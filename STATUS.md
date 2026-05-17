@@ -115,9 +115,11 @@ production UI server.
 - `make check` validates MVP plan links and minimum plan scaffolding, and is
   included in `make verify` and the GitHub Actions workflow.
 - `.github/workflows/public-demo.yml` runs tests, builds the fixture public demo,
-  builds a wheel, uploads the public-demo plus capture artifacts, and can
-  publish the static public-demo output to GitHub Pages from `main` when Pages
-  is enabled and the repository variable `NEODOJO_DEPLOY_PAGES=true` is set.
+  builds a wheel, uploads the standalone public-demo artifact plus a
+  capture-bundle artifact containing the capture manifest and referenced
+  generated evidence, and can publish the static public-demo output to GitHub
+  Pages from `main` when Pages is enabled and the repository variable
+  `NEODOJO_DEPLOY_PAGES=true` is set.
 - GitHub Actions run
   `https://github.com/MiaoDX/neodojo/actions/runs/25998662280` verified the
   default CI lane on `main`, uploaded the `neodojo-public-demo` artifact, and

@@ -52,9 +52,11 @@ wheel build, and `make demo-public`.
 
 `.github/workflows/public-demo.yml` installs the package, runs lint, plan
 quality checks, tests, wheel build, and `make demo-public`, uploads
-`outputs/public-demo` plus `outputs/capture` as workflow artifacts, and uploads
-the public-demo directory as the GitHub Pages artifact. The deploy job runs only
-on `main` outside pull
+`outputs/public-demo` as the standalone public-demo artifact, uploads a
+capture-bundle artifact containing `outputs/capture` plus the referenced
+public-demo, Viser runtime, and G1 render evidence, and uploads the public-demo
+directory as the GitHub Pages artifact. The deploy job runs only on `main`
+outside pull
 requests when Pages is configured and `NEODOJO_DEPLOY_PAGES=true` is set as a
 repository variable. Pages still requires repository Pages configuration to
 expose a live URL.
@@ -164,9 +166,9 @@ The downloaded `neodojo-public-demo` artifact passed
 - Unit tests and manifest validation pass locally; CI is configured to run the
   same commands.
 - CI uploads the generated `.rrd` fallback recording, static viewer page, SVG
-  screenshot, public-demo manifest, and generated capture bundle as artifacts,
-  verified by run `25998306700` for the original public-demo lane and by later
-  runs after the capture bundle was added.
+  screenshot, public-demo manifest, and a generated capture bundle artifact with
+  referenced evidence, verified by run `25998306700` for the original
+  public-demo lane and by later runs after the capture bundle was added.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages can publish only safe static demo assets once repository Pages is
