@@ -4,11 +4,12 @@ neodojo is in bootstrap state with one fixture-only local demo.
 
 There is now a minimal checked-in Python package, a `make test` command,
 fixture-backed and external-JSON `motion-record` paths, `robot-model`,
-`tracks`, `render g1`, `demo play`, and `real-conversion prepare` commands, and
-a `make demo-html` command that writes a self-contained synthetic web demo.
-There is still no checked-in GVHMR/GMR/simulator runtime pipeline,
-MuJoCo/Genesis real mesh rendering, install workflow, lint command, build
-command, CI gate, real generated motion artifact, or UI server.
+`tracks`, `render g1`, `demo play`, `demo export-rerun`, and
+`real-conversion prepare` commands, and a `make demo-html` command that writes a
+self-contained synthetic web demo. There is still no checked-in
+GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real mesh rendering,
+install workflow, lint command, build command, CI gate, real generated motion
+artifact, or UI server.
 
 ## Current Truth
 
@@ -52,6 +53,9 @@ command, CI gate, real generated motion artifact, or UI server.
 - Hardened artifact manifests now carry schema ids, shared timing,
   coordinate/floor/contact metadata, source-media provenance, optional
   reference-video sync metadata, and normalized annotation manifests.
+- Fixture-only public-demo export generated under `outputs/public-demo/`,
+  containing a scene/timeline contract, static HTML viewer, SVG screenshot, and
+  `.rrd`-named JSON fallback artifact for the future Rerun lane.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
@@ -90,6 +94,7 @@ PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixtu
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --allow-fixture-model --out outputs/g1-render
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
+PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 make demo-html
 ```
@@ -105,7 +110,11 @@ render evidence and a render manifest from a G1 model descriptor plus G1 track;
 fixture model descriptors require explicit `--allow-fixture-model`, and this is
 not MuJoCo/Genesis simulator mesh rendering. `neodojo demo play` writes
 `outputs/teaching-demo/index.html` and a playback manifest from the SMPL-X and
-G1 manifests. `make demo-html`
+G1 manifests. `neodojo demo export-rerun` writes
+`outputs/public-demo/index.html`, `outputs/public-demo/scene.json`,
+`outputs/public-demo/screenshot.svg`, and `outputs/public-demo/neodojo-demo.rrd`;
+the `.rrd` is currently a JSON fallback artifact, not a real Rerun SDK
+recording. `make demo-html`
 writes `outputs/html-demo/index.html`, `outputs/html-demo/manifest.json`, and
 the local motion/track manifests it consumes. These artifacts use synthetic
 fixture motion only; they validate UI plumbing, trajectory drawing, timeline
@@ -124,6 +133,7 @@ later GPU run and does not download video or execute GVHMR.
   still a derived visual skeleton.
 - SMPL-X mesh/body-surface playback; current demos draw joints and bones.
 - Simulator/Viser runtime integration and multi-camera offscreen capture.
+- True Rerun SDK `.rrd` export and GitHub Pages publishing.
 - Feedback beyond the first fixture geometry check: automatic key-frame
   detection, more posture terms, and routine-level review.
 - Rich source media probing beyond local file checksum/extension validation and
@@ -132,9 +142,9 @@ later GPU run and does not download video or execute GVHMR.
 
 ## Next Safe Task
 
-The next MVP capability is the non-GPU public-demo/CI sequence:
-`docs/plans/mvp-visualization-and-public-demo.md` and
-`docs/plans/mvp-devex-ci-surface.md` before returning to
+The next MVP capability is `docs/plans/mvp-devex-ci-surface.md`: add the
+one-command public-demo orchestration, visual smoke checks, artifact upload,
+and GitHub Pages workflow before returning to
 `docs/plans/mvp-real-conversion-gate.md`. Do not run GVHMR full-video inference
 on this macOS CPU workspace; use a GPU-capable machine to export a GVHMR SMPL-X
 teaching-joints JSON artifact, then import it through

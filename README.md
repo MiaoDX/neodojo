@@ -174,6 +174,7 @@ PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixtu
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --allow-fixture-model --out outputs/g1-render
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
+PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 make demo-html
 ```
@@ -200,6 +201,12 @@ playback manifest. This is a simulator-light HTML inspection path: SMPL-X stays
 the scoring source and G1 stays non-scoring. It can also preserve optional
 local-only original-video sync metadata with `--reference-video`.
 
+`neodojo demo export-rerun` writes the internal scene/timeline contract, a
+fixture-only static public-demo HTML page, an SVG screenshot, and a `.rrd`-named
+recording artifact under `outputs/public-demo/`. Until `rerun-sdk` is added,
+the `.rrd` file is an honest JSON fallback artifact, not a real Rerun SDK
+recording.
+
 `neodojo real-conversion prepare` writes source metadata, trim metadata, and
 next-command hints for the later GPU gate. It does not download the source
 video or run GVHMR.
@@ -223,6 +230,8 @@ In progress:
 - [x] Local G1 SVG/HTML render evidence command with front/side/top frames and
       `g1_scoring_allowed: false`
 - [x] Local teaching playback command that consumes SMPL-X and G1 manifests
+- [x] Fixture-only static public-demo export with scene/timeline contract,
+      `.rrd` fallback artifact, HTML, and SVG screenshot
 - [x] Local real-conversion prep manifest for source `03-006`
 - [ ] MuJoCo/Genesis real Unitree G1 mesh rendering from user-supplied URDF/MJCF
       and meshes

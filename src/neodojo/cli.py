@@ -8,6 +8,7 @@ from .demo_html import write_demo
 from .g1_visual import build_g1_visual_track, register_g1_model, write_fixture_g1_model_descriptor
 from .g1_render import write_g1_render
 from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
+from .public_demo import write_public_demo
 from .real_conversion import DEFAULT_SOURCE_ID, DEFAULT_SOURCE_INDEX, write_real_conversion_prep
 from .teaching_playback import write_teaching_playback_demo
 
@@ -167,6 +168,27 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/teaching-demo"),
         help="output directory for the teaching playback HTML and manifest",
     )
+    demo_export = demo_subparsers.add_parser(
+        "export-rerun",
+        help="write the public fixture demo scene and Rerun-target artifact",
+    )
+    demo_export.add_argument(
+        "--playback",
+        type=Path,
+        required=True,
+        help="teaching playback manifest path",
+    )
+    demo_export.add_argument(
+        "--g1-render",
+        type=Path,
+        help="optional G1 render manifest path",
+    )
+    demo_export.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/public-demo/neodojo-demo.rrd"),
+        help="output .rrd artifact path; sibling public-demo files are written next to it",
+    )
 
     render = subparsers.add_parser(
         "render",
@@ -310,6 +332,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(f"wrote {result.html_path}")
             print(f"wrote {result.manifest_path}")
+            return 0
+
+        if args.command == "demo" and args.demo_command == "export-rerun":
+            result = write_public_demo(
+                playback_manifest_path=args.playback,
+                recording_path=args.out,
+                g1_render_manifest_path=args.g1_render,
+            )
+            print(f"wrote {result.html_path}")
+            print(f"wrote {result.manifest_path}")
+            print(f"wrote {result.scene_path}")
+            print(f"wrote {result.recording_path}")
+            print(f"wrote {result.screenshot_path}")
             return 0
 
         if args.command == "render" and args.render_command == "g1":

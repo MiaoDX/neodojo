@@ -1,6 +1,6 @@
 # MVP Visualization And Public Demo Plan
 
-Status: PLANNED NON-GPU SLICE
+Status: IMPLEMENTED WITH STATIC FALLBACK; TRUE RERUN SDK EXPORT AND PAGES PUBLISH REMAIN FOLLOW-ON
 
 ## Goal
 
@@ -21,6 +21,20 @@ inspectable web artifact without committing to the future local/server teaching
 runtime. Viser remains the intended richer interactive runtime later. MuJoCo is
 render/simulator evidence, not the primary public UI. MeshCat is optional
 compatibility only and should not block this slice.
+
+## Implemented Local Path
+
+`neodojo demo export-rerun` now writes the internal scene/timeline contract,
+static public-demo HTML, SVG screenshot, public-demo manifest, and a
+`.rrd`-named recording artifact under ignored output. Because `rerun-sdk` is not
+yet a project dependency, the `.rrd` file is explicitly marked as a JSON
+fallback artifact with `actual_rerun_rrd: false`; it is not presented as a real
+Rerun SDK recording.
+
+The static HTML page is the current CI/publishable artifact. It is fixture-only,
+shows SMPL-X and G1 labels, preserves the G1 non-scoring boundary, and embeds
+the scene contract for smoke checks. The true Rerun SDK `.rrd` writer and
+GitHub Pages publication are left to the DevEx/CI slice.
 
 ## Dependencies
 
@@ -75,52 +89,59 @@ compatibility only and should not block this slice.
 ## Execution Tasks
 
 1. Define the internal scene/timeline contract.
-   - Treat the current HTML playback state as one consumer, not the source of
-     truth.
-   - Represent SMPL-X, G1, reference video, trajectories, annotations, cameras,
-     and timing in one compact structure.
-   - Keep scoring permissions explicit per track.
+   - [x] Treat the current HTML playback state as one consumer, not the source
+     of truth.
+   - [x] Represent SMPL-X, G1, reference video, trajectories, annotations,
+     cameras, and timing in one compact structure.
+   - [x] Keep scoring permissions explicit per track.
 
 2. Implement Rerun export as the first public artifact.
-   - Export track points, bones or line strips, trajectories, labels, cameras,
-     and key-frame markers into `.rrd`.
-   - Include clear fixture-only labels when the source data is synthetic.
-   - Keep generated `.rrd` files out of tracked source.
+   - [x] Export track points, bones, trajectories, labels, cameras, and
+     key-frame markers into a `.rrd`-named fallback artifact.
+   - [x] Include clear fixture-only labels when the source data is synthetic.
+   - [x] Keep generated `.rrd` files out of tracked source.
+   - [ ] Replace the fallback artifact with a true Rerun SDK `.rrd` once the
+     dependency decision is made.
 
 3. Add a static Rerun Web Viewer page.
-   - Load the generated `.rrd` artifact from the publish output.
-   - Make the page usable as a static artifact for CI and GitHub Pages.
-   - Avoid presenting it as the final teaching UI.
+   - [x] Generate a static HTML public-demo page from the scene/timeline
+     contract.
+   - [x] Make the page usable as a static artifact for CI and GitHub Pages.
+   - [x] Avoid presenting it as the final teaching UI or a real Rerun Web
+     Viewer while the SDK export is absent.
 
 4. Capture public-demo visual evidence.
-   - Generate a screenshot or short GIF from the static page.
-   - Verify that the page is nonblank and shows expected SMPL-X/G1 tracks,
-     trajectories, labels, and fixture-only status.
-   - Store generated images under ignored output or publish artifact staging.
+   - [x] Generate an SVG screenshot from the scene contract.
+   - [x] Verify through tests and smoke-searchable labels that the page is
+     nonblank and shows expected SMPL-X/G1 tracks, labels, and fixture-only
+     status.
+   - [x] Store generated images under ignored output or publish artifact
+     staging.
 
 5. Keep Viser as a later local/server runtime.
-   - Preserve scene contract fields Viser will need: synchronized viewports,
+   - [x] Preserve scene contract fields Viser will need: synchronized viewports,
      timeline state, selected joints, annotations, and optional reference video.
-   - Do not require Viser to complete the first public demo.
+   - [x] Do not require Viser to complete the first public demo.
 
 6. Treat simulator renders as evidence inputs.
-   - Use MuJoCo or Genesis frames when available to prove real model rendering.
-   - Do not make MuJoCo the public UI surface for the first demo.
-   - Keep MeshCat as an optional compatibility adapter only.
+   - [x] Consume G1 render evidence when available.
+   - [x] Do not make MuJoCo the public UI surface for the first demo.
+   - [x] Keep MeshCat as an optional compatibility adapter only.
 
 7. Update human docs only after publishing exists.
-   - README.md and README.zh.md must link to the GitHub Pages demo and embed
-     the generated screenshot or GIF only after the command and publish artifact
-     exist.
-   - The docs must clearly mark fixture-only demos as fixture-only.
+   - [x] README.md and README.zh.md document the local command and fixture-only
+     status without claiming GitHub Pages publication.
+   - [ ] Add the GitHub Pages link and embedded screenshot/GIF only after the
+     workflow publishes the artifact.
 
 ## Acceptance Evidence
 
 - A scene/timeline manifest can be produced from existing playback artifacts.
-- A Rerun `.rrd` export is generated under ignored output from fixture data.
-- A static Rerun Web Viewer page can load the recording locally.
-- A screenshot or GIF shows nonblank SMPL-X/G1 tracks, trajectory labels, and
-  fixture-only status.
+- A `.rrd`-named fallback export is generated under ignored output from fixture
+  data and is explicitly marked `actual_rerun_rrd: false`.
+- A static public-demo page can load the scene locally.
+- An SVG screenshot shows nonblank SMPL-X/G1 tracks, labels, and fixture-only
+  status.
 - The public-demo manifest records provenance, Rerun/Web Viewer versions,
   generated paths, and scoring-source metadata.
 - README.md and README.zh.md are updated only after the GitHub Pages artifact
@@ -139,6 +160,7 @@ compatibility only and should not block this slice.
 
 ## Stop Condition
 
-Stop when a fixture-only but honest Rerun Web Viewer demo can be generated,
+Stopped when a fixture-only but honest static public demo can be generated,
 visually smoke-tested, and staged for GitHub Pages through artifacts, with the
-scene/timeline contract ready for later Viser integration.
+scene/timeline contract ready for later Viser integration. True Rerun SDK export
+and Pages publication remain in the DevEx/CI queue.

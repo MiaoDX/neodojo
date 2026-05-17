@@ -141,6 +141,7 @@ PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixtu
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --allow-fixture-model --out outputs/g1-render
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
+PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 make demo-html
 ```
@@ -166,6 +167,11 @@ descriptor 不需要这个开关。这是本地 render evidence，不是 MuJoCo/
 一个 simulator-light HTML inspection path：SMPL-X 仍是 scoring source，G1 仍然
 不可用于评分。它也可以通过 `--reference-video` 保留可选的本地-only 原视频同步元数据。
 
+`neodojo demo export-rerun` 会写出内部 scene/timeline contract、fixture-only
+静态 public-demo HTML 页面、SVG screenshot，以及 `outputs/public-demo/` 下的
+`.rrd` 命名 recording artifact。在加入 `rerun-sdk` 之前，这个 `.rrd` 文件是如实
+标注的 JSON fallback artifact，不是真正的 Rerun SDK recording。
+
 `neodojo real-conversion prepare` 会为后续 GPU gate 写出 source metadata、trim
 metadata 和下一步命令提示。它不会下载源视频，也不会运行 GVHMR。
 
@@ -185,6 +191,8 @@ G1 retargeting 已经完成。
 - [x] 本地 G1 SVG/HTML render evidence 命令，输出正/侧/俯三视角 frame，并保持
       `g1_scoring_allowed: false`
 - [x] 本地 teaching playback 命令，可同时消费 SMPL-X 与 G1 manifests
+- [x] fixture-only 静态 public-demo export，包含 scene/timeline contract、
+      `.rrd` fallback artifact、HTML 与 SVG screenshot
 - [x] 本地 real-conversion prep manifest，默认 source 为 `03-006`
 - [ ] 基于用户本地 URDF/MJCF 与 meshes 的 MuJoCo/Genesis 真实 Unitree G1 mesh 渲染
 - [ ] roboharness 风格的多视角离屏录制集成

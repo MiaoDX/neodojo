@@ -16,6 +16,7 @@ from neodojo.motion_contract import (
     write_fixture_motion_contract,
     write_gvhmr_json_motion_contract,
 )
+from neodojo.public_demo import build_scene_timeline, write_public_demo
 from neodojo.real_conversion import write_real_conversion_prep
 from neodojo.teaching_playback import write_teaching_playback_demo
 
@@ -438,6 +439,73 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["reference_video_sync"]["media"]["suffix"], ".mp4")
         self.assertEqual(manifest["reference_video_sync"]["trim_start_seconds"], 1.25)
         self.assertEqual(len(manifest["reference_video_sync"]["media"]["sha256"]), 64)
+
+    def test_public_demo_export_writes_scene_recording_html_and_screenshot(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            render = write_g1_render(
+                root / "render",
+                model_descriptor_path=model.descriptor_path,
+                g1_track=g1.track_manifest_path,
+                allow_fixture_model=True,
+            )
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+            )
+
+            result = write_public_demo(
+                playback_manifest_path=playback.manifest_path,
+                g1_render_manifest_path=render.manifest_path,
+                recording_path=root / "public-demo" / "neodojo-demo.rrd",
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            recording = json.loads(result.recording_path.read_text(encoding="utf-8"))
+            scene = json.loads(result.scene_path.read_text(encoding="utf-8"))
+            html = result.html_path.read_text(encoding="utf-8")
+            screenshot = result.screenshot_path.read_text(encoding="utf-8")
+
+        self.assertEqual(manifest["schema"], "neodojo.public_demo.v1")
+        self.assertTrue(manifest["fixture_only"])
+        self.assertEqual(manifest["recording"], "neodojo-demo.rrd")
+        self.assertFalse(manifest["rerun"]["actual_rrd"])
+        self.assertEqual(recording["schema"], "neodojo.rerun_recording_export.v1")
+        self.assertFalse(recording["actual_rerun_rrd"])
+        self.assertEqual(scene["schema"], "neodojo.scene_timeline.v1")
+        self.assertIn("SMPL-X teacher", html)
+        self.assertIn("Unitree G1 visual", html)
+        self.assertIn("fixture-only", html)
+        self.assertIn("SMPL-X teacher", screenshot)
+
+    def test_scene_timeline_preserves_scoring_boundary(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+            )
+            scene = build_scene_timeline(playback_manifest_path=playback.manifest_path)
+
+        self.assertEqual(scene["scoring_source"], "smplx")
+        self.assertTrue(scene["tracks"]["smplx"]["scoring_allowed"])
+        self.assertFalse(scene["tracks"]["g1"]["scoring_allowed"])
+        self.assertIn("coordinates", scene)
 
     def test_write_real_conversion_prep_from_source_index(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
