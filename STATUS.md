@@ -22,9 +22,9 @@ real-gpu-archive`, `make gpu-input-archive-smoke`, and
 bundles/archives, CI-safe GPU runner packaging, reproducible GPU/provider
 readiness classification, metadata-only CI GPU execution probe artifacts, and a
 tracked external-GPU operator runbook, `make gvhmr-inspect` for returned GVHMR
-result inspection, and `make demo-real` for a validated external GVHMR JSON
-once a GPU artifact exists, with a verified live fixture-only GitHub Pages demo
-at
+result inspection, and `make demo-real` / `make real-artifact-intake` for a
+validated external GVHMR JSON once a GPU artifact exists, with a verified live
+fixture-only GitHub Pages demo at
 `https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, `real-conversion package-gpu-handoff` can package the handoff
@@ -336,6 +336,10 @@ motion artifact, or hosted/live-client Viser capture.
   with a validated source report, imported motion-record manifest, public-demo
   artifact, Viser preview, and capture bundle. This is still a local handoff
   proof, not a real GVHMR execution proof.
+- `make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=...` wraps the same
+  validated import-demo path with standard default paths for the returned export
+  workflow. It has been smoke-tested against fixture-backed real-demo inputs and
+  wrote `outputs/real-artifact-intake-smoke/`.
 
 ## Blockers And Constraints
 
@@ -374,6 +378,7 @@ make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
 make gpu-input-archive-smoke
 make gpu-execution-probe
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
+make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
@@ -567,7 +572,9 @@ real-conversion import-demo` wraps validation, motion import, annotations,
 surface proxy, G1 visual/render, teaching playback, public-demo, Viser preview,
 and capture-bundle generation for that external artifact under
 `outputs/real-demo/`. By default, the G1 visual companion remains fixture-derived
-until an external G1 track is supplied.
+until an external G1 track is supplied. `make real-artifact-intake
+REAL_ARTIFACT_GVHMR_JSON=...` is the simpler wrapper for the standard returned
+artifact path.
 
 ## Remaining Non-GPU Gaps
 

@@ -125,6 +125,10 @@ default. That JSON is the artifact to return to the local neodojo workspace.
 Copy `gvhmr-smplx-joints.json` back to the local machine, then run:
 
 ```bash
+make real-artifact-intake \
+  REAL_ARTIFACT_SOURCE_MATERIALIZATION=outputs/real-handoff-local-bilibili/source-materialized/source-materialization.json \
+  REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
+
 make demo-real \
   SOURCE_MATERIALIZATION=outputs/real-handoff-local-bilibili/source-materialized/source-materialization.json \
   GVHMR_JSON=path/to/gvhmr-smplx-joints.json

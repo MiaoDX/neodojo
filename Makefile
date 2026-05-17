@@ -1,4 +1,4 @@
-.PHONY: all verify lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-inspect demo-real smoke-public
+.PHONY: all verify lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-inspect demo-real real-artifact-intake smoke-public
 
 PYTHON ?= python3
 REAL_SOURCE_ID ?= 03-006
@@ -15,6 +15,9 @@ GPU_INPUT_ARCHIVE_NAME ?= neodojo-gvhmr-gpu-input.tar.gz
 GPU_EXECUTION_PROBE_OUT ?= outputs/gvhmr-gpu-execution-probe
 GVHMR_INSPECT_OUT ?= outputs/gvhmr-result-inspection
 REAL_DEMO_OUT ?= outputs/real-demo
+REAL_ARTIFACT_SOURCE_MATERIALIZATION ?= outputs/real-conversion-source/source-materialization.json
+REAL_ARTIFACT_GVHMR_JSON ?= outputs/real-conversion-gate/gvhmr-smplx-joints.json
+REAL_ARTIFACT_OUT ?= outputs/real-demo
 REAL_DEMO_ARGS = --source-materialization "$(SOURCE_MATERIALIZATION)" --gvhmr-json "$(GVHMR_JSON)" --out "$(REAL_DEMO_OUT)"
 ifdef G1_TRACK
 REAL_DEMO_ARGS += --g1-track "$(G1_TRACK)"
@@ -158,6 +161,11 @@ demo-real:
 	@test -n "$(SOURCE_MATERIALIZATION)" || (echo "SOURCE_MATERIALIZATION=path/to/source-materialization.json is required" && exit 2)
 	@test -n "$(GVHMR_JSON)" || (echo "GVHMR_JSON=path/to/gvhmr-smplx-joints.json is required" && exit 2)
 	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion import-demo $(REAL_DEMO_ARGS)
+
+real-artifact-intake:
+	@test -f "$(REAL_ARTIFACT_SOURCE_MATERIALIZATION)" || (echo "REAL_ARTIFACT_SOURCE_MATERIALIZATION=path/to/source-materialization.json is required" && exit 2)
+	@test -f "$(REAL_ARTIFACT_GVHMR_JSON)" || (echo "REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json is required" && exit 2)
+	$(MAKE) demo-real SOURCE_MATERIALIZATION="$(REAL_ARTIFACT_SOURCE_MATERIALIZATION)" GVHMR_JSON="$(REAL_ARTIFACT_GVHMR_JSON)" REAL_DEMO_OUT="$(REAL_ARTIFACT_OUT)"
 
 smoke-public:
 	PYTHONPATH=src $(PYTHON) -m neodojo demo smoke --public-demo outputs/public-demo

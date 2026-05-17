@@ -167,6 +167,7 @@ make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
 make gpu-input-archive-smoke
 make gpu-execution-probe
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
+make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
@@ -370,6 +371,11 @@ Viser preview 与 capture bundle lane。默认情况下，如果没有传入 `--
 `--model-descriptor`，或者没有给 `make demo-real` 传入 `G1_TRACK=...`
 `MODEL_DESCRIPTOR=...`，它会派生 fixture G1 visual companion。它们仍不会在本地运行
 GVHMR。
+`make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=...` 是同一条 validated import
+path 的更简单 post-return wrapper。使用标准路径时，它默认读取
+`outputs/real-conversion-source/source-materialization.json` 并写入
+`outputs/real-demo`，因此 GPU operator 返回 export 后只需要指定这个
+`neodojo.gvhmr_smplx_joints.v1` JSON。
 
 `make demo-html` 会写出 `outputs/html-demo/index.html`，这是一个由本地
 motion/track manifest contract 支撑的自包含合成 fixture demo，用来验证目标教学
@@ -432,6 +438,7 @@ capture 或真实 Unitree G1 retargeting 已经完成。
 - [x] 本地 GVHMR result inspection manifest，用于返回的 `.pt` 或 JSON export
 - [x] 本地 GVHMR source-validation report 与 validated JSON import handoff
 - [x] 外部 GPU GVHMR export 可用后的一命令本地 real-artifact import demo
+- [x] 面向标准返回 GVHMR export 路径的简化 `make real-artifact-intake` wrapper
 详细 implementation queue 放在 [`docs/plans/`](docs/plans/)，之后可以再同步成
 GitHub issues。
 

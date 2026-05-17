@@ -293,6 +293,9 @@ PYTHONPATH=src python -m neodojo real-conversion import-demo \
 make demo-real \
   SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json \
   GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
+
+make real-artifact-intake \
+  REAL_ARTIFACT_GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 ```
 
 These commands avoid downloading video, running GVHMR locally, or proving
@@ -300,6 +303,10 @@ qigong correctness. By default, `import-demo` derives a fixture G1 visual
 companion from the imported SMPL-X motion record; pass `--g1-track` and
 `--model-descriptor`, or the matching `G1_TRACK=... MODEL_DESCRIPTOR=...` make
 variables, when an external GMR/G1 visual artifact is available.
+`make real-artifact-intake` is the shorter wrapper for the standard returned
+artifact path; it defaults to
+`outputs/real-conversion-source/source-materialization.json` and
+`outputs/real-demo`.
 
 ## Execution Tasks
 
@@ -342,6 +349,8 @@ variables, when an external GMR/G1 visual artifact is available.
 - [x] Add a local `real-conversion import-demo` / `make demo-real` wrapper that
   validates the external export, imports it, and regenerates the demo/capture
   lane after the GPU artifact exists.
+- [x] Add a shorter `make real-artifact-intake` wrapper for the standard
+  returned artifact path.
 - [x] Add a safe `real-conversion probe-gpu-execution` / `make
   gpu-execution-probe` command that records local CUDA/provider readiness
   without running GVHMR or exposing secret values.
@@ -352,8 +361,9 @@ variables, when an external GMR/G1 visual artifact is available.
   local playback contract.
 - [ ] Import the exported JSON artifact using
   `neodojo motion-record create --from-gvhmr-json`.
-- [ ] Run `neodojo real-conversion import-demo` or `make demo-real` on the real
-  exported artifact and inspect `outputs/real-demo/`.
+- [ ] Run `neodojo real-conversion import-demo`, `make demo-real`, or
+  `make real-artifact-intake` on the real exported artifact and inspect
+  `outputs/real-demo/`.
 - [ ] If import fails, classify the failure:
   - contract too narrow
   - missing GVHMR metadata
@@ -410,6 +420,9 @@ When the external artifact exists, the next command is:
 make demo-real \
   SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json \
   GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
+
+make real-artifact-intake \
+  REAL_ARTIFACT_GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 ```
 
 ## Acceptance Evidence

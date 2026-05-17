@@ -200,6 +200,7 @@ make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
 make gpu-input-archive-smoke
 make gpu-execution-probe
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
+make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
@@ -424,6 +425,11 @@ bundle lane under `outputs/real-demo/`. By default they derive a fixture G1
 visual companion unless `--g1-track` and `--model-descriptor` are supplied to
 the CLI, or `G1_TRACK=... MODEL_DESCRIPTOR=...` are supplied to `make
 demo-real`. They still do not run GVHMR locally.
+`make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=...` is the simpler
+post-return wrapper for the same validated import path. It defaults to
+`outputs/real-conversion-source/source-materialization.json` and
+`outputs/real-demo`, so the GPU operator only needs to point it at the returned
+`neodojo.gvhmr_smplx_joints.v1` export when those standard paths are used.
 
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local
@@ -499,6 +505,8 @@ In progress:
 - [x] Local GVHMR source-validation report and validated JSON import handoff
 - [x] One-command local real-artifact import demo after an external GPU GVHMR
       export is available
+- [x] Simpler `make real-artifact-intake` wrapper for the standard returned
+      GVHMR export path
 The detailed implementation queue lives in [`docs/plans/`](docs/plans/) and
 can later be mirrored into GitHub issues.
 
