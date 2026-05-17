@@ -163,7 +163,8 @@ boundary, native GMR pickle normalization, a dependency-light SMPL-X surface
 proxy, a teaching-playback HTML command, a static HTML demo generator, local
 SVG/HTML G1 render evidence from a model descriptor plus visual track, optional
 MuJoCo offscreen mesh render evidence, optional true Rerun SDK `.rrd` export,
-an optional first Viser local runtime, and minimal lint/build/quality-check
+an optional first Viser local runtime, a generated roboharness-style capture
+bundle manifest, and minimal lint/build/quality-check
 commands. It can also write a dry-run or ffmpeg-backed local source-video
 handoff for a later GPU GVHMR run. There is still no checked-in GVHMR/GMR
 execution pipeline, simulator runtime pipeline, licensed SMPL-X mesh
@@ -195,6 +196,7 @@ PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contra
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --use-rerun-sdk --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo demo serve-viser --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/viser-runtime
+PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --out outputs/capture
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
@@ -273,12 +275,19 @@ synchronized 3D tracks with a frame slider, trajectory overlays, camera-preset
 metadata and buttons, annotation-anchor navigation, and explicit SMPL-X
 scoring/G1 visual labels; it is not the final teaching UI.
 
+`neodojo capture bundle` writes `outputs/capture/manifest.json`, a generated
+roboharness-style multi-camera evidence manifest. It validates the public-demo
+artifacts, Viser front/side/top preview screenshots, and G1 front/side/top
+render frames while preserving `scoring_source: smplx` and
+`g1_scoring_allowed: false`. This is a generated evidence boundary, not a real
+browser, simulator, or video recorder.
+
 `make verify` runs lint, MVP plan quality checks, tests, wheel build, and the
-public-demo smoke lane.
+public-demo plus capture-bundle smoke lane.
 `make demo-public` regenerates the fixture motion contract, detected
 annotations, SMPL-X surface proxy, G1 visual track, G1 render evidence,
-teaching playback, Viser runtime preview, public-demo artifact, and smoke check
-in one local command.
+teaching playback, Viser runtime preview, public-demo artifact, generated
+capture bundle, and smoke check in one local command.
 `make smoke-public`
 validates an existing
 `outputs/public-demo` artifact set. The GitHub Actions workflow at
@@ -342,6 +351,8 @@ In progress:
       scoring-source labels
 - [x] Generated Viser front/side/top preview screenshots in the one-command
       public-demo lane
+- [x] Generated roboharness-style multi-camera capture evidence bundle that
+      validates public-demo, Viser preview, and G1 render artifacts
 - [x] One-command local `make demo-public` flow and GitHub Actions artifact/Page
       workflow for the fixture public demo
 - [x] Minimal `make lint` and `make build` command surface
@@ -352,7 +363,8 @@ In progress:
 - [x] Local real-conversion source materialization handoff for a user-supplied
       video
 - [x] Local GVHMR source-validation report and validated JSON import handoff
-- [ ] roboharness-style multi-camera offscreen capture integration
+- [ ] real roboharness/browser offscreen recording beyond the generated capture
+      bundle
 - [ ] production Viser teaching polish beyond the first optional local runtime,
       camera/annotation controls, and generated preview screenshots
 
@@ -364,8 +376,9 @@ can later be mirrored into GitHub issues.
 ## Related work in the MiaoDX ecosystem
 
 - 🤖 [roboharness](https://github.com/MiaoDX/roboharness) — eyes for
-  robot simulation agents. neodojo reuses its multi-camera management
-  and recording layer.
+  robot simulation agents. neodojo currently mirrors its multi-camera evidence
+  pattern through a generated capture bundle; direct recorder integration is
+  still follow-on work.
 - 🦾 [robowbc](https://github.com/MiaoDX/robowbc) — whole-body control
   showcase built on roboharness.
 

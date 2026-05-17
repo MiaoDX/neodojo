@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .annotations import write_detected_annotations
+from .capture_bundle import write_capture_bundle
 from .demo_html import write_demo
 from .g1_visual import (
     build_g1_visual_track,
@@ -403,6 +404,40 @@ def build_parser() -> argparse.ArgumentParser:
         help="public-demo directory or manifest path",
     )
 
+    capture = subparsers.add_parser(
+        "capture",
+        help="build generated multi-camera evidence bundle manifests",
+    )
+    capture_subparsers = capture.add_subparsers(dest="capture_command", required=True)
+    capture_bundle = capture_subparsers.add_parser(
+        "bundle",
+        help="write a roboharness-style capture evidence bundle from generated artifacts",
+    )
+    capture_bundle.add_argument(
+        "--public-demo",
+        type=Path,
+        default=Path("outputs/public-demo"),
+        help="public-demo directory or manifest path",
+    )
+    capture_bundle.add_argument(
+        "--viser-runtime",
+        type=Path,
+        default=Path("outputs/viser-runtime"),
+        help="Viser runtime directory or viser-runtime.json path",
+    )
+    capture_bundle.add_argument(
+        "--g1-render",
+        type=Path,
+        default=Path("outputs/g1-render"),
+        help="G1 render evidence directory or manifest path",
+    )
+    capture_bundle.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/capture"),
+        help="output directory for the capture bundle manifest",
+    )
+
     render = subparsers.add_parser(
         "render",
         help="write local render evidence artifacts",
@@ -746,6 +781,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "demo" and args.demo_command == "smoke":
             result = smoke_check_public_demo(args.public_demo)
             print(f"validated {result.manifest_path}")
+            for path in result.checked_paths:
+                print(f"validated {path}")
+            return 0
+
+        if args.command == "capture" and args.capture_command == "bundle":
+            result = write_capture_bundle(
+                args.out,
+                public_demo=args.public_demo,
+                viser_runtime=args.viser_runtime,
+                g1_render=args.g1_render,
+            )
+            print(f"wrote {result.manifest_path}")
             for path in result.checked_paths:
                 print(f"validated {path}")
             return 0

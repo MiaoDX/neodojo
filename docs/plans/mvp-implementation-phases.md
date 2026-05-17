@@ -16,7 +16,8 @@ pickle normalization, an SMPL-X surface proxy, G1 SVG/HTML render evidence,
 optional MuJoCo render evidence, optional true Rerun SDK `.rrd` export,
 an optional first Viser local runtime, optional source-media probing, local
 source-media materialization handoff, a fixture-only static public-demo fallback
-artifact, and a GitHub Actions workflow for the fixture public-demo lane. It
+artifact, a generated roboharness-style capture bundle boundary, and a GitHub
+Actions workflow for the fixture public-demo lane. It
 does not yet have a checked-in GVHMR/GMR execution pipeline, simulator runtime
 pipeline, full licensed SMPL-X mesh generation, verified live GitHub Pages URL,
 production Viser teaching UX, or broad static-analysis/release gates beyond the
@@ -38,6 +39,7 @@ local/user-supplied source video
   -> source clip materialization handoff
   -> Rerun public demo artifact
   -> CI-published fixture demo
+  -> generated multi-camera capture bundle
   -> multi-view playback or Viser playback
   -> detected key-frame feedback proof
 ```
@@ -58,7 +60,8 @@ local/user-supplied source video
 | 10 | [mvp-lint-build-surface.md](mvp-lint-build-surface.md) | implemented | Add the minimal lint/build command surface and all-in-one local verification target. | `make verify` runs lint, plan quality checks, tests, wheel build, and public-demo generation without tracking generated artifacts. |
 | 11 | [mvp-source-media-probing.md](mvp-source-media-probing.md) | implemented metadata probe | Record optional ffprobe metadata for local source videos without copying media. | Source prep records probe success/failure, duration, resolution, codec, and frame-rate metadata when available. |
 | 12 | [mvp-source-media-materialization.md](mvp-source-media-materialization.md) | implemented local handoff | Turn source prep plus a local video into a dry-run or ffmpeg-backed trimmed-clip/reference-frame handoff. | A source-materialization manifest records source validation, commands, generated outputs when available, and the GVHMR input handoff path without committing media. |
-| 13 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep/materialization ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata and source materialization can prepare the trimmed input; final stop condition still requires a real GVHMR artifact imported through the hardened contracts. |
+| 13 | [mvp-roboharness-capture-boundary.md](mvp-roboharness-capture-boundary.md) | implemented first generated-evidence bundle; real recorder remains follow-on | Collect public-demo, Viser preview, and G1 render artifacts into one roboharness-style multi-camera evidence manifest. | `make demo-public` writes a validated capture bundle manifest without claiming real offscreen recording. |
+| 14 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep/materialization ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata and source materialization can prepare the trimmed input; final stop condition still requires a real GVHMR artifact imported through the hardened contracts. |
 
 ## Future Gap Plans
 
@@ -92,7 +95,8 @@ necessarily separate GSD phases. The grouping boundary is:
 10. lint/build command surface
 11. source media probing
 12. source media materialization
-13. later real conversion gate
+13. generated multi-camera capture bundle
+14. later real conversion gate
 
 The current local-first order intentionally puts real G1 model rendering before
 the GPU conversion gate, so the right-side robot view can become real while the
@@ -137,6 +141,7 @@ Allowed locally:
 - low-resolution screenshots or frame verification
 - Rerun fixture export, static viewer generation, and GitHub Pages artifact
   staging
+- generated multi-camera capture bundle manifests from existing local evidence
 - CI orchestration for fixture-only tests, generated demo artifacts, and visual
   smoke checks
 
@@ -222,6 +227,8 @@ docs:
   - path: docs/plans/mvp-smplx-body-surface-playback.md
     type: SPEC
   - path: docs/plans/mvp-viser-multicamera-runtime.md
+    type: SPEC
+  - path: docs/plans/mvp-roboharness-capture-boundary.md
     type: SPEC
   - path: docs/plans/mvp-rerun-pages-release.md
     type: SPEC

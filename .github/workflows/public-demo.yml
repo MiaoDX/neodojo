@@ -44,6 +44,11 @@ jobs:
         with:
           name: neodojo-public-demo
           path: outputs/public-demo
+      - name: Upload capture bundle artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neodojo-capture-bundle
+          path: outputs/capture
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:

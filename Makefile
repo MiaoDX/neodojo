@@ -22,7 +22,7 @@ demo-html:
 	PYTHONPATH=src $(PYTHON) -m neodojo demo-html --out outputs/html-demo
 
 demo-public:
-	rm -rf outputs/motion-contract outputs/smplx-surface outputs/annotations outputs/g1-visual outputs/g1-render outputs/teaching-demo outputs/public-demo outputs/viser-runtime
+	rm -rf outputs/motion-contract outputs/smplx-surface outputs/annotations outputs/g1-visual outputs/g1-render outputs/teaching-demo outputs/public-demo outputs/viser-runtime outputs/capture
 	PYTHONPATH=src $(PYTHON) -m neodojo motion-record create --out outputs/motion-contract
 	PYTHONPATH=src $(PYTHON) -m neodojo smplx-surface proxy --motion-record outputs/motion-contract --out outputs/smplx-surface
 	PYTHONPATH=src $(PYTHON) -m neodojo annotations detect --motion-record outputs/motion-contract --out outputs/annotations
@@ -33,6 +33,7 @@ demo-public:
 	PYTHONPATH=src $(PYTHON) -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 	PYTHONPATH=src $(PYTHON) -m neodojo demo serve-viser --write-contract-only --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/viser-runtime
 	PYTHONPATH=src $(PYTHON) -m neodojo demo smoke --public-demo outputs/public-demo
+	PYTHONPATH=src $(PYTHON) -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --out outputs/capture
 
 smoke-public:
 	PYTHONPATH=src $(PYTHON) -m neodojo demo smoke --public-demo outputs/public-demo

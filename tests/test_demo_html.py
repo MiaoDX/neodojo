@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 from neodojo.annotations import detect_opening_form_keyframe, write_detected_annotations
+from neodojo.capture_bundle import write_capture_bundle
 from neodojo.contracts import sha256_file
 from neodojo.demo_html import build_fixture, compute_feedback, render_demo_html, write_demo
 from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames, derive_g1_like_frame
@@ -982,6 +983,103 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("annotation_keyframe_button", control_kinds)
         self.assertIn("Viser front preview", front_screenshot)
         self.assertIn("G1 scoring allowed: false", front_screenshot)
+
+    def test_capture_bundle_collects_multi_camera_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            surface = write_smplx_surface_proxy(root / "surface", motion.out_dir)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            render = write_g1_render(
+                root / "render",
+                model_descriptor_path=model.descriptor_path,
+                g1_track=g1.track_manifest_path,
+                allow_fixture_model=True,
+            )
+            annotations = write_detected_annotations(root / "annotations", motion.out_dir)
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+                annotations_path=annotations.manifest_path,
+                smplx_surface=surface.manifest_path,
+            )
+            public = write_public_demo(
+                playback_manifest_path=playback.manifest_path,
+                g1_render_manifest_path=render.manifest_path,
+                recording_path=root / "public-demo" / "neodojo-demo.rrd",
+            )
+            viser = write_viser_runtime_contract(
+                root / "viser-runtime",
+                playback_manifest_path=playback.manifest_path,
+                g1_render_manifest_path=render.manifest_path,
+            )
+
+            result = write_capture_bundle(
+                root / "capture",
+                public_demo=public.manifest_path,
+                viser_runtime=viser.manifest_path,
+                g1_render=render.manifest_path,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(manifest["schema"], "neodojo.capture_bundle.v1")
+        self.assertEqual(manifest["style"], "roboharness_multi_camera_evidence_manifest")
+        self.assertTrue(manifest["fixture_only"])
+        self.assertEqual(manifest["scoring_source"], "smplx")
+        self.assertFalse(manifest["g1_scoring_allowed"])
+        self.assertFalse(manifest["source"]["real_offscreen_recorder"])
+        self.assertEqual(set(manifest["views"]), {"front", "side", "top"})
+        self.assertIn("viser_preview", manifest["views"]["front"]["artifacts"])
+        self.assertIn("g1_render_frame", manifest["views"]["front"]["artifacts"])
+        self.assertGreaterEqual(manifest["verification"]["nonblank_artifact_count"], 10)
+        self.assertEqual(set(manifest["verification"]["required_views"]), {"front", "side", "top"})
+
+    def test_capture_bundle_rejects_missing_viser_preview(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            render = write_g1_render(
+                root / "render",
+                model_descriptor_path=model.descriptor_path,
+                g1_track=g1.track_manifest_path,
+                allow_fixture_model=True,
+            )
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+            )
+            public = write_public_demo(
+                playback_manifest_path=playback.manifest_path,
+                g1_render_manifest_path=render.manifest_path,
+                recording_path=root / "public-demo" / "neodojo-demo.rrd",
+            )
+            viser = write_viser_runtime_contract(
+                root / "viser-runtime",
+                playback_manifest_path=playback.manifest_path,
+                g1_render_manifest_path=render.manifest_path,
+            )
+            viser.screenshot_paths["top"].unlink()
+
+            with self.assertRaisesRegex(ValueError, "viser top preview artifact is missing"):
+                write_capture_bundle(
+                    root / "capture",
+                    public_demo=public.manifest_path,
+                    viser_runtime=viser.manifest_path,
+                    g1_render=render.manifest_path,
+                )
 
     @unittest.skipUnless(importlib.util.find_spec("viser"), "viser optional dependency is not installed")
     def test_viser_runtime_can_start_and_stop_with_optional_dependency(self) -> None:

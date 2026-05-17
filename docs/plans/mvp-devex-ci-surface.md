@@ -14,6 +14,7 @@ one local command
   -> teaching playback
   -> Rerun public-demo export
   -> screenshot smoke check
+  -> generated capture bundle
   -> uploaded artifact
   -> GitHub Pages publish
 ```
@@ -43,15 +44,17 @@ annotations, fixture G1 model descriptor, G1 visual track, G1 SVG/HTML render
 evidence, teaching playback HTML/manifest, public-demo scene, `.rrd` fallback
 artifact, SVG screenshot, public-demo manifest, Viser runtime contract, and
 front/side/top Viser preview screenshots. It then runs `neodojo demo smoke`
-against `outputs/public-demo`.
+against `outputs/public-demo` and `neodojo capture bundle` to write
+`outputs/capture/manifest.json`.
 
 `make verify` now wraps the full local lane: lint, plan quality checks, tests,
 wheel build, and `make demo-public`.
 
 `.github/workflows/public-demo.yml` installs the package, runs lint, plan
 quality checks, tests, wheel build, and `make demo-public`, uploads
-`outputs/public-demo` as a workflow artifact, and uploads the same directory as
-the GitHub Pages artifact. The deploy job runs only on `main` outside pull
+`outputs/public-demo` plus `outputs/capture` as workflow artifacts, and uploads
+the public-demo directory as the GitHub Pages artifact. The deploy job runs only
+on `main` outside pull
 requests when Pages is configured and `NEODOJO_DEPLOY_PAGES=true` is set as a
 repository variable. Pages still requires repository Pages configuration to
 expose a live URL.
@@ -93,6 +96,7 @@ The downloaded `neodojo-public-demo` artifact passed
   - Rerun `.rrd` export
   - static page generation
   - screenshot capture
+  - generated capture bundle validation
   - nonblank visual smoke checks
   - artifact upload
   - GitHub Pages publish
@@ -122,6 +126,7 @@ The downloaded `neodojo-public-demo` artifact passed
    - [x] Export `.rrd` fallback artifact and static viewer page.
    - [x] Capture SVG screenshot evidence.
    - [x] Write a public-demo manifest.
+   - [x] Write a generated multi-camera capture bundle manifest.
 
 4. Add CI validation.
    - [x] Run `make test`.
@@ -159,8 +164,9 @@ The downloaded `neodojo-public-demo` artifact passed
 - Unit tests and manifest validation pass locally; CI is configured to run the
   same commands.
 - CI uploads the generated `.rrd` fallback recording, static viewer page, SVG
-  screenshot, and public-demo manifest as artifacts, verified by run
-  `25998306700`.
+  screenshot, public-demo manifest, and generated capture bundle as artifacts,
+  verified by run `25998306700` for the original public-demo lane and by later
+  runs after the capture bundle was added.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages can publish only safe static demo assets once repository Pages is
