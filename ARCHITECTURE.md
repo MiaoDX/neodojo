@@ -55,8 +55,9 @@ capture, and trajectory overlays.
 Web playback owns the Viser UI: synchronized views, timeline control, overlays,
 and later user-practice comparison. The current optional Viser slice consumes
 the public-demo scene contract and proves synchronized SMPL-X/G1 tracks with a
-frame slider plus generated front/side/top preview screenshots; richer
-production teaching UX remains follow-on work.
+frame slider, camera preset controls, annotation-anchor navigation, and
+generated front/side/top preview screenshots; richer production teaching polish
+remains follow-on work.
 
 ## Core Contracts
 

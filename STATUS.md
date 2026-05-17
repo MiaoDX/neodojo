@@ -96,9 +96,10 @@ production UI server.
 - Optional first Viser local runtime is available through `demo serve-viser`
   when the optional `viser` extra is installed. It loads the shared
   scene/timeline contract, shows synchronized SMPL-X and G1 3D tracks,
-  trajectory overlays, a frame slider, and explicit scoring-source labels. The
-  contract path also writes generated front/side/top SVG preview screenshots
-  for visual smoke evidence without requiring the optional Viser package.
+  trajectory overlays, camera preset controls, annotation-anchor navigation, a
+  frame slider, and explicit scoring-source labels. The contract path also
+  writes generated front/side/top SVG preview screenshots for visual smoke
+  evidence without requiring the optional Viser package.
 - `make demo-public` regenerates the fixture motion, routine feedback
   annotations, SMPL-X surface proxy, G1 visual/render, teaching-playback,
   public-demo, Viser runtime preview, and smoke-check artifacts in one command.
@@ -240,8 +241,9 @@ under `outputs/viser-runtime/screenshots/`, then starts a local Viser server
 when the optional `viser` extra is installed. The first runtime consumes the
 same scene/timeline contract as the public-demo lane, converts the current y-up
 coordinates into Viser z-up coordinates, and displays synchronized SMPL-X/G1
-tracks, trajectory overlays, a frame slider, and scoring-source labels. Use
-`--write-contract-only` to write the Viser runtime contract and preview
+tracks, trajectory overlays, camera preset buttons, annotation-anchor buttons, a
+frame slider, and scoring-source labels. Use `--write-contract-only` to write
+the Viser runtime contract and preview
 screenshots without importing Viser, or `--smoke-start` to start, populate, and
 stop the server for local verification.
 
@@ -263,9 +265,11 @@ when source id, trim, input path/checksum, and duration checks pass.
 - Full licensed SMPL-X mesh/body-model playback beyond the current capsule
   proxy and local-only asset descriptor:
   `docs/plans/mvp-smplx-body-surface-playback.md`.
-- Production Viser teaching UX beyond generated multi-camera preview evidence:
+- Production Viser teaching polish beyond generated multi-camera preview
+  evidence and first camera/annotation controls:
   `docs/plans/mvp-viser-multicamera-runtime.md`. The first optional local
-  Viser runtime and front/side/top preview screenshots exist.
+  Viser runtime, camera/annotation controls, and front/side/top preview
+  screenshots exist.
 - Verification of the live GitHub Pages URL:
   `docs/plans/mvp-rerun-pages-release.md`. True Rerun SDK `.rrd` export exists
   as an optional command.

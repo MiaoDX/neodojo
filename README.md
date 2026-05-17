@@ -270,8 +270,8 @@ starts an optional local Viser server from the same scene/timeline contract. It
 requires installing the `viser` extra or the `viser` package unless
 `--write-contract-only` is used. The first runtime shows SMPL-X and G1 as
 synchronized 3D tracks with a frame slider, trajectory overlays, camera-preset
-metadata, and explicit SMPL-X scoring/G1 visual labels; it is not the final
-teaching UI.
+metadata and buttons, annotation-anchor navigation, and explicit SMPL-X
+scoring/G1 visual labels; it is not the final teaching UI.
 
 `make verify` runs lint, MVP plan quality checks, tests, wheel build, and the
 public-demo smoke lane.
@@ -338,7 +338,8 @@ In progress:
 - [x] Optional true Rerun SDK `.rrd` export; live GitHub Pages URL verification
       remains repository-setting dependent
 - [x] Optional first Viser local runtime with synchronized SMPL-X/G1 tracks,
-      frame slider, trajectory overlays, and scoring-source labels
+      frame slider, camera/annotation controls, trajectory overlays, and
+      scoring-source labels
 - [x] Generated Viser front/side/top preview screenshots in the one-command
       public-demo lane
 - [x] One-command local `make demo-public` flow and GitHub Actions artifact/Page
@@ -352,8 +353,8 @@ In progress:
       video
 - [x] Local GVHMR source-validation report and validated JSON import handoff
 - [ ] roboharness-style multi-camera offscreen capture integration
-- [ ] production Viser teaching UX beyond the first optional local runtime and
-      generated preview screenshots
+- [ ] production Viser teaching polish beyond the first optional local runtime,
+      camera/annotation controls, and generated preview screenshots
 
 The detailed implementation queue lives in [`docs/plans/`](docs/plans/) and
 can later be mirrored into GitHub issues.

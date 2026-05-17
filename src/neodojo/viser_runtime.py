@@ -210,6 +210,20 @@ def build_viser_runtime_manifest(
         "controls": [
             {"id": "frame", "kind": "slider", "min": 0, "max": max(0, frame_count - 1), "step": 1},
             {"id": "reset_key_frame", "kind": "button", "frame": int(scene.get("key_frame", 0))},
+            *[
+                {"id": f"camera_{name}", "kind": "camera_preset_button", "preset": name}
+                for name in _camera_presets()
+            ],
+            *[
+                {
+                    "id": f"anchor_{index}",
+                    "kind": "annotation_keyframe_button",
+                    "label": str(keyframe.get("name")),
+                    "frame": int(keyframe.get("frame", 0)),
+                }
+                for index, keyframe in enumerate((scene.get("annotations") or {}).get("keyframes", []))
+                if isinstance(keyframe, dict) and isinstance(keyframe.get("name"), str)
+            ],
         ],
         "overlays": {
             "tracks": [
@@ -317,6 +331,30 @@ def _populate_static_viser_scene(server: Any, np: Any, scene: dict[str, Any]) ->
         "Scoring source: SMPL-X teacher. Unitree G1 is visual-only.",
         position=(-1.25, -0.9, 2.2),
     )
+    for index, keyframe in enumerate((scene.get("annotations") or {}).get("keyframes", [])):
+        if not isinstance(keyframe, dict):
+            continue
+        name = keyframe.get("name")
+        frame_index = int(keyframe.get("frame", 0))
+        selected_joints = keyframe.get("selected_joints", [])
+        if not isinstance(name, str) or not isinstance(selected_joints, list):
+            continue
+        frames = scene["tracks"]["smplx"]["frames"]
+        if frame_index < 0 or frame_index >= len(frames):
+            continue
+        anchor_joint = next(
+            (joint for joint in selected_joints if isinstance(joint, str) and joint in frames[frame_index]),
+            None,
+        )
+        if anchor_joint is None:
+            continue
+        position = _to_viser_point(frames[frame_index][anchor_joint], x_offset=-0.55)
+        position[2] += 0.16 + (index * 0.04)
+        server.scene.add_label(
+            f"/annotations/{index}_{name.replace(' ', '_')}",
+            f"{name} - frame {frame_index + 1}",
+            position=tuple(position),
+        )
     for track_id, x_offset, color in [
         ("smplx", -0.55, (20, 124, 114)),
         ("g1", 0.55, (184, 78, 50)),
@@ -331,6 +369,22 @@ def _populate_static_viser_scene(server: Any, np: Any, scene: dict[str, Any]) ->
                     colors=color,
                     line_width=1.0,
                 )
+
+
+def _apply_camera_preset(client: Any, preset: dict[str, Any]) -> None:
+    client.camera.position = tuple(preset["position"])
+    client.camera.look_at = tuple(preset["look_at"])
+    client.camera.up_direction = (0.0, 0.0, 1.0)
+    client.flush()
+
+
+def _apply_camera_preset_to_clients(server: Any, preset: dict[str, Any], event: Any) -> None:
+    event_client = getattr(event, "client", None)
+    if event_client is not None:
+        _apply_camera_preset(event_client, preset)
+        return
+    for client in server.get_clients().values():
+        _apply_camera_preset(client, preset)
 
 
 def _render_viser_frame(server: Any, np: Any, scene: dict[str, Any], frame_index: int, handles: dict[str, Any]) -> None:
@@ -403,6 +457,20 @@ def serve_viser_runtime(
         initial_value=initial_frame,
     )
     reset_button = server.gui.add_button("Reset to key frame")
+    camera_buttons = {
+        name: server.gui.add_button(f"Camera: {name.title()}")
+        for name in _camera_presets()
+    }
+    anchor_buttons = []
+    for keyframe in (scene.get("annotations") or {}).get("keyframes", []):
+        if not isinstance(keyframe, dict) or not isinstance(keyframe.get("name"), str):
+            continue
+        anchor_buttons.append(
+            (
+                server.gui.add_button(f"Anchor: {keyframe['name']}"),
+                min(max(0, int(keyframe.get("frame", 0))), max(0, frame_count - 1)),
+            )
+        )
 
     @frame_slider.on_update
     def _(_: Any) -> None:
@@ -412,6 +480,20 @@ def serve_viser_runtime(
     def _(_: Any) -> None:
         frame_slider.value = initial_frame
         _render_viser_frame(server, np, scene, initial_frame, handles)
+
+    for name, button in camera_buttons.items():
+        preset = _camera_presets()[name]
+
+        @button.on_click
+        def _(_: Any, preset: dict[str, Any] = preset) -> None:
+            _apply_camera_preset_to_clients(server, preset, _)
+
+    for button, target_frame in anchor_buttons:
+
+        @button.on_click
+        def _(_: Any, target_frame: int = target_frame) -> None:
+            frame_slider.value = target_frame
+            _render_viser_frame(server, np, scene, target_frame, handles)
 
     url = f"http://{host}:{port}"
     if stop_after_start:

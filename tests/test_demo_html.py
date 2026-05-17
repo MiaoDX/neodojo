@@ -879,6 +879,7 @@ class DemoHtmlTests(unittest.TestCase):
                 root / "teaching-demo",
                 motion.out_dir,
                 g1.track_manifest_path,
+                annotations_path=write_detected_annotations(root / "annotations", motion.out_dir).manifest_path,
             )
 
             result = write_public_demo(
@@ -922,6 +923,7 @@ class DemoHtmlTests(unittest.TestCase):
                 root / "teaching-demo",
                 motion.out_dir,
                 g1.track_manifest_path,
+                annotations_path=write_detected_annotations(root / "annotations", motion.out_dir).manifest_path,
             )
 
             result = write_public_demo(
@@ -947,10 +949,12 @@ class DemoHtmlTests(unittest.TestCase):
                 root / "g1",
                 model_descriptor_path=model.descriptor_path,
             )
+            annotations = write_detected_annotations(root / "annotations", motion.out_dir)
             playback = write_teaching_playback_demo(
                 root / "teaching-demo",
                 motion.out_dir,
                 g1.track_manifest_path,
+                annotations_path=annotations.manifest_path,
             )
 
             result = write_viser_runtime_contract(
@@ -973,6 +977,9 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("SMPL-X teacher", manifest["overlays"]["public_labels"])
         self.assertEqual(set(manifest["visual_smoke"]["screenshot_paths"]), {"front", "side", "top"})
         self.assertEqual(set(result.screenshot_paths), {"front", "side", "top"})
+        control_kinds = {control["kind"] for control in manifest["controls"]}
+        self.assertIn("camera_preset_button", control_kinds)
+        self.assertIn("annotation_keyframe_button", control_kinds)
         self.assertIn("Viser front preview", front_screenshot)
         self.assertIn("G1 scoring allowed: false", front_screenshot)
 

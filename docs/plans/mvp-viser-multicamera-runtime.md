@@ -1,6 +1,6 @@
 # MVP Viser Multi-Camera Runtime Plan
 
-Status: IMPLEMENTED FIRST OPTIONAL LOCAL SERVER AND MULTI-CAMERA PREVIEW EVIDENCE; PRODUCTION UX REMAINS FOLLOW-ON
+Status: IMPLEMENTED FIRST OPTIONAL LOCAL SERVER, CAMERA CONTROLS, AND MULTI-CAMERA PREVIEW EVIDENCE; PRODUCTION POLISH REMAINS FOLLOW-ON
 
 ## Goal
 
@@ -22,10 +22,11 @@ slice.
 The first optional runtime now exists as `neodojo demo serve-viser`. It consumes
 the same scene/timeline contract as the public-demo lane, starts a real local
 Viser server when the `viser` extra is installed, and exposes synchronized
-SMPL-X/G1 tracks with a frame slider, trajectory overlays, and explicit
-scoring-source labels. The contract writer also emits dependency-light
-front/side/top SVG preview screenshots from the same scene contract for visual
-smoke evidence. Richer production teaching interaction remains follow-on work.
+SMPL-X/G1 tracks with a frame slider, camera preset buttons, annotation-anchor
+navigation, trajectory overlays, and explicit scoring-source labels. The
+contract writer also emits dependency-light front/side/top SVG preview
+screenshots from the same scene contract for visual smoke evidence. Richer
+production teaching polish remains follow-on work.
 
 ## Dependencies
 
@@ -60,6 +61,7 @@ smoke evidence. Richer production teaching interaction remains follow-on work.
    - [x] Load SMPL-X and G1 tracks.
    - [x] Add timeline synchronization with a frame slider.
    - [x] Add camera-preset metadata and scoring-source labels.
+   - [x] Add camera preset buttons and annotation-anchor navigation.
 
 3. Add smoke checks.
    - [x] Verify server startup and populated scene through an optional
@@ -72,6 +74,8 @@ smoke evidence. Richer production teaching interaction remains follow-on work.
 - A local command starts a Viser teaching runtime from existing manifests.
 - SMPL-X and G1 playback stay synchronized.
 - The UI visibly preserves SMPL-X as the scoring source and G1 as visual-only.
+- Camera preset controls and annotation-anchor buttons are exposed in the local
+  Viser GUI contract and server path.
 - Static public-demo generation still works independently.
 - Optional dependency tests can start and stop the server without making Viser a
   default dependency.
@@ -83,13 +87,13 @@ smoke evidence. Richer production teaching interaction remains follow-on work.
 - Public hosting of the Viser runtime.
 - Replacing GitHub Pages artifact publishing.
 - Physics/control simulation.
-- Full production UI polish.
+- Full production UI polish and browser-verified interaction polish.
 - Browser-driven capture of the live Viser client.
 
 ## Stop Condition
 
 Stop for this slice when a local Viser session can load the fixture scene,
-expose synchronized SMPL-X/G1 tracks, pass optional server-start smoke, and
-write generated multi-camera preview screenshots from the runtime contract.
-Continue when the next task needs browser-driven live-client capture or
-production teaching UX.
+expose synchronized SMPL-X/G1 tracks, provide camera and annotation controls,
+pass optional server-start smoke, and write generated multi-camera preview
+screenshots from the runtime contract. Continue when the next task needs
+browser-driven live-client capture or production teaching polish.
