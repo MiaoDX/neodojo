@@ -1,6 +1,6 @@
 # MVP Key-Frame Feedback Detection Plan
 
-Status: IMPLEMENTED FIRST DETECTOR
+Status: IMPLEMENTED FIRST DETECTOR; EXTENDED BY ROUTINE REVIEW
 
 ## Goal
 
@@ -16,7 +16,10 @@ SMPL-X motion record
 ```
 
 The first detector targets the Baduanjin opening-form "raise hands apex" shape.
-It is intentionally narrow and SMPL-X-only.
+It is intentionally narrow and SMPL-X-only. The later
+[mvp-feedback-routine-review.md](mvp-feedback-routine-review.md) slice extends
+the same command with opening stance, settled support, and routine feedback
+report output.
 
 ## Dependencies
 
@@ -44,6 +47,8 @@ It is intentionally narrow and SMPL-X-only.
   ```
 
 - `outputs/annotations/manifest.json` using schema `neodojo.annotation.v1`.
+- `outputs/annotations/routine-feedback.json` using schema
+  `neodojo.routine_feedback_report.v1` after the routine-review extension.
 - A keyframe named `raise hands apex`.
 - SMPL-X-only constraints for shoulders below neck, wrists above elbows, and
   wrist symmetry.

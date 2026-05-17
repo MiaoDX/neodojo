@@ -67,6 +67,18 @@ def build_scene_timeline(
     render_manifest = _load_optional_render_manifest(g1_render_manifest_path)
     fixture_only = bool(playback.get("fixture_only") or g1_manifest.get("fixture_only"))
     key_frame = int(playback.get("key_frame", len(smplx_frames) - 1))
+    annotations = playback.get("annotation_manifest")
+    routine_review = playback.get("routine_review")
+    feedback_anchor_labels = []
+    if isinstance(annotations, dict):
+        keyframes = annotations.get("keyframes", [])
+        if isinstance(keyframes, list):
+            feedback_anchor_labels = [
+                str(keyframe.get("name"))
+                for keyframe in keyframes
+                if isinstance(keyframe, dict) and isinstance(keyframe.get("name"), str)
+            ]
+
     return {
         "schema": SCENE_TIMELINE_SCHEMA,
         "fixture_only": fixture_only,
@@ -101,7 +113,9 @@ def build_scene_timeline(
                 "frames": g1_frames,
             },
         },
-        "annotations": playback.get("annotation_manifest"),
+        "annotations": annotations,
+        "routine_review": routine_review,
+        "feedback_anchor_labels": feedback_anchor_labels,
         "reference_video_sync": playback.get("reference_video_sync"),
         "feedback": playback.get("feedback"),
         "render_evidence": render_manifest,
@@ -110,6 +124,8 @@ def build_scene_timeline(
             "SMPL-X teacher",
             "Unitree G1 visual",
             "G1 non-scoring",
+            "Routine feedback",
+            *feedback_anchor_labels,
         ],
         "scoring_source": "smplx",
     }
@@ -169,6 +185,8 @@ def _render_screenshot_svg(scene: dict[str, Any]) -> str:
     g1 = _track_svg(scene["tracks"]["g1"], "front", key_frame, "#b84e32")
     fixture_label = "FIXTURE-ONLY" if scene["fixture_only"] else "REAL ARTIFACT"
     feedback = scene.get("feedback") or {}
+    anchors = scene.get("feedback_anchor_labels") or []
+    anchor_text = ", ".join(anchors[:3]) if anchors else "none"
     return "\n".join(
         [
             '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img">',
@@ -185,6 +203,7 @@ def _render_screenshot_svg(scene: dict[str, Any]) -> str:
             f'<g transform="translate(80 210)">{smplx}</g>',
             f'<g transform="translate(704 210)">{g1}</g>',
             f'<text x="56" y="684" class="muted">Scoring source: SMPL-X. G1 scoring allowed: false. Feedback passed: {feedback.get("passed")}</text>',
+            f'<text x="696" y="684" class="muted">Routine feedback anchors: {anchor_text}</text>',
             "</svg>",
         ]
     )
@@ -193,6 +212,12 @@ def _render_screenshot_svg(scene: dict[str, Any]) -> str:
 def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
     payload = json.dumps(scene, sort_keys=True, separators=(",", ":"))
     fixture_note = "fixture-only" if scene["fixture_only"] else "real-artifact"
+    anchor_labels = scene.get("feedback_anchor_labels") or []
+    anchor_text = ", ".join(anchor_labels) if anchor_labels else "none"
+    routine_review = scene.get("routine_review") or {}
+    routine_summary = routine_review.get("summary") if isinstance(routine_review, dict) else {}
+    if not isinstance(routine_summary, dict):
+        routine_summary = {}
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -238,6 +263,12 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
         <div class="metric"><span>Scene</span><strong>{manifest["scene"]}</strong></div>
         <div class="metric"><span>Recording</span><strong>{manifest["recording"]}</strong></div>
         <div class="metric"><span>Actual Rerun SDK .rrd</span><strong>{manifest["rerun"]["actual_rrd"]}</strong></div>
+      </section>
+      <section>
+        <h2>Routine feedback</h2>
+        <div class="metric"><span>Anchors</span><strong>{anchor_text}</strong></div>
+        <div class="metric"><span>Terms</span><strong>{routine_summary.get("passed_terms", 0)} / {routine_summary.get("term_count", 0)}</strong></div>
+        <div class="metric"><span>Source</span><strong>SMPL-X</strong></div>
       </section>
     </aside>
   </main>
@@ -290,6 +321,11 @@ def write_public_demo(
             "smplx": {"label": "SMPL-X teacher", "scoring_allowed": True},
             "g1": {"label": "Unitree G1 visual", "scoring_allowed": False},
         },
+        "routine_feedback": {
+            "available": bool(scene.get("routine_review")),
+            "anchor_count": len(scene.get("feedback_anchor_labels", [])),
+            "scoring_source": "smplx",
+        },
         "rerun": {
             "target": "Rerun Web Viewer",
             "actual_rrd": False,
@@ -297,7 +333,7 @@ def write_public_demo(
             "fallback_reason": "rerun-sdk not installed",
         },
         "visual_smoke_expectations": {
-            "required_labels": ["SMPL-X teacher", "Unitree G1 visual", "fixture-only"],
+            "required_labels": ["SMPL-X teacher", "Unitree G1 visual", "fixture-only", "Routine feedback"],
             "nonblank_artifacts": ["index.html", "screenshot.svg"],
         },
     }

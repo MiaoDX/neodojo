@@ -533,16 +533,67 @@ class DemoHtmlTests(unittest.TestCase):
                 g1.track_manifest_path,
                 annotations_path=annotation_result.manifest_path,
             )
+            feedback_report_exists = annotation_result.feedback_report_path.exists()
+            feedback_report = json.loads(annotation_result.feedback_report_path.read_text(encoding="utf-8"))
             manifest = json.loads(playback.manifest_path.read_text(encoding="utf-8"))
 
         self.assertEqual(detect_opening_form_keyframe(smplx_frames), 9)
         self.assertEqual(annotations["schema"], "neodojo.annotation.v1")
-        self.assertEqual(annotations["detector"]["version"], "neodojo.detector.opening_form_apex.v1")
-        self.assertEqual(annotations["keyframes"][0]["name"], "raise hands apex")
-        self.assertEqual(annotations["keyframes"][0]["frame"], 9)
+        self.assertEqual(annotations["detector"]["version"], "neodojo.detector.opening_form_routine_review.v1")
+        self.assertEqual(len(annotations["keyframes"]), 3)
+        self.assertEqual(annotations["keyframes"][0]["name"], "opening stance")
+        self.assertEqual(annotations["keyframes"][1]["name"], "settled support")
+        self.assertEqual(annotations["keyframes"][2]["name"], "raise hands apex")
+        self.assertTrue(annotations["keyframes"][2]["primary"])
+        self.assertEqual(annotations["keyframes"][2]["frame"], 9)
+        self.assertEqual(annotations["routine_review"]["summary"]["keyframe_count"], 3)
+        self.assertEqual(annotations["routine_review"]["scoring_source"], "smplx")
+        self.assertEqual(annotations["routine_review"]["term_results"][0]["source"], "smplx")
+        self.assertIn("confidence", annotations["routine_review"]["term_results"][0])
+        self.assertTrue(feedback_report_exists)
+        self.assertEqual(feedback_report["schema"], "neodojo.routine_feedback_report.v1")
         self.assertEqual(manifest["key_frame"], 9)
         self.assertEqual(manifest["annotation_name"], "raise hands apex")
         self.assertTrue(manifest["feedback"]["passed"])
+        self.assertEqual(manifest["routine_review"]["summary"]["keyframe_count"], 3)
+        self.assertEqual(manifest["routine_review"]["source"], "smplx")
+
+    def test_public_demo_exposes_routine_feedback_anchors(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=12)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            annotation_result = write_detected_annotations(root / "annotations", motion.out_dir)
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+                annotations_path=annotation_result.manifest_path,
+            )
+
+            result = write_public_demo(
+                playback_manifest_path=playback.manifest_path,
+                recording_path=root / "public-demo" / "neodojo-demo.rrd",
+            )
+            smoke = smoke_check_public_demo(root / "public-demo")
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            scene = json.loads(result.scene_path.read_text(encoding="utf-8"))
+            html = result.html_path.read_text(encoding="utf-8")
+            screenshot = result.screenshot_path.read_text(encoding="utf-8")
+
+        self.assertEqual(scene["routine_review"]["scoring_source"], "smplx")
+        self.assertEqual(scene["feedback_anchor_labels"], ["opening stance", "settled support", "raise hands apex"])
+        self.assertEqual(manifest["routine_feedback"]["anchor_count"], 3)
+        self.assertEqual(manifest["routine_feedback"]["scoring_source"], "smplx")
+        self.assertIn("Routine feedback", html)
+        self.assertIn("opening stance", html)
+        self.assertIn("settled support", screenshot)
+        self.assertEqual(len(smoke.checked_paths), 4)
 
     def test_public_demo_export_writes_scene_recording_html_and_screenshot(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

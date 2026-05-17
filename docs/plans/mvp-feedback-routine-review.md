@@ -1,6 +1,6 @@
 # MVP Feedback Routine Review Plan
 
-Status: PLANNED
+Status: IMPLEMENTED
 
 ## Goal
 
@@ -45,17 +45,17 @@ become the scoring source.
 ## Execution Tasks
 
 1. Define feedback terms.
-   - [ ] Pick the first three to five measurable terms.
-   - [ ] Document required joints and expected geometry.
+   - [x] Pick the first three to five measurable terms.
+   - [x] Document required joints and expected geometry.
 
 2. Add detectors.
-   - [ ] Detect start, apex, return, and any stable stance anchors available in
-     the fixture and real-import contracts.
-   - [ ] Emit term-level evidence and confidence.
+   - [x] Detect opening stance, settled support, apex, and any stable anchors
+     available in the fixture and real-import contracts.
+   - [x] Emit term-level evidence and confidence.
 
 3. Add report/playback integration.
-   - [ ] Write a routine feedback report next to annotations.
-   - [ ] Surface anchors in teaching playback and public-demo scene metadata.
+   - [x] Write a routine feedback report next to annotations.
+   - [x] Surface anchors in teaching playback and public-demo scene metadata.
 
 ## Acceptance Evidence
 
@@ -64,6 +64,8 @@ become the scoring source.
 - Tests prove feedback uses SMPL-X data only.
 - Playback/public-demo artifacts expose the feedback anchors without claiming
   real qigong correctness for fixture data.
+- `make demo-public` writes `outputs/annotations/routine-feedback.json` and the
+  public-demo HTML/SVG scene labels include routine feedback anchors.
 
 ## Non-Goals
 
@@ -74,5 +76,5 @@ become the scoring source.
 
 ## Stop Condition
 
-Stop when a small deterministic routine review exists for the opening-form
+Stopped when a small deterministic routine review exists for the opening-form
 fixture/import path and all feedback evidence remains traceable to SMPL-X.

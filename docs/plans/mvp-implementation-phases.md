@@ -71,7 +71,7 @@ of truth for the next waves.
 | [mvp-smplx-body-surface-playback.md](mvp-smplx-body-surface-playback.md) | planned; blocked on licensed SMPL-X assets | SMPL-X mesh/body-surface playback. |
 | [mvp-viser-multicamera-runtime.md](mvp-viser-multicamera-runtime.md) | planned; blocked on runtime dependency and interaction design | Local Viser runtime and multi-camera/offscreen workflow. |
 | [mvp-rerun-pages-release.md](mvp-rerun-pages-release.md) | planned; blocked on Rerun SDK install and repository Pages settings | True Rerun SDK `.rrd` export and verified live GitHub Pages URL. |
-| [mvp-feedback-routine-review.md](mvp-feedback-routine-review.md) | planned | Broader key-frame/posture feedback and routine-level review. |
+| [mvp-feedback-routine-review.md](mvp-feedback-routine-review.md) | implemented | Broader key-frame/posture feedback and routine-level review. |
 | [mvp-gvhmr-source-validation.md](mvp-gvhmr-source-validation.md) | planned; blocked on a real GVHMR export | Validation that imported GVHMR artifacts match the materialized source clip and trim. |
 | [mvp-quality-release-surface.md](mvp-quality-release-surface.md) | planned | Type/static/coverage/release quality surface beyond the minimal lint/build commands. |
 

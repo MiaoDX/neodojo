@@ -24,9 +24,27 @@ class TeachingPlaybackWriteResult:
     manifest_path: Path
 
 
-def _normalize_annotation_manifest(annotations_path: Path | None, frame_count: int) -> tuple[int, str | None, dict[str, Any] | None]:
+def _select_primary_keyframe(keyframes: list[Any], frame_count: int) -> dict[str, Any]:
+    selected = None
+    for candidate in keyframes:
+        if not isinstance(candidate, dict):
+            raise ValueError("annotation keyframes must be objects")
+        frame = candidate.get("frame")
+        if not isinstance(frame, int):
+            raise ValueError("annotation keyframe must contain integer frame")
+        if frame < 0 or frame >= frame_count:
+            raise ValueError("annotation key_frame is outside the available frame range")
+        if candidate.get("primary") is True and selected is None:
+            selected = candidate
+    return selected or keyframes[0]
+
+
+def _normalize_annotation_manifest(
+    annotations_path: Path | None,
+    frame_count: int,
+) -> tuple[int, str | None, dict[str, Any] | None, dict[str, Any] | None]:
     if annotations_path is None:
-        return frame_count - 1, None, None
+        return frame_count - 1, None, None, None
 
     annotations = json.loads(annotations_path.read_text(encoding="utf-8"))
     if not isinstance(annotations, dict):
@@ -35,7 +53,15 @@ def _normalize_annotation_manifest(annotations_path: Path | None, frame_count: i
     if annotations.get("schema") is None:
         key_frame = annotations.get("key_frame")
         name = annotations.get("name")
-        keyframes = [{"name": name or "manual key frame", "frame": key_frame, "terms": [], "constraints": []}]
+        keyframes = [
+            {
+                "name": name or "manual key frame",
+                "frame": key_frame,
+                "primary": True,
+                "terms": [],
+                "constraints": [],
+            }
+        ]
         normalized = {
             "schema": ANNOTATION_SCHEMA,
             "source_format": "legacy_key_frame",
@@ -48,18 +74,15 @@ def _normalize_annotation_manifest(annotations_path: Path | None, frame_count: i
             raise ValueError("annotation manifest must contain non-empty keyframes")
         normalized = annotations
 
-    first_keyframe = keyframes[0]
-    if not isinstance(first_keyframe, dict):
-        raise ValueError("annotation keyframes must be objects")
-    key_frame = first_keyframe.get("frame")
-    if not isinstance(key_frame, int):
-        raise ValueError("annotation keyframe must contain integer frame")
-    if key_frame < 0 or key_frame >= frame_count:
-        raise ValueError("annotation key_frame is outside the available frame range")
-    name = first_keyframe.get("name")
+    primary_keyframe = _select_primary_keyframe(keyframes, frame_count)
+    key_frame = primary_keyframe["frame"]
+    name = primary_keyframe.get("name")
     if name is not None and not isinstance(name, str):
         raise ValueError("annotations name must be a string when provided")
-    return key_frame, name, normalized
+    routine_review = normalized.get("routine_review")
+    if routine_review is not None and not isinstance(routine_review, dict):
+        raise ValueError("annotation routine_review must be an object when provided")
+    return key_frame, name, normalized, routine_review
 
 
 def _reference_video_sync(reference_video: Path | None, trim_start_seconds: float = 0.0) -> dict[str, Any] | None:
@@ -97,7 +120,7 @@ def write_teaching_playback_demo(
     if len(smplx_frames) != len(g1_frames):
         raise ValueError("SMPL-X and G1 tracks must have matching frame counts")
 
-    key_frame, annotation_name, annotation_manifest = _normalize_annotation_manifest(
+    key_frame, annotation_name, annotation_manifest, routine_review = _normalize_annotation_manifest(
         annotations_path,
         len(smplx_frames),
     )
@@ -108,6 +131,8 @@ def write_teaching_playback_demo(
         key_frame=key_frame,
         fixture_only=fixture_only,
     )
+    if routine_review is not None:
+        fixture["routine_review"] = routine_review
 
     out_dir.mkdir(parents=True, exist_ok=True)
     html_path = out_dir / "index.html"
@@ -140,6 +165,7 @@ def write_teaching_playback_demo(
         "key_frame": key_frame,
         "scoring_source": "smplx",
         "feedback": fixture["feedback"],
+        "routine_review": routine_review,
         "annotation_manifest": annotation_manifest,
         "reference_video_sync": _reference_video_sync(reference_video, reference_trim_start_seconds),
         "evidence": {

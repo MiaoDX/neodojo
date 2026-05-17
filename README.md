@@ -195,9 +195,9 @@ or parse raw GVHMR `.pt` files; the JSON path is the CPU-side import boundary
 for a later GPU run.
 
 `neodojo annotations detect` writes an explicit SMPL-X-only annotation manifest
-for the opening-form raised-hands key frame. `make demo-public` feeds that
-manifest into the teaching playback instead of relying on an implicit final
-frame.
+and routine feedback report for opening stance, settled support, and
+raised-hands apex anchors. `make demo-public` feeds those anchors into the
+teaching playback instead of relying on an implicit final frame.
 
 `neodojo robot-model register` and `neodojo tracks build` can write fixture G1
 model and visual-track manifests. These preserve the SMPL-X/G1 responsibility
@@ -267,8 +267,8 @@ In progress:
 - [x] Local G1 SVG/HTML render evidence command with front/side/top frames and
       `g1_scoring_allowed: false`
 - [x] Local teaching playback command that consumes SMPL-X and G1 manifests
-- [x] Deterministic SMPL-X opening-form key-frame annotation detector for the
-      first geometry feedback proof
+- [x] Deterministic SMPL-X opening-form routine feedback review with multiple
+      key-frame anchors and posture terms
 - [x] Fixture-only static public-demo export with scene/timeline contract,
       `.rrd` fallback artifact, HTML, and SVG screenshot
 - [x] One-command local `make demo-public` flow and GitHub Actions artifact/Page
@@ -283,8 +283,6 @@ In progress:
       and meshes
 - [ ] roboharness-style multi-camera offscreen capture integration
 - [ ] SMPL-X + Unitree G1 dual-track synchronized Viser UI
-- [ ] Broader automatic key-frame detection + geometry-constrained verbal
-      feedback beyond the first opening-form detector
 
 The detailed implementation queue lives in [`docs/plans/`](docs/plans/) and
 can later be mirrored into GitHub issues.

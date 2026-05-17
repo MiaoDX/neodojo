@@ -34,7 +34,7 @@ mesh rendering, real generated motion artifact, or UI server.
   `docs/plans/mvp-implementation-phases.md`.
 - Immediate local-first smoke path: fixture motion -> motion record -> SMPL-X
   teaching-track manifest -> fixture G1 visual-track manifest -> local teaching
-  playback HTML/manifest -> one geometry check.
+  playback HTML/manifest -> routine feedback anchors.
 - Multi-camera offscreen rendering approach, likely reusing roboharness patterns.
 - Synchronized SMPL-X and Unitree G1 playback in Viser.
 - Key-frame detection and geometry-constrained verbal feedback for terms such as
@@ -51,8 +51,9 @@ mesh rendering, real generated motion artifact, or UI server.
   comparison report with `g1_scoring_allowed: false`.
 - Normalized external GMR Unitree G1 JSON import into the same G1 visual-track
   contract, preserving imported joint angles while keeping G1 non-scoring.
-- Deterministic SMPL-X opening-form key-frame annotation detection, producing
-  `neodojo.annotation.v1` manifests for the first geometry feedback proof.
+- Deterministic SMPL-X opening-form routine review, producing
+  `neodojo.annotation.v1` manifests plus `neodojo.routine_feedback_report.v1`
+  reports with opening stance, settled support, and raised-hands apex anchors.
 - Local G1 SVG/HTML render evidence generated under `outputs/g1-render/`,
   proving the render manifest, front/side/top frame evidence, and G1
   non-scoring boundary. Fixture descriptors require explicit
@@ -63,8 +64,9 @@ mesh rendering, real generated motion artifact, or UI server.
 - Fixture-only public-demo export generated under `outputs/public-demo/`,
   containing a scene/timeline contract, static HTML viewer, SVG screenshot, and
   `.rrd`-named JSON fallback artifact for the future Rerun lane.
-- `make demo-public` regenerates the fixture motion, G1 visual/render,
-  teaching-playback, public-demo, and smoke-check artifacts in one command.
+- `make demo-public` regenerates the fixture motion, routine feedback
+  annotations, G1 visual/render, teaching-playback, public-demo, and
+  smoke-check artifacts in one command.
 - `.github/workflows/public-demo.yml` runs tests, builds the fixture public demo,
   builds a wheel, uploads the artifact, and can publish the static output to
   GitHub Pages from `main` when Pages is enabled.
@@ -132,8 +134,9 @@ generator and local motion contract. `make build` builds a wheel under ignored
 motion-record and teaching-track manifests under the selected ignored output
 directory, or imports an external GVHMR teaching-joints JSON export with
 `--from-gvhmr-json`. `neodojo annotations detect` writes an explicit
-SMPL-X-only annotation manifest for the opening-form raised-hands key frame and
-feeds the public-demo feedback anchor. `neodojo robot-model register` and
+SMPL-X-only annotation manifest plus routine feedback report for opening
+stance, settled support, and raised-hands apex anchors, then feeds those anchors
+into the public-demo lane. `neodojo robot-model register` and
 `neodojo tracks build` write fixture G1 model/visual-track manifests and a
 comparison report that keeps G1 non-scoring. `neodojo tracks import-gmr-json`
 imports an external
@@ -181,9 +184,6 @@ artifacts for the later GPU GVHMR input handoff.
   `docs/plans/mvp-viser-multicamera-runtime.md`.
 - True Rerun SDK `.rrd` export and verification of the live GitHub Pages URL:
   `docs/plans/mvp-rerun-pages-release.md`.
-- Feedback beyond the first deterministic opening-form detector: more posture
-  terms, multi-keyframe detection, and routine-level review:
-  `docs/plans/mvp-feedback-routine-review.md`.
 - Validation that an imported real GVHMR artifact was produced from the exact
   materialized source clip and trim window:
   `docs/plans/mvp-gvhmr-source-validation.md`.

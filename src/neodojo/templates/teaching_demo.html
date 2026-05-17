@@ -382,6 +382,22 @@
           </div>
         </section>
 
+        <section class="panel">
+          <h3 style="font-size: 14px; margin-bottom: 10px;">Routine feedback</h3>
+          <div class="metric">
+            <span>Anchors</span>
+            <strong id="anchorMetric">0</strong>
+          </div>
+          <div class="metric">
+            <span>Terms</span>
+            <strong id="termMetric">0 / 0</strong>
+          </div>
+          <div class="metric">
+            <span>Review</span>
+            <strong id="routineStatus" class="status">pending</strong>
+          </div>
+        </section>
+
         <section class="panel legend">
           <div class="legend-row"><span class="swatch" style="background: var(--smplx);"></span><span>SMPL-X skeleton</span></div>
           <div class="legend-row"><span class="swatch" style="background: var(--g1);"></span><span>G1 skeleton</span></div>
@@ -410,6 +426,9 @@
     const shoulderMetric = document.getElementById("shoulderMetric");
     const elbowMetric = document.getElementById("elbowMetric");
     const wristMetric = document.getElementById("wristMetric");
+    const anchorMetric = document.getElementById("anchorMetric");
+    const termMetric = document.getElementById("termMetric");
+    const routineStatus = document.getElementById("routineStatus");
 
     const colors = {
       smplx: "#147c72",
@@ -546,6 +565,12 @@
       shoulderMetric.textContent = `${feedback.shoulder_clearance_m.toFixed(3)} m`;
       elbowMetric.textContent = `${feedback.elbow_drop_m.toFixed(3)} m`;
       wristMetric.textContent = `${feedback.wrist_symmetry_m.toFixed(3)} m`;
+      const routine = DEMO.routine_review || { summary: { keyframe_count: 0, passed_terms: 0, term_count: 0, status: "pending" } };
+      const summary = routine.summary || { keyframe_count: 0, passed_terms: 0, term_count: 0, status: "pending" };
+      anchorMetric.textContent = String(summary.keyframe_count || 0);
+      termMetric.textContent = `${summary.passed_terms || 0} / ${summary.term_count || 0}`;
+      routineStatus.textContent = summary.status || "pending";
+      routineStatus.classList.toggle("fail", summary.status !== "pass");
     }
 
     function render() {

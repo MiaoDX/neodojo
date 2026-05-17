@@ -397,6 +397,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "annotations" and args.annotation_command == "detect":
             result = write_detected_annotations(args.out, args.motion_record)
             print(f"wrote {result.manifest_path}")
+            print(f"wrote {result.feedback_report_path}")
             return 0
 
         if args.command == "robot-model" and args.robot_command == "register":
