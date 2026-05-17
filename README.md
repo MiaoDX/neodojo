@@ -234,7 +234,8 @@ writes a wheel under ignored `outputs/dist/`.
 
 `neodojo real-conversion prepare` writes source metadata, trim metadata, and
 next-command hints for the later GPU gate. It does not download the source
-video or run GVHMR.
+video or run GVHMR. When `--local-video` is supplied, it records checksum data
+and optional ffprobe duration, resolution, codec, and frame-rate metadata.
 
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local

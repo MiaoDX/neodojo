@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import csv
+import json
+import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -62,11 +65,126 @@ def _validate_trim(start_seconds: float, end_seconds: float, source_duration: fl
     }
 
 
+def _parse_rate(value: str | None) -> float | None:
+    if not value or value == "0/0":
+        return None
+    if "/" in value:
+        numerator, denominator = value.split("/", 1)
+        try:
+            parsed_denominator = float(denominator)
+            if parsed_denominator == 0:
+                return None
+            return round(float(numerator) / parsed_denominator, 6)
+        except ValueError:
+            return None
+    try:
+        return round(float(value), 6)
+    except ValueError:
+        return None
+
+
+def _parse_ffprobe_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    streams = payload.get("streams", [])
+    video_stream = None
+    if isinstance(streams, list):
+        for stream in streams:
+            if isinstance(stream, dict) and stream.get("codec_type") == "video":
+                video_stream = stream
+                break
+
+    format_info = payload.get("format", {})
+    if not isinstance(format_info, dict):
+        format_info = {}
+    duration = None
+    if video_stream and video_stream.get("duration") is not None:
+        duration = video_stream.get("duration")
+    elif format_info.get("duration") is not None:
+        duration = format_info.get("duration")
+    try:
+        duration_seconds = round(float(duration), 6) if duration is not None else None
+    except (TypeError, ValueError):
+        duration_seconds = None
+
+    return {
+        "format": {
+            "duration_seconds": duration_seconds,
+            "size_bytes": int(format_info["size"]) if str(format_info.get("size", "")).isdigit() else None,
+            "bit_rate_bps": int(format_info["bit_rate"])
+            if str(format_info.get("bit_rate", "")).isdigit()
+            else None,
+            "format_name": format_info.get("format_name"),
+        },
+        "video_stream": {
+            "codec": video_stream.get("codec_name"),
+            "width": video_stream.get("width"),
+            "height": video_stream.get("height"),
+            "avg_frame_rate": _parse_rate(video_stream.get("avg_frame_rate")),
+            "duration_seconds": duration_seconds,
+        }
+        if video_stream
+        else None,
+    }
+
+
+def _ffprobe_media(path: Path) -> dict[str, Any]:
+    ffprobe = shutil.which("ffprobe")
+    probe: dict[str, Any] = {
+        "schema": "neodojo.media_probe.v1",
+        "tool": "ffprobe",
+        "available": ffprobe is not None,
+        "succeeded": False,
+        "error": None,
+        "format": None,
+        "video_stream": None,
+    }
+    if ffprobe is None:
+        probe["error"] = "ffprobe not found on PATH"
+        return probe
+
+    completed = subprocess.run(
+        [
+            ffprobe,
+            "-v",
+            "error",
+            "-print_format",
+            "json",
+            "-show_format",
+            "-show_streams",
+            str(path),
+        ],
+        capture_output=True,
+        encoding="utf-8",
+        timeout=20,
+        check=False,
+    )
+    if completed.returncode != 0:
+        probe["error"] = completed.stderr.strip() or f"ffprobe exited with {completed.returncode}"
+        return probe
+
+    try:
+        payload = json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        probe["error"] = f"ffprobe returned invalid JSON: {exc}"
+        return probe
+    if not isinstance(payload, dict):
+        probe["error"] = "ffprobe returned non-object JSON"
+        return probe
+
+    parsed = _parse_ffprobe_payload(payload)
+    probe.update(parsed)
+    probe["succeeded"] = parsed["video_stream"] is not None
+    if not probe["succeeded"]:
+        probe["error"] = "ffprobe found no video stream"
+    return probe
+
+
 def _source_media_metadata(planned_video_path: Path, local_video: Path | None, trim: dict[str, Any]) -> dict[str, Any]:
     media: dict[str, Any] | None = None
+    media_probe: dict[str, Any] | None = None
     validation = {
         "local_file_supplied": local_video is not None,
         "local_file_validated": False,
+        "media_probe_succeeded": False,
         "media_committed_to_repo": False,
     }
     if local_video is not None:
@@ -75,12 +193,15 @@ def _source_media_metadata(planned_video_path: Path, local_video: Path | None, t
             label="local source video",
             allowed_suffixes={".mp4", ".mov", ".m4v", ".webm"},
         )
+        media_probe = _ffprobe_media(local_video)
         validation["local_file_validated"] = True
+        validation["media_probe_succeeded"] = bool(media_probe.get("succeeded"))
 
     return {
         "schema": "neodojo.source_media.v1",
         "planned_local_path": _as_posix(planned_video_path),
         "local_file": media,
+        "probe": media_probe,
         "validation": validation,
         "reference_video_sync": {
             "schema": "neodojo.reference_video_sync.v1",

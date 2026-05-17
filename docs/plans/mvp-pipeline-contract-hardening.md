@@ -50,9 +50,10 @@ solve.
 
 `real-conversion prepare` records a `source_media` contract. When
 `--local-video` is supplied, it validates the local file, records size, suffix,
-and SHA-256 checksum, and stores local-only reference-video sync metadata. When
-no local video is supplied, the planned path remains metadata-only and the
-manifest records that the local file was not validated.
+SHA-256 checksum, optional ffprobe metadata, and stores local-only
+reference-video sync metadata. When no local video is supplied, the planned path
+remains metadata-only and the manifest records that the local file was not
+validated.
 
 `demo play` accepts annotation manifests using `neodojo.annotation.v1` and can
 preserve optional local-only reference-video sync metadata. The legacy
@@ -83,8 +84,8 @@ for compatibility.
   - annotation manifests
   - public-demo manifests
 - A source-media intake contract that records local file validation,
-  probe-derived trim metadata, provenance, checksums, and rights notes without
-  copying source media into the repo.
+  probe-derived media/trim metadata, provenance, checksums, and rights notes
+  without copying source media into the repo.
 - A local-only original-video sync contract for side-by-side reference playback
   when the user has a lawful local video file.
 - Coordinate, floor, facing, scale, and timing normalization fields that are

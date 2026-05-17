@@ -23,7 +23,7 @@ from neodojo.motion_contract import (
     write_gvhmr_json_motion_contract,
 )
 from neodojo.public_demo import build_scene_timeline, smoke_check_public_demo, write_public_demo
-from neodojo.real_conversion import write_real_conversion_prep
+from neodojo.real_conversion import _parse_ffprobe_payload, write_real_conversion_prep
 from neodojo.teaching_playback import write_teaching_playback_demo
 
 
@@ -701,7 +701,37 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(manifest["source_media"]["validation"]["local_file_validated"])
         self.assertEqual(manifest["source_media"]["local_file"]["suffix"], ".mp4")
         self.assertEqual(len(manifest["source_media"]["local_file"]["sha256"]), 64)
+        self.assertIn("probe", manifest["source_media"])
+        self.assertIn("media_probe_succeeded", manifest["source_media"]["validation"])
         self.assertTrue(manifest["source_media"]["reference_video_sync"]["available"])
+
+    def test_ffprobe_payload_parser_extracts_video_metadata(self) -> None:
+        parsed = _parse_ffprobe_payload(
+            {
+                "streams": [
+                    {
+                        "codec_type": "video",
+                        "codec_name": "h264",
+                        "width": 1280,
+                        "height": 720,
+                        "avg_frame_rate": "30000/1001",
+                    }
+                ],
+                "format": {
+                    "duration": "12.3456",
+                    "size": "123456",
+                    "bit_rate": "456789",
+                    "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+                },
+            }
+        )
+
+        self.assertEqual(parsed["format"]["duration_seconds"], 12.3456)
+        self.assertEqual(parsed["format"]["size_bytes"], 123456)
+        self.assertEqual(parsed["video_stream"]["codec"], "h264")
+        self.assertEqual(parsed["video_stream"]["width"], 1280)
+        self.assertEqual(parsed["video_stream"]["height"], 720)
+        self.assertAlmostEqual(parsed["video_stream"]["avg_frame_rate"], 29.97003)
 
     def test_real_conversion_prep_rejects_unknown_source_id(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

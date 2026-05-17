@@ -196,7 +196,9 @@ lane，上传 artifact，并在 repo 启用 Pages 后发布到 GitHub Pages。
 写到被忽略的 `outputs/dist/`。
 
 `neodojo real-conversion prepare` 会为后续 GPU gate 写出 source metadata、trim
-metadata 和下一步命令提示。它不会下载源视频，也不会运行 GVHMR。
+metadata 和下一步命令提示。它不会下载源视频，也不会运行 GVHMR。如果传入
+`--local-video`，它会记录 checksum 数据和可选的 ffprobe duration、resolution、codec、
+frame-rate metadata。
 
 `make demo-html` 会写出 `outputs/html-demo/index.html`，这是一个由本地
 motion/track manifest contract 支撑的自包含合成 fixture demo，用来验证目标教学

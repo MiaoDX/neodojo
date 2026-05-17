@@ -75,7 +75,8 @@ mesh rendering, real generated motion artifact, or UI server.
   gap.
 - Real-conversion source prep manifest generated under
   `outputs/real-conversion-gate/`, selecting source `03-006` metadata and a
-  short trim window for a later GPU run.
+  short trim window for a later GPU run. When `--local-video` is supplied, the
+  source-media contract records checksum and optional ffprobe metadata.
 
 ## Blockers And Constraints
 
@@ -149,7 +150,9 @@ sync, the local SMPL-X/G1 scoring boundary, and one SMPL-X-based geometry check,
 not qigong correctness.
 
 `neodojo real-conversion prepare` writes ignored source/trim metadata for the
-later GPU run and does not download video or execute GVHMR.
+later GPU run and does not download video or execute GVHMR. When a local video
+is supplied, it records checksum data and optional ffprobe duration,
+resolution, codec, and frame-rate metadata.
 
 ## Remaining Non-GPU Gaps
 
@@ -162,8 +165,8 @@ later GPU run and does not download video or execute GVHMR.
 - True Rerun SDK `.rrd` export and verification of the live GitHub Pages URL.
 - Feedback beyond the first deterministic opening-form detector: more posture
   terms, multi-keyframe detection, and routine-level review.
-- Rich source media probing beyond local file checksum/extension validation and
-  source-index duration/resolution metadata.
+- Source media handling beyond metadata probing: clip trimming, frame
+  extraction, and validating the actual trimmed video against GVHMR.
 - Broader static analysis, type checking, coverage, and release packaging
   beyond the minimal syntax-lint and wheel-build commands.
 

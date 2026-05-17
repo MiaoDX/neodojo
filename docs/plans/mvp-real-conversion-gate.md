@@ -28,6 +28,8 @@ but it is required before calling the MVP an end-to-end neodojo proof.
   expected to stabilize the import, source-prep, normalization, annotation,
   render, playback, and public-demo manifest boundaries before this real
   artifact enters them.
+- [mvp-source-media-probing.md](mvp-source-media-probing.md) records optional
+  local video ffprobe metadata before the GPU run.
 - [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md)
   and [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) are not required to run
   GVHMR, but they should provide the fixture public-demo lane that the imported
@@ -91,6 +93,8 @@ It writes `outputs/real-conversion-gate/real-conversion-prep.json` with:
 - recommended local path
 - 0-12 second proof trim
 - rights notes
+- optional local file checksum and ffprobe media probe metadata when
+  `--local-video` is supplied
 - expected GVHMR output/export paths
 - downstream import, G1-track, and playback commands
 
@@ -102,6 +106,8 @@ This command does not download video, run GVHMR, or prove qigong correctness.
   candidate.
 - [x] Record source metadata: title, source URL or local origin, duration, trim
   window, resolution, and license/rights notes.
+- [x] Record optional local source-video checksum and ffprobe metadata when a
+  local file is supplied.
 - [ ] Run GVHMR on a GPU-capable environment.
 - [ ] Export the SMPL-X result directory with enough metadata for reproducibility.
 - [ ] Convert or export the GVHMR result into
