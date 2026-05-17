@@ -380,6 +380,19 @@ CPU workspace:
 - not currently implicated: local schema, validation, import, playback,
   public-demo, Viser preview, or capture-bundle contracts
 
+Latest local execution probe:
+
+- no `nvidia-smi` or CUDA runtime is visible on this macOS ARM workspace
+- no Modal, RunPod, Hugging Face, AWS, GCP, Replicate, or similar provider
+  credentials are exposed through the local environment
+- no matching provider CLI is installed, except Docker, which does not expose a
+  GPU runtime here
+- GitHub repository configuration exposes only the Pages deploy variable and no
+  repository secrets for a GPU job
+
+That probe keeps the blocker classified as external artifact acquisition rather
+than an unimplemented local command or contract gap.
+
 When the external artifact exists, the next command is:
 
 ```bash

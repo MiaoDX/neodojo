@@ -576,9 +576,12 @@ its manifest reports `archive_with_media`, `media_included: true`, and
 `gvhmr-smplx-joints.template.json`, source metadata, and the trimmed clip. The
 archive writer now rejects missing required GPU-operator files, including stale
 bundles that omit the runner script. The tracked operator checklist is
-`docs/runbooks/gvhmr-external-gpu.md`. The next external step is to copy the
-bundle or archive to a GPU-capable machine, run GVHMR, and return the neodojo
-export.
+`docs/runbooks/gvhmr-external-gpu.md`. A local/provider execution probe found
+no CUDA runtime, no configured GPU-provider environment variables or provider
+CLIs, no GitHub repository secrets for a GPU job, and only the existing Pages
+deploy repository variable; Docker is available locally but does not expose a
+GPU runtime. The next external step is therefore to copy the bundle or archive
+to a GPU-capable machine, run GVHMR, and return the neodojo export.
 Once that artifact exists, the remaining task is to validate it with
 `real-conversion import-demo`, then inspect the generated `outputs/real-demo/`
 artifacts.
