@@ -351,6 +351,8 @@ artifact path; it defaults to
   lane after the GPU artifact exists.
 - [x] Add a shorter `make real-artifact-intake` wrapper for the standard
   returned artifact path.
+- [x] Add fixture-backed `make real-artifact-intake-smoke` coverage for the
+  returned-artifact wrapper without claiming a real GPU result.
 - [x] Add a safe `real-conversion probe-gpu-execution` / `make
   gpu-execution-probe` command that records local CUDA/provider readiness
   without running GVHMR or exposing secret values.

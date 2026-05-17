@@ -22,9 +22,10 @@ real-gpu-archive`, `make gpu-input-archive-smoke`, and
 bundles/archives, CI-safe GPU runner packaging, reproducible GPU/provider
 readiness classification, metadata-only CI GPU execution probe artifacts, and a
 tracked external-GPU operator runbook, `make gvhmr-inspect` for returned GVHMR
-result inspection, and `make demo-real` / `make real-artifact-intake` for a
-validated external GVHMR JSON once a GPU artifact exists, with a verified live
-fixture-only GitHub Pages demo at
+result inspection, `make demo-real` / `make real-artifact-intake` for a
+validated external GVHMR JSON once a GPU artifact exists, and
+`make real-artifact-intake-smoke` for fixture-backed coverage of that returned
+artifact wrapper, with a verified live fixture-only GitHub Pages demo at
 `https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, `real-conversion package-gpu-handoff` can package the handoff
@@ -192,10 +193,11 @@ motion artifact, or hosted/live-client Viser capture.
   dry-run real-conversion handoff smoke, installs the optional Playwright
   browser runtime, builds the fixture public demo with browser capture, uploads
   the metadata-only real-handoff smoke artifact, metadata-only GPU input bundle
-  smoke artifact, metadata-only GPU input archive smoke artifact, standalone
-  public-demo artifact, browser-capture artifact, and capture-bundle artifact
-  containing the capture manifest and referenced generated evidence, and
-  publishes the static
+  smoke artifact, metadata-only GPU input archive smoke artifact, metadata-only
+  GPU execution probe artifact, fixture-only real-artifact intake smoke
+  artifact, standalone public-demo artifact, browser-capture artifact, and
+  capture-bundle artifact containing the capture manifest and referenced
+  generated evidence, and publishes the static
   public-demo output to GitHub Pages from `main` when the repository variable
   `NEODOJO_DEPLOY_PAGES=true` is set.
 - GitHub Actions run
@@ -340,6 +342,11 @@ motion artifact, or hosted/live-client Viser capture.
   validated import-demo path with standard default paths for the returned export
   workflow. It has been smoke-tested against fixture-backed real-demo inputs and
   wrote `outputs/real-artifact-intake-smoke/`.
+- `make real-artifact-intake-smoke` generates fixture-only source
+  materialization and GVHMR JSON inputs, then runs the same
+  `make real-artifact-intake` wrapper. It is included in `make verify` and is
+  intended to keep the returned-artifact intake surface covered without
+  claiming a real GVHMR artifact exists.
 
 ## Blockers And Constraints
 
@@ -379,6 +386,7 @@ make gpu-input-archive-smoke
 make gpu-execution-probe
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
+make real-artifact-intake-smoke
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
@@ -417,7 +425,8 @@ make demo-html
 
 `make verify` runs lint, MVP plan quality checks, tests, wheel build, the
 public-demo plus capture-bundle smoke lane, the dry-run real-handoff smoke
-lane, and metadata-only GPU input bundle/archive smoke lanes.
+lane, metadata-only GPU input bundle/archive smoke lanes, GPU execution probe,
+and fixture-only real-artifact intake smoke lane.
 `make lint` runs a minimal syntax/import bytecode compile check over `src/` and
 `tests/`. `make check` validates MVP plan links and minimum plan scaffolding.
 `make test` runs the focused Python unit tests for the fixture demo generator

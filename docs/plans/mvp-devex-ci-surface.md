@@ -1,6 +1,6 @@
 # MVP DevEx And CI Surface Plan
 
-Status: IMPLEMENTED WITH BROWSER CAPTURE, REAL-HANDOFF, GPU-INPUT, GPU-ARCHIVE, AND GPU-EXECUTION-PROBE ARTIFACT CI
+Status: IMPLEMENTED WITH BROWSER CAPTURE, REAL-HANDOFF, GPU-INPUT, GPU-ARCHIVE, GPU-EXECUTION-PROBE, AND REAL-ARTIFACT-INTAKE SMOKE ARTIFACT CI SURFACE
 
 ## Goal
 
@@ -50,10 +50,14 @@ against `outputs/public-demo` and `neodojo capture bundle` to write
 
 `make verify` now wraps the default dependency-light local lane: lint, plan
 quality checks, tests, wheel build, `make demo-public`,
-`make real-handoff-smoke`, `make gpu-input-bundle-smoke`, and
-`make gpu-input-archive-smoke`.
+`make real-handoff-smoke`, `make gpu-input-bundle-smoke`,
+`make gpu-input-archive-smoke`, `make gpu-execution-probe`, and
+`make real-artifact-intake-smoke`.
 `make demo-public-browser` adds the optional Playwright-backed Chromium
 screenshot capture and refreshes the capture bundle with browser evidence.
+`make real-artifact-intake-smoke` writes fixture-only source materialization
+and GVHMR JSON inputs, then runs the standard `make real-artifact-intake`
+wrapper so the returned-artifact import path is covered without a GPU artifact.
 
 `.github/workflows/public-demo.yml` installs the package, runs lint, plan
 quality checks, tests, wheel build, runs `make real-handoff-smoke`, uploads a
@@ -62,9 +66,11 @@ metadata-only `neodojo-real-handoff-smoke` artifact from that smoke, runs
 `neodojo-gpu-input-bundle-smoke` artifact, runs
 `make gpu-input-archive-smoke`, uploads a metadata-only
 `neodojo-gpu-input-archive-smoke` artifact, runs `make gpu-execution-probe`,
-uploads a metadata-only `neodojo-gpu-execution-probe` artifact, installs
-Chromium through the optional Playwright browser extra, and runs
-`make demo-public-browser`. It uploads `outputs/public-demo` as the standalone
+uploads a metadata-only `neodojo-gpu-execution-probe` artifact, runs
+`make real-artifact-intake-smoke`, uploads a fixture-only
+`neodojo-real-artifact-intake-smoke` artifact, installs Chromium through the
+optional Playwright browser extra, and runs `make demo-public-browser`. It
+uploads `outputs/public-demo` as the standalone
 public-demo artifact, uploads `outputs/browser-capture` as browser evidence,
 uploads a capture-bundle artifact containing `outputs/capture` plus the
 referenced public-demo, browser-capture, Viser runtime, and G1 render evidence,
@@ -194,10 +200,12 @@ with no local CUDA, Docker GPU runtime, or configured GPU provider candidate.
      placeholder source media.
    - [x] Upload the metadata-only GPU input bundle smoke artifact with
      `run_gvhmr_neodojo.sh` and no media.
-  - [x] Upload the metadata-only GPU input archive smoke artifact with no
+   - [x] Upload the metadata-only GPU input archive smoke artifact with no
      media.
    - [x] Upload the metadata-only GPU execution probe artifact with no secret
      values.
+   - [x] Upload the fixture-only real-artifact intake smoke artifact with no
+     media.
 
 5. Add visual smoke checks.
    - [x] Check generated HTML, scene, `.rrd` fallback, and SVG screenshot are
@@ -239,6 +247,9 @@ with no local CUDA, Docker GPU runtime, or configured GPU provider candidate.
   media.
 - CI uploads the metadata-only GPU execution probe artifact with command/env-key
   readiness evidence and no secret values, verified by run `26005618093`.
+- CI is configured to upload the fixture-only real-artifact intake smoke
+  artifact with source-validation, public-demo, and capture manifests but no
+  media.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages publishes only safe static demo assets once repository Pages is

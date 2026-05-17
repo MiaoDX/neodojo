@@ -15,7 +15,7 @@ make build
   -> wheel artifact under ignored outputs/dist
 
 make verify
-  -> lint + tests + build + public-demo smoke
+  -> lint + tests + build + public-demo smoke + non-GPU real/GPU smoke lanes
 ```
 
 The goal is a reproducible local and CI command surface, not a full static
@@ -37,8 +37,9 @@ analysis or release pipeline.
 
 - `make lint`, using `python -m compileall -q src tests`.
 - `make build`, using `python -m pip wheel . --wheel-dir outputs/dist`.
-- `make verify`, running lint, plan quality checks, tests, wheel build, and
-  public-demo generation.
+- `make verify`, running lint, plan quality checks, tests, wheel build,
+  public-demo generation, real-handoff smoke, GPU bundle/archive/probe smoke,
+  and fixture-only real-artifact intake smoke.
 - CI steps that run lint, plan quality checks, tests, wheel build, and
   public-demo generation.
 - README/README.zh/STATUS/AGENTS updates that describe the limited scope.
@@ -63,7 +64,8 @@ analysis or release pipeline.
 
 - `make lint` passes locally.
 - `make build` produces a wheel under ignored `outputs/dist`.
-- `make verify` runs the complete local verification lane.
+- `make verify` runs the complete local verification lane, including the
+  fixture-only and metadata-only real/GPU smoke targets.
 - `make test` and `make demo-public` still pass.
 - CI workflow includes lint, plan quality check, unit test, wheel build,
   public-demo generation, artifact upload, and Pages artifact staging.

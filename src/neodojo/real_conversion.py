@@ -13,6 +13,12 @@ from pathlib import Path
 from typing import Any, Callable, Mapping
 
 from .contracts import local_file_metadata, require_schema, sha256_file
+from .fixtures import (
+    FIXTURE_FORM,
+    FIXTURE_FPS,
+    FIXTURE_ROUTINE,
+    build_smplx_fixture_frames,
+)
 from .motion_contract import (
     GVHMR_JOINT_EXPORT_SCHEMA,
     _SMPLX_FRAME_PARAMETER_FIELDS,
@@ -92,6 +98,12 @@ class GvhmrResultInspectionWriteResult:
 class GvhmrGpuExecutionProbeWriteResult:
     manifest_path: Path
     status: str
+
+
+@dataclass(frozen=True)
+class RealArtifactIntakeSmokeInputWriteResult:
+    source_materialization_path: Path
+    gvhmr_json_path: Path
 
 
 def _as_posix(path: Path) -> str:
@@ -239,6 +251,118 @@ def probe_gpu_execution_environment(
     }
     _write_json(manifest_path, manifest)
     return GvhmrGpuExecutionProbeWriteResult(manifest_path=manifest_path, status=status)
+
+
+def write_real_artifact_intake_smoke_input(
+    out_dir: Path,
+    *,
+    frame_count: int = 36,
+) -> RealArtifactIntakeSmokeInputWriteResult:
+    """Write fixture-only returned-artifact inputs for the import-demo lane."""
+
+    validate_output_dir(out_dir)
+    if frame_count <= 0:
+        raise ValueError("frame count must be positive")
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    source_materialization_path = out_dir / "source-materialization.json"
+    gvhmr_json_path = out_dir / "gvhmr-smplx-joints.json"
+    duration_seconds = round(frame_count / FIXTURE_FPS, 6)
+    trim = {
+        "start_seconds": 0.25,
+        "end_seconds": round(0.25 + duration_seconds, 6),
+        "duration_seconds": duration_seconds,
+    }
+    source_id = "fixture-real-artifact-intake-smoke"
+    trimmed_video_argument = _as_posix(out_dir / "source" / "trimmed-clip.mp4")
+    source_materialization = {
+        "schema": SOURCE_MATERIALIZATION_SCHEMA,
+        "status": "fixture_smoke_input",
+        "fixture_only": True,
+        "media_committed_to_repo": False,
+        "source_prep": {
+            "manifest": None,
+            "source_id": source_id,
+            "source_kind": "fixture_smoke",
+            "title_english": "Fixture real-artifact intake smoke segment",
+            "source_schema": REAL_CONVERSION_PREP_SCHEMA,
+        },
+        "source_media": {
+            "schema": "neodojo.source_media_materialized.v1",
+            "local_file": None,
+            "prep_probe": None,
+            "rights_notes": "fixture-only smoke input; no source media exists or should be committed",
+        },
+        "trim": trim,
+        "ffmpeg": {
+            "available": False,
+            "executable": None,
+            "dry_run": True,
+            "commands": [],
+        },
+        "outputs": {
+            "trimmed_video_path": trimmed_video_argument,
+            "trimmed_video": None,
+            "frames_dir": _as_posix(out_dir / "source" / "frames"),
+            "frame_pattern": _as_posix(out_dir / "source" / "frames" / "frame-%06d.jpg"),
+            "extracted_frame_count": 0,
+            "first_frame": None,
+            "last_frame": None,
+        },
+        "validation": {
+            "schema": "neodojo.source_materialization_validation.v1",
+            "source_file_validated": False,
+            "trimmed_video_written": False,
+            "frames_extracted": False,
+            "duration": {
+                "checked": False,
+                "succeeded": False,
+                "expected_duration_seconds": duration_seconds,
+                "actual_duration_seconds": None,
+                "delta_seconds": None,
+                "tolerance_seconds": None,
+                "error": "fixture smoke input does not include source media",
+            },
+            "gvhmr_input_ready": False,
+        },
+        "gpu_handoff": {
+            "schema": "neodojo.gvhmr_input_handoff.v1",
+            "blocked_locally": True,
+            "trimmed_video_argument": trimmed_video_argument,
+            "expected_export_json": _as_posix(gvhmr_json_path),
+            "command_template": "fixture smoke input; GVHMR was not run",
+            "notes": (
+                "This manifest exists only to exercise the local returned-artifact "
+                "intake path. It is not evidence of a real GVHMR execution."
+            ),
+        },
+    }
+    _write_json(source_materialization_path, source_materialization)
+
+    gvhmr_export = {
+        "schema": GVHMR_JOINT_EXPORT_SCHEMA,
+        "fixture_only": True,
+        "routine": FIXTURE_ROUTINE,
+        "form": FIXTURE_FORM,
+        "fps": FIXTURE_FPS,
+        "frames": build_smplx_fixture_frames(frame_count),
+        "provenance": {
+            "source_materialization_manifest": _as_posix(source_materialization_path),
+            "source_materialization_sha256": sha256_file(source_materialization_path),
+            "source_id": source_id,
+            "trim": trim,
+            "input_video": trimmed_video_argument,
+            "input_video_sha256": None,
+            "gpu_command": "fixture smoke input; GVHMR was not run",
+            "runtime": "neodojo fixture smoke",
+            "upstream_version": "fixture",
+        },
+    }
+    _write_json(gvhmr_json_path, gvhmr_export)
+    return RealArtifactIntakeSmokeInputWriteResult(
+        source_materialization_path=source_materialization_path,
+        gvhmr_json_path=gvhmr_json_path,
+    )
 
 
 def _source_id(row: dict[str, str]) -> str:

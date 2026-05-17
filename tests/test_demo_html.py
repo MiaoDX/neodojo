@@ -42,6 +42,7 @@ from neodojo.real_conversion import (
     package_gvhmr_gpu_input_bundle,
     probe_gpu_execution_environment,
     validate_gvhmr_source,
+    write_real_artifact_intake_smoke_input,
     write_real_conversion_prep,
 )
 from neodojo.real_demo import write_real_conversion_demo
@@ -2460,6 +2461,33 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(capture_manifest["schema"], "neodojo.capture_bundle.v1")
         self.assertTrue(capture_manifest["verification"]["public_demo_smoke_checked"])
         self.assertGreaterEqual(len(result.checked_paths), len(public_smoke.checked_paths))
+
+    def test_real_artifact_intake_smoke_input_builds_import_demo(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            smoke_input = write_real_artifact_intake_smoke_input(root / "smoke-input")
+            result = write_real_conversion_demo(
+                root / "real-artifact-intake-smoke",
+                source_materialization=smoke_input.source_materialization_path,
+                gvhmr_json=smoke_input.gvhmr_json_path,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            validation = json.loads(
+                (root / "real-artifact-intake-smoke" / "real-conversion-validation" / "source-validation.json")
+                .read_text(encoding="utf-8")
+            )
+            source_materialization = json.loads(
+                smoke_input.source_materialization_path.read_text(encoding="utf-8")
+            )
+            gvhmr_export = json.loads(smoke_input.gvhmr_json_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(manifest["schema"], "neodojo.real_conversion_demo.v1")
+        self.assertTrue(manifest["real_gvhmr_artifact_imported"])
+        self.assertTrue(validation["passed"])
+        self.assertTrue(source_materialization["fixture_only"])
+        self.assertTrue(gvhmr_export["fixture_only"])
+        self.assertEqual(gvhmr_export["provenance"]["runtime"], "neodojo fixture smoke")
 
     def test_real_conversion_prep_rejects_unknown_source_id(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

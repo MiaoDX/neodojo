@@ -86,6 +86,20 @@ jobs:
           name: neodojo-gpu-execution-probe
           path: outputs/gvhmr-gpu-execution-probe/manifest.json
           if-no-files-found: error
+      - name: Real artifact intake smoke
+        run: make real-artifact-intake-smoke
+      - name: Upload real artifact intake smoke artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neodojo-real-artifact-intake-smoke
+          path: |
+            outputs/real-artifact-intake-smoke-input/source-materialization.json
+            outputs/real-artifact-intake-smoke-input/gvhmr-smplx-joints.json
+            outputs/real-artifact-intake-smoke/manifest.json
+            outputs/real-artifact-intake-smoke/real-conversion-validation/source-validation.json
+            outputs/real-artifact-intake-smoke/public-demo/manifest.json
+            outputs/real-artifact-intake-smoke/capture/manifest.json
+          if-no-files-found: error
       - name: Install browser runtime
         run: python -m playwright install --with-deps chromium
       - name: Build public demo with browser capture

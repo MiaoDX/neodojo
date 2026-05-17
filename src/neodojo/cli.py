@@ -30,6 +30,7 @@ from .real_conversion import (
     package_gvhmr_gpu_input_bundle,
     probe_gpu_execution_environment,
     validate_gvhmr_source,
+    write_real_artifact_intake_smoke_input,
     write_real_conversion_prep,
 )
 from .real_demo import write_real_conversion_demo
@@ -775,6 +776,22 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/gvhmr-gpu-execution-probe"),
         help="output directory for the GPU execution probe manifest",
     )
+    real_intake_smoke = real_subparsers.add_parser(
+        "write-intake-smoke-input",
+        help="write fixture-only inputs for smoke-testing returned-artifact intake",
+    )
+    real_intake_smoke.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/real-artifact-intake-smoke-input"),
+        help="output directory for fixture-only source materialization and GVHMR JSON inputs",
+    )
+    real_intake_smoke.add_argument(
+        "--frames",
+        type=int,
+        default=36,
+        help="number of synthetic SMPL-X frames to write",
+    )
     real_inspect_gvhmr = real_subparsers.add_parser(
         "inspect-gvhmr-result",
         help="inspect a returned GVHMR hmr4d_results.pt or JSON summary for export readiness",
@@ -1150,6 +1167,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = probe_gpu_execution_environment(args.out)
             print(f"wrote {result.manifest_path}")
             print(f"status {result.status}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "write-intake-smoke-input":
+            result = write_real_artifact_intake_smoke_input(args.out, frame_count=args.frames)
+            print(f"wrote {result.source_materialization_path}")
+            print(f"wrote {result.gvhmr_json_path}")
             return 0
 
         if args.command == "real-conversion" and args.real_command == "package-gpu-handoff":

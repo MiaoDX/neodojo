@@ -201,6 +201,7 @@ make gpu-input-archive-smoke
 make gpu-execution-probe
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
+make real-artifact-intake-smoke
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
@@ -331,7 +332,8 @@ Direct roboharness and live-runtime recording remain follow-on work.
 
 `make verify` runs lint, MVP plan quality checks, tests, wheel build, the
 public-demo plus capture-bundle smoke lane, the dry-run real-handoff smoke
-lane, and metadata-only GPU input bundle/archive smoke lanes.
+lane, metadata-only GPU input bundle/archive smoke lanes, GPU execution probe,
+and fixture-only real-artifact intake smoke lane.
 `make demo-public` regenerates the fixture motion contract, detected
 annotations, SMPL-X surface proxy, G1 visual track, G1 render evidence,
 teaching playback, Viser runtime preview, public-demo artifact, generated
@@ -430,6 +432,9 @@ post-return wrapper for the same validated import path. It defaults to
 `outputs/real-conversion-source/source-materialization.json` and
 `outputs/real-demo`, so the GPU operator only needs to point it at the returned
 `neodojo.gvhmr_smplx_joints.v1` export when those standard paths are used.
+`make real-artifact-intake-smoke` writes fixture-only source materialization
+and GVHMR JSON inputs, then runs the same wrapper to keep the returned-artifact
+intake path covered locally and in CI without claiming a real GVHMR run.
 
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local
@@ -488,7 +493,8 @@ In progress:
 - [x] Minimal `make lint` and `make build` command surface
 - [x] Project-owned `make check` quality gate for MVP plan links/scaffolding
 - [x] One-command local `make verify` flow for lint, quality checks, tests,
-      build, public demo generation, and real-handoff smoke
+      build, public demo generation, real/GPU smoke lanes, and real-artifact
+      intake smoke
 - [x] Local real-conversion prep manifest for source `03-006`
 - [x] Custom local-source real-conversion prep path with explicit provenance
 - [x] Local real-conversion source materialization handoff for a user-supplied
@@ -507,6 +513,8 @@ In progress:
       export is available
 - [x] Simpler `make real-artifact-intake` wrapper for the standard returned
       GVHMR export path
+- [x] Fixture-backed `make real-artifact-intake-smoke` coverage for the returned
+      artifact wrapper
 The detailed implementation queue lives in [`docs/plans/`](docs/plans/) and
 can later be mirrored into GitHub issues.
 
