@@ -4,7 +4,8 @@ neodojo is in bootstrap state with one fixture-only local demo.
 
 There is now a minimal checked-in Python package, a `make test` command,
 fixture-backed and external-JSON `motion-record` paths, `robot-model`,
-`tracks`, imported GMR JSON track, `annotations detect`, `render g1`,
+`tracks`, imported GMR JSON track, native GMR pickle normalization,
+`annotations detect`, `render g1`,
 `demo play`, `demo export-rerun`, and `real-conversion prepare` commands, a
 `make demo-html` command that writes a self-contained synthetic web demo,
 minimal `make lint`, `make check`, and `make build` commands, and a
@@ -13,8 +14,8 @@ the fixture public-demo artifact. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, and `real-conversion validate-source` can validate a GVHMR JSON
 export against that handoff before import. There is still no checked-in
-GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real mesh rendering, real
-generated motion artifact, or UI server.
+GVHMR/GMR execution pipeline, simulator runtime pipeline, MuJoCo/Genesis real
+mesh rendering, real generated motion artifact, or UI server.
 
 ## Current Truth
 
@@ -53,6 +54,11 @@ generated motion artifact, or UI server.
   comparison report with `g1_scoring_allowed: false`.
 - Normalized external GMR Unitree G1 JSON import into the same G1 visual-track
   contract, preserving imported joint angles while keeping G1 non-scoring.
+- Native YanjieZe/GMR robot-motion pickle normalization into the same
+  `neodojo.gmr_unitree_g1_track.v1` import contract. This parses the saved
+  `--save_path` artifact shape, preserves Unitree G1 joint angles, derives the
+  current viewer joints from the source SMPL-X motion record, and does not run
+  GMR locally.
 - Deterministic SMPL-X opening-form routine review, producing
   `neodojo.annotation.v1` manifests plus `neodojo.routine_feedback_report.v1`
   reports with opening stance, settled support, and raised-hands apex anchors.
@@ -126,6 +132,7 @@ PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/
 PYTHONPATH=src python -m neodojo annotations detect --motion-record outputs/motion-contract --out outputs/annotations
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
+PYTHONPATH=src python -m neodojo tracks normalize-gmr-pkl --source path/to/gmr-motion.pkl --motion-record outputs/motion-contract --out outputs/gmr-native
 PYTHONPATH=src python -m neodojo tracks import-gmr-json --source path/to/gmr-unitree-g1.json --motion-record outputs/motion-contract --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --allow-fixture-model --out outputs/g1-render
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
@@ -150,11 +157,14 @@ SMPL-X-only annotation manifest plus routine feedback report for opening
 stance, settled support, and raised-hands apex anchors, then feeds those anchors
 into the public-demo lane. `neodojo robot-model register` and
 `neodojo tracks build` write fixture G1 model/visual-track manifests and a
-comparison report that keeps G1 non-scoring. `neodojo tracks import-gmr-json`
-imports an external
+comparison report that keeps G1 non-scoring. `neodojo tracks normalize-gmr-pkl`
+parses the native YanjieZe/GMR robot-motion pickle shape written by
+`scripts/*_to_robot.py --save_path` and writes a normalized G1 JSON export plus
+adapter report. `neodojo tracks import-gmr-json` imports an external
 normalized `neodojo.gmr_unitree_g1_track.v1` export with Unitree G1 joint-angle
 frames into the same non-scoring G1 track contract; it does not run GMR
-locally or parse every native upstream GMR output format. `neodojo render g1`
+locally or claim support for every native upstream GMR output format.
+`neodojo render g1`
 writes local SVG/HTML front/side/top render evidence and a render manifest from
 a G1 model descriptor plus G1 track; fixture model descriptors require explicit
 `--allow-fixture-model`, and this is not MuJoCo/Genesis simulator mesh
@@ -190,9 +200,6 @@ when source id, trim, input path/checksum, and duration checks pass.
 
 - MuJoCo/Genesis real Unitree G1 mesh rendering from local URDF/MJCF plus
   meshes: `docs/plans/mvp-simulator-mesh-rendering.md`.
-- Native GMR execution/parsing from upstream pickle/NumPy outputs:
-  `docs/plans/mvp-native-gmr-runner.md`. The repo now has a normalized
-  imported-GMR JSON boundary, but not local GMR execution.
 - SMPL-X mesh/body-surface playback; current demos draw joints and bones:
   `docs/plans/mvp-smplx-body-surface-playback.md`.
 - Simulator/Viser runtime integration and multi-camera offscreen capture:

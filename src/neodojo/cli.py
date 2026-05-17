@@ -12,6 +12,7 @@ from .g1_visual import (
     register_g1_model,
     write_fixture_g1_model_descriptor,
 )
+from .gmr_native import normalize_gmr_pickle
 from .g1_render import write_g1_render
 from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
 from .public_demo import smoke_check_public_demo, write_public_demo
@@ -192,6 +193,33 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("outputs/g1-visual"),
         help="output directory for the imported G1 visual-track manifest and report",
+    )
+    tracks_normalize_pkl = tracks_subparsers.add_parser(
+        "normalize-gmr-pkl",
+        help="normalize a native GMR robot-motion pickle into the imported-GMR JSON contract",
+    )
+    tracks_normalize_pkl.add_argument(
+        "--source",
+        type=Path,
+        required=True,
+        help="native GMR robot-motion pickle written by scripts/*_to_robot.py --save_path",
+    )
+    tracks_normalize_pkl.add_argument(
+        "--motion-record",
+        type=Path,
+        required=True,
+        help="source motion-record root directory or manifest path for display joints and timing validation",
+    )
+    tracks_normalize_pkl.add_argument("--robot", choices=["unitree_g1"], default="unitree_g1")
+    tracks_normalize_pkl.add_argument(
+        "--joint-names",
+        help="optional comma-separated joint names when the pickle does not embed them and is not Unitree G1 29-DOF",
+    )
+    tracks_normalize_pkl.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/gmr-native"),
+        help="output directory for normalized GMR JSON and adapter report",
     )
 
     demo = subparsers.add_parser(
@@ -477,6 +505,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(f"wrote {result.track_manifest_path}")
             print(f"wrote {result.comparison_report_path}")
+            return 0
+
+        if args.command == "tracks" and args.tracks_command == "normalize-gmr-pkl":
+            joint_names = None
+            if args.joint_names:
+                joint_names = [name.strip() for name in args.joint_names.split(",") if name.strip()]
+            result = normalize_gmr_pickle(
+                args.out,
+                args.source,
+                motion_record=args.motion_record,
+                robot=args.robot,
+                joint_names=joint_names,
+            )
+            print(f"wrote {result.normalized_export_path}")
+            print(f"wrote {result.report_path}")
             return 0
 
         if args.command == "demo" and args.demo_command == "play":

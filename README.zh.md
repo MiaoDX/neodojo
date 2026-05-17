@@ -128,10 +128,10 @@ Viser (web 端三视角同步 + 关节轨迹 polyline + 时间轴)
 当前 repo 状态、已知约束与下一步安全任务见 [`STATUS.md`](STATUS.md)。现在已经有
 一个很小的 Python package、本地 SMPL-X 与 G1 fixture artifact 命令、教学 playback
 HTML 命令、规范化 imported-GMR G1 track 边界、静态 HTML demo 生成器，以及基于
-model descriptor 与 visual track 的本地 G1 SVG/HTML render evidence，以及最小
-lint/build/quality-check 命令。它也可以为后续 GPU GVHMR run 写出 dry-run 或
-ffmpeg-backed 的本地 source-video handoff。但还没有提交到仓库的 GVHMR/GMR/
-仿真器运行时 pipeline 或 MuJoCo/Genesis 真实 mesh 渲染。
+model descriptor 与 visual track 的本地 G1 SVG/HTML render evidence、GMR 原生
+pickle 规范化，以及最小 lint/build/quality-check 命令。它也可以为后续 GPU GVHMR
+run 写出 dry-run 或 ffmpeg-backed 的本地 source-video handoff。但还没有提交到仓库的
+GVHMR/GMR 执行 pipeline、仿真器运行时 pipeline 或 MuJoCo/Genesis 真实 mesh 渲染。
 
 现在可以运行：
 
@@ -148,6 +148,7 @@ PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/
 PYTHONPATH=src python -m neodojo annotations detect --motion-record outputs/motion-contract --out outputs/annotations
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
+PYTHONPATH=src python -m neodojo tracks normalize-gmr-pkl --source path/to/gmr-motion.pkl --motion-record outputs/motion-contract --out outputs/gmr-native
 PYTHONPATH=src python -m neodojo tracks import-gmr-json --source path/to/gmr-unitree-g1.json --motion-record outputs/motion-contract --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --allow-fixture-model --out outputs/g1-render
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
@@ -171,10 +172,12 @@ final frame。
 
 `neodojo robot-model register` 和 `neodojo tracks build` 可以写出 fixture G1
 model 和 visual-track manifests。它们保留 SMPL-X/G1 职责边界，但还没有加载真实
-Unitree G1 mesh，也没有运行 GMR retargeting。`neodojo tracks import-gmr-json`
-可以把规范化的外部 `neodojo.gmr_unitree_g1_track.v1` export（含 Unitree G1
-joint-angle frames）导入同一个不可评分的 G1 track contract；它不会在本地运行 GMR，
-也不会解析所有 upstream GMR 原生输出格式。
+Unitree G1 mesh，也没有运行 GMR retargeting。`neodojo tracks normalize-gmr-pkl`
+可以解析 upstream `scripts/*_to_robot.py --save_path` 写出的 YanjieZe/GMR 原生
+robot-motion pickle，并转成 repo 内部使用的规范化 JSON contract。`neodojo tracks
+import-gmr-json` 可以把规范化的外部 `neodojo.gmr_unitree_g1_track.v1` export（含
+Unitree G1 joint-angle frames）导入同一个不可评分的 G1 track contract；它不会在
+本地运行 GMR，也不宣称支持所有 upstream GMR 原生输出格式。
 
 `neodojo render g1` 会读取 G1 model descriptor 与 G1 visual-track manifest，
 写出正/侧/俯三视角 SVG frame evidence、本地 HTML 页面与 render manifest。
@@ -230,6 +233,7 @@ G1 retargeting 已经完成。
 - [x] 外部 GVHMR teaching-joints JSON 可导入同一 motion contract
 - [x] 本地 fixture G1 model 和 visual-track manifests，并保持 scoring separation
 - [x] 规范化外部 GMR Unitree G1 JSON import 到不可评分的 G1 visual-track contract
+- [x] GMR 原生 robot-motion pickle 规范化到同一个 G1 JSON import contract
 - [x] 本地 G1 SVG/HTML render evidence 命令，输出正/侧/俯三视角 frame，并保持
       `g1_scoring_allowed: false`
 - [x] 本地 teaching playback 命令，可同时消费 SMPL-X 与 G1 manifests

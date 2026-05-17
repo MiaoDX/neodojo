@@ -11,12 +11,12 @@ each slice.
 
 The current repo is still in bootstrap state. It has a fixture-only HTML demo
 generator, `make test`, `make demo-html`, `make demo-public`, versioned local
-artifact contracts, a normalized imported-GMR G1 track boundary, G1 SVG/HTML
-render evidence, optional source-media probing, local source-media
+artifact contracts, a normalized imported-GMR G1 track boundary, native GMR
+pickle normalization, G1 SVG/HTML render evidence, optional source-media probing, local source-media
 materialization handoff, a fixture-only static public-demo fallback artifact,
 and a GitHub Actions workflow for the fixture public-demo lane. It does not yet
-have a checked-in GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real mesh
-rendering, Viser UI, true Rerun SDK `.rrd` recording, verified live GitHub
+have a checked-in GVHMR/GMR execution pipeline, simulator runtime pipeline,
+MuJoCo/Genesis real mesh rendering, Viser UI, true Rerun SDK `.rrd` recording, verified live GitHub
 Pages URL, or broad static-analysis/release gates beyond the minimal
 `make lint` and `make build` surface.
 
@@ -67,7 +67,7 @@ of truth for the next waves.
 | Plan | Status | Gap Covered |
 | --- | --- | --- |
 | [mvp-simulator-mesh-rendering.md](mvp-simulator-mesh-rendering.md) | planned; blocked on user-supplied G1 assets and simulator dependency | MuJoCo/Genesis real Unitree G1 mesh rendering. |
-| [mvp-native-gmr-runner.md](mvp-native-gmr-runner.md) | planned; blocked on upstream GMR environment and sample outputs | Native GMR execution/parsing beyond normalized JSON import. |
+| [mvp-native-gmr-runner.md](mvp-native-gmr-runner.md) | implemented first pickle adapter; local GMR execution remains external | Native GMR robot-motion pickle parsing beyond normalized JSON import. |
 | [mvp-smplx-body-surface-playback.md](mvp-smplx-body-surface-playback.md) | planned; blocked on licensed SMPL-X assets | SMPL-X mesh/body-surface playback. |
 | [mvp-viser-multicamera-runtime.md](mvp-viser-multicamera-runtime.md) | planned; blocked on runtime dependency and interaction design | Local Viser runtime and multi-camera/offscreen workflow. |
 | [mvp-rerun-pages-release.md](mvp-rerun-pages-release.md) | planned; blocked on Rerun SDK install and repository Pages settings | True Rerun SDK `.rrd` export and verified live GitHub Pages URL. |

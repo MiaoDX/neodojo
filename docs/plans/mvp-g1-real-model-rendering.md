@@ -165,8 +165,9 @@ PYTHONPATH=src python -m neodojo robot-model register \
 
 ## Follow-On Gaps After This Plan
 
-- Native GMR execution/parsing from upstream pickle/NumPy outputs. Normalized
-  imported GMR JSON is now supported by `mvp-gmr-import-track.md`.
+- Local upstream GMR execution remains external. Native robot-motion pickle
+  parsing is now covered by `mvp-native-gmr-runner.md`, and normalized imported
+  GMR JSON is supported by `mvp-gmr-import-track.md`.
 - SMPL-X mesh/body-surface rendering; the current teaching demo still uses
   skeleton joints.
 - MuJoCo/Genesis real robot mesh rendering from registered G1 assets.
