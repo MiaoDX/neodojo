@@ -17,12 +17,13 @@ workflow for the fixture public-demo artifact, browser capture, generated
 capture bundle, and metadata-only real-handoff smoke artifact,
 `make real-handoff`, `make gpu-handoff`, `make gpu-input-bundle`,
 `make gpu-input-bundle-smoke`, `make gpu-input-archive`, `make
-real-gpu-archive`, and `make gpu-input-archive-smoke` for external GVHMR run
-metadata, transfer bundles/archives, CI-safe GPU runner packaging, and a
-tracked external-GPU operator runbook, `make gvhmr-inspect` for returned GVHMR
-result inspection, and `make demo-real` for a validated external GVHMR JSON
-once a GPU artifact exists, with a verified live fixture-only GitHub Pages demo
-at
+real-gpu-archive`, `make gpu-input-archive-smoke`, and
+`make gpu-execution-probe` for external GVHMR run metadata, transfer
+bundles/archives, CI-safe GPU runner packaging, reproducible GPU/provider
+readiness classification, and a tracked external-GPU operator runbook, `make
+gvhmr-inspect` for returned GVHMR result inspection, and `make demo-real` for a
+validated external GVHMR JSON once a GPU artifact exists, with a verified live
+fixture-only GitHub Pages demo at
 `https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, `real-conversion package-gpu-handoff` can package the handoff
@@ -292,6 +293,11 @@ motion artifact, or hosted/live-client Viser capture.
   `run_gvhmr_neodojo.sh`, `export_neodojo_gvhmr.py`,
   `gvhmr-smplx-joints.template.json`, `source-materialization.json`, and
   `source/trimmed-clip.mp4`.
+- `make gpu-execution-probe` writes
+  `outputs/gvhmr-gpu-execution-probe/manifest.json` and is included in
+  `make verify`. On the current macOS ARM workspace it reports
+  `external_gpu_artifact_missing`, with no local CUDA runtime, no Docker GPU
+  runtime, and no configured GPU provider candidate detected.
 - GVHMR GPU handoff package generated under `outputs/gvhmr-gpu-handoff-smoke/`
   in local smoke, writing `neodojo.gvhmr_gpu_handoff.v1` manifest metadata,
   README instructions, a copyable `source-materialization.json`,
@@ -354,6 +360,7 @@ make gpu-input-bundle GPU_HANDOFF=outputs/gvhmr-gpu-handoff GPU_INPUT_INCLUDE_ME
 make gpu-input-bundle-smoke
 make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
 make gpu-input-archive-smoke
+make gpu-execution-probe
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
@@ -384,6 +391,7 @@ PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outpu
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff --source-materialization outputs/real-conversion-source/source-materialization.json --out outputs/gvhmr-gpu-handoff
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-input --gpu-handoff outputs/gvhmr-gpu-handoff --include-media --out outputs/gvhmr-gpu-input
 PYTHONPATH=src python -m neodojo real-conversion archive-gpu-input --gpu-input outputs/gvhmr-gpu-input --out outputs/gvhmr-gpu-input-archive
+PYTHONPATH=src python -m neodojo real-conversion probe-gpu-execution --out outputs/gvhmr-gpu-execution-probe
 PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result --source outputs/real-conversion-gate/hmr4d_results.pt --out outputs/gvhmr-result-inspection
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
 PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
@@ -519,6 +527,12 @@ or run GVHMR locally.
 materialization, GPU handoff packaging, media-including GPU input bundle
 creation, and transfer archive creation in one local command for the external
 GPU operator. It requires ffmpeg and does not run GVHMR locally.
+`neodojo real-conversion probe-gpu-execution` and `make gpu-execution-probe`
+write `outputs/gvhmr-gpu-execution-probe/manifest.json`, a
+`neodojo.gvhmr_gpu_execution_probe.v1` manifest that records local CUDA command
+presence, Docker GPU runtime visibility, provider CLI presence, and
+provider-related environment variable names without recording secret values or
+running GVHMR. It is included in `make verify`.
 `neodojo real-conversion package-gpu-input` and `make gpu-input-bundle
 GPU_HANDOFF=... GPU_INPUT_INCLUDE_MEDIA=1` create an ignored copyable GPU input
 bundle with `RUN_ON_GPU.md`, handoff metadata, `run_gvhmr_neodojo.sh`, exporter

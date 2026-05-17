@@ -40,6 +40,7 @@ from neodojo.real_conversion import (
     package_gvhmr_gpu_handoff,
     package_gvhmr_gpu_input_archive,
     package_gvhmr_gpu_input_bundle,
+    probe_gpu_execution_environment,
     validate_gvhmr_source,
     write_real_conversion_prep,
 )
@@ -2221,6 +2222,42 @@ class DemoHtmlTests(unittest.TestCase):
 
         self.assertEqual(result.status, "already_neodojo_export")
         self.assertEqual(manifest["status"], "already_neodojo_export")
+
+    def test_gpu_execution_probe_reports_external_blocker_without_runtime(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            result = probe_gpu_execution_environment(
+                root / "probe",
+                env={},
+                command_lookup=lambda _command: None,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "external_gpu_artifact_missing")
+        self.assertEqual(manifest["schema"], "neodojo.gvhmr_gpu_execution_probe.v1")
+        self.assertTrue(manifest["safe_for_git"])
+        self.assertFalse(manifest["secret_values_recorded"])
+        self.assertTrue(manifest["classification"]["blocked_locally"])
+        self.assertEqual(manifest["provider_candidates"], [])
+        self.assertFalse(manifest["local_cuda"]["available"])
+
+    def test_gpu_execution_probe_reports_provider_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            result = probe_gpu_execution_environment(
+                root / "probe",
+                env={"MODAL_TOKEN_ID": "redacted"},
+                command_lookup=lambda command: "/usr/local/bin/modal" if command == "modal" else None,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "provider_candidate_available")
+        self.assertFalse(manifest["classification"]["blocked_locally"])
+        self.assertEqual(manifest["provider_candidates"], ["modal"])
+        self.assertEqual(manifest["providers"]["modal"]["env_keys_present"], ["MODAL_TOKEN_ID"])
+        self.assertEqual(manifest["providers"]["modal"]["cli_paths"]["modal"], "/usr/local/bin/modal")
 
     def test_gvhmr_source_validation_writes_validated_export(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

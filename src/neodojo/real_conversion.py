@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import csv
 import json
+import os
+import platform
 import shutil
 import subprocess
 import tarfile
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Mapping
 
 from .contracts import local_file_metadata, require_schema, sha256_file
 from .motion_contract import (
@@ -26,6 +28,7 @@ GVHMR_GPU_HANDOFF_SCHEMA = "neodojo.gvhmr_gpu_handoff.v1"
 GVHMR_GPU_INPUT_BUNDLE_SCHEMA = "neodojo.gvhmr_gpu_input_bundle.v1"
 GVHMR_GPU_INPUT_ARCHIVE_SCHEMA = "neodojo.gvhmr_gpu_input_archive.v1"
 GVHMR_RESULT_INSPECTION_SCHEMA = "neodojo.gvhmr_result_inspection.v1"
+GVHMR_GPU_EXECUTION_PROBE_SCHEMA = "neodojo.gvhmr_gpu_execution_probe.v1"
 DEFAULT_SOURCE_INDEX = Path("video/original_videos.csv")
 DEFAULT_SOURCE_ID = "03-006"
 
@@ -85,8 +88,154 @@ class GvhmrResultInspectionWriteResult:
     status: str
 
 
+@dataclass(frozen=True)
+class GvhmrGpuExecutionProbeWriteResult:
+    manifest_path: Path
+    status: str
+
+
 def _as_posix(path: Path) -> str:
     return str(path).replace("\\", "/")
+
+
+_GPU_PROVIDER_ENV_PREFIXES: dict[str, tuple[str, ...]] = {
+    "modal": ("MODAL_",),
+    "runpod": ("RUNPOD",),
+    "huggingface": ("HF_", "HUGGINGFACE"),
+    "aws": ("AWS_",),
+    "gcp": ("GCP", "GOOGLE"),
+    "replicate": ("REPLICATE",),
+    "vast": ("VAST",),
+    "kaggle": ("KAGGLE",),
+}
+
+_GPU_PROVIDER_CLIS: dict[str, tuple[str, ...]] = {
+    "modal": ("modal",),
+    "runpod": ("runpodctl",),
+    "huggingface": ("huggingface-cli",),
+    "aws": ("aws",),
+    "gcp": ("gcloud",),
+    "replicate": ("replicate",),
+    "vast": ("vastai",),
+    "kaggle": ("kaggle",),
+}
+
+
+def _env_keys_for_prefixes(env: Mapping[str, str], prefixes: tuple[str, ...]) -> list[str]:
+    return sorted(key for key in env if any(key.startswith(prefix) for prefix in prefixes))
+
+
+def _command_paths(
+    command_lookup: Callable[[str], str | None],
+    commands: tuple[str, ...],
+) -> dict[str, str | None]:
+    return {command: command_lookup(command) for command in commands}
+
+
+def _probe_docker_gpu_runtime(docker_path: str | None) -> dict[str, Any]:
+    if docker_path is None:
+        return {"cli_found": False, "gpu_runtime_detected": False, "runtimes": None, "error": None}
+    try:
+        completed = subprocess.run(
+            [docker_path, "info", "--format", "{{json .Runtimes}}"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"cli_found": True, "gpu_runtime_detected": False, "runtimes": None, "error": str(exc)}
+    output = completed.stdout.strip()
+    runtimes = None
+    if output and output != "null":
+        try:
+            runtimes = json.loads(output)
+        except json.JSONDecodeError:
+            runtimes = output
+    gpu_runtime_detected = False
+    if isinstance(runtimes, dict):
+        gpu_runtime_detected = "nvidia" in runtimes
+    return {
+        "cli_found": True,
+        "gpu_runtime_detected": gpu_runtime_detected,
+        "runtimes": runtimes,
+        "error": completed.stderr.strip() or None if completed.returncode else None,
+    }
+
+
+def probe_gpu_execution_environment(
+    out_dir: Path,
+    *,
+    env: Mapping[str, str] | None = None,
+    command_lookup: Callable[[str], str | None] | None = None,
+) -> GvhmrGpuExecutionProbeWriteResult:
+    """Write a safe local/provider GPU execution readiness probe.
+
+    The manifest records variable names and command presence only. It must not
+    expose credential values or attempt to run GVHMR.
+    """
+
+    validate_output_dir(out_dir)
+    current_env = os.environ if env is None else env
+    lookup = shutil.which if command_lookup is None else command_lookup
+    nvidia_smi = lookup("nvidia-smi")
+    docker_path = lookup("docker")
+    providers: dict[str, Any] = {}
+    for provider, prefixes in _GPU_PROVIDER_ENV_PREFIXES.items():
+        command_paths = _command_paths(lookup, _GPU_PROVIDER_CLIS[provider])
+        env_keys = _env_keys_for_prefixes(current_env, prefixes)
+        providers[provider] = {
+            "env_keys_present": env_keys,
+            "cli_paths": command_paths,
+            "configured": bool(env_keys) and any(command_paths.values()),
+        }
+
+    local_cuda_available = nvidia_smi is not None
+    provider_candidates = [name for name, data in providers.items() if data["configured"]]
+    docker_probe = _probe_docker_gpu_runtime(docker_path)
+    docker_gpu_runtime = bool(docker_probe["gpu_runtime_detected"])
+    if local_cuda_available:
+        status = "local_cuda_available"
+    elif provider_candidates:
+        status = "provider_candidate_available"
+    elif docker_gpu_runtime:
+        status = "docker_gpu_runtime_available"
+    else:
+        status = "external_gpu_artifact_missing"
+
+    manifest_path = out_dir / "manifest.json"
+    manifest = {
+        "schema": GVHMR_GPU_EXECUTION_PROBE_SCHEMA,
+        "status": status,
+        "safe_for_git": True,
+        "secret_values_recorded": False,
+        "platform": {
+            "system": platform.system(),
+            "machine": platform.machine(),
+            "platform": platform.platform(),
+        },
+        "local_cuda": {
+            "nvidia_smi_path": nvidia_smi,
+            "available": local_cuda_available,
+        },
+        "docker": docker_probe,
+        "providers": providers,
+        "provider_candidates": provider_candidates,
+        "classification": {
+            "blocked_locally": status == "external_gpu_artifact_missing",
+            "reason": (
+                "No local CUDA runtime, Docker GPU runtime, or configured GPU provider was detected."
+                if status == "external_gpu_artifact_missing"
+                else "A possible GPU execution route is visible; validate it before running GVHMR."
+            ),
+            "next_action": (
+                "Copy the ignored GPU input archive to a GPU-capable machine or configure a provider "
+                "before running GVHMR, then return a neodojo.gvhmr_smplx_joints.v1 export."
+            ),
+        },
+    }
+    _write_json(manifest_path, manifest)
+    return GvhmrGpuExecutionProbeWriteResult(manifest_path=manifest_path, status=status)
 
 
 def _source_id(row: dict[str, str]) -> str:

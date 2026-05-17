@@ -165,6 +165,7 @@ make gpu-input-bundle GPU_HANDOFF=outputs/gvhmr-gpu-handoff GPU_INPUT_INCLUDE_ME
 make gpu-input-bundle-smoke
 make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
 make gpu-input-archive-smoke
+make gpu-execution-probe
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
@@ -195,6 +196,7 @@ PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outpu
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff --source-materialization outputs/real-conversion-source/source-materialization.json --out outputs/gvhmr-gpu-handoff
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-input --gpu-handoff outputs/gvhmr-gpu-handoff --include-media --out outputs/gvhmr-gpu-input
 PYTHONPATH=src python -m neodojo real-conversion archive-gpu-input --gpu-input outputs/gvhmr-gpu-input --out outputs/gvhmr-gpu-input-archive
+PYTHONPATH=src python -m neodojo real-conversion probe-gpu-execution --out outputs/gvhmr-gpu-execution-probe
 PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result --source outputs/real-conversion-gate/hmr4d_results.pt --out outputs/gvhmr-result-inspection
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
 PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
@@ -348,6 +350,10 @@ archive-gpu-input` 和 `make gpu-input-archive GPU_INPUT=...` 会把这个目录
 transfer package 包含 GPU operator 需要的 runner script、exporter、template、
 runbook、manifests 和 source metadata。持久化的外部 GPU operator checklist 在
 [`docs/runbooks/gvhmr-external-gpu.md`](docs/runbooks/gvhmr-external-gpu.md)。
+`neodojo real-conversion probe-gpu-execution` 和 `make gpu-execution-probe`
+会写出安全的本地/provider readiness manifest，只记录命令是否存在和环境变量名，不记录
+secret value，也不会运行 GVHMR；它已接入 `make verify`，用于让 blocker
+classification 可复现。
 `neodojo real-conversion inspect-gvhmr-result` 和
 `make gvhmr-inspect GVHMR_RESULT=...` 会在 GVHMR/GPU 环境安装了 optional `torch`
 时检查返回的 `hmr4d_results.pt`，或者在默认本地环境检查 JSON summary。inspection

@@ -1,6 +1,6 @@
 # MVP Real Conversion Gate Plan
 
-Status: LOCAL PREP, SOURCE MATERIALIZATION, GPU HANDOFF, GPU INPUT BUNDLE, GPU RUNNER, TRANSFER ARCHIVE, EXPORT HELPER, RESULT INSPECTION, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
+Status: LOCAL PREP, SOURCE MATERIALIZATION, GPU HANDOFF, GPU INPUT BUNDLE, GPU RUNNER, TRANSFER ARCHIVE, GPU EXECUTION PROBE, EXPORT HELPER, RESULT INSPECTION, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
 
 ## Goal
 
@@ -255,6 +255,11 @@ Inspect the returned GVHMR result structure before writing the final neodojo
 export:
 
 ```bash
+PYTHONPATH=src python -m neodojo real-conversion probe-gpu-execution \
+  --out outputs/gvhmr-gpu-execution-probe
+
+make gpu-execution-probe
+
 PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result \
   --source outputs/real-conversion-gate/hmr4d_results.pt \
   --out outputs/gvhmr-result-inspection
@@ -263,8 +268,11 @@ make gvhmr-inspect \
   GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 ```
 
-Native `.pt` inspection requires `torch` and should normally run in the
-GVHMR/GPU environment. The command can inspect JSON summaries or existing
+The GPU execution probe writes a safe readiness manifest with local CUDA,
+Docker GPU runtime, provider CLI, and provider environment-variable-name
+evidence only; it does not record secret values or run GVHMR. Native `.pt`
+inspection requires `torch` and should normally run in the GVHMR/GPU
+environment. The command can inspect JSON summaries or existing
 `neodojo.gvhmr_smplx_joints.v1` exports in the default local environment. It
 does not convert raw `.pt` results locally.
 After the GPU run returns a `neodojo.gvhmr_smplx_joints.v1` export with
@@ -334,6 +342,9 @@ variables, when an external GMR/G1 visual artifact is available.
 - [x] Add a local `real-conversion import-demo` / `make demo-real` wrapper that
   validates the external export, imports it, and regenerates the demo/capture
   lane after the GPU artifact exists.
+- [x] Add a safe `real-conversion probe-gpu-execution` / `make
+  gpu-execution-probe` command that records local CUDA/provider readiness
+  without running GVHMR or exposing secret values.
 - [ ] Run GVHMR on a GPU-capable environment.
 - [ ] Export the SMPL-X result directory with enough metadata for reproducibility.
 - [ ] Convert or export the GVHMR result into
@@ -356,9 +367,9 @@ variables, when an external GMR/G1 visual artifact is available.
 
 The local, non-GPU side of this gate is complete through prep,
 source-materialization, GPU handoff packaging, GPU runner packaging, transfer
-archive packaging, returned-result inspection, GPU-side export-helper packaging,
-returned-export validation, motion import, and `import-demo`/`make demo-real`
-demo regeneration.
+archive packaging, GPU execution readiness probing, returned-result inspection,
+GPU-side export-helper packaging, returned-export validation, motion import,
+and `import-demo`/`make demo-real` demo regeneration.
 A local ignored Bilibili Baduanjin source candidate has been materialized as a
 replacement-source GPU input handoff, but rights remain unconfirmed and no real
 GVHMR export has been returned. The remaining blocker is external to this macOS
@@ -380,7 +391,7 @@ CPU workspace:
 - not currently implicated: local schema, validation, import, playback,
   public-demo, Viser preview, or capture-bundle contracts
 
-Latest local execution probe:
+Latest local execution probe, now reproducible with `make gpu-execution-probe`:
 
 - no `nvidia-smi` or CUDA runtime is visible on this macOS ARM workspace
 - no Modal, RunPod, Hugging Face, AWS, GCP, Replicate, or similar provider

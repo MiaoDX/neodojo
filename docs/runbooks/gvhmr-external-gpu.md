@@ -47,6 +47,16 @@ For another local source, regenerate the handoff:
 make real-gpu-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 ```
 
+To record whether this local workspace has any configured GPU execution route:
+
+```bash
+make gpu-execution-probe
+python -m json.tool outputs/gvhmr-gpu-execution-probe/manifest.json
+```
+
+This probe records command presence and environment-variable names only. It
+does not record secret values and does not run GVHMR.
+
 The expanded form is:
 
 ```bash

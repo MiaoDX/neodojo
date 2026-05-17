@@ -28,6 +28,7 @@ from .real_conversion import (
     package_gvhmr_gpu_handoff,
     package_gvhmr_gpu_input_archive,
     package_gvhmr_gpu_input_bundle,
+    probe_gpu_execution_environment,
     validate_gvhmr_source,
     write_real_conversion_prep,
 )
@@ -764,6 +765,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/gvhmr-gpu-input-archive"),
         help="output directory for the transfer archive and archive manifest",
     )
+    real_gpu_probe = real_subparsers.add_parser(
+        "probe-gpu-execution",
+        help="write a safe local/provider GPU execution readiness probe without running GVHMR",
+    )
+    real_gpu_probe.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/gvhmr-gpu-execution-probe"),
+        help="output directory for the GPU execution probe manifest",
+    )
     real_inspect_gvhmr = real_subparsers.add_parser(
         "inspect-gvhmr-result",
         help="inspect a returned GVHMR hmr4d_results.pt or JSON summary for export readiness",
@@ -1133,6 +1144,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"status {result.status}")
             for path in result.checked_paths:
                 print(f"checked {path}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "probe-gpu-execution":
+            result = probe_gpu_execution_environment(args.out)
+            print(f"wrote {result.manifest_path}")
+            print(f"status {result.status}")
             return 0
 
         if args.command == "real-conversion" and args.real_command == "package-gpu-handoff":

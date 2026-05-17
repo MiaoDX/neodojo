@@ -1,4 +1,4 @@
-.PHONY: all verify lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gvhmr-inspect demo-real smoke-public
+.PHONY: all verify lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-inspect demo-real smoke-public
 
 PYTHON ?= python3
 REAL_SOURCE_ID ?= 03-006
@@ -12,6 +12,7 @@ GPU_INPUT_OUT ?= outputs/gvhmr-gpu-input
 GPU_INPUT_INCLUDE_MEDIA ?= 0
 GPU_INPUT_ARCHIVE_OUT ?= outputs/gvhmr-gpu-input-archive
 GPU_INPUT_ARCHIVE_NAME ?= neodojo-gvhmr-gpu-input.tar.gz
+GPU_EXECUTION_PROBE_OUT ?= outputs/gvhmr-gpu-execution-probe
 GVHMR_INSPECT_OUT ?= outputs/gvhmr-result-inspection
 REAL_DEMO_OUT ?= outputs/real-demo
 REAL_DEMO_ARGS = --source-materialization "$(SOURCE_MATERIALIZATION)" --gvhmr-json "$(GVHMR_JSON)" --out "$(REAL_DEMO_OUT)"
@@ -59,7 +60,7 @@ endif
 
 all: verify
 
-verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke gpu-input-archive-smoke
+verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke gpu-input-archive-smoke gpu-execution-probe
 
 lint:
 	PYTHONPATH=src $(PYTHON) -m compileall -q src tests
@@ -144,6 +145,10 @@ gpu-input-archive-smoke: gpu-input-bundle-smoke
 	test -f outputs/gvhmr-gpu-input-archive-smoke/manifest.json
 	test -f outputs/gvhmr-gpu-input-archive-smoke/neodojo-gvhmr-gpu-input.tar.gz
 	$(PYTHON) -m tarfile -l outputs/gvhmr-gpu-input-archive-smoke/neodojo-gvhmr-gpu-input.tar.gz
+
+gpu-execution-probe:
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion probe-gpu-execution --out "$(GPU_EXECUTION_PROBE_OUT)"
+	test -f "$(GPU_EXECUTION_PROBE_OUT)/manifest.json"
 
 gvhmr-inspect:
 	@test -n "$(GVHMR_RESULT)" || (echo "GVHMR_RESULT=path/to/hmr4d_results.pt is required" && exit 2)
