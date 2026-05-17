@@ -1,6 +1,6 @@
 # MVP Source Media Materialization Plan
 
-Status: IMPLEMENTED LOCAL HANDOFF
+Status: IMPLEMENTED LOCAL HANDOFF AND GPU INPUT BUNDLE
 
 ## Goal
 
