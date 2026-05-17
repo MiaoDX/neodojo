@@ -129,8 +129,9 @@ Viser (web 端三视角同步 + 关节轨迹 polyline + 时间轴)
 一个很小的 Python package、本地 SMPL-X 与 G1 fixture artifact 命令、教学 playback
 HTML 命令、规范化 imported-GMR G1 track 边界、静态 HTML demo 生成器，以及基于
 model descriptor 与 visual track 的本地 G1 SVG/HTML render evidence，以及最小
-lint/build 命令。但还没有提交到仓库的 GVHMR/GMR/仿真器运行时 pipeline 或
-MuJoCo/Genesis 真实 mesh 渲染。
+lint/build 命令。它也可以为后续 GPU GVHMR run 写出 dry-run 或 ffmpeg-backed
+的本地 source-video handoff。但还没有提交到仓库的 GVHMR/GMR/仿真器运行时
+pipeline 或 MuJoCo/Genesis 真实 mesh 渲染。
 
 现在可以运行：
 
@@ -151,6 +152,7 @@ PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
+PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 make demo-html
 ```
 
@@ -200,7 +202,11 @@ lane，上传 artifact，并在 repo 启用 Pages 后发布到 GitHub Pages。
 `neodojo real-conversion prepare` 会为后续 GPU gate 写出 source metadata、trim
 metadata 和下一步命令提示。它不会下载源视频，也不会运行 GVHMR。如果传入
 `--local-video`，它会记录 checksum 数据和可选的 ffprobe duration、resolution、codec、
-frame-rate metadata。
+frame-rate metadata。`neodojo real-conversion materialize-source` 会读取这个 prep
+manifest 与本地视频，写出 source-materialization manifest。传入 `--dry-run` 时，
+它只记录准确的 ffmpeg trim 与 reference-frame extraction 命令，不处理媒体；不传
+`--dry-run` 时，它需要 ffmpeg，并把 ignored trimmed-video 与 reference-frame
+artifacts 写给后续 GPU GVHMR input。
 
 `make demo-html` 会写出 `outputs/html-demo/index.html`，这是一个由本地
 motion/track manifest contract 支撑的自包含合成 fixture demo，用来验证目标教学
@@ -227,6 +233,7 @@ G1 retargeting 已经完成。
 - [x] 最小 `make lint` 与 `make build` 命令面
 - [x] 本地一条命令 `make verify` 跑完 lint、tests、build 和 public demo generation
 - [x] 本地 real-conversion prep manifest，默认 source 为 `03-006`
+- [x] 面向用户本地视频的 real-conversion source materialization handoff
 - [ ] 基于用户本地 URDF/MJCF 与 meshes 的 MuJoCo/Genesis 真实 Unitree G1 mesh 渲染
 - [ ] roboharness 风格的多视角离屏录制集成
 - [ ] SMPL-X 与 Unitree G1 双轨同屏 Viser UI

@@ -23,6 +23,9 @@ copying media into the repo or requiring ffprobe in CI.
   defines the source-media contract and local-only media policy.
 - [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) owns the later GPU
   source clip path and trim metadata.
+- [mvp-source-media-materialization.md](mvp-source-media-materialization.md)
+  consumes the validated local source path when a real trim/frame handoff is
+  needed.
 
 ## Inputs
 

@@ -161,7 +161,8 @@ and next safe task. There is now a small checked-in Python package, local
 SMPL-X and G1 fixture artifact commands, a normalized imported-GMR G1 track
 boundary, a teaching-playback HTML command, a static HTML demo generator, local
 SVG/HTML G1 render evidence from a model descriptor plus visual track, and
-minimal lint/build commands. There is still no checked-in
+minimal lint/build commands. It can also write a dry-run or ffmpeg-backed local
+source-video handoff for a later GPU GVHMR run. There is still no checked-in
 GVHMR/GMR/simulator runtime pipeline or MuJoCo/Genesis real mesh rendering.
 
 What can be run now:
@@ -183,6 +184,7 @@ PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
+PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 make demo-html
 ```
 
@@ -238,6 +240,11 @@ writes a wheel under ignored `outputs/dist/`.
 next-command hints for the later GPU gate. It does not download the source
 video or run GVHMR. When `--local-video` is supplied, it records checksum data
 and optional ffprobe duration, resolution, codec, and frame-rate metadata.
+`neodojo real-conversion materialize-source` consumes that prep manifest plus a
+local video and writes a source-materialization manifest. With `--dry-run`, it
+records exact ffmpeg trim and reference-frame extraction commands without
+processing media. Without `--dry-run`, it requires ffmpeg and writes ignored
+trimmed-video and reference-frame artifacts for the later GPU GVHMR input.
 
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local
@@ -270,6 +277,8 @@ In progress:
 - [x] One-command local `make verify` flow for lint, tests, build, and public
       demo generation
 - [x] Local real-conversion prep manifest for source `03-006`
+- [x] Local real-conversion source materialization handoff for a user-supplied
+      video
 - [ ] MuJoCo/Genesis real Unitree G1 mesh rendering from user-supplied URDF/MJCF
       and meshes
 - [ ] roboharness-style multi-camera offscreen capture integration

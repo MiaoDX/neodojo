@@ -15,7 +15,12 @@ from .g1_visual import (
 from .g1_render import write_g1_render
 from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
 from .public_demo import smoke_check_public_demo, write_public_demo
-from .real_conversion import DEFAULT_SOURCE_ID, DEFAULT_SOURCE_INDEX, write_real_conversion_prep
+from .real_conversion import (
+    DEFAULT_SOURCE_ID,
+    DEFAULT_SOURCE_INDEX,
+    materialize_real_conversion_source,
+    write_real_conversion_prep,
+)
 from .teaching_playback import write_teaching_playback_demo
 
 
@@ -331,6 +336,38 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/real-conversion-gate"),
         help="output directory for the real conversion prep manifest",
     )
+    real_materialize = real_subparsers.add_parser(
+        "materialize-source",
+        help="trim a local source clip and extract reference frames for a later GPU GVHMR run",
+    )
+    real_materialize.add_argument(
+        "--prep",
+        type=Path,
+        default=Path("outputs/real-conversion-gate/real-conversion-prep.json"),
+        help="real-conversion prep manifest path or directory",
+    )
+    real_materialize.add_argument(
+        "--local-video",
+        type=Path,
+        help="local/user-supplied source clip path; overrides the prep manifest local file",
+    )
+    real_materialize.add_argument(
+        "--frame-rate",
+        type=float,
+        default=1.0,
+        help="reference frame extraction rate in frames per second",
+    )
+    real_materialize.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="write the handoff manifest and ffmpeg commands without processing media",
+    )
+    real_materialize.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/real-conversion-source"),
+        help="output directory for trimmed source and frame-reference artifacts",
+    )
 
     return parser
 
@@ -458,6 +495,19 @@ def main(argv: Sequence[str] | None = None) -> int:
                 rights_notes=args.rights_notes,
             )
             print(f"wrote {result.manifest_path}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "materialize-source":
+            result = materialize_real_conversion_source(
+                args.out,
+                prep_manifest=args.prep,
+                local_video=args.local_video,
+                frame_rate=args.frame_rate,
+                dry_run=args.dry_run,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"prepared {result.trimmed_video_path}")
+            print(f"prepared {result.frames_dir}")
             return 0
     except ValueError as exc:
         parser.error(str(exc))

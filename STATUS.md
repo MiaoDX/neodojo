@@ -8,7 +8,9 @@ fixture-backed and external-JSON `motion-record` paths, `robot-model`,
 `demo play`, `demo export-rerun`, and `real-conversion prepare` commands, a
 `make demo-html` command that writes a self-contained synthetic web demo,
 minimal `make lint` and `make build` commands, and a `make demo-public` command
-plus `make verify` and GitHub Actions workflow for the fixture public-demo artifact. There is
+plus `make verify` and GitHub Actions workflow for the fixture public-demo
+artifact. `real-conversion materialize-source` can also prepare a dry-run or
+ffmpeg-backed local source clip handoff for a later GPU GVHMR run. There is
 still no checked-in GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real
 mesh rendering, real generated motion artifact, or UI server.
 
@@ -77,6 +79,10 @@ mesh rendering, real generated motion artifact, or UI server.
   `outputs/real-conversion-gate/`, selecting source `03-006` metadata and a
   short trim window for a later GPU run. When `--local-video` is supplied, the
   source-media contract records checksum and optional ffprobe metadata.
+- Source materialization handoff generated under
+  `outputs/real-conversion-source/` when a local video is supplied, writing
+  dry-run ffmpeg commands or ignored trimmed clip/reference-frame artifacts for
+  the later GPU run.
 
 ## Blockers And Constraints
 
@@ -114,6 +120,7 @@ PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
+PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 make demo-html
 ```
 
@@ -154,7 +161,12 @@ not qigong correctness.
 `neodojo real-conversion prepare` writes ignored source/trim metadata for the
 later GPU run and does not download video or execute GVHMR. When a local video
 is supplied, it records checksum data and optional ffprobe duration,
-resolution, codec, and frame-rate metadata.
+resolution, codec, and frame-rate metadata. `neodojo real-conversion
+materialize-source` consumes that prep manifest and a local video to write a
+source-materialization manifest. With `--dry-run`, it records the ffmpeg trim
+and reference-frame extraction commands without processing media. Without
+`--dry-run`, it requires ffmpeg and writes ignored trimmed-video and frame
+artifacts for the later GPU GVHMR input handoff.
 
 ## Remaining Non-GPU Gaps
 
@@ -167,8 +179,8 @@ resolution, codec, and frame-rate metadata.
 - True Rerun SDK `.rrd` export and verification of the live GitHub Pages URL.
 - Feedback beyond the first deterministic opening-form detector: more posture
   terms, multi-keyframe detection, and routine-level review.
-- Source media handling beyond metadata probing: clip trimming, frame
-  extraction, and validating the actual trimmed video against GVHMR.
+- Validation that an imported real GVHMR artifact was produced from the exact
+  materialized source clip and trim window.
 - Broader static analysis, type checking, coverage, and release packaging
   beyond the minimal syntax-lint and wheel-build commands.
 

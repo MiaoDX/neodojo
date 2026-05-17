@@ -23,7 +23,11 @@ from neodojo.motion_contract import (
     write_gvhmr_json_motion_contract,
 )
 from neodojo.public_demo import build_scene_timeline, smoke_check_public_demo, write_public_demo
-from neodojo.real_conversion import _parse_ffprobe_payload, write_real_conversion_prep
+from neodojo.real_conversion import (
+    _parse_ffprobe_payload,
+    materialize_real_conversion_source,
+    write_real_conversion_prep,
+)
 from neodojo.teaching_playback import write_teaching_playback_demo
 
 
@@ -668,6 +672,7 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["trim"]["duration_seconds"], 7.5)
         self.assertFalse(manifest["source_media"]["validation"]["local_file_validated"])
         self.assertTrue(manifest["gpu_run"]["required"])
+        self.assertIn("materialize-source", manifest["next_commands"]["materialize_source"])
         self.assertIn("--from-gvhmr-json", manifest["next_commands"]["import_motion_record"])
 
     def test_real_conversion_prep_records_local_video_checksum(self) -> None:
@@ -732,6 +737,48 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(parsed["video_stream"]["width"], 1280)
         self.assertEqual(parsed["video_stream"]["height"], 720)
         self.assertAlmostEqual(parsed["video_stream"]["avg_frame_rate"], 29.97003)
+
+    def test_real_conversion_source_materialization_dry_run_writes_handoff(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source_index = root / "sources.csv"
+            source_index.write_text(
+                "\n".join(
+                    [
+                        "category_order,category_chinese,category_slug,item_order,article_title_chinese,title_english,selected_quality,available_qualities,source_size_bytes,source_size_mib,width,height,resolution,duration_seconds,duration_minutes,bit_rate_kbps,codec,article_url,source_mp4_url,recommended_output_path,probe_error",
+                        "3,八段锦,03_baduanjin,6,5八段锦两手托天理三焦,Two Hands Hold Up the Heavens,SD,\"LD,SD\",45028780,42.94,1280,720,1280x720,220.843,3.68,1631.2,h264,https://example.invalid/article,https://example.invalid/source.mp4,video/03_baduanjin/006_two-hands-hold-up-the-heavens.mp4,",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            local_video = root / "source.mp4"
+            local_video.write_bytes(b"fixture source video bytes")
+            prep = write_real_conversion_prep(
+                root / "prep",
+                source_index=source_index,
+                source_id="03-006",
+                local_video=local_video,
+                start_seconds=1.5,
+                end_seconds=9.0,
+            )
+
+            result = materialize_real_conversion_source(
+                root / "source-materialized",
+                prep_manifest=prep.manifest_path,
+                frame_rate=2.0,
+                dry_run=True,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(manifest["schema"], "neodojo.real_conversion_source_materialization.v1")
+        self.assertEqual(manifest["status"], "dry_run")
+        self.assertFalse(manifest["validation"]["gvhmr_input_ready"])
+        self.assertEqual(manifest["source_prep"]["source_id"], "03-006")
+        self.assertEqual(manifest["trim"]["duration_seconds"], 7.5)
+        self.assertEqual(manifest["outputs"]["extracted_frame_count"], 0)
+        self.assertEqual(manifest["ffmpeg"]["commands"][0]["kind"], "trim_clip")
+        self.assertIn("trimmed-clip.mp4", manifest["gpu_handoff"]["trimmed_video_argument"])
 
     def test_real_conversion_prep_rejects_unknown_source_id(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

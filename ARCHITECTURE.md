@@ -6,9 +6,9 @@ simulated teaching playback that can be inspected from multiple views.
 The architecture is currently a target design, not an implemented runtime. The
 repo contains fixture-first motion contracts, G1 visual-track manifests,
 an imported-GMR G1 track boundary, local G1 SVG/HTML render evidence, teaching
-playback HTML, public-demo artifacts, and real-conversion prep. It does not
-contain the GVHMR/GMR/simulator runtime pipeline or MuJoCo/Genesis real mesh
-rendering.
+playback HTML, public-demo artifacts, real-conversion prep, and local
+source-media materialization handoff. It does not contain the
+GVHMR/GMR/simulator runtime pipeline or MuJoCo/Genesis real mesh rendering.
 
 ## MVP Data Flow
 
@@ -26,7 +26,8 @@ official/user-supplied source video
 ## Subsystems
 
 Source video intake owns local video selection, licensing boundaries, clip
-metadata, and routine segmentation. The repo should not commit source video.
+metadata, trim handoff, reference-frame extraction, and routine segmentation.
+The repo should not commit source video.
 
 Human motion reconstruction owns GVHMR execution and normalization into a shared
 SMPL-X motion record. This record is the canonical motion source for teaching

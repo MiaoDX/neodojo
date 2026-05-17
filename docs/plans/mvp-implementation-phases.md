@@ -12,12 +12,13 @@ each slice.
 The current repo is still in bootstrap state. It has a fixture-only HTML demo
 generator, `make test`, `make demo-html`, `make demo-public`, versioned local
 artifact contracts, a normalized imported-GMR G1 track boundary, G1 SVG/HTML
-render evidence, optional source-media probing, a fixture-only static
-public-demo fallback artifact, and a GitHub Actions workflow for the fixture
-public-demo lane. It does not yet have a checked-in GVHMR/GMR/simulator runtime
-pipeline, MuJoCo/Genesis real mesh rendering, Viser UI, true Rerun SDK `.rrd`
-recording, verified live GitHub Pages URL, or broad static-analysis/release
-gates beyond the minimal `make lint` and `make build` surface.
+render evidence, optional source-media probing, local source-media
+materialization handoff, a fixture-only static public-demo fallback artifact,
+and a GitHub Actions workflow for the fixture public-demo lane. It does not yet
+have a checked-in GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real mesh
+rendering, Viser UI, true Rerun SDK `.rrd` recording, verified live GitHub
+Pages URL, or broad static-analysis/release gates beyond the minimal
+`make lint` and `make build` surface.
 
 ## Shared Goal
 
@@ -32,6 +33,7 @@ local/user-supplied source video
   -> imported or fixture Unitree G1 visual track
   -> real Unitree G1 model rendering
   -> hardened artifact contracts
+  -> source clip materialization handoff
   -> Rerun public demo artifact
   -> CI-published fixture demo
   -> multi-view playback or Viser playback
@@ -53,7 +55,8 @@ local/user-supplied source video
 | 9 | [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) | implemented | Add one-command public-demo orchestration and CI artifact/Page publishing for the fixture lane. | A clean checkout can regenerate, validate, visually smoke-test, upload, and publish the non-GPU fixture demo without tracking generated outputs. |
 | 10 | [mvp-lint-build-surface.md](mvp-lint-build-surface.md) | implemented | Add the minimal lint/build command surface and all-in-one local verification target. | `make verify` runs lint, tests, wheel build, and public-demo generation without tracking generated artifacts. |
 | 11 | [mvp-source-media-probing.md](mvp-source-media-probing.md) | implemented metadata probe | Record optional ffprobe metadata for local source videos without copying media. | Source prep records probe success/failure, duration, resolution, codec, and frame-rate metadata when available. |
-| 12 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata; final stop condition still requires a real GVHMR artifact imported through the hardened contracts. |
+| 12 | [mvp-source-media-materialization.md](mvp-source-media-materialization.md) | implemented local handoff | Turn source prep plus a local video into a dry-run or ffmpeg-backed trimmed-clip/reference-frame handoff. | A source-materialization manifest records source validation, commands, generated outputs when available, and the GVHMR input handoff path without committing media. |
+| 13 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep/materialization ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata and source materialization can prepare the trimmed input; final stop condition still requires a real GVHMR artifact imported through the hardened contracts. |
 
 The numbered plans are semantically independent execution slices, not
 necessarily separate GSD phases. The grouping boundary is:
@@ -69,7 +72,8 @@ necessarily separate GSD phases. The grouping boundary is:
 9. developer experience and CI surface
 10. lint/build command surface
 11. source media probing
-12. later real conversion gate
+12. source media materialization
+13. later real conversion gate
 
 The current local-first order intentionally puts real G1 model rendering before
 the GPU conversion gate, so the right-side robot view can become real while the
@@ -101,6 +105,7 @@ Allowed locally:
 - package layout, CLI, config, schemas, manifests, and tests
 - local video path validation, metadata, and frame-range checks
 - optional local source-video ffprobe metadata
+- optional local source-video trim and reference-frame materialization
 - imported GVHMR output validation
 - imported GMR Unitree G1 track validation
 - SMPL-X motion-record normalization
@@ -186,6 +191,8 @@ docs:
   - path: docs/plans/mvp-lint-build-surface.md
     type: SPEC
   - path: docs/plans/mvp-source-media-probing.md
+    type: SPEC
+  - path: docs/plans/mvp-source-media-materialization.md
     type: SPEC
   - path: docs/plans/mvp-real-conversion-gate.md
     type: SPEC

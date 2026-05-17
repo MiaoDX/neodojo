@@ -1,6 +1,6 @@
 # MVP Real Conversion Gate Plan
 
-Status: LOCAL PREP READY; LATER GPU GATE
+Status: LOCAL PREP AND SOURCE MATERIALIZATION READY; LATER GPU GATE
 
 ## Goal
 
@@ -30,6 +30,9 @@ but it is required before calling the MVP an end-to-end neodojo proof.
   artifact enters them.
 - [mvp-source-media-probing.md](mvp-source-media-probing.md) records optional
   local video ffprobe metadata before the GPU run.
+- [mvp-source-media-materialization.md](mvp-source-media-materialization.md)
+  prepares a dry-run or ffmpeg-backed trimmed clip/reference-frame bundle for
+  the GPU run without committing media.
 - [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md)
   and [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) are not required to run
   GVHMR, but they should provide the fixture public-demo lane that the imported
@@ -54,7 +57,8 @@ path is acceptable and preferred.
 
 ## Inputs
 
-- Local source clip path, or a trimmed local clip path.
+- Local source clip path, or a trimmed local clip path from
+  `neodojo real-conversion materialize-source`.
 - Frame range or trim metadata.
 - GVHMR environment details:
   - upstream commit or package version
@@ -72,11 +76,14 @@ path is acceptable and preferred.
 - A local prep manifest from `neodojo real-conversion prepare` or its hardened
   successor that records source metadata, trim metadata, checksums,
   provenance/rights notes, and next commands before the GPU run.
+- A source materialization manifest from
+  `neodojo real-conversion materialize-source` that records the local validated
+  source, trim command, optional generated clip/frames, and GVHMR input handoff.
 - A motion-record import run using
   `neodojo motion-record create --from-gvhmr-json`.
 - A short report stating whether downstream local contracts needed changes.
 
-## Implemented Local Prep
+## Implemented Local Prep And Source Handoff
 
 The local prep command is:
 
@@ -98,7 +105,16 @@ It writes `outputs/real-conversion-gate/real-conversion-prep.json` with:
 - expected GVHMR output/export paths
 - downstream import, G1-track, and playback commands
 
-This command does not download video, run GVHMR, or prove qigong correctness.
+The local source handoff command is:
+
+```bash
+PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
+```
+
+Without `--dry-run`, the same command requires ffmpeg and writes an ignored
+trimmed clip plus reference frames under `outputs/real-conversion-source/`.
+Both commands avoid downloading video, running GVHMR, or proving qigong
+correctness.
 
 ## Execution Tasks
 
@@ -108,6 +124,8 @@ This command does not download video, run GVHMR, or prove qigong correctness.
   window, resolution, and license/rights notes.
 - [x] Record optional local source-video checksum and ffprobe metadata when a
   local file is supplied.
+- [x] Materialize, or dry-run materialize, the trimmed local source clip and
+  reference-frame handoff for the GPU run.
 - [ ] Run GVHMR on a GPU-capable environment.
 - [ ] Export the SMPL-X result directory with enough metadata for reproducibility.
 - [ ] Convert or export the GVHMR result into
