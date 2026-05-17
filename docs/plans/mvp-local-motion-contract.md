@@ -40,7 +40,8 @@ useful while making it look like a future real GVHMR import from the outside.
   data, such as:
 
   ```bash
-  neodojo motion-record create --fixture <fixture.json> --out <motion-dir>
+  PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
+  PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
   ```
 
 - A project-owned SMPL-X motion-record manifest under ignored `outputs/`.
@@ -49,6 +50,19 @@ useful while making it look like a future real GVHMR import from the outside.
 - Validation that SMPL-X is the only allowed scoring source.
 - Focused tests for manifest writing/loading, scoring-source enforcement,
   artifact-policy checks, and current `make demo-html` behavior.
+
+## Implemented Local Path
+
+The command supports two local CPU-side inputs:
+
+- `--fixture synthetic` writes synthetic fixture motion into the canonical
+  motion-record and SMPL-X teaching-track manifests.
+- `--from-gvhmr-json <path>` imports an external GVHMR SMPL-X teaching-joints
+  JSON export into the same manifests.
+
+The JSON import expects precomputed teaching joints, not a raw GVHMR `.pt`
+file. Raw GVHMR execution and raw `.pt` export remain part of the later GPU
+gate.
 
 ## Implementation Tasks
 
@@ -87,6 +101,8 @@ useful while making it look like a future real GVHMR import from the outside.
 - `make demo-html` still writes the self-contained HTML fixture demo.
 - A fixture-based command writes a motion-record manifest and SMPL-X
   teaching-track manifest under ignored `outputs/`.
+- An external GVHMR teaching-joints JSON export can write the same
+  motion-record and SMPL-X teaching-track manifest shape.
 - The generated root manifest marks the artifact as `fixture_only: true` and
   `scoring_source: smplx`.
 - Tests prove that scoring remains attached to SMPL-X.

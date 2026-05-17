@@ -49,12 +49,15 @@ path is acceptable and preferred.
   - command or notebook used
   - hardware/runtime
 - Output artifact directory from GVHMR.
+- Exported `neodojo.gvhmr_smplx_joints.v1` JSON containing precomputed SMPL-X
+  teaching joints for the selected frame range.
 
 ## Outputs
 
 - External GVHMR artifact directory stored outside tracked source files.
 - A small provenance manifest in an ignored output/artifact directory.
-- A motion-record import run using the Phase 1 command.
+- A motion-record import run using
+  `neodojo motion-record create --from-gvhmr-json`.
 - A short report stating whether downstream local contracts needed changes.
 
 ## Execution Tasks
@@ -64,7 +67,11 @@ path is acceptable and preferred.
   range, resolution, and license/rights notes.
 - Run GVHMR on a GPU-capable environment.
 - Export the SMPL-X result directory with enough metadata for reproducibility.
-- Import the exported artifact using `neodojo motion-record create`.
+- Convert or export the GVHMR result into
+  `neodojo.gvhmr_smplx_joints.v1` JSON with the teaching joints required by the
+  local playback contract.
+- Import the exported JSON artifact using
+  `neodojo motion-record create --from-gvhmr-json`.
 - If import fails, classify the failure:
   - contract too narrow
   - missing GVHMR metadata
@@ -78,7 +85,8 @@ path is acceptable and preferred.
 
 - A real GVHMR output directory exists outside git.
 - The provenance manifest records source, command/runtime, and artifact path.
-- The artifact imports through the same motion-record contract as fixtures.
+- The exported JSON artifact imports through the same motion-record contract as
+  fixtures.
 - The imported record reports frame count, fps or timing, joint coverage, and
   SMPL-X provenance.
 - No downstream code needs special real-artifact handling beyond the accepted

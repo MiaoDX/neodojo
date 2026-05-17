@@ -25,6 +25,7 @@
 
 - `make test` runs the focused unit tests for the fixture demo generator, local motion contract, G1 visual-track manifest boundary, and teaching playback manifest path.
 - `PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract` writes fixture-backed SMPL-X motion-record and teaching-track manifests.
+- `PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract` imports an external GVHMR SMPL-X teaching-joints JSON export into the same motion-record contract without running GVHMR locally.
 - `PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual` writes a fixture G1 model descriptor.
 - `PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual` writes a fixture-derived G1 visual-track manifest and comparison report.
 - `PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo` writes a fixture-only teaching playback HTML and manifest from the SMPL-X and G1 manifests.

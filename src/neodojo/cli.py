@@ -6,7 +6,7 @@ from typing import Sequence
 
 from .demo_html import write_demo
 from .g1_visual import build_g1_visual_track, register_g1_model, write_fixture_g1_model_descriptor
-from .motion_contract import write_fixture_motion_contract
+from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
 from .teaching_playback import write_teaching_playback_demo
 
 
@@ -41,13 +41,19 @@ def build_parser() -> argparse.ArgumentParser:
     motion_subparsers = motion_record.add_subparsers(dest="motion_command", required=True)
     motion_create = motion_subparsers.add_parser(
         "create",
-        help="write a fixture-backed SMPL-X motion-record contract",
+        help="write an SMPL-X motion-record contract",
     )
-    motion_create.add_argument(
+    motion_source = motion_create.add_mutually_exclusive_group()
+    motion_source.add_argument(
         "--fixture",
         choices=["synthetic"],
         default="synthetic",
         help="fixture source to import into the local motion-record contract",
+    )
+    motion_source.add_argument(
+        "--from-gvhmr-json",
+        type=Path,
+        help="import an external GVHMR SMPL-X teaching-joints JSON export",
     )
     motion_create.add_argument(
         "--out",
@@ -170,7 +176,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
 
         if args.command == "motion-record" and args.motion_command == "create":
-            result = write_fixture_motion_contract(args.out, frame_count=args.frames)
+            if args.from_gvhmr_json:
+                result = write_gvhmr_json_motion_contract(args.out, args.from_gvhmr_json)
+            else:
+                result = write_fixture_motion_contract(args.out, frame_count=args.frames)
             print(f"wrote {result.motion_record_manifest_path}")
             print(f"wrote {result.smplx_track_manifest_path}")
             return 0

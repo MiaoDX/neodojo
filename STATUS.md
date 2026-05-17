@@ -3,11 +3,11 @@
 neodojo is in bootstrap state with one fixture-only local demo.
 
 There is now a minimal checked-in Python package, a `make test` command,
-fixture-backed `motion-record`, `robot-model`, `tracks`, and `demo play`
-commands, and a `make demo-html` command that writes a self-contained synthetic
-web demo. There is still no checked-in GVHMR/GMR/simulator runtime pipeline,
-install workflow, lint command, build command, CI gate, real generated motion
-artifact, or UI server.
+fixture-backed and external-JSON `motion-record` paths, `robot-model`,
+`tracks`, and `demo play` commands, and a `make demo-html` command that writes
+a self-contained synthetic web demo. There is still no checked-in
+GVHMR/GMR/simulator runtime pipeline, install workflow, lint command, build
+command, CI gate, real generated motion artifact, or UI server.
 
 ## Current Truth
 
@@ -39,6 +39,9 @@ artifact, or UI server.
   retargeting.
 - Fixture-backed SMPL-X motion-record and teaching-track manifests, proving the
   local contract shape that later GVHMR/GMR imports should consume.
+- External GVHMR SMPL-X teaching-joints JSON import into the same motion-record
+  contract. This is an import boundary only, not local GVHMR execution or raw
+  `.pt` parsing.
 - Fixture-backed Unitree G1 model descriptor, derived visual-track manifest, and
   comparison report with `g1_scoring_allowed: false`.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
@@ -67,6 +70,7 @@ artifact, or UI server.
 ```bash
 make test
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
+PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
@@ -76,10 +80,12 @@ make demo-html
 `make test` runs the focused Python unit tests for the fixture demo generator
 and local motion contract. `neodojo motion-record create` writes fixture-backed
 SMPL-X motion-record and teaching-track manifests under the selected ignored
-output directory. `neodojo robot-model register` and `neodojo tracks build`
-write fixture G1 model/visual-track manifests and a comparison report that keeps
-G1 non-scoring. `neodojo demo play` writes `outputs/teaching-demo/index.html`
-and a playback manifest from the SMPL-X and G1 manifests. `make demo-html`
+output directory, or imports an external GVHMR teaching-joints JSON export with
+`--from-gvhmr-json`. `neodojo robot-model register` and `neodojo tracks build`
+write fixture G1 model/visual-track manifests and a comparison report that
+keeps G1 non-scoring. `neodojo demo play` writes
+`outputs/teaching-demo/index.html` and a playback manifest from the SMPL-X and
+G1 manifests. `make demo-html`
 writes `outputs/html-demo/index.html`, `outputs/html-demo/manifest.json`, and
 the local motion/track manifests it consumes. These artifacts use synthetic
 fixture motion only; they validate UI plumbing, trajectory drawing, timeline
@@ -90,8 +96,9 @@ not qigong correctness.
 
 The next MVP capability is `docs/plans/mvp-real-conversion-gate.md`, but it is
 a deliberate GPU/local-dev gate. Do not run GVHMR full-video inference on this
-macOS CPU workspace; use a GPU-capable machine or an imported GVHMR artifact,
-then import it through the same motion-record contract.
+macOS CPU workspace; use a GPU-capable machine to export a GVHMR SMPL-X
+teaching-joints JSON artifact, then import it through
+`neodojo motion-record create --from-gvhmr-json`.
 
 ## Background Evidence
 

@@ -34,6 +34,24 @@ FIXTURE_ROUTINE = "Baduanjin"
 FIXTURE_FORM = "opening-form fixture"
 FIXTURE_FPS = 24
 FIXTURE_JOINT_SET = "neodojo_fixture_v1"
+TEACHING_JOINTS = [
+    "pelvis",
+    "spine",
+    "neck",
+    "head",
+    "left_hip",
+    "left_knee",
+    "left_ankle",
+    "right_hip",
+    "right_knee",
+    "right_ankle",
+    "left_shoulder",
+    "left_elbow",
+    "left_wrist",
+    "right_shoulder",
+    "right_elbow",
+    "right_wrist",
+]
 
 
 def _point(x: float, y: float, z: float) -> list[float]:

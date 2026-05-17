@@ -135,6 +135,7 @@ pipeline 或 CI gate。
 ```bash
 make test
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
+PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
@@ -142,8 +143,10 @@ make demo-html
 ```
 
 `neodojo motion-record create` 会写出 fixture-backed SMPL-X motion-record 和
-teaching-track manifests。这些只是 plumbing artifact，不是真实 GVHMR 输出，也不
-是气功教学证据。
+teaching-track manifests，也可以通过 `--from-gvhmr-json` 导入外部 GVHMR
+SMPL-X teaching-joints JSON export。当前 repo 仍不会在本地运行 GVHMR，也不会直接
+解析 raw GVHMR `.pt` 文件；JSON 路径只是给后续 GPU run 准备的 CPU-side import
+边界。
 
 `neodojo robot-model register` 和 `neodojo tracks build` 可以写出 fixture G1
 model 和 visual-track manifests。它们保留 SMPL-X/G1 职责边界，但还没有加载真实
@@ -165,6 +168,7 @@ G1 retargeting 已经完成。
 - [x] fixture-only web/HTML 教学 demo：同步 SMPL-X/G1 风格播放、轨迹叠加、
       时间轴控制，以及一个基于 SMPL-X 的几何检查
 - [x] 本地 fixture SMPL-X motion-record 和 teaching-track manifests
+- [x] 外部 GVHMR teaching-joints JSON 可导入同一 motion contract
 - [x] 本地 fixture G1 model 和 visual-track manifests，并保持 scoring separation
 - [x] 本地 teaching playback 命令，可同时消费 SMPL-X 与 G1 manifests
 - [ ] roboharness 风格的多视角离屏录制集成

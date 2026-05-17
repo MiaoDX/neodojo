@@ -11,11 +11,13 @@ from .fixtures import (
     FIXTURE_FPS,
     FIXTURE_JOINT_SET,
     FIXTURE_ROUTINE,
+    TEACHING_JOINTS,
     build_smplx_fixture_frames,
 )
 
 MOTION_RECORD_SCHEMA = "neodojo.motion_record.v1"
 TRACK_SCHEMA = "neodojo.track.v1"
+GVHMR_JOINT_EXPORT_SCHEMA = "neodojo.gvhmr_smplx_joints.v1"
 
 
 @dataclass(frozen=True)
@@ -72,10 +74,64 @@ def validate_scoring_source(track_manifests: dict[str, dict[str, Any]], scoring_
             raise ValueError("derived visual tracks cannot allow scoring")
 
 
-def write_fixture_motion_contract(out_dir: Path, frame_count: int = 96) -> MotionContractWriteResult:
+def _as_posix(path: Path) -> str:
+    return str(path).replace(os.sep, "/")
+
+
+def _require_text(payload: dict[str, Any], key: str, fallback: str) -> str:
+    value = payload.get(key, fallback)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"GVHMR joint export must contain string {key}")
+    return value
+
+
+def _require_fps(payload: dict[str, Any]) -> int | float:
+    fps = payload.get("fps", FIXTURE_FPS)
+    if isinstance(fps, bool) or not isinstance(fps, (int, float)) or fps <= 0:
+        raise ValueError("GVHMR joint export must contain positive numeric fps")
+    return fps
+
+
+def _normalize_point(value: Any, frame_index: int, joint: str) -> list[float]:
+    if not isinstance(value, list) or len(value) != 3:
+        raise ValueError(f"frame {frame_index} joint {joint} must be a 3D point")
+
+    point = []
+    for component in value:
+        if isinstance(component, bool) or not isinstance(component, (int, float)):
+            raise ValueError(f"frame {frame_index} joint {joint} must contain numeric coordinates")
+        point.append(round(float(component), 4))
+    return point
+
+
+def _normalize_teaching_frames(raw_frames: Any) -> list[dict[str, list[float]]]:
+    if not isinstance(raw_frames, list) or len(raw_frames) < 8:
+        raise ValueError("GVHMR joint export must contain at least 8 frames")
+
+    frames = []
+    for frame_index, raw_frame in enumerate(raw_frames):
+        if not isinstance(raw_frame, dict):
+            raise ValueError(f"frame {frame_index} must be an object")
+        missing = [joint for joint in TEACHING_JOINTS if joint not in raw_frame]
+        if missing:
+            raise ValueError(f"frame {frame_index} is missing teaching joints: {', '.join(missing)}")
+        frames.append({joint: _normalize_point(raw_frame[joint], frame_index, joint) for joint in TEACHING_JOINTS})
+    return frames
+
+
+def _write_motion_contract(
+    out_dir: Path,
+    frames: list[dict[str, list[float]]],
+    *,
+    fixture_only: bool,
+    source_type: str,
+    routine: str,
+    form: str,
+    fps: int | float,
+    provenance: dict[str, Any],
+) -> MotionContractWriteResult:
     validate_output_dir(out_dir)
 
-    frames = build_smplx_fixture_frames(frame_count)
     motion_dir = out_dir / "motion-record"
     track_dir = out_dir / "tracks" / "smplx"
     motion_data_path = motion_dir / "smplx-joints.json"
@@ -96,18 +152,15 @@ def write_fixture_motion_contract(out_dir: Path, frame_count: int = 96) -> Motio
 
     motion_manifest = {
         "schema": MOTION_RECORD_SCHEMA,
-        "fixture_only": True,
-        "source_type": "synthetic_fixture",
-        "routine": FIXTURE_ROUTINE,
-        "form": FIXTURE_FORM,
-        "fps": FIXTURE_FPS,
+        "fixture_only": fixture_only,
+        "source_type": source_type,
+        "routine": routine,
+        "form": form,
+        "fps": fps,
         "frame_count": len(frames),
         "joint_set": FIXTURE_JOINT_SET,
         "scoring_source": "smplx",
-        "provenance": {
-            "generator": "neodojo.fixtures.build_smplx_fixture_frames",
-            "accuracy_role": "plumbing fixture only; not qigong teaching evidence",
-        },
+        "provenance": provenance,
         "data_files": {
             "smplx_frames": _relative_path(motion_data_path, motion_manifest_path.parent),
         },
@@ -115,11 +168,11 @@ def write_fixture_motion_contract(out_dir: Path, frame_count: int = 96) -> Motio
     track_manifest = {
         "schema": TRACK_SCHEMA,
         "track_id": "smplx",
-        "fixture_only": True,
+        "fixture_only": fixture_only,
         "source_motion_record": _relative_path(motion_manifest_path, track_manifest_path.parent),
         "role": "teaching accuracy source",
         "scoring_allowed": True,
-        "fps": FIXTURE_FPS,
+        "fps": fps,
         "frame_count": len(frames),
         "joint_set": FIXTURE_JOINT_SET,
         "data_files": {
@@ -140,6 +193,61 @@ def write_fixture_motion_contract(out_dir: Path, frame_count: int = 96) -> Motio
         motion_record_data_path=motion_data_path,
         smplx_track_manifest_path=track_manifest_path,
         smplx_track_data_path=track_data_path,
+    )
+
+
+def write_fixture_motion_contract(out_dir: Path, frame_count: int = 96) -> MotionContractWriteResult:
+    frames = build_smplx_fixture_frames(frame_count)
+    return _write_motion_contract(
+        out_dir,
+        frames,
+        fixture_only=True,
+        source_type="synthetic_fixture",
+        routine=FIXTURE_ROUTINE,
+        form=FIXTURE_FORM,
+        fps=FIXTURE_FPS,
+        provenance={
+            "generator": "neodojo.fixtures.build_smplx_fixture_frames",
+            "accuracy_role": "plumbing fixture only; not qigong teaching evidence",
+        },
+    )
+
+
+def write_gvhmr_json_motion_contract(out_dir: Path, source_path: Path) -> MotionContractWriteResult:
+    if not source_path.exists():
+        raise ValueError(f"GVHMR joint export does not exist: {source_path}")
+    try:
+        payload = json.loads(source_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"failed to parse GVHMR joint export JSON: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("GVHMR joint export must be a JSON object")
+
+    raw_frames = payload.get("frames", payload.get("smplx_joints"))
+    frames = _normalize_teaching_frames(raw_frames)
+    routine = _require_text(payload, "routine", FIXTURE_ROUTINE)
+    form = _require_text(payload, "form", "imported GVHMR segment")
+    fps = _require_fps(payload)
+    provenance = payload.get("provenance", {})
+    if not isinstance(provenance, dict):
+        raise ValueError("GVHMR joint export provenance must be an object when provided")
+    provenance = {
+        **provenance,
+        "source_schema": payload.get("schema", GVHMR_JOINT_EXPORT_SCHEMA),
+        "source_artifact": _as_posix(source_path),
+        "source_artifact_resolved": _as_posix(source_path.resolve()),
+        "accuracy_role": "imported SMPL-X teaching joints; not a fixture",
+    }
+
+    return _write_motion_contract(
+        out_dir,
+        frames,
+        fixture_only=False,
+        source_type="gvhmr_smplx_joints_json",
+        routine=routine,
+        form=form,
+        fps=fps,
+        provenance=provenance,
     )
 
 

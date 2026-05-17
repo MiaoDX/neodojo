@@ -6,8 +6,14 @@ import unittest
 from pathlib import Path
 
 from neodojo.demo_html import build_fixture, compute_feedback, render_demo_html, write_demo
+from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames
 from neodojo.g1_visual import build_g1_visual_track, register_g1_model, write_fixture_g1_model_descriptor
-from neodojo.motion_contract import validate_output_dir, validate_scoring_source, write_fixture_motion_contract
+from neodojo.motion_contract import (
+    validate_output_dir,
+    validate_scoring_source,
+    write_fixture_motion_contract,
+    write_gvhmr_json_motion_contract,
+)
 from neodojo.teaching_playback import write_teaching_playback_demo
 
 
@@ -78,6 +84,56 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(smplx_track["scoring_allowed"])
         self.assertEqual(smplx_track["data_files"]["frames"], "joints.json")
         self.assertEqual(len(track_data["frames"]), 10)
+
+    def test_gvhmr_json_motion_contract_outputs_non_fixture_manifests(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "gvhmr-smplx-joints.json"
+            source.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gvhmr_smplx_joints.v1",
+                        "routine": "Baduanjin",
+                        "form": "Two Hands Hold Up the Heavens",
+                        "fps": 30,
+                        "frames": build_smplx_fixture_frames(10),
+                        "provenance": {
+                            "gvhmr_results": "hmr4d_results.pt",
+                            "exporter": "test fixture",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = write_gvhmr_json_motion_contract(root / "motion", source)
+            motion_record = json.loads(result.motion_record_manifest_path.read_text(encoding="utf-8"))
+            smplx_track = json.loads(result.smplx_track_manifest_path.read_text(encoding="utf-8"))
+            track_data = json.loads(result.smplx_track_data_path.read_text(encoding="utf-8"))
+
+        self.assertFalse(motion_record["fixture_only"])
+        self.assertEqual(motion_record["source_type"], "gvhmr_smplx_joints_json")
+        self.assertEqual(motion_record["fps"], 30)
+        self.assertEqual(motion_record["provenance"]["gvhmr_results"], "hmr4d_results.pt")
+        self.assertFalse(smplx_track["fixture_only"])
+        self.assertEqual(len(track_data["frames"]), 10)
+
+    def test_gvhmr_json_motion_contract_rejects_missing_teaching_joint(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            frames = build_smplx_fixture_frames(8)
+            del frames[0][TEACHING_JOINTS[0]]
+            source = root / "bad-gvhmr-smplx-joints.json"
+            source.write_text(json.dumps({"frames": frames}), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "missing teaching joints"):
+                write_gvhmr_json_motion_contract(root / "motion", source)
+
+    def test_gvhmr_json_motion_contract_rejects_missing_export_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            with self.assertRaisesRegex(ValueError, "does not exist"):
+                write_gvhmr_json_motion_contract(root / "motion", root / "missing.json")
 
     def test_rejects_non_smplx_scoring_source(self) -> None:
         smplx = {"track_id": "smplx", "scoring_allowed": True}

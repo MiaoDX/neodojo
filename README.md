@@ -167,6 +167,7 @@ What can be run now:
 ```bash
 make test
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
+PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
@@ -174,8 +175,10 @@ make demo-html
 ```
 
 `neodojo motion-record create` writes fixture-backed SMPL-X motion-record and
-teaching-track manifests. These are plumbing artifacts only, not real GVHMR
-outputs or qigong teaching evidence.
+teaching-track manifests, or imports an external GVHMR SMPL-X teaching-joints
+JSON export with `--from-gvhmr-json`. The repo still does not run GVHMR locally
+or parse raw GVHMR `.pt` files; the JSON path is the CPU-side import boundary
+for a later GPU run.
 
 `neodojo robot-model register` and `neodojo tracks build` can write fixture G1
 model and visual-track manifests. These preserve the SMPL-X/G1 responsibility
@@ -200,6 +203,7 @@ In progress:
       playback, trajectory overlays, timeline controls, and one SMPL-X-based
       geometry check
 - [x] Local fixture SMPL-X motion-record and teaching-track manifests
+- [x] External GVHMR teaching-joints JSON import into the same motion contract
 - [x] Local fixture G1 model and visual-track manifests with scoring separation
 - [x] Local teaching playback command that consumes SMPL-X and G1 manifests
 - [ ] roboharness-style multi-camera offscreen capture integration
