@@ -135,6 +135,7 @@ MuJoCo/Genesis 真实 mesh 渲染。
 现在可以运行：
 
 ```bash
+make verify
 make lint
 make test
 make build
@@ -186,6 +187,7 @@ descriptor 不需要这个开关。这是本地 render evidence，不是 MuJoCo/
 `.rrd` 命名 recording artifact。在加入 `rerun-sdk` 之前，这个 `.rrd` 文件是如实
 标注的 JSON fallback artifact，不是真正的 Rerun SDK recording。
 
+`make verify` 会一次运行 lint、tests、wheel build 和 public-demo smoke lane。
 `make demo-public` 会用一个本地命令重新生成 fixture motion contract、detected
 annotations、G1 visual track、G1 render evidence、teaching playback、public-demo
 artifact，并运行 smoke check。`make smoke-public` 会验证现有的
@@ -223,6 +225,7 @@ G1 retargeting 已经完成。
 - [x] 本地一条命令 `make demo-public`，以及用于 fixture public demo 的 GitHub
       Actions artifact/Page workflow
 - [x] 最小 `make lint` 与 `make build` 命令面
+- [x] 本地一条命令 `make verify` 跑完 lint、tests、build 和 public demo generation
 - [x] 本地 real-conversion prep manifest，默认 source 为 `03-006`
 - [ ] 基于用户本地 URDF/MJCF 与 meshes 的 MuJoCo/Genesis 真实 Unitree G1 mesh 渲染
 - [ ] roboharness 风格的多视角离屏录制集成

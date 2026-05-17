@@ -1,6 +1,10 @@
-.PHONY: lint test build demo-html demo-public smoke-public
+.PHONY: all verify lint test build demo-html demo-public smoke-public
 
 PYTHON ?= python3
+
+all: verify
+
+verify: lint test build demo-public
 
 lint:
 	PYTHONPATH=src $(PYTHON) -m compileall -q src tests

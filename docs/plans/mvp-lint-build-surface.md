@@ -13,6 +13,9 @@ make lint
 
 make build
   -> wheel artifact under ignored outputs/dist
+
+make verify
+  -> lint + tests + build + public-demo smoke
 ```
 
 The goal is a reproducible local and CI command surface, not a full static
@@ -34,6 +37,7 @@ analysis or release pipeline.
 
 - `make lint`, using `python -m compileall -q src tests`.
 - `make build`, using `python -m pip wheel . --wheel-dir outputs/dist`.
+- `make verify`, running lint, tests, wheel build, and public-demo generation.
 - CI steps that run lint, tests, wheel build, and public-demo generation.
 - README/README.zh/STATUS/AGENTS updates that describe the limited scope.
 
@@ -42,6 +46,7 @@ analysis or release pipeline.
 1. Add local commands.
    - [x] Add `make lint`.
    - [x] Add `make build`.
+   - [x] Add `make verify` and `make all`.
    - [x] Keep build artifacts under ignored `outputs/dist`.
 
 2. Wire CI.
@@ -56,6 +61,7 @@ analysis or release pipeline.
 
 - `make lint` passes locally.
 - `make build` produces a wheel under ignored `outputs/dist`.
+- `make verify` runs the complete local verification lane.
 - `make test` and `make demo-public` still pass.
 - CI workflow includes lint, unit test, wheel build, public-demo generation,
   artifact upload, and Pages artifact staging.

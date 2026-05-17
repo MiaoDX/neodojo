@@ -167,6 +167,7 @@ GVHMR/GMR/simulator runtime pipeline or MuJoCo/Genesis real mesh rendering.
 What can be run now:
 
 ```bash
+make verify
 make lint
 make test
 make build
@@ -222,6 +223,7 @@ recording artifact under `outputs/public-demo/`. Until `rerun-sdk` is added,
 the `.rrd` file is an honest JSON fallback artifact, not a real Rerun SDK
 recording.
 
+`make verify` runs lint, tests, wheel build, and the public-demo smoke lane.
 `make demo-public` regenerates the fixture motion contract, detected
 annotations, G1 visual track, G1 render evidence, teaching playback,
 public-demo artifact, and smoke check in one local command. `make smoke-public`
@@ -265,6 +267,8 @@ In progress:
 - [x] One-command local `make demo-public` flow and GitHub Actions artifact/Page
       workflow for the fixture public demo
 - [x] Minimal `make lint` and `make build` command surface
+- [x] One-command local `make verify` flow for lint, tests, build, and public
+      demo generation
 - [x] Local real-conversion prep manifest for source `03-006`
 - [ ] MuJoCo/Genesis real Unitree G1 mesh rendering from user-supplied URDF/MJCF
       and meshes

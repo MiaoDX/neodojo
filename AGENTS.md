@@ -30,6 +30,7 @@
 - `make test` runs the focused unit tests for the fixture demo generator, local motion contract, G1 visual-track manifest boundary, local G1 render evidence, and teaching playback manifest path.
 - `make lint` runs the minimal syntax/import bytecode compile check over `src/` and `tests/`.
 - `make build` builds a wheel under ignored `outputs/dist/`.
+- `make verify` runs lint, tests, wheel build, fixture public-demo generation, and public-demo smoke validation.
 - `PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract` writes fixture-backed SMPL-X motion-record and teaching-track manifests.
 - `PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract` imports an external GVHMR SMPL-X teaching-joints JSON export into the same motion-record contract without running GVHMR locally.
 - `PYTHONPATH=src python -m neodojo annotations detect --motion-record outputs/motion-contract --out outputs/annotations` writes a deterministic SMPL-X-only key-frame annotation manifest for the opening-form raised-hands feedback proof.

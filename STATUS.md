@@ -8,7 +8,7 @@ fixture-backed and external-JSON `motion-record` paths, `robot-model`,
 `demo play`, `demo export-rerun`, and `real-conversion prepare` commands, a
 `make demo-html` command that writes a self-contained synthetic web demo,
 minimal `make lint` and `make build` commands, and a `make demo-public` command
-plus GitHub Actions workflow for the fixture public-demo artifact. There is
+plus `make verify` and GitHub Actions workflow for the fixture public-demo artifact. There is
 still no checked-in GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real
 mesh rendering, real generated motion artifact, or UI server.
 
@@ -98,6 +98,7 @@ mesh rendering, real generated motion artifact, or UI server.
 ## What Can Be Run Now
 
 ```bash
+make verify
 make lint
 make test
 make build
@@ -116,6 +117,7 @@ PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 -
 make demo-html
 ```
 
+`make verify` runs lint, tests, wheel build, and the public-demo smoke lane.
 `make lint` runs a minimal syntax/import bytecode compile check over `src/` and
 `tests/`. `make test` runs the focused Python unit tests for the fixture demo
 generator and local motion contract. `make build` builds a wheel under ignored
