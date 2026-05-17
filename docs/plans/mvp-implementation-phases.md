@@ -16,16 +16,17 @@ pickle normalization, an SMPL-X surface proxy, G1 SVG/HTML render evidence,
 optional MuJoCo render evidence, optional true Rerun SDK `.rrd` export,
 an optional first Viser local runtime, optional source-media probing with
 custom local-source provenance, local source-media materialization handoff, a
-copyable ignored GPU input bundle with explicit media inclusion, a fixture-only
-static public-demo fallback artifact, a generated roboharness-style capture
-bundle boundary, optional MuJoCo simulator recorder-capture integration, and a
-GitHub Actions workflow with verified fixture-only Pages publication, optional
-browser-rendered public-demo screenshot capture, and metadata-only
-real-handoff smoke artifact upload. It
-does not yet have a checked-in GVHMR/GMR execution pipeline, simulator runtime
-pipeline, built-in official SMPL-X body-model renderer, hosted/live-client
-Viser capture, or broad static-analysis/release gates beyond the minimal
-`make lint` and `make build` surface.
+copyable ignored GPU input bundle with explicit media inclusion, a CI-safe
+GPU-side runner script for external GVHMR execution, a fixture-only static
+public-demo fallback artifact, a generated roboharness-style capture bundle
+boundary, optional MuJoCo simulator recorder-capture integration, and a GitHub
+Actions workflow with verified fixture-only Pages publication, optional
+browser-rendered public-demo screenshot capture, metadata-only real-handoff
+smoke artifact upload, and metadata-only GPU input bundle smoke upload. It
+does not yet have a checked-in local GVHMR/GMR execution environment, completed
+simulator runtime pipeline, built-in official SMPL-X body-model renderer,
+hosted/live-client Viser capture, or broad static-analysis/release gates beyond
+the minimal `make lint` and `make build` surface.
 
 ## Shared Goal
 
@@ -66,7 +67,7 @@ local/user-supplied source video
 | 11 | [mvp-source-media-probing.md](mvp-source-media-probing.md) | implemented metadata probe and custom local-source prep | Record optional ffprobe metadata for local source videos without copying media. | Source prep records probe success/failure, duration, resolution, codec, and frame-rate metadata when available, and custom local sources can derive source duration/resolution without an official source-index row. |
 | 12 | [mvp-source-media-materialization.md](mvp-source-media-materialization.md) | implemented local handoff, materialized local candidate, and GPU input bundle | Turn source prep plus a local video into a dry-run or ffmpeg-backed trimmed-clip/reference-frame handoff. | A source-materialization manifest records source validation, commands, generated outputs when available, and the GVHMR input handoff path without committing media; an ignored local Bilibili candidate handoff reports `ready_for_gpu`, and a transfer bundle reports `ready_for_gpu_with_media`. |
 | 13 | [mvp-roboharness-capture-boundary.md](mvp-roboharness-capture-boundary.md) | implemented generated bundle and browser public-demo capture; CI verified | Collect public-demo, browser capture, Viser preview, G1 render, and optional recorder artifacts into one roboharness-style multi-camera evidence manifest. | `make demo-public` writes a validated generated capture bundle, and `make demo-public-browser` adds optional real browser screenshot evidence without claiming direct roboharness integration. |
-| 14 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep/materialization/custom-source handoff/gpu-input/export-helper/result-inspection/validation/import-demo ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata, source materialization can prepare the trimmed input, `make real-handoff` can build the local GPU handoff in one command for official-index or custom local sources, `make gpu-handoff` can repackage existing materialization with the GPU-side exporter helper, `make gpu-input-bundle` can package transfer files plus media when explicit, `make gvhmr-inspect` can inspect returned result structure, and `make demo-real` can validate/import a returned export; final stop condition still requires a real GVHMR artifact from a GPU run. |
+| 14 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep/materialization/custom-source handoff/gpu-input/gpu-runner/export-helper/result-inspection/validation/import-demo ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata, source materialization can prepare the trimmed input, `make real-handoff` can build the local GPU handoff in one command for official-index or custom local sources, `make gpu-handoff` can repackage existing materialization with the GPU-side exporter helper and runner, `make gpu-input-bundle` can package transfer files plus media when explicit, `make gvhmr-inspect` can inspect returned result structure, and `make demo-real` can validate/import a returned export; final stop condition still requires a real GVHMR artifact from a GPU run. |
 
 ## Future Gap Plans
 
@@ -87,6 +88,7 @@ of truth for the next waves.
 | [mvp-feedback-routine-review.md](mvp-feedback-routine-review.md) | implemented | Broader key-frame/posture feedback and routine-level review. |
 | [mvp-gvhmr-source-validation.md](mvp-gvhmr-source-validation.md) | implemented validator; blocked on a real GVHMR export for final proof | Validation that imported GVHMR artifacts match the materialized source clip and trim. |
 | [mvp-gvhmr-export-adapter.md](mvp-gvhmr-export-adapter.md) | implemented GPU-side export helper; real artifact still external | Standalone GPU-side helper packaged with the handoff to convert GVHMR `hmr4d_results.pt` plus licensed SMPL-X assets into the neodojo import schema. |
+| [mvp-gvhmr-gpu-runner-surface.md](mvp-gvhmr-gpu-runner-surface.md) | implemented CI-safe GPU runner packaging; real artifact still external | Executable GPU-side runner script packaged with handoff/input bundles and smoke-tested without media or GVHMR execution. |
 | [mvp-quality-release-surface.md](mvp-quality-release-surface.md) | implemented first quality gate | Project-owned static quality check for MVP plan links and scaffolding beyond the minimal lint/build commands. |
 
 The numbered plans are semantically independent execution slices, not
@@ -254,6 +256,8 @@ docs:
   - path: docs/plans/mvp-gvhmr-source-validation.md
     type: SPEC
   - path: docs/plans/mvp-gvhmr-export-adapter.md
+    type: SPEC
+  - path: docs/plans/mvp-gvhmr-gpu-runner-surface.md
     type: SPEC
   - path: docs/plans/mvp-quality-release-surface.md
     type: SPEC

@@ -53,6 +53,7 @@ class GvhmrGpuHandoffWriteResult:
     readme_path: Path
     export_template_path: Path
     exporter_script_path: Path
+    runner_script_path: Path
     source_materialization_copy_path: Path
     checked_paths: list[Path]
     status: str
@@ -62,6 +63,7 @@ class GvhmrGpuHandoffWriteResult:
 class GvhmrGpuInputBundleWriteResult:
     manifest_path: Path
     runbook_path: Path
+    runner_script_path: Path
     checked_paths: list[Path]
     status: str
 
@@ -650,6 +652,14 @@ def _copy_handoff_file(
     return destination
 
 
+def _write_gpu_runner_script(path: Path) -> None:
+    runner_script = resources.files("neodojo.templates").joinpath("run_gvhmr_neodojo.sh").read_text(
+        encoding="utf-8"
+    )
+    path.write_text(runner_script, encoding="utf-8")
+    path.chmod(0o755)
+
+
 def _write_gpu_input_runbook(
     path: Path,
     *,
@@ -664,7 +674,7 @@ def _write_gpu_input_runbook(
     upstream_command = f"python tools/demo/demo.py --video {video_argument} --output_root gvhmr-output"
     exporter_command = (
         "python export_neodojo_gvhmr.py "
-        "--hmr4d-results gvhmr-output/hmr4d_results.pt "
+        "--hmr4d-results gvhmr-output/trimmed-clip/hmr4d_results.pt "
         "--smplx-model-dir <path-to-licensed-smplx-model-dir> "
         "--template gvhmr-smplx-joints.template.json "
         "--source-materialization source-materialization.json "
@@ -693,7 +703,18 @@ def _write_gpu_input_runbook(
             "- `source-materialization.json`: source/trim metadata.",
             "- `gvhmr-smplx-joints.template.json`: returned export template.",
             "- `export_neodojo_gvhmr.py`: GPU-side neodojo exporter helper.",
+            "- `run_gvhmr_neodojo.sh`: executable GPU-side runner that wraps GVHMR and the neodojo exporter.",
             "- `source/trimmed-clip.mp4`: local media for GVHMR, present only when `media_included` is true.",
+            "",
+            "## One-Command GPU Runner",
+            "",
+            "Place licensed GVHMR/SMPL-X checkpoints as required by upstream GVHMR, then run:",
+            "",
+            _markdown_command(
+                "SMPLX_MODEL_DIR=<path-to-licensed-smplx-model-dir> ./run_gvhmr_neodojo.sh --install"
+            ),
+            "",
+            "Set `GVHMR_REPO=/path/to/GVHMR` and omit `--install` if the GPU environment already has GVHMR installed.",
             "",
             "## Run GVHMR On The GPU Machine",
             "",
@@ -740,10 +761,21 @@ def _write_gpu_handoff_readme(
             "- `source-materialization.json`: copy of the local source/trim handoff metadata for the GPU machine.",
             "- `gvhmr-smplx-joints.template.json`: JSON shape and provenance fields to preserve in the returned export.",
             "- `export_neodojo_gvhmr.py`: GPU-side helper for converting `hmr4d_results.pt` plus a licensed local SMPL-X model into the neodojo export schema.",
+            "- `run_gvhmr_neodojo.sh`: executable GPU-side runner for the upstream GVHMR demo plus neodojo export.",
             "",
             "## GPU Input",
             "",
             f"- Trimmed video argument: `{input_video or '<missing>'}`",
+            "",
+            "## One-Command GPU Runner",
+            "",
+            "When this directory is copied together with the trimmed clip, the GPU operator can run:",
+            "",
+            _markdown_command(
+                "SMPLX_MODEL_DIR=<path-to-licensed-smplx-model-dir> ./run_gvhmr_neodojo.sh --install"
+            ),
+            "",
+            "Set `GVHMR_REPO=/path/to/GVHMR` and omit `--install` if the GPU environment already has GVHMR installed.",
             "",
             "## Upstream GVHMR Command Template",
             "",
@@ -788,6 +820,7 @@ def package_gvhmr_gpu_handoff(
     readme_path = out_dir / "README.md"
     export_template_path = out_dir / "gvhmr-smplx-joints.template.json"
     exporter_script_path = out_dir / "export_neodojo_gvhmr.py"
+    runner_script_path = out_dir / "run_gvhmr_neodojo.sh"
     source_materialization_copy_path = out_dir / "source-materialization.json"
 
     source_hash = sha256_file(source_materialization)
@@ -829,7 +862,7 @@ def package_gvhmr_gpu_handoff(
     )
     exporter_command = (
         "python export_neodojo_gvhmr.py "
-        "--hmr4d-results <gvhmr-output-dir>/hmr4d_results.pt "
+        f"--hmr4d-results <gvhmr-output-dir>/{Path(input_video).stem if input_video else '<video-stem>'}/hmr4d_results.pt "
         "--smplx-model-dir <path-to-licensed-smplx-model-dir> "
         f"--template {export_template_path.name} "
         f"--source-materialization {source_materialization_copy_path.name} "
@@ -871,6 +904,7 @@ def package_gvhmr_gpu_handoff(
         encoding="utf-8"
     )
     exporter_script_path.write_text(exporter_script, encoding="utf-8")
+    _write_gpu_runner_script(runner_script_path)
     _write_json(source_materialization_copy_path, materialization)
 
     manifest = {
@@ -913,6 +947,7 @@ def package_gvhmr_gpu_handoff(
                 "source_materialization": source_materialization_copy_path.name,
                 "export_template": export_template_path.name,
                 "exporter_script": exporter_script_path.name,
+                "runner_script": runner_script_path.name,
                 "returned_export": Path(expected_export).name,
             },
             "notes": "Copy this directory plus the materialized trimmed video to the GPU machine; the exporter command uses bundle-local filenames.",
@@ -920,6 +955,10 @@ def package_gvhmr_gpu_handoff(
         "commands": {
             "upstream_gvhmr": upstream_command,
             "gpu_export_neodojo": exporter_command,
+            "gpu_run_neodojo": (
+                "SMPLX_MODEL_DIR=<path-to-licensed-smplx-model-dir> "
+                "./run_gvhmr_neodojo.sh --install"
+            ),
             "local_import_demo": local_import_command,
         },
         "provenance_to_preserve": provenance,
@@ -948,6 +987,7 @@ def package_gvhmr_gpu_handoff(
         readme_path,
         export_template_path,
         exporter_script_path,
+        runner_script_path,
         source_materialization_copy_path,
         source_materialization,
     ]
@@ -958,6 +998,7 @@ def package_gvhmr_gpu_handoff(
         readme_path=readme_path,
         export_template_path=export_template_path,
         exporter_script_path=exporter_script_path,
+        runner_script_path=runner_script_path,
         source_materialization_copy_path=source_materialization_copy_path,
         checked_paths=checked_paths,
         status=status,
@@ -1009,6 +1050,19 @@ def package_gvhmr_gpu_input_bundle(
         )
         if copied is not None:
             copied_paths.append(copied)
+    runner_script_path = _copy_handoff_file(
+        handoff_dir=handoff_dir,
+        source_name=str(bundle_files.get("runner_script", "run_gvhmr_neodojo.sh")),
+        output_dir=out_dir,
+        output_name="run_gvhmr_neodojo.sh",
+        required=False,
+    )
+    if runner_script_path is None:
+        runner_script_path = out_dir / "run_gvhmr_neodojo.sh"
+        _write_gpu_runner_script(runner_script_path)
+    else:
+        runner_script_path.chmod(0o755)
+    copied_paths.append(runner_script_path)
 
     gpu_input = handoff.get("gpu_input") if isinstance(handoff.get("gpu_input"), dict) else {}
     input_reference = gpu_input.get("local_path_checked") or gpu_input.get("trimmed_video_argument")
@@ -1073,13 +1127,21 @@ def package_gvhmr_gpu_input_bundle(
             "checksum_matches": checksum_matches,
         },
         "files": {
-            "runbook": _as_posix(runbook_path),
+            "runbook": runbook_path.name,
             "gpu_handoff_manifest": "gpu-handoff-manifest.json",
             "source_materialization": "source-materialization.json",
             "export_template": "gvhmr-smplx-joints.template.json",
             "exporter_script": "export_neodojo_gvhmr.py",
+            "runner_script": "run_gvhmr_neodojo.sh",
             "trimmed_video": _as_posix(media_path) if media_path is not None else None,
             "returned_export": returned_export_filename,
+        },
+        "commands": {
+            "gpu_run_neodojo": (
+                "SMPLX_MODEL_DIR=<path-to-licensed-smplx-model-dir> "
+                "./run_gvhmr_neodojo.sh --install"
+            ),
+            "local_import_demo": local_import_command,
         },
         "policy": {
             "safe_for_git": False if media_included else True,
@@ -1094,6 +1156,7 @@ def package_gvhmr_gpu_input_bundle(
     return GvhmrGpuInputBundleWriteResult(
         manifest_path=manifest_path,
         runbook_path=runbook_path,
+        runner_script_path=runner_script_path,
         checked_paths=checked_paths,
         status=status,
     )

@@ -1,6 +1,6 @@
 # MVP Real Conversion Gate Plan
 
-Status: LOCAL PREP, SOURCE MATERIALIZATION, GPU HANDOFF, GPU INPUT BUNDLE, EXPORT HELPER, RESULT INSPECTION, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
+Status: LOCAL PREP, SOURCE MATERIALIZATION, GPU HANDOFF, GPU INPUT BUNDLE, GPU RUNNER, EXPORT HELPER, RESULT INSPECTION, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
 
 ## Goal
 
@@ -39,6 +39,9 @@ but it is required before calling the MVP an end-to-end neodojo proof.
 - [mvp-gvhmr-export-adapter.md](mvp-gvhmr-export-adapter.md) packages a
   GPU-side helper script for converting GVHMR `hmr4d_results.pt` plus licensed
   local SMPL-X assets into the neodojo JSON import schema.
+- [mvp-gvhmr-gpu-runner-surface.md](mvp-gvhmr-gpu-runner-surface.md) packages
+  a CI-safe `run_gvhmr_neodojo.sh` script so the GPU operator has one
+  executable wrapper around upstream GVHMR and the neodojo exporter.
 - [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md)
   and [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) are not required to run
   GVHMR, but they should provide the fixture public-demo lane that the imported
@@ -88,7 +91,8 @@ path is acceptable and preferred.
 - A GPU handoff package from `neodojo real-conversion package-gpu-handoff` or
   `make gpu-handoff` that records source-materialization hash, trimmed-video
   readiness, expected export schema, provenance fields, a GPU-side exporter
-  helper script, and the local return command without copying media.
+  helper script, an executable GPU runner, and the local return command without
+  copying media.
 - A result inspection manifest from `neodojo real-conversion
   inspect-gvhmr-result` or `make gvhmr-inspect` that reports top-level
   `hmr4d_results.pt` keys and candidate SMPL-X parameter blocks when run in a
@@ -177,11 +181,11 @@ make gpu-handoff \
 ```
 
 This writes `outputs/gvhmr-gpu-handoff/manifest.json`, a README,
-`source-materialization.json`, `gvhmr-smplx-joints.template.json`, and
-`export_neodojo_gvhmr.py`. It reports `ready_for_gpu` only when the
-source-materialization manifest points to an existing materialized trimmed clip
-with matching checksum; dry-run handoffs correctly report
-`needs_materialization`.
+`source-materialization.json`, `gvhmr-smplx-joints.template.json`,
+`export_neodojo_gvhmr.py`, and `run_gvhmr_neodojo.sh`. It reports
+`ready_for_gpu` only when the source-materialization manifest points to an
+existing materialized trimmed clip with matching checksum; dry-run handoffs
+correctly report `needs_materialization`.
 Package a copyable GPU input directory when the materialized clip should travel
 with the handoff:
 
@@ -197,8 +201,16 @@ make gpu-input-bundle \
 ```
 
 This writes `RUN_ON_GPU.md`, handoff metadata, the export template,
-`export_neodojo_gvhmr.py`, and `source/trimmed-clip.mp4` under ignored output.
-It is a transfer bundle only; do not commit or publish it.
+`export_neodojo_gvhmr.py`, `run_gvhmr_neodojo.sh`, and
+`source/trimmed-clip.mp4` under ignored output. It is a transfer bundle only;
+do not commit or publish it. The runner can be invoked on the GPU machine as:
+
+```bash
+SMPLX_MODEL_DIR=<path-to-licensed-smplx-model-dir> ./run_gvhmr_neodojo.sh --install
+```
+
+Set `GVHMR_REPO=/path/to/GVHMR` and omit `--install` when the GPU environment
+already has GVHMR installed.
 After GVHMR writes `hmr4d_results.pt` on the GPU machine, the packaged exporter
 can be run there with a licensed local SMPL-X model directory to write the
 expected `neodojo.gvhmr_smplx_joints.v1` JSON. The exporter remains a GPU-side
@@ -265,6 +277,8 @@ variables, when an external GMR/G1 visual artifact is available.
   command.
 - [x] Package an ignored copyable GPU input bundle with explicit media inclusion
   for transfer to the selected GPU machine.
+- [x] Package an executable `run_gvhmr_neodojo.sh` GPU-side runner in the
+  handoff and input bundles, and smoke-check it without running GVHMR.
 - [x] Add `make real-handoff LOCAL_VIDEO=...` to run local prep,
   materialization, and GPU handoff packaging as one command without running
   GVHMR locally.
@@ -305,19 +319,20 @@ variables, when an external GMR/G1 visual artifact is available.
 ## Current Blocker Classification
 
 The local, non-GPU side of this gate is complete through prep,
-source-materialization, GPU handoff packaging, returned-result inspection,
-GPU-side export-helper packaging, returned-export validation, motion import,
-and `import-demo`/`make demo-real` demo regeneration. A local ignored Bilibili
-Baduanjin source candidate has been materialized as a replacement-source GPU
-input handoff, but rights remain unconfirmed and no real GVHMR export has been
-returned. The remaining blocker is external to this macOS CPU workspace:
+source-materialization, GPU handoff packaging, GPU runner packaging,
+returned-result inspection, GPU-side export-helper packaging, returned-export
+validation, motion import, and `import-demo`/`make demo-real` demo regeneration.
+A local ignored Bilibili Baduanjin source candidate has been materialized as a
+replacement-source GPU input handoff, but rights remain unconfirmed and no real
+GVHMR export has been returned. The remaining blocker is external to this macOS
+CPU workspace:
 
 - blocker type: GPU artifact missing
 - input status: custom local source handoff candidate exists under ignored
   `outputs/real-handoff-local-bilibili/`, and a media-including transfer bundle
-  exists under ignored `outputs/gvhmr-gpu-input-local-bilibili/`; official
-  source `03-006` is still an available source-index path if rights/source
-  selection change
+  exists under ignored `outputs/gvhmr-gpu-input-local-bilibili/` with
+  `run_gvhmr_neodojo.sh`; official source `03-006` is still an available
+  source-index path if rights/source selection change
 - missing runtime: a GPU-capable GVHMR environment such as Colab, RunPod,
   Modal, Hugging Face Jobs, or another CUDA machine
 - missing artifact: a `neodojo.gvhmr_smplx_joints.v1` JSON export with

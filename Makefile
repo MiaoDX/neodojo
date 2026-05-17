@@ -1,4 +1,4 @@
-.PHONY: all verify lint check test build demo-html demo-public demo-public-browser real-handoff real-handoff-smoke gpu-handoff gpu-input-bundle gvhmr-inspect demo-real smoke-public
+.PHONY: all verify lint check test build demo-html demo-public demo-public-browser real-handoff real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gvhmr-inspect demo-real smoke-public
 
 PYTHON ?= python3
 REAL_SOURCE_ID ?= 03-006
@@ -57,7 +57,7 @@ endif
 
 all: verify
 
-verify: lint check test build demo-public real-handoff-smoke
+verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke
 
 lint:
 	PYTHONPATH=src $(PYTHON) -m compileall -q src tests
@@ -108,6 +108,7 @@ real-handoff-smoke:
 	test -f outputs/real-handoff-smoke/source-materialized/source-materialization.json
 	test -f outputs/real-handoff-smoke/gpu-handoff/manifest.json
 	test -f outputs/real-handoff-smoke/gpu-handoff/export_neodojo_gvhmr.py
+	test -f outputs/real-handoff-smoke/gpu-handoff/run_gvhmr_neodojo.sh
 
 gpu-handoff:
 	@test -n "$(SOURCE_MATERIALIZATION)" || (echo "SOURCE_MATERIALIZATION=path/to/source-materialization.json is required" && exit 2)
@@ -116,6 +117,14 @@ gpu-handoff:
 gpu-input-bundle:
 	@test -n "$(GPU_HANDOFF)" || (echo "GPU_HANDOFF=path/to/gpu-handoff is required" && exit 2)
 	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion package-gpu-input --gpu-handoff "$(GPU_HANDOFF)" $(GPU_INPUT_MEDIA_FLAGS) --out "$(GPU_INPUT_OUT)"
+
+gpu-input-bundle-smoke: real-handoff-smoke
+	rm -rf outputs/gvhmr-gpu-input-smoke
+	$(MAKE) gpu-input-bundle GPU_HANDOFF=outputs/real-handoff-smoke/gpu-handoff GPU_INPUT_OUT=outputs/gvhmr-gpu-input-smoke
+	test -f outputs/gvhmr-gpu-input-smoke/manifest.json
+	test -f outputs/gvhmr-gpu-input-smoke/RUN_ON_GPU.md
+	test -f outputs/gvhmr-gpu-input-smoke/run_gvhmr_neodojo.sh
+	bash -n outputs/gvhmr-gpu-input-smoke/run_gvhmr_neodojo.sh
 
 gvhmr-inspect:
 	@test -n "$(GVHMR_RESULT)" || (echo "GVHMR_RESULT=path/to/hmr4d_results.pt is required" && exit 2)

@@ -51,6 +51,22 @@ jobs:
             outputs/real-handoff-smoke/gpu-handoff/source-materialization.json
             outputs/real-handoff-smoke/gpu-handoff/gvhmr-smplx-joints.template.json
             outputs/real-handoff-smoke/gpu-handoff/export_neodojo_gvhmr.py
+            outputs/real-handoff-smoke/gpu-handoff/run_gvhmr_neodojo.sh
+          if-no-files-found: error
+      - name: GPU input bundle smoke
+        run: make gpu-input-bundle-smoke
+      - name: Upload GPU input bundle smoke artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neodojo-gpu-input-bundle-smoke
+          path: |
+            outputs/gvhmr-gpu-input-smoke/manifest.json
+            outputs/gvhmr-gpu-input-smoke/RUN_ON_GPU.md
+            outputs/gvhmr-gpu-input-smoke/gpu-handoff-manifest.json
+            outputs/gvhmr-gpu-input-smoke/source-materialization.json
+            outputs/gvhmr-gpu-input-smoke/gvhmr-smplx-joints.template.json
+            outputs/gvhmr-gpu-input-smoke/export_neodojo_gvhmr.py
+            outputs/gvhmr-gpu-input-smoke/run_gvhmr_neodojo.sh
           if-no-files-found: error
       - name: Install browser runtime
         run: python -m playwright install --with-deps chromium

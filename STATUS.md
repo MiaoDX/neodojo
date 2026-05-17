@@ -15,25 +15,27 @@ self-contained synthetic web demo, minimal `make lint`, `make check`, and
 `make demo-public-browser` commands plus `make verify` and GitHub Actions
 workflow for the fixture public-demo artifact, browser capture, generated
 capture bundle, and metadata-only real-handoff smoke artifact,
-`make real-handoff`, `make gpu-handoff`, and `make gpu-input-bundle` for
-external GVHMR run metadata and transfer bundles, `make gvhmr-inspect` for
+`make real-handoff`, `make gpu-handoff`, `make gpu-input-bundle`, and
+`make gpu-input-bundle-smoke` for external GVHMR run metadata, transfer
+bundles, and CI-safe GPU runner packaging, `make gvhmr-inspect` for
 returned GVHMR result inspection, and `make demo-real` for a validated external
 GVHMR JSON once a GPU artifact exists, with a verified live fixture-only
 GitHub Pages demo at
 `https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, `real-conversion package-gpu-handoff` can package the handoff
-manifest, export template, GPU-side exporter helper, and return command for the
-external GPU operator, `real-conversion package-gpu-input` can create an
-ignored copyable GPU input bundle with the materialized trimmed clip when media
-inclusion is explicit, `real-conversion inspect-gvhmr-result` can inspect
+manifest, export template, GPU-side exporter helper, executable GPU runner, and
+return command for the external GPU operator, `real-conversion
+package-gpu-input` can create an ignored copyable GPU input bundle with the
+materialized trimmed clip and executable GPU runner when media inclusion is
+explicit, `real-conversion inspect-gvhmr-result` can inspect
 returned GVHMR result keys and candidate SMPL-X parameter blocks,
 `real-conversion validate-source` can validate a GVHMR JSON export against that
 handoff before import, and `real-conversion import-demo` can regenerate the
 local demo lane from that validated export. There is
-still no checked-in GVHMR/GMR execution pipeline, simulator runtime pipeline,
-built-in official SMPL-X body-model renderer, real generated motion artifact,
-or hosted/live-client Viser capture.
+still no checked-in local GVHMR/GMR execution environment, completed simulator
+runtime pipeline, built-in official SMPL-X body-model renderer, real generated
+motion artifact, or hosted/live-client Viser capture.
 
 ## Current Truth
 
@@ -136,13 +138,17 @@ or hosted/live-client Viser capture.
 - `make gpu-handoff SOURCE_MATERIALIZATION=...` writes
   `outputs/gvhmr-gpu-handoff/manifest.json`, a README, and
   `source-materialization.json`, `gvhmr-smplx-joints.template.json`, and
-  `export_neodojo_gvhmr.py` for an external GVHMR run. The manifest preserves
-  source-materialization hash, trim, input-video checksum, expected
-  `neodojo.gvhmr_smplx_joints.v1` export path, a GPU-side export command, and
-  the local return command. The exporter helper uses bundle-local filenames and
-  is intended to run after GVHMR in the GPU environment with `torch`, `smplx`,
-  and licensed local SMPL-X assets. It does not copy source media or run GVHMR
-  locally.
+  `export_neodojo_gvhmr.py` plus `run_gvhmr_neodojo.sh` for an external GVHMR
+  run. The manifest preserves source-materialization hash, trim, input-video
+  checksum, expected `neodojo.gvhmr_smplx_joints.v1` export path, a GPU-side
+  export command, the executable GPU runner command, and the local return
+  command. The exporter helper uses bundle-local filenames and is intended to
+  run after GVHMR in the GPU environment with `torch`, `smplx`, and licensed
+  local SMPL-X assets. It does not copy source media or run GVHMR locally.
+- `make gpu-input-bundle-smoke` writes a metadata-only
+  `outputs/gvhmr-gpu-input-smoke/` bundle and checks `run_gvhmr_neodojo.sh`
+  with `bash -n`. It is included in `make verify` and does not copy media or
+  run GVHMR.
 - `make gvhmr-inspect GVHMR_RESULT=...` writes
   `outputs/gvhmr-result-inspection/manifest.json`, a
   `neodojo.gvhmr_result_inspection.v1` manifest that reports result keys,
@@ -288,6 +294,7 @@ make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
 make real-handoff-smoke
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
 make gpu-input-bundle GPU_HANDOFF=outputs/gvhmr-gpu-handoff GPU_INPUT_INCLUDE_MEDIA=1
+make gpu-input-bundle-smoke
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
@@ -446,12 +453,14 @@ handoff path with an ignored placeholder `.mp4` and is included in
 package-gpu-handoff` packages that manifest into a GPU handoff directory with a
 machine-readable status, export template, provenance fields, upstream command
 template, copyable source-materialization metadata, GPU-side neodojo export
-helper, and local return command; it does not copy media or run GVHMR locally.
+helper, executable GPU runner, and local return command; it does not copy media
+or run GVHMR locally.
 `neodojo real-conversion package-gpu-input` and `make gpu-input-bundle
 GPU_HANDOFF=... GPU_INPUT_INCLUDE_MEDIA=1` create an ignored copyable GPU input
-bundle with `RUN_ON_GPU.md`, handoff metadata, exporter helper, template, and
-the materialized `source/trimmed-clip.mp4`. This is a transfer bundle for the
-selected GPU machine and must not be committed or published.
+bundle with `RUN_ON_GPU.md`, handoff metadata, `run_gvhmr_neodojo.sh`, exporter
+helper, template, and the materialized `source/trimmed-clip.mp4`. This is a
+transfer bundle for the selected GPU machine and must not be committed or
+published.
 `neodojo real-conversion
 inspect-gvhmr-result` writes a result
 inspection manifest for a returned `hmr4d_results.pt` when `torch` is available
@@ -488,9 +497,10 @@ The current blocker is external to the local non-GPU pipeline: no GPU-produced
 `neodojo.gvhmr_smplx_joints.v1` export is present in this workspace. A local
 ignored Bilibili Baduanjin source candidate has been materialized under
 `outputs/real-handoff-local-bilibili/` and a copyable media-including GPU input
-bundle exists under `outputs/gvhmr-gpu-input-local-bilibili/`, with rights
-marked unconfirmed and media kept out of git. The next external step is to copy
-that bundle to a GPU-capable machine, run GVHMR, and return the neodojo export.
+bundle exists under `outputs/gvhmr-gpu-input-local-bilibili/`, with a
+`run_gvhmr_neodojo.sh` runner, rights marked unconfirmed, and media kept out of
+git. The next external step is to copy that bundle to a GPU-capable machine,
+run GVHMR, and return the neodojo export.
 Once that artifact exists, the remaining task is to validate it with
 `real-conversion import-demo`, then inspect the generated `outputs/real-demo/`
 artifacts.

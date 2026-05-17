@@ -1,6 +1,6 @@
 # MVP DevEx And CI Surface Plan
 
-Status: IMPLEMENTED WITH BROWSER CAPTURE AND REAL-HANDOFF ARTIFACT CI VERIFIED
+Status: IMPLEMENTED WITH BROWSER CAPTURE, REAL-HANDOFF, AND GPU-INPUT ARTIFACT CI
 
 ## Goal
 
@@ -49,15 +49,17 @@ against `outputs/public-demo` and `neodojo capture bundle` to write
 `outputs/capture/manifest.json`.
 
 `make verify` now wraps the default dependency-light local lane: lint, plan
-quality checks, tests, wheel build, `make demo-public`, and
-`make real-handoff-smoke`. `make demo-public-browser` adds the optional
-Playwright-backed Chromium screenshot capture and refreshes the capture bundle
-with browser evidence.
+quality checks, tests, wheel build, `make demo-public`,
+`make real-handoff-smoke`, and `make gpu-input-bundle-smoke`.
+`make demo-public-browser` adds the optional Playwright-backed Chromium
+screenshot capture and refreshes the capture bundle with browser evidence.
 
 `.github/workflows/public-demo.yml` installs the package, runs lint, plan
 quality checks, tests, wheel build, runs `make real-handoff-smoke`, uploads a
-metadata-only `neodojo-real-handoff-smoke` artifact from that smoke, installs
-Chromium through the optional Playwright browser extra, and runs
+metadata-only `neodojo-real-handoff-smoke` artifact from that smoke, runs
+`make gpu-input-bundle-smoke`, uploads a metadata-only
+`neodojo-gpu-input-bundle-smoke` artifact, installs Chromium through the
+optional Playwright browser extra, and runs
 `make demo-public-browser`. It uploads `outputs/public-demo` as the standalone
 public-demo artifact, uploads `outputs/browser-capture` as browser evidence,
 uploads a capture-bundle artifact containing `outputs/capture` plus the
@@ -170,6 +172,8 @@ helper, and contained no video files.
    - [x] Upload generated outputs as CI artifacts without committing them.
    - [x] Upload the dry-run real-handoff smoke metadata bundle without the
      placeholder source media.
+   - [x] Upload the metadata-only GPU input bundle smoke artifact with
+     `run_gvhmr_neodojo.sh` and no media.
 
 5. Add visual smoke checks.
    - [x] Check generated HTML, scene, `.rrd` fallback, and SVG screenshot are
@@ -204,7 +208,9 @@ helper, and contained no video files.
   screenshot, public-demo manifest, browser-rendered PNG screenshot, generated
   capture bundle artifact with referenced evidence, and metadata-only
   real-handoff smoke artifact without source media, verified by runs
-  `25999641059`, `26000413142`, and `26003369563`.
+  `25999641059`, `26000413142`, and `26003369563`. The same workflow now also
+  uploads the metadata-only GPU input bundle smoke artifact with the executable
+  runner script.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages publishes only safe static demo assets once repository Pages is

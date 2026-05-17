@@ -1849,11 +1849,26 @@ class DemoHtmlTests(unittest.TestCase):
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
             template = json.loads(result.export_template_path.read_text(encoding="utf-8"))
             exporter_exists = result.exporter_script_path.exists()
+            runner_exists = result.runner_script_path.exists()
+            runner_is_executable = bool(result.runner_script_path.stat().st_mode & 0o111)
             source_materialization_copy = json.loads(
                 result.source_materialization_copy_path.read_text(encoding="utf-8")
             )
             exporter_script = result.exporter_script_path.read_text(encoding="utf-8")
+            runner_script = result.runner_script_path.read_text(encoding="utf-8")
             readme = result.readme_path.read_text(encoding="utf-8")
+            runner_syntax = subprocess.run(
+                ["bash", "-n", str(result.runner_script_path)],
+                capture_output=True,
+                encoding="utf-8",
+                check=False,
+            )
+            runner_help = subprocess.run(
+                ["bash", str(result.runner_script_path), "--help"],
+                capture_output=True,
+                encoding="utf-8",
+                check=False,
+            )
 
         self.assertEqual(result.status, "ready_for_gpu")
         self.assertEqual(manifest["schema"], "neodojo.gvhmr_gpu_handoff.v1")
@@ -1866,6 +1881,8 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(template["provenance"]["source_id"], "03-006")
         self.assertEqual(source_materialization_copy["schema"], "neodojo.real_conversion_source_materialization.v1")
         self.assertTrue(exporter_exists)
+        self.assertTrue(runner_exists)
+        self.assertTrue(runner_is_executable)
         self.assertEqual(
             manifest["source_materialization_copy"],
             str(result.source_materialization_copy_path),
@@ -1874,18 +1891,27 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["expected_export"]["gpu_bundle_output"], "gvhmr-smplx-joints.json")
         self.assertTrue(manifest["gpu_bundle"]["copyable"])
         self.assertEqual(manifest["gpu_bundle"]["files"]["source_materialization"], "source-materialization.json")
+        self.assertEqual(manifest["gpu_bundle"]["files"]["runner_script"], "run_gvhmr_neodojo.sh")
         self.assertIn("gpu_export_neodojo", manifest["commands"])
+        self.assertIn("gpu_run_neodojo", manifest["commands"])
         self.assertIn("export_neodojo_gvhmr.py", manifest["commands"]["gpu_export_neodojo"])
         self.assertIn("--template gvhmr-smplx-joints.template.json", manifest["commands"]["gpu_export_neodojo"])
+        self.assertIn("<gvhmr-output-dir>/trimmed-clip/hmr4d_results.pt", manifest["commands"]["gpu_export_neodojo"])
         self.assertIn("--source-materialization source-materialization.json", manifest["commands"]["gpu_export_neodojo"])
         self.assertIn("--out gvhmr-smplx-joints.json", manifest["commands"]["gpu_export_neodojo"])
         self.assertIn("real-conversion import-demo", manifest["commands"]["local_import_demo"])
         self.assertIn("Export GVHMR hmr4d_results.pt", exporter_script)
+        self.assertIn("Run GVHMR and export a neodojo", runner_script)
+        self.assertEqual(runner_syntax.returncode, 0, runner_syntax.stderr)
+        self.assertEqual(runner_help.returncode, 0, runner_help.stderr)
+        self.assertIn("SMPLX_MODEL_DIR", runner_help.stdout)
         self.assertIn("export_neodojo_gvhmr.py", readme)
+        self.assertIn("run_gvhmr_neodojo.sh", readme)
         self.assertIn("source-materialization.json", readme)
         self.assertIn("GVHMR GPU Handoff", readme)
         self.assertIn(trimmed, result.checked_paths)
         self.assertIn(result.exporter_script_path, result.checked_paths)
+        self.assertIn(result.runner_script_path, result.checked_paths)
         self.assertIn(result.source_materialization_copy_path, result.checked_paths)
 
     def test_real_conversion_gpu_input_bundle_can_include_media(self) -> None:
@@ -1931,6 +1957,12 @@ class DemoHtmlTests(unittest.TestCase):
             bundled_video_exists = bundled_video.exists()
             bundled_video_sha = sha256_file(bundled_video)
             trimmed_sha = sha256_file(trimmed)
+            runner_help = subprocess.run(
+                ["bash", str(bundle.runner_script_path), "--help"],
+                capture_output=True,
+                encoding="utf-8",
+                check=False,
+            )
 
         self.assertEqual(bundle.status, "ready_for_gpu_with_media")
         self.assertEqual(manifest["schema"], "neodojo.gvhmr_gpu_input_bundle.v1")
@@ -1940,8 +1972,15 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(bundled_video_exists)
         self.assertEqual(bundled_video_sha, trimmed_sha)
         self.assertIn("source/trimmed-clip.mp4", runbook)
+        self.assertIn("gvhmr-output/trimmed-clip/hmr4d_results.pt", runbook)
         self.assertIn("export_neodojo_gvhmr.py", runbook)
+        self.assertIn("run_gvhmr_neodojo.sh", runbook)
+        self.assertEqual(manifest["files"]["runbook"], "RUN_ON_GPU.md")
+        self.assertEqual(manifest["files"]["runner_script"], "run_gvhmr_neodojo.sh")
+        self.assertEqual(runner_help.returncode, 0, runner_help.stderr)
+        self.assertIn("Run GVHMR and export", runner_help.stdout)
         self.assertIn(bundled_video, bundle.checked_paths)
+        self.assertIn(bundle.runner_script_path, bundle.checked_paths)
 
     def test_real_conversion_gpu_input_bundle_metadata_only_omits_media(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1969,10 +2008,18 @@ class DemoHtmlTests(unittest.TestCase):
             handoff = package_gvhmr_gpu_handoff(root / "handoff", source_materialization=materialization)
             bundle = package_gvhmr_gpu_input_bundle(root / "gpu-input", gpu_handoff=handoff.manifest_path)
             manifest = json.loads(bundle.manifest_path.read_text(encoding="utf-8"))
+            runner_syntax = subprocess.run(
+                ["bash", "-n", str(bundle.runner_script_path)],
+                capture_output=True,
+                encoding="utf-8",
+                check=False,
+            )
 
         self.assertEqual(bundle.status, "metadata_only")
         self.assertFalse(manifest["media_included"])
         self.assertIsNone(manifest["files"]["trimmed_video"])
+        self.assertEqual(manifest["files"]["runner_script"], "run_gvhmr_neodojo.sh")
+        self.assertEqual(runner_syntax.returncode, 0, runner_syntax.stderr)
         self.assertFalse((root / "gpu-input" / "source" / "trimmed-clip.mp4").exists())
 
     def test_gpu_handoff_exporter_script_is_dependency_lazy_for_help(self) -> None:

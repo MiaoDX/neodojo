@@ -169,10 +169,11 @@ contract, a generated roboharness-style capture bundle manifest, optional
 browser-rendered public-demo screenshot capture, optional MuJoCo simulator
 recorder-capture integration, and minimal lint/build/quality-check
 commands. It can also write a dry-run or ffmpeg-backed local source-video
-handoff plus a metadata package for a later GPU GVHMR run. There is still no
-checked-in GVHMR/GMR execution pipeline, simulator runtime pipeline,
-built-in official SMPL-X body-model renderer, live-client Viser capture, or
-end-to-end real generated motion artifact.
+handoff plus a metadata package, copyable input bundle, and executable
+GPU-side runner for a later GPU GVHMR run. There is still no checked-in local
+GVHMR/GMR execution environment, completed simulator runtime pipeline, built-in
+official SMPL-X body-model renderer, live-client Viser capture, or end-to-end
+real generated motion artifact.
 
 Fixture-only public demo: [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
 
@@ -193,6 +194,7 @@ make real-handoff LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=loca
 make real-handoff-smoke
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
 make gpu-input-bundle GPU_HANDOFF=outputs/gvhmr-gpu-handoff GPU_INPUT_INCLUDE_MEDIA=1
+make gpu-input-bundle-smoke
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
@@ -368,15 +370,19 @@ SOURCE_MATERIALIZATION=...` consume a source-materialization manifest and write
 copy of `source-materialization.json` plus `gvhmr-smplx-joints.template.json`
 and `export_neodojo_gvhmr.py` that preserve the exact source hash, trim, input
 video checksum, expected export schema, GPU-side export command, and local
-import command for the external GPU operator. The exporter helper uses
-bundle-local filenames and is intended to run after GVHMR in the GPU
-environment with `torch`, `smplx`, and licensed local SMPL-X assets; this
-package does not copy media or run GVHMR locally.
+import command for the external GPU operator. The package also includes
+`run_gvhmr_neodojo.sh`, a GPU-side runner that wraps the upstream GVHMR demo
+command and the neodojo exporter. The exporter helper uses bundle-local
+filenames and is intended to run after GVHMR in the GPU environment with
+`torch`, `smplx`, and licensed local SMPL-X assets; this package does not copy
+media or run GVHMR locally.
 `neodojo real-conversion package-gpu-input` and `make gpu-input-bundle
 GPU_HANDOFF=... GPU_INPUT_INCLUDE_MEDIA=1` create an ignored copyable GPU input
-bundle with `RUN_ON_GPU.md`, handoff metadata, the exporter helper, template,
-and the materialized `source/trimmed-clip.mp4`. This bundle is for transfer to
-the selected GPU machine and must not be committed or published.
+bundle with `RUN_ON_GPU.md`, handoff metadata, the runner script, exporter
+helper, template, and the materialized `source/trimmed-clip.mp4`. This bundle
+is for transfer to the selected GPU machine and must not be committed or
+published. `make gpu-input-bundle-smoke` verifies the metadata-only bundle and
+runner script without copying media or running GVHMR.
 `neodojo real-conversion inspect-gvhmr-result` and `make gvhmr-inspect
 GVHMR_RESULT=...` inspect a returned `hmr4d_results.pt` when the optional
 `torch` dependency is available in the GVHMR/GPU environment, or a JSON summary
