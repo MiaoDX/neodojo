@@ -24,6 +24,14 @@ but it is required before calling the MVP an end-to-end neodojo proof.
 - [mvp-g1-real-model-rendering.md](mvp-g1-real-model-rendering.md) is the
   preferred next local slice before this GPU gate, so the right-side G1 view can
   become a real model render independently from source-video conversion.
+- [mvp-pipeline-contract-hardening.md](mvp-pipeline-contract-hardening.md) is
+  expected to stabilize the import, source-prep, normalization, annotation,
+  render, playback, and public-demo manifest boundaries before this real
+  artifact enters them.
+- [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md)
+  and [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) are not required to run
+  GVHMR, but they should provide the fixture public-demo lane that the imported
+  real artifact can replace later.
 - A GPU-capable environment is available through Colab, RunPod, Modal, Hugging
   Face Jobs, or another machine.
 - A local/user-supplied source clip is selected with licensing boundaries
@@ -59,8 +67,9 @@ path is acceptable and preferred.
 
 - External GVHMR artifact directory stored outside tracked source files.
 - A small provenance manifest in an ignored output/artifact directory.
-- A local prep manifest from `neodojo real-conversion prepare` that records
-  source metadata, trim metadata, and next commands before the GPU run.
+- A local prep manifest from `neodojo real-conversion prepare` or its hardened
+  successor that records source metadata, trim metadata, checksums,
+  provenance/rights notes, and next commands before the GPU run.
 - A motion-record import run using
   `neodojo motion-record create --from-gvhmr-json`.
 - A short report stating whether downstream local contracts needed changes.
@@ -117,6 +126,9 @@ This command does not download video, run GVHMR, or prove qigong correctness.
   fixtures.
 - The imported record reports frame count, fps or timing, joint coverage, and
   SMPL-X provenance.
+- The artifact includes enough coordinate, floor/facing, source-media, and
+  annotation metadata to enter the hardened playback/public-demo lane without a
+  special real-artifact path.
 - No downstream code needs special real-artifact handling beyond the accepted
   contract.
 - Docs continue to distinguish real conversion from fixture playback.

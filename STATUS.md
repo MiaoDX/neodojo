@@ -120,13 +120,17 @@ later GPU run and does not download video or execute GVHMR.
 
 The next MVP capability is
 `docs/plans/mvp-g1-real-model-rendering.md`. Keep the GPU conversion gate after
-this local slice. The target is a real Unitree G1 URDF/MJCF plus mesh render
-manifest and screenshot/frame evidence, while preserving
-`g1_scoring_allowed: false`.
+this local slice and the planned non-GPU hardening/public-demo/CI slices. The
+target is a real Unitree G1 URDF/MJCF plus mesh render manifest and
+screenshot/frame evidence, while preserving `g1_scoring_allowed: false`.
 
-After that, return to `docs/plans/mvp-real-conversion-gate.md`: do not run GVHMR
-full-video inference on this macOS CPU workspace; use a GPU-capable machine to
-export a GVHMR SMPL-X teaching-joints JSON artifact, then import it through
+After that, follow the non-GPU plans in
+`docs/plans/mvp-pipeline-contract-hardening.md`,
+`docs/plans/mvp-visualization-and-public-demo.md`, and
+`docs/plans/mvp-devex-ci-surface.md` before returning to
+`docs/plans/mvp-real-conversion-gate.md`. Do not run GVHMR full-video inference
+on this macOS CPU workspace; use a GPU-capable machine to export a GVHMR SMPL-X
+teaching-joints JSON artifact, then import it through
 `neodojo motion-record create --from-gvhmr-json`.
 
 ## Background Evidence
@@ -134,5 +138,5 @@ export a GVHMR SMPL-X teaching-joints JSON artifact, then import it through
 - `docs/technical-roadmap.md` is the long technical research report.
 - `docs/humanoid-platform-evaluation.md` records the G1 + SMPL-X dual-track
   platform decision.
-- `docs/plans/mvp-implementation-phases.md` indexes the five current executable
-  MVP plan slices.
+- `docs/plans/mvp-implementation-phases.md` indexes the current executable MVP
+  plan slices.

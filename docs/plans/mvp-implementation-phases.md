@@ -12,7 +12,8 @@ each slice.
 The current repo is still in bootstrap state. It has a fixture-only HTML demo
 generator, `make test`, and `make demo-html`. It does not yet have a checked-in
 GVHMR/GMR/simulator runtime pipeline, real Unitree G1 rendering, Viser UI,
-install workflow, lint command, build command, or CI gate.
+Rerun public demo, GitHub Pages publish path, install workflow, lint command,
+build command, or CI gate.
 
 ## Shared Goal
 
@@ -26,6 +27,9 @@ local/user-supplied source video
   -> SMPL-X teaching track
   -> GMR Unitree G1 visual track
   -> real Unitree G1 model rendering
+  -> hardened artifact contracts
+  -> Rerun public demo artifact
+  -> CI-published fixture demo
   -> multi-view playback or Viser playback
   -> manual key-frame feedback proof
 ```
@@ -38,7 +42,10 @@ local/user-supplied source video
 | 2 | [mvp-g1-visual-track.md](mvp-g1-visual-track.md) | done | Add the Unitree G1 visual-track boundary: model provenance, derived track manifest, and scoring separation. | G1 assets/tracks are validated as derived visual artifacts and cannot become the scoring source. |
 | 3 | [mvp-teaching-playback-demo.md](mvp-teaching-playback-demo.md) | done | Create the inspectable multi-view teaching playback with trajectories and one manual feedback proof. | The local `demo play` command consumes SMPL-X/G1 manifests and writes fixture-only HTML playback plus manifest evidence. |
 | 4 | [mvp-g1-real-model-rendering.md](mvp-g1-real-model-rendering.md) | planned local non-GPU slice | Load a user-supplied real Unitree G1 URDF/MJCF and render robot evidence instead of the current canvas skeleton. | A local render manifest and screenshot/frame prove the real G1 model loads and remains non-scoring. |
-| 5 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata; final stop condition still requires a real GVHMR artifact imported through the same contracts. |
+| 5 | [mvp-pipeline-contract-hardening.md](mvp-pipeline-contract-hardening.md) | planned non-GPU slice | Version and validate source, motion, teaching, G1, render, playback, annotation, and public-demo contracts before broader orchestration. | Existing fixture paths and future import paths pass through explicit versioned manifest boundaries with source-media provenance and local video-sync metadata. |
+| 6 | [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md) | planned non-GPU slice | Define one internal scene/timeline contract and make Rerun Web Viewer the first public demo artifact. | A fixture-only Rerun `.rrd`, static viewer page, public-demo manifest, and screenshot/GIF can be generated and visually smoke-tested. |
+| 7 | [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) | planned non-GPU slice | Add one-command public-demo orchestration and CI artifact/Page publishing for the fixture lane. | A clean checkout can regenerate, validate, visually smoke-test, upload, and publish the non-GPU fixture demo without tracking generated outputs. |
+| 8 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata; final stop condition still requires a real GVHMR artifact imported through the hardened contracts. |
 
 The numbered plans are semantically independent execution slices, not
 necessarily separate GSD phases. The grouping boundary is:
@@ -47,11 +54,16 @@ necessarily separate GSD phases. The grouping boundary is:
 2. G1 visual track
 3. teaching-playback-demo
 4. real Unitree G1 model rendering
-5. later real conversion gate
+5. pipeline contract hardening
+6. visualization and public demo publishing
+7. developer experience and CI surface
+8. later real conversion gate
 
 The current local-first order intentionally puts real G1 model rendering before
 the GPU conversion gate, so the right-side robot view can become real while the
-source-video pipeline still waits for a GVHMR artifact.
+source-video pipeline still waits for a GVHMR artifact. The non-GPU hardening,
+public-demo, and CI slices also stay before the GPU conversion gate so the real
+artifact has stable contracts and a publish lane when it arrives.
 
 ## Shared Decisions
 
@@ -83,6 +95,10 @@ Allowed locally:
 - lightweight MuJoCo/Genesis/Viser proof work when dependencies are stable
 - real Unitree G1 model-load/render smoke tests from user-supplied assets
 - low-resolution screenshots or frame verification
+- Rerun fixture export, static viewer generation, and GitHub Pages artifact
+  staging
+- CI orchestration for fixture-only tests, generated demo artifacts, and visual
+  smoke checks
 
 Not default local work:
 
@@ -107,6 +123,11 @@ Use two lanes throughout the MVP:
 PBHC fixtures may be useful bootstrap data, but only as externally referenced
 development samples. Do not commit copied `.pkl` or `.npz` files. Record source
 URL, license, checksum, and local path in a manifest.
+
+The public demo lane starts from the bootstrap fixture lane. It may publish
+fixture-only Rerun Web Viewer artifacts through GitHub Pages after the
+generation and CI surface exists, but it must remain visibly labeled as
+fixture-only until a real GVHMR artifact enters the same contracts.
 
 ## Shared Compute Notes
 
@@ -135,6 +156,12 @@ docs:
   - path: docs/plans/mvp-teaching-playback-demo.md
     type: SPEC
   - path: docs/plans/mvp-g1-real-model-rendering.md
+    type: SPEC
+  - path: docs/plans/mvp-pipeline-contract-hardening.md
+    type: SPEC
+  - path: docs/plans/mvp-visualization-and-public-demo.md
+    type: SPEC
+  - path: docs/plans/mvp-devex-ci-surface.md
     type: SPEC
   - path: docs/plans/mvp-real-conversion-gate.md
     type: SPEC
