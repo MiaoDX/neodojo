@@ -126,25 +126,32 @@ Viser (web 端三视角同步 + 关节轨迹 polyline + 时间轴)
 🚧 **Bootstrap 阶段，已有 fixture-only HTML demo。**
 
 当前 repo 状态、已知约束与下一步安全任务见 [`STATUS.md`](STATUS.md)。现在已经有
-一个很小的 Python package 和静态 HTML demo 生成器，但还没有提交到仓库的
-GVHMR/GMR/仿真器运行时 pipeline 或 CI gate。
+一个很小的 Python package、本地 SMPL-X fixture motion contract 命令和静态 HTML
+demo 生成器，但还没有提交到仓库的 GVHMR/GMR/仿真器运行时 pipeline 或 CI gate。
 
 现在可以运行：
 
 ```bash
 make test
+PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 make demo-html
 ```
 
-`make demo-html` 会写出 `outputs/html-demo/index.html`，这是一个自包含的合成
-fixture demo，用来验证目标教学 UI 的形态。它不证明源视频转换、气功动作精度、
-仿真器渲染、Viser 或真实 Unitree G1 retargeting 已经完成。
+`neodojo motion-record create` 会写出 fixture-backed SMPL-X motion-record 和
+teaching-track manifests。这些只是 plumbing artifact，不是真实 GVHMR 输出，也不
+是气功教学证据。
+
+`make demo-html` 会写出 `outputs/html-demo/index.html`，这是一个由本地
+motion/track manifest contract 支撑的自包含合成 fixture demo，用来验证目标教学
+UI 的形态。它不证明源视频转换、气功动作精度、仿真器渲染、Viser 或真实 Unitree
+G1 retargeting 已经完成。
 
 正在做的事情：
 
 - [ ] 第一个端到端 demo：八段锦第一式「双手托天理三焦」
 - [x] fixture-only web/HTML 教学 demo：同步 SMPL-X/G1 风格播放、轨迹叠加、
       时间轴控制，以及一个基于 SMPL-X 的几何检查
+- [x] 本地 fixture SMPL-X motion-record 和 teaching-track manifests
 - [ ] roboharness 风格的多视角离屏录制集成
 - [ ] SMPL-X 与 Unitree G1 双轨同屏 Viser UI
 - [ ] 关键定式自动检测 + 几何约束式术语反馈

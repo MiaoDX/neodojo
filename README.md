@@ -157,21 +157,27 @@ embodied skills.
 🚧 **Bootstrap phase, with a fixture-only HTML demo.**
 
 See [`STATUS.md`](STATUS.md) for the current repo state, known constraints,
-and next safe task. There is now a small checked-in Python package and static
-HTML demo generator, but there is still no checked-in GVHMR/GMR/simulator
-runtime pipeline or CI gate.
+and next safe task. There is now a small checked-in Python package, a local
+SMPL-X fixture motion-contract command, and a static HTML demo generator, but
+there is still no checked-in GVHMR/GMR/simulator runtime pipeline or CI gate.
 
 What can be run now:
 
 ```bash
 make test
+PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 make demo-html
 ```
 
+`neodojo motion-record create` writes fixture-backed SMPL-X motion-record and
+teaching-track manifests. These are plumbing artifacts only, not real GVHMR
+outputs or qigong teaching evidence.
+
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
-synthetic fixture demo for the intended teaching UI shape. It does not prove
-source-video conversion, qigong motion accuracy, simulator rendering, Viser, or
-real Unitree G1 retargeting.
+synthetic fixture demo for the intended teaching UI shape, backed by the local
+motion/track manifest contract. It does not prove source-video conversion,
+qigong motion accuracy, simulator rendering, Viser, or real Unitree G1
+retargeting.
 
 In progress:
 
@@ -180,6 +186,7 @@ In progress:
 - [x] Fixture-only web/HTML teaching demo for synchronized SMPL-X/G1-style
       playback, trajectory overlays, timeline controls, and one SMPL-X-based
       geometry check
+- [x] Local fixture SMPL-X motion-record and teaching-track manifests
 - [ ] roboharness-style multi-camera offscreen capture integration
 - [ ] SMPL-X + Unitree G1 dual-track synchronized Viser UI
 - [ ] Automatic key-frame detection + geometry-constrained verbal

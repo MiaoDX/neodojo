@@ -23,8 +23,9 @@
 
 ## Commands
 
-- `make test` runs the focused unit tests for the fixture demo generator.
-- `make demo-html` writes the self-contained fixture demo to `outputs/html-demo/index.html`.
+- `make test` runs the focused unit tests for the fixture demo generator and local motion contract.
+- `PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract` writes fixture-backed SMPL-X motion-record and teaching-track manifests.
+- `make demo-html` writes the self-contained fixture demo to `outputs/html-demo/index.html` plus the local motion/track manifests it consumes.
 - No canonical install, lint, build, or CI commands exist yet.
 - When adding code, add the command surface in the same change: package metadata, scripts or Make targets, focused tests, and README/docs updates.
 - Prefer small, reproducible Python entrypoints for pipeline work before adding broad framework structure.
