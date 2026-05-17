@@ -69,7 +69,12 @@
 
 ## Tech stack at a glance
 
-完整技术路线、SOTA 模型对比、机器人平台评估、失败模式分析见：
+项目当前事实见：
+
+- 📄 [`STATUS.md`](STATUS.md) — 当前状态、约束与下一步安全任务
+- 📄 [`ARCHITECTURE.md`](ARCHITECTURE.md) — MVP 数据流、子系统边界与验证边界
+
+完整技术路线、SOTA 模型对比、机器人平台评估、失败模式分析见以下背景文档：
 
 - 📄 [`docs/technical-roadmap.md`](docs/technical-roadmap.md) — 端到端 pipeline 调研（GVHMR / GMR / Genesis / Viser / KungfuBot 等）
 - 📄 [`docs/humanoid-platform-evaluation.md`](docs/humanoid-platform-evaluation.md) — 为什么 G1 + SMPL-X 双轨，而不是等"完美 humanoid"
@@ -119,6 +124,9 @@ Viser (web 端三视角同步 + 关节轨迹 polyline + 时间轴)
 ## Status
 
 🚧 **Bootstrap 阶段**。
+
+当前 repo 状态、已知约束与下一步安全任务见 [`STATUS.md`](STATUS.md)。目前还没有
+提交到仓库的运行时 pipeline、package layout、测试命令或 CI gate。
 
 正在做的事情：
 

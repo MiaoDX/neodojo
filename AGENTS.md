@@ -2,7 +2,9 @@
 
 ## Read First
 
-- Start with `README.md`, then `docs/technical-roadmap.md` and `docs/humanoid-platform-evaluation.md`.
+- Start with `README.md`, `STATUS.md`, and `ARCHITECTURE.md`, then consult
+  `docs/technical-roadmap.md` and `docs/humanoid-platform-evaluation.md` for
+  background research.
 - `README.zh.md` is the Chinese README. Keep the English and Chinese README files aligned when changing project positioning, status, or roadmap claims.
 - This repo is currently in bootstrap/docs-only state. Do not claim a working runtime pipeline, package layout, test command, or CI gate exists until it is added.
 

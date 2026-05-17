@@ -87,8 +87,14 @@ Administration of Sport of China:
 
 ## Tech stack at a glance
 
+Current project truth lives in:
+
+- 📄 [`STATUS.md`](STATUS.md) — current state, constraints, and next safe task
+- 📄 [`ARCHITECTURE.md`](ARCHITECTURE.md) — MVP data flow, subsystem
+  boundaries, and proof boundaries
+
 Full technical investigation, SOTA model comparisons, robot platform
-evaluation, and failure-mode analysis live in:
+evaluation, and failure-mode analysis live in these background notes:
 
 - 📄 [`docs/technical-roadmap.md`](docs/technical-roadmap.md) —
   end-to-end pipeline study (GVHMR / GMR / Genesis / Viser / KungfuBot
@@ -149,6 +155,10 @@ embodied skills.
 ## Status
 
 🚧 **Bootstrap phase.**
+
+See [`STATUS.md`](STATUS.md) for the current repo state, known constraints,
+and next safe task. There is no checked-in runtime pipeline, package layout,
+test command, or CI gate yet.
 
 In progress:
 
