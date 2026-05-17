@@ -41,8 +41,9 @@ lint/build commands.
 `make demo-public` now regenerates the fixture motion contract, detected
 annotations, fixture G1 model descriptor, G1 visual track, G1 SVG/HTML render
 evidence, teaching playback HTML/manifest, public-demo scene, `.rrd` fallback
-artifact, SVG screenshot, and public-demo manifest. It then runs
-`neodojo demo smoke` against `outputs/public-demo`.
+artifact, SVG screenshot, public-demo manifest, Viser runtime contract, and
+front/side/top Viser preview screenshots. It then runs `neodojo demo smoke`
+against `outputs/public-demo`.
 
 `make verify` now wraps the full local lane: lint, plan quality checks, tests,
 wheel build, and `make demo-public`.

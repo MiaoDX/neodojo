@@ -15,12 +15,14 @@ VISER_RUNTIME_SCHEMA = "neodojo.viser_runtime.v1"
 class ViserRuntimeWriteResult:
     manifest_path: Path
     scene_path: Path
+    screenshot_paths: dict[str, Path]
 
 
 @dataclass(frozen=True)
 class ViserServeResult:
     manifest_path: Path
     scene_path: Path
+    screenshot_paths: dict[str, Path]
     url: str
     server: Any | None = None
 
@@ -56,9 +58,138 @@ def _camera_presets() -> dict[str, dict[str, Any]]:
     }
 
 
-def build_viser_runtime_manifest(scene: dict[str, Any], *, scene_path: Path, manifest_path: Path) -> dict[str, Any]:
+def _project_viser_point(point: list[float], view: str) -> tuple[float, float]:
+    x, y, z = point
+    if view == "front":
+        return x, z
+    if view == "side":
+        return y, z
+    if view == "top":
+        return x, y
+    raise ValueError(f"unsupported Viser preview view: {view}")
+
+
+def _bounds(points: list[tuple[float, float]]) -> tuple[float, float, float, float]:
+    xs = [point[0] for point in points]
+    ys = [point[1] for point in points]
+    return min(xs), max(xs), min(ys), max(ys)
+
+
+def _scale(point: tuple[float, float], bounds: tuple[float, float, float, float]) -> tuple[float, float]:
+    min_x, max_x, min_y, max_y = bounds
+    width = max(max_x - min_x, 0.1)
+    height = max(max_y - min_y, 0.1)
+    scale = min(420 / width, 300 / height)
+    x = 320 + (point[0] - ((min_x + max_x) / 2)) * scale
+    y = 220 - (point[1] - ((min_y + max_y) / 2)) * scale
+    return x, y
+
+
+def _preview_bounds(scene: dict[str, Any], view: str, frame_index: int) -> tuple[float, float, float, float]:
+    projected = []
+    for track_id, x_offset in [("smplx", -0.55), ("g1", 0.55)]:
+        frame = scene["tracks"][track_id]["frames"][frame_index]
+        projected.extend(_project_viser_point(_to_viser_point(point, x_offset=x_offset), view) for point in frame.values())
+    return _bounds(projected)
+
+
+def _render_preview_track(
+    scene: dict[str, Any],
+    *,
+    track_id: str,
+    x_offset: float,
+    color: str,
+    view: str,
+    frame_index: int,
+    bounds: tuple[float, float, float, float],
+) -> str:
+    frame = scene["tracks"][track_id]["frames"][frame_index]
+    lines = []
+    for start, end in BONES:
+        if start not in frame or end not in frame:
+            continue
+        start_point = _project_viser_point(_to_viser_point(frame[start], x_offset=x_offset), view)
+        end_point = _project_viser_point(_to_viser_point(frame[end], x_offset=x_offset), view)
+        x1, y1 = _scale(start_point, bounds)
+        x2, y2 = _scale(end_point, bounds)
+        lines.append(
+            f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
+            f'stroke="{color}" stroke-width="4" stroke-linecap="round"/>'
+        )
+    joints = []
+    for point in frame.values():
+        x, y = _scale(_project_viser_point(_to_viser_point(point, x_offset=x_offset), view), bounds)
+        joints.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" fill="{color}"/>')
+    return "\n".join(lines + joints)
+
+
+def _render_viser_preview_svg(scene: dict[str, Any], view: str) -> str:
+    frame_count = int((scene.get("timing") or {}).get("frame_count") or len(scene["tracks"]["smplx"]["frames"]))
+    frame_index = min(max(0, int(scene.get("key_frame", 0))), max(0, frame_count - 1))
+    bounds = _preview_bounds(scene, view, frame_index)
+    smplx = _render_preview_track(
+        scene,
+        track_id="smplx",
+        x_offset=-0.55,
+        color="#147c72",
+        view=view,
+        frame_index=frame_index,
+        bounds=bounds,
+    )
+    g1 = _render_preview_track(
+        scene,
+        track_id="g1",
+        x_offset=0.55,
+        color="#b84e32",
+        view=view,
+        frame_index=frame_index,
+        bounds=bounds,
+    )
+    fixture_label = "fixture-only" if scene["fixture_only"] else "real-artifact"
+    title = f"Viser {view} preview"
+    return "\n".join(
+        [
+            '<svg xmlns="http://www.w3.org/2000/svg" width="960" height="640" viewBox="0 0 640 440" role="img">',
+            "<style>text{font-family:Inter,Arial,sans-serif}.title{font-size:18px;font-weight:760;fill:#17212b}.muted{font-size:12px;fill:#66717f}.badge{font-size:12px;font-weight:760;fill:#b54708}</style>",
+            '<rect width="640" height="440" fill="#eef2f6"/>',
+            '<rect x="18" y="18" width="604" height="404" rx="8" fill="#ffffff" stroke="#d8e0e8"/>',
+            f'<text x="40" y="50" class="title">{title}</text>',
+            f'<text x="40" y="72" class="muted">Frame {frame_index + 1} / {frame_count}. Scoring source: SMPL-X teacher.</text>',
+            f'<text x="500" y="50" class="badge">{fixture_label}</text>',
+            f'<g>{smplx}</g>',
+            f'<g>{g1}</g>',
+            '<circle cx="40" cy="386" r="5" fill="#147c72"/>',
+            '<text x="54" y="390" class="muted">SMPL-X teacher</text>',
+            '<circle cx="190" cy="386" r="5" fill="#b84e32"/>',
+            '<text x="204" y="390" class="muted">Unitree G1 visual</text>',
+            '<text x="40" y="412" class="muted">G1 scoring allowed: false. Preview generated from the Viser scene/timeline contract.</text>',
+            "</svg>",
+        ]
+    )
+
+
+def _write_viser_preview_screenshots(out_dir: Path, scene: dict[str, Any]) -> dict[str, Path]:
+    screenshot_dir = out_dir / "screenshots"
+    screenshot_dir.mkdir(parents=True, exist_ok=True)
+    paths = {
+        view: screenshot_dir / f"{view}.svg"
+        for view in ("front", "side", "top")
+    }
+    for view, path in paths.items():
+        path.write_text(_render_viser_preview_svg(scene, view), encoding="utf-8")
+    return paths
+
+
+def build_viser_runtime_manifest(
+    scene: dict[str, Any],
+    *,
+    scene_path: Path,
+    manifest_path: Path,
+    screenshot_paths: dict[str, Path] | None = None,
+) -> dict[str, Any]:
     timing = scene.get("timing") or {}
     frame_count = int(timing.get("frame_count") or len(scene["tracks"]["smplx"]["frames"]))
+    screenshot_paths = screenshot_paths or {}
     return {
         "schema": VISER_RUNTIME_SCHEMA,
         "runtime": {
@@ -89,6 +220,19 @@ def build_viser_runtime_manifest(scene: dict[str, Any], *, scene_path: Path, man
             "feedback_anchor_labels": scene.get("feedback_anchor_labels", []),
             "public_labels": scene.get("public_labels", []),
         },
+        "visual_smoke": {
+            "kind": "generated_svg_multi_camera_preview",
+            "views": ["front", "side", "top"],
+            "screenshot_paths": {
+                view: _relative_path(path, manifest_path.parent)
+                for view, path in screenshot_paths.items()
+            },
+            "required_labels": [
+                "SMPL-X teacher",
+                "Unitree G1 visual",
+                "G1 scoring allowed: false",
+            ],
+        },
         "scoring_source": "smplx",
         "g1_scoring_allowed": False,
     }
@@ -108,9 +252,22 @@ def write_viser_runtime_contract(
     )
     scene_path = out_dir / "scene.json"
     manifest_path = out_dir / "viser-runtime.json"
+    screenshot_paths = _write_viser_preview_screenshots(out_dir, scene)
     _write_json(scene_path, scene)
-    _write_json(manifest_path, build_viser_runtime_manifest(scene, scene_path=scene_path, manifest_path=manifest_path))
-    return ViserRuntimeWriteResult(manifest_path=manifest_path, scene_path=scene_path)
+    _write_json(
+        manifest_path,
+        build_viser_runtime_manifest(
+            scene,
+            scene_path=scene_path,
+            manifest_path=manifest_path,
+            screenshot_paths=screenshot_paths,
+        ),
+    )
+    return ViserRuntimeWriteResult(
+        manifest_path=manifest_path,
+        scene_path=scene_path,
+        screenshot_paths=screenshot_paths,
+    )
 
 
 def _to_viser_point(point: list[float], *, x_offset: float = 0.0) -> list[float]:
@@ -262,6 +419,7 @@ def serve_viser_runtime(
         return ViserServeResult(
             manifest_path=result.manifest_path,
             scene_path=result.scene_path,
+            screenshot_paths=result.screenshot_paths,
             url=url,
             server=None,
         )
@@ -270,6 +428,7 @@ def serve_viser_runtime(
     return ViserServeResult(
         manifest_path=result.manifest_path,
         scene_path=result.scene_path,
+        screenshot_paths=result.screenshot_paths,
         url=url,
         server=server,
     )

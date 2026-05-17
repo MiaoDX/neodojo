@@ -259,17 +259,20 @@ writes a true Rerun SDK recording and marks
 `rerun.actual_rrd: true` in the public-demo manifest.
 
 `neodojo demo serve-viser` writes `outputs/viser-runtime/scene.json` plus a
-Viser runtime manifest, then starts an optional local Viser server from the
-same scene/timeline contract. It requires installing the `viser` extra or the
-`viser` package. The first runtime shows SMPL-X and G1 as synchronized 3D
-tracks with a frame slider, trajectory overlays, camera-preset metadata, and
-explicit SMPL-X scoring/G1 visual labels; it is not the final teaching UI.
+Viser runtime manifest and generated front/side/top preview screenshots, then
+starts an optional local Viser server from the same scene/timeline contract. It
+requires installing the `viser` extra or the `viser` package unless
+`--write-contract-only` is used. The first runtime shows SMPL-X and G1 as
+synchronized 3D tracks with a frame slider, trajectory overlays, camera-preset
+metadata, and explicit SMPL-X scoring/G1 visual labels; it is not the final
+teaching UI.
 
 `make verify` runs lint, MVP plan quality checks, tests, wheel build, and the
 public-demo smoke lane.
 `make demo-public` regenerates the fixture motion contract, detected
 annotations, SMPL-X surface proxy, G1 visual track, G1 render evidence,
-teaching playback, public-demo artifact, and smoke check in one local command.
+teaching playback, Viser runtime preview, public-demo artifact, and smoke check
+in one local command.
 `make smoke-public`
 validates an existing
 `outputs/public-demo` artifact set. The GitHub Actions workflow at
@@ -329,6 +332,8 @@ In progress:
       remains repository-setting dependent
 - [x] Optional first Viser local runtime with synchronized SMPL-X/G1 tracks,
       frame slider, trajectory overlays, and scoring-source labels
+- [x] Generated Viser front/side/top preview screenshots in the one-command
+      public-demo lane
 - [x] One-command local `make demo-public` flow and GitHub Actions artifact/Page
       workflow for the fixture public demo
 - [x] Minimal `make lint` and `make build` command surface
@@ -340,7 +345,8 @@ In progress:
       video
 - [x] Local GVHMR source-validation report and validated JSON import handoff
 - [ ] roboharness-style multi-camera offscreen capture integration
-- [ ] production Viser teaching UX beyond the first optional local runtime
+- [ ] production Viser teaching UX beyond the first optional local runtime and
+      generated preview screenshots
 
 The detailed implementation queue lives in [`docs/plans/`](docs/plans/) and
 can later be mirrored into GitHub issues.

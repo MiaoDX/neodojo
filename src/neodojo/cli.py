@@ -655,6 +655,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
                 print(f"wrote {result.manifest_path}")
                 print(f"wrote {result.scene_path}")
+                for path in result.screenshot_paths.values():
+                    print(f"wrote {path}")
                 return 0
             result = serve_viser_runtime(
                 playback_manifest_path=args.playback,
@@ -666,6 +668,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(f"wrote {result.manifest_path}")
             print(f"wrote {result.scene_path}")
+            for path in result.screenshot_paths.values():
+                print(f"wrote {path}")
             print(f"serving {result.url}")
             return 0
 

@@ -1,6 +1,6 @@
 # MVP Viser Multi-Camera Runtime Plan
 
-Status: IMPLEMENTED FIRST OPTIONAL LOCAL SERVER; MULTI-CAMERA OFFSCREEN CAPTURE REMAINS FOLLOW-ON
+Status: IMPLEMENTED FIRST OPTIONAL LOCAL SERVER AND MULTI-CAMERA PREVIEW EVIDENCE; PRODUCTION UX REMAINS FOLLOW-ON
 
 ## Goal
 
@@ -23,8 +23,9 @@ The first optional runtime now exists as `neodojo demo serve-viser`. It consumes
 the same scene/timeline contract as the public-demo lane, starts a real local
 Viser server when the `viser` extra is installed, and exposes synchronized
 SMPL-X/G1 tracks with a frame slider, trajectory overlays, and explicit
-scoring-source labels. Browser screenshot capture and richer multi-camera
-interaction remain follow-on work.
+scoring-source labels. The contract writer also emits dependency-light
+front/side/top SVG preview screenshots from the same scene contract for visual
+smoke evidence. Richer production teaching interaction remains follow-on work.
 
 ## Dependencies
 
@@ -47,7 +48,7 @@ interaction remain follow-on work.
 - `neodojo demo serve-viser` or equivalent local runtime command.
 - Synchronized timeline controls and camera/view selection.
 - Overlay support for trajectories, annotations, and scoring-source labels.
-- Visual smoke procedure with screenshots when browser tooling is available.
+- Visual smoke procedure with generated front/side/top screenshots.
 
 ## Execution Tasks
 
@@ -63,7 +64,8 @@ interaction remain follow-on work.
 3. Add smoke checks.
    - [x] Verify server startup and populated scene through an optional
      `--smoke-start` path.
-   - [ ] Capture screenshot evidence when browser tooling is available.
+   - [x] Capture front/side/top SVG screenshot evidence from the Viser
+     scene/timeline contract.
 
 ## Acceptance Evidence
 
@@ -73,17 +75,21 @@ interaction remain follow-on work.
 - Static public-demo generation still works independently.
 - Optional dependency tests can start and stop the server without making Viser a
   default dependency.
+- `make demo-public` writes the Viser runtime contract and generated
+  multi-camera preview screenshots without requiring the optional Viser package.
 
 ## Non-Goals
 
 - Public hosting of the Viser runtime.
 - Replacing GitHub Pages artifact publishing.
 - Physics/control simulation.
-- Full production UI polish in the first runtime slice.
+- Full production UI polish.
+- Browser-driven capture of the live Viser client.
 
 ## Stop Condition
 
-Stopped for the first slice when a local Viser session could load the fixture
-scene, expose synchronized SMPL-X/G1 tracks, and pass optional server-start
-smoke. Continue when the next task needs browser screenshot capture,
-multi-camera offscreen evidence, or production teaching UX.
+Stop for this slice when a local Viser session can load the fixture scene,
+expose synchronized SMPL-X/G1 tracks, pass optional server-start smoke, and
+write generated multi-camera preview screenshots from the runtime contract.
+Continue when the next task needs browser-driven live-client capture or
+production teaching UX.

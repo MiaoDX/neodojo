@@ -902,6 +902,7 @@ class DemoHtmlTests(unittest.TestCase):
             )
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
             scene = json.loads(result.scene_path.read_text(encoding="utf-8"))
+            front_screenshot = result.screenshot_paths["front"].read_text(encoding="utf-8")
 
         self.assertEqual(manifest["schema"], "neodojo.viser_runtime.v1")
         self.assertEqual(manifest["runtime"]["target"], "viser")
@@ -913,6 +914,10 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["controls"][0]["kind"], "slider")
         self.assertEqual(scene["schema"], "neodojo.scene_timeline.v1")
         self.assertIn("SMPL-X teacher", manifest["overlays"]["public_labels"])
+        self.assertEqual(set(manifest["visual_smoke"]["screenshot_paths"]), {"front", "side", "top"})
+        self.assertEqual(set(result.screenshot_paths), {"front", "side", "top"})
+        self.assertIn("Viser front preview", front_screenshot)
+        self.assertIn("G1 scoring allowed: false", front_screenshot)
 
     @unittest.skipUnless(importlib.util.find_spec("viser"), "viser optional dependency is not installed")
     def test_viser_runtime_can_start_and_stop_with_optional_dependency(self) -> None:
@@ -942,6 +947,7 @@ class DemoHtmlTests(unittest.TestCase):
 
         self.assertEqual(result.manifest_path.name, "viser-runtime.json")
         self.assertEqual(result.scene_path.name, "scene.json")
+        self.assertEqual(set(result.screenshot_paths), {"front", "side", "top"})
         self.assertTrue(result.url.startswith("http://127.0.0.1:"))
 
     def test_public_demo_smoke_rejects_missing_label(self) -> None:

@@ -94,10 +94,12 @@ UI server.
 - Optional first Viser local runtime is available through `demo serve-viser`
   when the optional `viser` extra is installed. It loads the shared
   scene/timeline contract, shows synchronized SMPL-X and G1 3D tracks,
-  trajectory overlays, a frame slider, and explicit scoring-source labels.
+  trajectory overlays, a frame slider, and explicit scoring-source labels. The
+  contract path also writes generated front/side/top SVG preview screenshots
+  for visual smoke evidence without requiring the optional Viser package.
 - `make demo-public` regenerates the fixture motion, routine feedback
   annotations, SMPL-X surface proxy, G1 visual/render, teaching-playback,
-  public-demo, and smoke-check artifacts in one command.
+  public-demo, Viser runtime preview, and smoke-check artifacts in one command.
 - `make check` validates MVP plan links and minimum plan scaffolding, and is
   included in `make verify` and the GitHub Actions workflow.
 - `.github/workflows/public-demo.yml` runs tests, builds the fixture public demo,
@@ -216,8 +218,8 @@ optional SMPL-X surface proxy, and G1 manifests. `neodojo demo export-rerun` wri
 by default, the `.rrd` is a JSON fallback artifact, not a real Rerun SDK
 recording. Passing `--use-rerun-sdk` with the optional `rerun` extra installed
 writes a true Rerun recording. `make demo-public` regenerates the full fixture
-public-demo lane, including detected annotations and the SMPL-X surface proxy,
-and runs the smoke check. `make smoke-public`
+public-demo lane, including detected annotations, the SMPL-X surface proxy, and
+the Viser runtime preview screenshots, then runs the smoke check. `make smoke-public`
 validates an existing `outputs/public-demo` artifact set. `make demo-html`
 writes `outputs/html-demo/index.html`, `outputs/html-demo/manifest.json`, and
 the local motion/track manifests it consumes. These artifacts use synthetic
@@ -225,15 +227,16 @@ fixture motion only; they validate UI plumbing, trajectory drawing, timeline
 sync, the local SMPL-X/G1 scoring boundary, the visual-only SMPL-X surface
 proxy, and one SMPL-X-based geometry check, not qigong correctness.
 
-`neodojo demo serve-viser` writes `outputs/viser-runtime/viser-runtime.json`
-and `outputs/viser-runtime/scene.json`, then starts a local Viser server when
-the optional `viser` extra is installed. The first runtime consumes the same
-scene/timeline contract as the public-demo lane, converts the current y-up
+`neodojo demo serve-viser` writes `outputs/viser-runtime/viser-runtime.json`,
+`outputs/viser-runtime/scene.json`, and generated front/side/top SVG previews
+under `outputs/viser-runtime/screenshots/`, then starts a local Viser server
+when the optional `viser` extra is installed. The first runtime consumes the
+same scene/timeline contract as the public-demo lane, converts the current y-up
 coordinates into Viser z-up coordinates, and displays synchronized SMPL-X/G1
 tracks, trajectory overlays, a frame slider, and scoring-source labels. Use
-`--write-contract-only` to write the Viser runtime contract without importing
-Viser, or `--smoke-start` to start, populate, and stop the server for local
-verification.
+`--write-contract-only` to write the Viser runtime contract and preview
+screenshots without importing Viser, or `--smoke-start` to start, populate, and
+stop the server for local verification.
 
 `neodojo real-conversion prepare` writes ignored source/trim metadata for the
 later GPU run and does not download video or execute GVHMR. When a local video
@@ -252,9 +255,9 @@ when source id, trim, input path/checksum, and duration checks pass.
 
 - Licensed SMPL-X mesh/body-model playback beyond the current capsule proxy:
   `docs/plans/mvp-smplx-body-surface-playback.md`.
-- Production Viser teaching UX and multi-camera/offscreen screenshot capture:
+- Production Viser teaching UX beyond generated multi-camera preview evidence:
   `docs/plans/mvp-viser-multicamera-runtime.md`. The first optional local
-  Viser runtime exists.
+  Viser runtime and front/side/top preview screenshots exist.
 - Verification of the live GitHub Pages URL:
   `docs/plans/mvp-rerun-pages-release.md`. True Rerun SDK `.rrd` export exists
   as an optional command.
