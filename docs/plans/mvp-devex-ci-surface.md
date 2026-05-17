@@ -52,7 +52,7 @@ against `outputs/public-demo` and `neodojo capture bundle` to write
 quality checks, tests, wheel build, `make demo-public`,
 `make real-handoff-smoke`, `make gpu-input-bundle-smoke`,
 `make gpu-input-archive-smoke`, `make gpu-execution-probe`, and
-`make real-artifact-intake-smoke`.
+`make real-artifact-intake-smoke`, and `make real-conversion-audit`.
 `make demo-public-browser` adds the optional Playwright-backed Chromium
 screenshot capture and refreshes the capture bundle with browser evidence.
 `make real-artifact-intake-smoke` writes fixture-only source materialization
@@ -71,7 +71,9 @@ metadata-only `neodojo-real-handoff-smoke` artifact from that smoke, runs
 `neodojo-gpu-input-archive-smoke` artifact, runs `make gpu-execution-probe`,
 uploads a metadata-only `neodojo-gpu-execution-probe` artifact, runs
 `make real-artifact-intake-smoke`, uploads a fixture-only
-`neodojo-real-artifact-intake-smoke` artifact, installs Chromium through the
+`neodojo-real-artifact-intake-smoke` artifact, runs
+`make real-conversion-audit`, uploads a metadata-only
+`neodojo-real-conversion-audit` artifact, installs Chromium through the
 optional Playwright browser extra, and runs `make demo-public-browser`. It
 uploads `outputs/public-demo` as the standalone
 public-demo artifact, uploads `outputs/browser-capture` as browser evidence,
@@ -219,6 +221,7 @@ the artifact contains no source media or checkpoint/model files.
      values.
    - [x] Upload the fixture-only real-artifact intake smoke artifact with no
      media.
+   - [x] Upload the metadata-only real-conversion completion audit artifact.
 
 5. Add visual smoke checks.
    - [x] Check generated HTML, scene, `.rrd` fallback, and SVG screenshot are
@@ -263,6 +266,8 @@ the artifact contains no source media or checkpoint/model files.
 - CI uploads the fixture-only real-artifact intake smoke artifact with
   source-validation, public-demo, and capture manifests but no media, verified
   by run `26006210299`.
+- CI is configured to upload the real-conversion completion audit artifact with
+  blocker status and no media.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages publishes only safe static demo assets once repository Pages is

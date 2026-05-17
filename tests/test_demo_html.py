@@ -35,6 +35,7 @@ from neodojo.quality import check_quality_surface
 from neodojo.recorder_capture import write_simulator_recorder_capture
 from neodojo.real_conversion import (
     _parse_ffprobe_payload,
+    audit_real_conversion_completion,
     inspect_gvhmr_result,
     materialize_real_conversion_source,
     package_gvhmr_gpu_handoff,
@@ -2494,6 +2495,125 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(source_materialization["fixture_only"])
         self.assertTrue(gvhmr_export["fixture_only"])
         self.assertEqual(gvhmr_export["provenance"]["runtime"], "neodojo fixture smoke")
+
+    def test_real_conversion_audit_reports_external_artifact_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            result = audit_real_conversion_completion(
+                root / "audit",
+                source_materialization=root / "missing-source-materialization.json",
+                gvhmr_json=root / "missing-gvhmr-smplx-joints.json",
+                real_demo=root / "real-demo",
+                env={},
+                command_lookup=lambda _command: None,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "external_gpu_artifact_missing")
+        self.assertFalse(result.complete)
+        self.assertTrue(manifest["blocked"])
+        self.assertEqual(manifest["schema"], "neodojo.real_conversion_audit.v1")
+        self.assertEqual(manifest["gpu_execution_probe"]["status"], "external_gpu_artifact_missing")
+        self.assertFalse(manifest["checks"][0]["passed"])
+
+    def test_real_conversion_audit_distinguishes_fixture_intake_smoke(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            smoke_input = write_real_artifact_intake_smoke_input(root / "smoke-input")
+            write_real_conversion_demo(
+                root / "real-artifact-intake-smoke",
+                source_materialization=smoke_input.source_materialization_path,
+                gvhmr_json=smoke_input.gvhmr_json_path,
+            )
+
+            result = audit_real_conversion_completion(
+                root / "audit",
+                source_materialization=smoke_input.source_materialization_path,
+                gvhmr_json=smoke_input.gvhmr_json_path,
+                real_demo=root / "real-artifact-intake-smoke",
+                env={},
+                command_lookup=lambda _command: None,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "fixture_artifact_only")
+        self.assertFalse(result.complete)
+        self.assertTrue(manifest["artifact"]["source_materialization_fixture_only"])
+        self.assertTrue(manifest["artifact"]["gvhmr_export_fixture_only"])
+        self.assertFalse(manifest["real_demo"]["real_gvhmr_artifact_imported"])
+        self.assertEqual(manifest["artifact"]["validation_status"], "validated")
+
+    def test_real_conversion_audit_accepts_verified_real_demo(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            materialization = root / "source-materialization.json"
+            materialization.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.real_conversion_source_materialization.v1",
+                        "source_prep": {"source_id": "03-006"},
+                        "trim": {
+                            "start_seconds": 0.25,
+                            "end_seconds": 1.75,
+                            "duration_seconds": 1.5,
+                        },
+                        "outputs": {
+                            "trimmed_video_path": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                            "trimmed_video": {"sha256": "abc123"},
+                        },
+                        "gpu_handoff": {
+                            "trimmed_video_argument": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            gvhmr = root / "gvhmr-smplx-joints.json"
+            gvhmr.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gvhmr_smplx_joints.v1",
+                        "routine": "Baduanjin",
+                        "form": "Two Hands Hold Up the Heavens",
+                        "fps": 24,
+                        "frames": build_smplx_fixture_frames(36),
+                        "provenance": {
+                            "source_materialization_manifest": str(materialization),
+                            "source_materialization_sha256": sha256_file(materialization),
+                            "source_id": "03-006",
+                            "trim": {
+                                "start_seconds": 0.25,
+                                "end_seconds": 1.75,
+                                "duration_seconds": 1.5,
+                            },
+                            "input_video": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                            "input_video_sha256": "abc123",
+                            "gpu_command": "python tools/demo/demo.py --video trimmed-clip.mp4",
+                            "runtime": "test gpu",
+                            "upstream_version": "gvhmr-test",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            write_real_conversion_demo(root / "real-demo", source_materialization=materialization, gvhmr_json=gvhmr)
+
+            result = audit_real_conversion_completion(
+                root / "audit",
+                source_materialization=materialization,
+                gvhmr_json=gvhmr,
+                real_demo=root / "real-demo",
+                env={},
+                command_lookup=lambda _command: None,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "real_demo_verified")
+        self.assertTrue(result.complete)
+        self.assertFalse(manifest["blocked"])
+        self.assertTrue(manifest["real_demo"]["real_gvhmr_artifact_imported"])
+        self.assertEqual(manifest["artifact"]["validation_status"], "validated")
 
     def test_real_conversion_prep_rejects_unknown_source_id(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -100,6 +100,16 @@ jobs:
             outputs/real-artifact-intake-smoke/public-demo/manifest.json
             outputs/real-artifact-intake-smoke/capture/manifest.json
           if-no-files-found: error
+      - name: Real conversion completion audit
+        run: make real-conversion-audit
+      - name: Upload real conversion audit artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neodojo-real-conversion-audit
+          path: |
+            outputs/real-conversion-audit/manifest.json
+            outputs/real-conversion-audit/gpu-execution-probe/manifest.json
+          if-no-files-found: error
       - name: Install browser runtime
         run: python -m playwright install --with-deps chromium
       - name: Build public demo with browser capture

@@ -23,6 +23,7 @@ from .recorder_capture import write_simulator_recorder_capture
 from .real_conversion import (
     DEFAULT_SOURCE_ID,
     DEFAULT_SOURCE_INDEX,
+    audit_real_conversion_completion,
     inspect_gvhmr_result,
     materialize_real_conversion_source,
     package_gvhmr_gpu_handoff,
@@ -792,6 +793,39 @@ def build_parser() -> argparse.ArgumentParser:
         default=36,
         help="number of synthetic SMPL-X frames to write",
     )
+    real_audit = real_subparsers.add_parser(
+        "audit-completion",
+        help="write a non-failing audit of whether the real GVHMR conversion gate is complete",
+    )
+    real_audit.add_argument(
+        "--source-materialization",
+        type=Path,
+        default=Path("outputs/real-conversion-source/source-materialization.json"),
+        help="source-materialization.json expected to match the returned GVHMR export",
+    )
+    real_audit.add_argument(
+        "--gvhmr-json",
+        type=Path,
+        default=Path("outputs/real-conversion-gate/gvhmr-smplx-joints.json"),
+        help="returned neodojo.gvhmr_smplx_joints.v1 JSON export to audit",
+    )
+    real_audit.add_argument(
+        "--real-demo",
+        type=Path,
+        default=Path("outputs/real-demo"),
+        help="real-demo output directory or manifest to verify",
+    )
+    real_audit.add_argument(
+        "--require-complete",
+        action="store_true",
+        help="exit with an error unless the audit proves a real non-fixture demo exists",
+    )
+    real_audit.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/real-conversion-audit"),
+        help="output directory for the audit manifest",
+    )
     real_inspect_gvhmr = real_subparsers.add_parser(
         "inspect-gvhmr-result",
         help="inspect a returned GVHMR hmr4d_results.pt or JSON summary for export readiness",
@@ -1173,6 +1207,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = write_real_artifact_intake_smoke_input(args.out, frame_count=args.frames)
             print(f"wrote {result.source_materialization_path}")
             print(f"wrote {result.gvhmr_json_path}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "audit-completion":
+            result = audit_real_conversion_completion(
+                args.out,
+                source_materialization=args.source_materialization,
+                gvhmr_json=args.gvhmr_json,
+                real_demo=args.real_demo,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"status {result.status}")
+            print(f"complete {str(result.complete).lower()}")
+            if args.require_complete and not result.complete:
+                raise ValueError(f"real conversion gate is not complete; status is {result.status}")
             return 0
 
         if args.command == "real-conversion" and args.real_command == "package-gpu-handoff":

@@ -202,6 +202,7 @@ make gpu-execution-probe
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
+make real-conversion-audit
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
@@ -333,7 +334,8 @@ Direct roboharness and live-runtime recording remain follow-on work.
 `make verify` runs lint, MVP plan quality checks, tests, wheel build, the
 public-demo plus capture-bundle smoke lane, the dry-run real-handoff smoke
 lane, metadata-only GPU input bundle/archive smoke lanes, GPU execution probe,
-and fixture-only real-artifact intake smoke lane.
+fixture-only real-artifact intake smoke lane, and real-conversion completion
+audit.
 `make demo-public` regenerates the fixture motion contract, detected
 annotations, SMPL-X surface proxy, G1 visual track, G1 render evidence,
 teaching playback, Viser runtime preview, public-demo artifact, generated
@@ -437,6 +439,11 @@ and GVHMR JSON inputs, then runs the same wrapper to keep the returned-artifact
 intake path covered locally and in CI without claiming a real GVHMR run. The
 resulting real-demo manifest sets `gvhmr_artifact_imported: true` for the
 contract import and `real_gvhmr_artifact_imported: false` for fixture smoke.
+`make real-conversion-audit` writes `outputs/real-conversion-audit/manifest.json`,
+classifying whether the real gate is complete or still blocked on an external
+GPU artifact. It exits successfully for blocker classification; use
+`PYTHONPATH=src python -m neodojo real-conversion audit-completion --require-complete`
+when a script should fail unless a real non-fixture demo exists.
 
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local
@@ -517,6 +524,8 @@ In progress:
       GVHMR export path
 - [x] Fixture-backed `make real-artifact-intake-smoke` coverage for the returned
       artifact wrapper
+- [x] Executable `make real-conversion-audit` blocker classifier for the real
+      GVHMR gate
 The detailed implementation queue lives in [`docs/plans/`](docs/plans/) and
 can later be mirrored into GitHub issues.
 

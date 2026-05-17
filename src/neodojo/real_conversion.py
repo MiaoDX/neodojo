@@ -35,6 +35,7 @@ GVHMR_GPU_INPUT_BUNDLE_SCHEMA = "neodojo.gvhmr_gpu_input_bundle.v1"
 GVHMR_GPU_INPUT_ARCHIVE_SCHEMA = "neodojo.gvhmr_gpu_input_archive.v1"
 GVHMR_RESULT_INSPECTION_SCHEMA = "neodojo.gvhmr_result_inspection.v1"
 GVHMR_GPU_EXECUTION_PROBE_SCHEMA = "neodojo.gvhmr_gpu_execution_probe.v1"
+REAL_CONVERSION_AUDIT_SCHEMA = "neodojo.real_conversion_audit.v1"
 DEFAULT_SOURCE_INDEX = Path("video/original_videos.csv")
 DEFAULT_SOURCE_ID = "03-006"
 
@@ -104,6 +105,14 @@ class GvhmrGpuExecutionProbeWriteResult:
 class RealArtifactIntakeSmokeInputWriteResult:
     source_materialization_path: Path
     gvhmr_json_path: Path
+
+
+@dataclass(frozen=True)
+class RealConversionCompletionAuditWriteResult:
+    manifest_path: Path
+    status: str
+    complete: bool
+    checked_paths: list[Path]
 
 
 def _as_posix(path: Path) -> str:
@@ -1930,6 +1939,261 @@ def _relative_path_for_validation(path: Path, start: Path) -> str:
         return str(path.relative_to(start)).replace("\\", "/")
     except ValueError:
         return _as_posix(path)
+
+
+def _relative_to_out_dir(path: Path | None, out_dir: Path) -> str | None:
+    if path is None:
+        return None
+    try:
+        return _as_posix(path.relative_to(out_dir))
+    except ValueError:
+        return _as_posix(path)
+
+
+def _audit_json_schema(path: Path, schema: str, label: str) -> tuple[dict[str, Any] | None, str | None]:
+    if not path.exists():
+        return None, f"{label} does not exist"
+    try:
+        payload = _load_json_object(path, label)
+        require_schema(payload, schema, label)
+    except ValueError as exc:
+        return None, str(exc)
+    return payload, None
+
+
+def _audit_add_check(
+    checks: list[dict[str, Any]],
+    *,
+    name: str,
+    passed: bool,
+    message: str,
+    required: bool = True,
+    path: Path | None = None,
+) -> None:
+    checks.append(
+        {
+            "name": name,
+            "passed": passed,
+            "required": required,
+            "message": message,
+            "path": _as_posix(path) if path is not None else None,
+        }
+    )
+
+
+def audit_real_conversion_completion(
+    out_dir: Path,
+    *,
+    source_materialization: Path = Path("outputs/real-conversion-source/source-materialization.json"),
+    gvhmr_json: Path = Path("outputs/real-conversion-gate/gvhmr-smplx-joints.json"),
+    real_demo: Path = Path("outputs/real-demo"),
+    env: Mapping[str, str] | None = None,
+    command_lookup: Callable[[str], str | None] | None = None,
+) -> RealConversionCompletionAuditWriteResult:
+    """Write an executable audit of the remaining real GVHMR conversion gate."""
+
+    validate_output_dir(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = out_dir / "manifest.json"
+    checks: list[dict[str, Any]] = []
+    checked_paths: list[Path] = []
+
+    probe = probe_gpu_execution_environment(
+        out_dir / "gpu-execution-probe",
+        env=env,
+        command_lookup=command_lookup,
+    )
+    checked_paths.append(probe.manifest_path)
+    gpu_route_visible = probe.status != "external_gpu_artifact_missing"
+    _audit_add_check(
+        checks,
+        name="gpu_execution_route_visible",
+        passed=gpu_route_visible,
+        required=False,
+        path=probe.manifest_path,
+        message=(
+            "A possible GPU execution route is visible."
+            if gpu_route_visible
+            else "No local CUDA runtime, Docker GPU runtime, or configured provider was detected."
+        ),
+    )
+
+    materialization, materialization_error = _audit_json_schema(
+        source_materialization,
+        SOURCE_MATERIALIZATION_SCHEMA,
+        "source materialization manifest",
+    )
+    if materialization is not None:
+        checked_paths.append(source_materialization)
+    _audit_add_check(
+        checks,
+        name="source_materialization_available",
+        passed=materialization is not None,
+        path=source_materialization,
+        message=materialization_error or "Source materialization manifest is present and schema-valid.",
+    )
+    source_materialization_fixture_only = bool(
+        materialization.get("fixture_only") if materialization is not None else False
+    )
+
+    gvhmr_export, gvhmr_error = _audit_json_schema(
+        gvhmr_json,
+        GVHMR_JOINT_EXPORT_SCHEMA,
+        "GVHMR SMPL-X export",
+    )
+    if gvhmr_export is not None:
+        checked_paths.append(gvhmr_json)
+    frames = gvhmr_export.get("frames", gvhmr_export.get("smplx_joints")) if gvhmr_export else None
+    frame_count = len(frames) if isinstance(frames, list) else None
+    gvhmr_export_fixture_only = bool(gvhmr_export.get("fixture_only") if gvhmr_export is not None else False)
+    _audit_add_check(
+        checks,
+        name="gvhmr_export_available",
+        passed=gvhmr_export is not None,
+        path=gvhmr_json,
+        message=gvhmr_error or "GVHMR export is present and schema-valid.",
+    )
+    _audit_add_check(
+        checks,
+        name="gvhmr_export_non_fixture",
+        passed=gvhmr_export is not None and not gvhmr_export_fixture_only,
+        path=gvhmr_json,
+        message=(
+            "GVHMR export is not marked fixture-only."
+            if gvhmr_export is not None and not gvhmr_export_fixture_only
+            else "No non-fixture returned GVHMR export is available."
+        ),
+    )
+
+    validation_status = None
+    validation_report_path = None
+    if materialization is not None and gvhmr_export is not None:
+        validation = validate_gvhmr_source(
+            out_dir / "source-validation",
+            source_materialization=source_materialization,
+            gvhmr_json=gvhmr_json,
+        )
+        validation_status = validation.status
+        validation_report_path = validation.report_path
+        checked_paths.append(validation.report_path)
+        if validation.validated_export_path is not None:
+            checked_paths.append(validation.validated_export_path)
+        _audit_add_check(
+            checks,
+            name="source_validation_passed",
+            passed=validation.status == "validated",
+            path=validation.report_path,
+            message=f"GVHMR source validation status is {validation.status}.",
+        )
+
+    real_demo_manifest = real_demo if real_demo.suffix == ".json" else real_demo / "manifest.json"
+    real_demo_payload, real_demo_error = _audit_json_schema(
+        real_demo_manifest,
+        "neodojo.real_conversion_demo.v1",
+        "real conversion demo manifest",
+    )
+    if real_demo_payload is not None:
+        checked_paths.append(real_demo_manifest)
+    real_demo_imported = bool(real_demo_payload.get("real_gvhmr_artifact_imported")) if real_demo_payload else False
+    public_demo_ref = real_demo_payload.get("public_demo") if real_demo_payload else None
+    public_demo_manifest = (
+        real_demo_manifest.parent / public_demo_ref
+        if isinstance(public_demo_ref, str) and public_demo_ref
+        else real_demo_manifest.parent / "public-demo" / "manifest.json"
+    )
+    public_demo_available = public_demo_manifest.exists()
+    if public_demo_available:
+        checked_paths.append(public_demo_manifest)
+    _audit_add_check(
+        checks,
+        name="real_demo_manifest_imported_real_artifact",
+        passed=real_demo_imported,
+        path=real_demo_manifest,
+        message=(
+            "Real-demo manifest confirms a real non-fixture GVHMR artifact import."
+            if real_demo_imported
+            else real_demo_error or "Real-demo manifest does not confirm a real non-fixture GVHMR artifact import."
+        ),
+    )
+    _audit_add_check(
+        checks,
+        name="real_demo_public_demo_available",
+        passed=real_demo_imported and public_demo_available,
+        path=public_demo_manifest,
+        message=(
+            "Real-demo public-demo manifest is available."
+            if real_demo_imported and public_demo_available
+            else "No verified public-demo manifest exists for a real GVHMR artifact."
+        ),
+    )
+
+    complete = real_demo_imported and public_demo_available
+    if complete:
+        status = "real_demo_verified"
+        next_action = "Inspect outputs/real-demo/public-demo and archive the real conversion evidence outside git."
+    elif gvhmr_export is None:
+        status = "external_gpu_artifact_missing" if not gpu_route_visible else "real_artifact_missing"
+        next_action = (
+            "Run GVHMR on a GPU-capable machine and return a neodojo.gvhmr_smplx_joints.v1 export."
+        )
+    elif materialization is None:
+        status = "source_materialization_missing"
+        next_action = "Create or point to the matching source-materialization.json for the returned GVHMR export."
+    elif gvhmr_export_fixture_only or source_materialization_fixture_only:
+        status = "fixture_artifact_only"
+        next_action = "Use a non-fixture source materialization and returned GVHMR export for the real gate."
+    elif validation_status != "validated":
+        status = "real_artifact_validation_failed"
+        next_action = "Inspect the source-validation report and classify the mismatch before changing contracts."
+    else:
+        status = "real_artifact_ready_for_import"
+        next_action = "Run make real-artifact-intake or make demo-real with the validated returned export."
+
+    manifest = {
+        "schema": REAL_CONVERSION_AUDIT_SCHEMA,
+        "status": status,
+        "complete": complete,
+        "blocked": not complete,
+        "inputs": {
+            "source_materialization": _as_posix(source_materialization),
+            "gvhmr_json": _as_posix(gvhmr_json),
+            "real_demo": _as_posix(real_demo),
+        },
+        "gpu_execution_probe": {
+            "manifest": _relative_to_out_dir(probe.manifest_path, out_dir),
+            "status": probe.status,
+            "route_visible": gpu_route_visible,
+        },
+        "artifact": {
+            "source_materialization_fixture_only": source_materialization_fixture_only,
+            "gvhmr_export_fixture_only": gvhmr_export_fixture_only,
+            "frame_count": frame_count,
+            "validation_status": validation_status,
+            "validation_report": _relative_to_out_dir(validation_report_path, out_dir),
+        },
+        "real_demo": {
+            "manifest": _as_posix(real_demo_manifest),
+            "exists": real_demo_payload is not None,
+            "real_gvhmr_artifact_imported": real_demo_imported,
+            "public_demo_manifest": _as_posix(public_demo_manifest),
+            "public_demo_manifest_exists": public_demo_available,
+        },
+        "checks": checks,
+        "next_action": next_action,
+        "notes": (
+            "This audit is a blocker classifier. It may pass local verification "
+            "while status is not complete, because the remaining GVHMR run is "
+            "external to the local CPU workspace."
+        ),
+    }
+    _write_json(manifest_path, manifest)
+    checked_paths.append(manifest_path)
+    return RealConversionCompletionAuditWriteResult(
+        manifest_path=manifest_path,
+        status=status,
+        complete=complete,
+        checked_paths=list(dict.fromkeys(checked_paths)),
+    )
 
 
 def _source_media_metadata(planned_video_path: Path, local_video: Path | None, trim: dict[str, Any]) -> dict[str, Any]:

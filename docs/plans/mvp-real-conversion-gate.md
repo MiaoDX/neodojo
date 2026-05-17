@@ -356,6 +356,9 @@ artifact path; it defaults to
 - [x] Add a safe `real-conversion probe-gpu-execution` / `make
   gpu-execution-probe` command that records local CUDA/provider readiness
   without running GVHMR or exposing secret values.
+- [x] Add `real-conversion audit-completion` / `make real-conversion-audit`
+  so local and CI runs write a non-failing blocker classification manifest for
+  this gate.
 - [ ] Run GVHMR on a GPU-capable environment.
 - [ ] Export the SMPL-X result directory with enough metadata for reproducibility.
 - [ ] Convert or export the GVHMR result into
@@ -415,6 +418,15 @@ Latest local execution probe, now reproducible with `make gpu-execution-probe`:
 
 That probe keeps the blocker classified as external artifact acquisition rather
 than an unimplemented local command or contract gap.
+
+The broader real-conversion completion audit is now executable with
+`make real-conversion-audit`. It writes
+`outputs/real-conversion-audit/manifest.json` with schema
+`neodojo.real_conversion_audit.v1`, the GPU probe status, source/export/demo
+checks, `complete: false`, and the next action while the real artifact is
+missing. This target exits successfully for blocker classification; use
+`neodojo real-conversion audit-completion --require-complete` when automation
+should fail unless a real non-fixture demo has been generated.
 
 The returned-artifact import wrapper is now covered by fixture-only local and
 CI smoke evidence: `make real-artifact-intake-smoke` writes fixture source
