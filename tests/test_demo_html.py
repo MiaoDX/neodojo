@@ -33,7 +33,13 @@ from neodojo.real_conversion import (
     validate_gvhmr_source,
     write_real_conversion_prep,
 )
-from neodojo.smplx_surface import load_smplx_surface_proxy, write_smplx_surface_proxy
+from neodojo.smplx_surface import (
+    load_smplx_asset_descriptor,
+    load_smplx_surface_proxy,
+    register_smplx_asset_descriptor,
+    validate_smplx_mesh_generation_inputs,
+    write_smplx_surface_proxy,
+)
 from neodojo.teaching_playback import write_teaching_playback_demo
 from neodojo.viser_runtime import serve_viser_runtime, write_viser_runtime_contract
 
@@ -718,6 +724,57 @@ class DemoHtmlTests(unittest.TestCase):
                     motion.out_dir,
                     g1.track_manifest_path,
                     smplx_surface=surface.manifest_path,
+                )
+
+    def test_register_smplx_asset_descriptor_is_local_only(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            asset = root / "SMPLX_NEUTRAL.npz"
+            asset.write_bytes(b"licensed fixture asset placeholder")
+
+            result = register_smplx_asset_descriptor(
+                root / "assets-out",
+                model_path=asset,
+                license_name="local licensed fixture",
+                source_url="https://example.invalid/smplx",
+                source_revision="fixture",
+                variant="neutral fixture",
+            )
+            descriptor = load_smplx_asset_descriptor(result.descriptor_path)
+
+        self.assertEqual(descriptor["schema"], "neodojo.smplx_asset_descriptor.v1")
+        self.assertTrue(descriptor["local_only"])
+        self.assertTrue(descriptor["licensed_smplx_mesh"])
+        self.assertEqual(descriptor["license"], "local licensed fixture")
+        self.assertEqual(descriptor["variant"], "neutral fixture")
+        self.assertEqual(len(descriptor["sha256"]), 64)
+
+    def test_smplx_asset_descriptor_rejects_missing_asset(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            with self.assertRaisesRegex(ValueError, "licensed SMPL-X model asset does not exist"):
+                register_smplx_asset_descriptor(
+                    root / "assets-out",
+                    model_path=root / "missing-SMPLX_NEUTRAL.npz",
+                    license_name="local licensed fixture",
+                )
+
+    def test_smplx_mesh_gate_rejects_joint_only_motion_record(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            asset = root / "SMPLX_NEUTRAL.npz"
+            asset.write_bytes(b"licensed fixture asset placeholder")
+            descriptor = register_smplx_asset_descriptor(
+                root / "assets-out",
+                model_path=asset,
+                license_name="local licensed fixture",
+            )
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+
+            with self.assertRaisesRegex(ValueError, "only exposes teaching joints"):
+                validate_smplx_mesh_generation_inputs(
+                    motion_record=motion.out_dir,
+                    asset_descriptor=descriptor.descriptor_path,
                 )
 
     def test_detected_annotations_drive_teaching_playback_key_frame(self) -> None:

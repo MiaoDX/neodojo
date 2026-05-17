@@ -24,7 +24,11 @@ from .real_conversion import (
     validate_gvhmr_source,
     write_real_conversion_prep,
 )
-from .smplx_surface import write_smplx_surface_proxy
+from .smplx_surface import (
+    register_smplx_asset_descriptor,
+    validate_smplx_mesh_generation_inputs,
+    write_smplx_surface_proxy,
+)
 from .teaching_playback import write_teaching_playback_demo
 from .viser_runtime import serve_viser_runtime, write_viser_runtime_contract
 
@@ -129,6 +133,53 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("outputs/smplx-surface"),
         help="output directory for the SMPL-X surface proxy manifest",
+    )
+    surface_register = surface_subparsers.add_parser(
+        "register-assets",
+        help="write a local-only descriptor for licensed SMPL-X model assets",
+    )
+    surface_register.add_argument(
+        "--model",
+        type=Path,
+        required=True,
+        help="local licensed SMPL-X model file path; the file is not copied",
+    )
+    surface_register.add_argument(
+        "--license",
+        dest="license_name",
+        required=True,
+        help="license/provenance note for the local SMPL-X asset",
+    )
+    surface_register.add_argument("--source-url", help="upstream asset source URL")
+    surface_register.add_argument("--source-revision", help="upstream version, release, or checksum note")
+    surface_register.add_argument("--variant", help="SMPL-X model variant notes")
+    surface_register.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/smplx-assets"),
+        help="output directory for the local-only SMPL-X asset descriptor",
+    )
+    surface_mesh = surface_subparsers.add_parser(
+        "mesh",
+        help="validate inputs for the future licensed SMPL-X mesh path",
+    )
+    surface_mesh.add_argument(
+        "--motion-record",
+        type=Path,
+        required=True,
+        help="motion-record root directory or manifest path",
+    )
+    surface_mesh.add_argument(
+        "--asset-descriptor",
+        type=Path,
+        required=True,
+        help="local-only SMPL-X asset descriptor manifest or root directory",
+    )
+    surface_mesh.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/smplx-mesh"),
+        help="reserved output directory for future licensed SMPL-X mesh artifacts",
     )
 
     robot_model = subparsers.add_parser(
@@ -563,6 +614,25 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"wrote {result.manifest_path}")
             print(f"wrote {result.data_path}")
             return 0
+
+        if args.command == "smplx-surface" and args.surface_command == "register-assets":
+            result = register_smplx_asset_descriptor(
+                args.out,
+                model_path=args.model,
+                license_name=args.license_name,
+                source_url=args.source_url,
+                source_revision=args.source_revision,
+                variant=args.variant,
+            )
+            print(f"wrote {result.descriptor_path}")
+            return 0
+
+        if args.command == "smplx-surface" and args.surface_command == "mesh":
+            validate_smplx_mesh_generation_inputs(
+                motion_record=args.motion_record,
+                asset_descriptor=args.asset_descriptor,
+            )
+            parser.error("unexpected SMPL-X mesh validation success")
 
         if args.command == "robot-model" and args.robot_command == "register":
             if args.fixture:

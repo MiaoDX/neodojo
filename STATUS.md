@@ -16,8 +16,8 @@ materialize-source` can also prepare a dry-run or ffmpeg-backed local source
 clip handoff for a later GPU GVHMR run, and `real-conversion validate-source`
 can validate a GVHMR JSON export against that handoff before import. There is
 still no checked-in GVHMR/GMR execution pipeline, simulator runtime pipeline,
-licensed SMPL-X mesh generation, real generated motion artifact, or production
-UI server.
+full licensed SMPL-X mesh generation, real generated motion artifact, or
+production UI server.
 
 ## Current Truth
 
@@ -65,7 +65,9 @@ UI server.
 - Dependency-light SMPL-X capsule surface proxy generated from teaching joints
   under `outputs/smplx-surface/`. It is a visual-only inspection layer in
   teaching/public demos, not a licensed SMPL-X body mesh and not a scoring
-  source.
+  source. A local-only licensed SMPL-X asset descriptor and mesh-input gate now
+  exist, but full mesh generation still requires mesh-ready SMPL-X pose/shape
+  parameters and a future renderer.
 - Deterministic SMPL-X opening-form routine review, producing
   `neodojo.annotation.v1` manifests plus `neodojo.routine_feedback_report.v1`
   reports with opening stance, settled support, and raised-hands apex anchors.
@@ -161,6 +163,7 @@ make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo smplx-surface proxy --motion-record outputs/motion-contract --out outputs/smplx-surface
+PYTHONPATH=src python -m neodojo smplx-surface register-assets --model path/to/SMPLX_NEUTRAL.npz --license "local licensed SMPL-X asset; do not commit" --out outputs/smplx-assets
 PYTHONPATH=src python -m neodojo annotations detect --motion-record outputs/motion-contract --out outputs/annotations
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
@@ -192,7 +195,11 @@ SMPL-X-only annotation manifest plus routine feedback report for opening
 stance, settled support, and raised-hands apex anchors, then feeds those anchors
 into the public-demo lane. `neodojo smplx-surface proxy` writes a visual-only
 SMPL-X capsule surface proxy derived from teaching joints; it does not require
-or bundle licensed SMPL-X model assets. `neodojo robot-model register` and
+or bundle licensed SMPL-X model assets. `neodojo smplx-surface register-assets`
+writes a local-only descriptor for an existing licensed SMPL-X model file
+without copying it, and `neodojo smplx-surface mesh` currently rejects
+joint-only motion records with a clear requirement for mesh-ready SMPL-X
+pose/shape parameters. `neodojo robot-model register` and
 `neodojo tracks build` write fixture G1 model/visual-track manifests and a
 comparison report that keeps G1 non-scoring. `neodojo tracks normalize-gmr-pkl`
 parses the native YanjieZe/GMR robot-motion pickle shape written by
@@ -253,7 +260,8 @@ when source id, trim, input path/checksum, and duration checks pass.
 
 ## Remaining Non-GPU Gaps
 
-- Licensed SMPL-X mesh/body-model playback beyond the current capsule proxy:
+- Full licensed SMPL-X mesh/body-model playback beyond the current capsule
+  proxy and local-only asset descriptor:
   `docs/plans/mvp-smplx-body-surface-playback.md`.
 - Production Viser teaching UX beyond generated multi-camera preview evidence:
   `docs/plans/mvp-viser-multicamera-runtime.md`. The first optional local

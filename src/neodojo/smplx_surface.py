@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .contracts import require_schema
+from .contracts import require_schema, sha256_file
 from .fixtures import BONES
 from .motion_contract import (
     _relative_path,
@@ -16,6 +16,7 @@ from .motion_contract import (
 )
 
 SMPLX_SURFACE_PROXY_SCHEMA = "neodojo.smplx_surface_proxy.v1"
+SMPLX_ASSET_DESCRIPTOR_SCHEMA = "neodojo.smplx_asset_descriptor.v1"
 
 _SURFACE_RADII_M = {
     ("pelvis", "spine"): 0.105,
@@ -40,6 +41,11 @@ _SURFACE_RADII_M = {
 class SMPLXSurfaceProxyWriteResult:
     manifest_path: Path
     data_path: Path
+
+
+@dataclass(frozen=True)
+class SMPLXAssetDescriptorWriteResult:
+    descriptor_path: Path
 
 
 def _radius_for_bone(start: str, end: str) -> float:
@@ -110,6 +116,112 @@ def write_smplx_surface_proxy(out_dir: Path, motion_record: Path) -> SMPLXSurfac
     _write_json(data_path, data)
     _write_json(manifest_path, manifest)
     return SMPLXSurfaceProxyWriteResult(manifest_path=manifest_path, data_path=data_path)
+
+
+def register_smplx_asset_descriptor(
+    out_dir: Path,
+    *,
+    model_path: Path,
+    license_name: str,
+    source_url: str | None = None,
+    source_revision: str | None = None,
+    variant: str | None = None,
+) -> SMPLXAssetDescriptorWriteResult:
+    validate_output_dir(out_dir)
+    if not model_path.exists() or not model_path.is_file():
+        raise ValueError(
+            "licensed SMPL-X model asset does not exist; keep SMPL-X assets local "
+            f"and pass an existing file path: {model_path}"
+        )
+    if not license_name.strip():
+        raise ValueError("licensed SMPL-X asset descriptor requires a license note")
+
+    descriptor_path = out_dir / "assets" / "smplx" / "manifest.json"
+    descriptor = {
+        "schema": SMPLX_ASSET_DESCRIPTOR_SCHEMA,
+        "asset_kind": "licensed_smplx_body_model",
+        "local_only": True,
+        "licensed_smplx_mesh": True,
+        "model_path": str(model_path),
+        "resolved_model_path": str(model_path.resolve()),
+        "sha256": sha256_file(model_path),
+        "source_url": source_url,
+        "source_revision": source_revision,
+        "license": license_name,
+        "variant": variant,
+        "validation": {
+            "file_exists": True,
+            "load_attempted": False,
+            "loadable": None,
+            "notes": "Descriptor validates local file presence only; the asset is not copied or committed.",
+        },
+        "provenance": {
+            "registered_by": "neodojo smplx-surface register-assets",
+            "storage_policy": "local path only; do not commit SMPL-X model files",
+        },
+    }
+    _write_json(descriptor_path, descriptor)
+    return SMPLXAssetDescriptorWriteResult(descriptor_path=descriptor_path)
+
+
+def resolve_smplx_asset_descriptor(path: Path) -> Path:
+    if path.is_file():
+        return path
+
+    candidates = [
+        path / "assets" / "smplx" / "manifest.json",
+        path / "manifest.json",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise ValueError(f"could not find an SMPL-X asset descriptor under {path}")
+
+
+def load_smplx_asset_descriptor(path: Path) -> dict[str, Any]:
+    descriptor_path = resolve_smplx_asset_descriptor(path)
+    descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+    require_schema(descriptor, SMPLX_ASSET_DESCRIPTOR_SCHEMA, "SMPL-X asset descriptor")
+    if not descriptor.get("local_only"):
+        raise ValueError("SMPL-X asset descriptor must be local_only")
+    if not descriptor.get("licensed_smplx_mesh"):
+        raise ValueError("SMPL-X asset descriptor must describe licensed SMPL-X mesh assets")
+    asset_path = Path(descriptor.get("resolved_model_path") or descriptor.get("model_path", ""))
+    if not asset_path.exists() or not asset_path.is_file():
+        raise ValueError(
+            "licensed SMPL-X model asset is missing; keep assets local and update "
+            f"the descriptor path: {asset_path}"
+        )
+    return descriptor
+
+
+def validate_smplx_mesh_generation_inputs(*, motion_record: Path, asset_descriptor: Path) -> None:
+    descriptor = load_smplx_asset_descriptor(asset_descriptor)
+    motion_manifest_path = resolve_motion_record_manifest(motion_record)
+    motion_manifest, _ = load_motion_record_frames(motion_manifest_path)
+
+    smplx_parameters = motion_manifest.get("smplx_parameters")
+    if not isinstance(smplx_parameters, dict):
+        raise ValueError(
+            "licensed SMPL-X mesh generation requires a motion record with SMPL-X "
+            "pose/shape parameter fields, but this record only exposes teaching joints. "
+            "Use `neodojo smplx-surface proxy` until a real GVHMR export includes "
+            f"mesh-ready parameters. Asset descriptor was valid for {descriptor.get('variant') or 'SMPL-X'}."
+        )
+
+    required = ["global_orient", "body_pose", "betas"]
+    missing = [field for field in required if field not in smplx_parameters]
+    if missing:
+        raise ValueError(
+            "licensed SMPL-X mesh generation requires SMPL-X parameter fields: "
+            + ", ".join(missing)
+        )
+
+    raise ValueError(
+        "licensed SMPL-X mesh generation is intentionally not implemented yet; "
+        "the asset descriptor and motion parameters are present, but the renderer "
+        "must be added in a separate licensed-asset-safe slice."
+    )
 
 
 def resolve_smplx_surface_manifest(path: Path) -> Path:

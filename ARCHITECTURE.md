@@ -37,7 +37,10 @@ feedback.
 
 Teaching track playback owns SMPL-X kinematic playback, joint trajectories,
 key-frame anchors, deterministic annotation detection, and geometric feedback
-checks. This is the accuracy path.
+checks. This is the accuracy path. The current surface layer is a joint-derived
+capsule proxy; licensed SMPL-X model assets can be described locally, but full
+mesh generation waits for mesh-ready SMPL-X pose/shape parameters and a future
+renderer.
 
 Humanoid visual track owns retargeting from SMPL-X to Unitree G1 through GMR and
 rendering the robot as a visual companion. The current repo can import a

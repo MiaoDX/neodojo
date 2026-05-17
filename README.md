@@ -183,6 +183,7 @@ make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo smplx-surface proxy --motion-record outputs/motion-contract --out outputs/smplx-surface
+PYTHONPATH=src python -m neodojo smplx-surface register-assets --model path/to/SMPLX_NEUTRAL.npz --license "local licensed SMPL-X asset; do not commit" --out outputs/smplx-assets
 PYTHONPATH=src python -m neodojo annotations detect --motion-record outputs/motion-contract --out outputs/annotations
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
@@ -215,6 +216,11 @@ teaching playback instead of relying on an implicit final frame.
 derived from SMPL-X teaching joints. It improves visual inspection in the
 teaching/public demo while staying honest that no licensed SMPL-X body-model
 mesh is generated and all feedback still reads SMPL-X joints.
+`neodojo smplx-surface register-assets` can write a local-only descriptor for
+an existing licensed SMPL-X model file without copying it. `neodojo
+smplx-surface mesh` is a validation gate for the future full-mesh path; with
+current joint-only motion records it fails clearly and asks for mesh-ready
+SMPL-X pose/shape parameters.
 
 `neodojo robot-model register` and `neodojo tracks build` can write fixture G1
 model and visual-track manifests. These preserve the SMPL-X/G1 responsibility
@@ -312,6 +318,7 @@ In progress:
 - [x] Local fixture SMPL-X motion-record and teaching-track manifests
 - [x] External GVHMR teaching-joints JSON import into the same motion contract
 - [x] Dependency-light SMPL-X surface proxy layer in teaching/public demos
+- [x] Local-only licensed SMPL-X asset descriptor and full-mesh input gate
 - [x] Local fixture G1 model and visual-track manifests with scoring separation
 - [x] Normalized external GMR Unitree G1 JSON import into the non-scoring G1
       visual-track contract

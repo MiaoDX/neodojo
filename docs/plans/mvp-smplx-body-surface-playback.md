@@ -1,6 +1,6 @@
 # MVP SMPL-X Body Surface Playback Plan
 
-Status: IMPLEMENTED SURFACE PROXY; LICENSED SMPL-X MESH REMAINS FOLLOW-ON
+Status: IMPLEMENTED SURFACE PROXY AND LICENSED-ASSET BOUNDARY; FULL MESH GENERATION REMAINS FOLLOW-ON
 
 ## Goal
 
@@ -18,7 +18,9 @@ SMPL-X motion record
 The first implemented surface layer improves fixture/public demo inspection
 while preserving the SMPL-X joint track as the feedback/scoring source. It is
 not a licensed SMPL-X body-model mesh. Full SMPL-X mesh generation still waits
-for local licensed model assets and richer pose parameters.
+for local licensed model assets, richer pose parameters, and a future
+licensed-asset-safe renderer. The local asset descriptor and mesh-input gate now
+exist so missing assets or joint-only motion records fail clearly.
 
 ## Dependencies
 
@@ -56,15 +58,24 @@ for local licensed model assets and richer pose parameters.
     --out outputs/smplx-surface
   ```
 
+- Local-only licensed asset descriptor command:
+
+  ```bash
+  PYTHONPATH=src python -m neodojo smplx-surface register-assets \
+    --model path/to/SMPLX_NEUTRAL.npz \
+    --license "local licensed SMPL-X asset; do not commit" \
+    --out outputs/smplx-assets
+  ```
+
 ## Execution Tasks
 
 1. Define asset contract.
    - [x] Add a versioned `neodojo.smplx_surface_proxy.v1` manifest for the
      dependency-light capsule proxy.
    - [x] Mark `licensed_smplx_mesh: false` and `scoring_allowed: false`.
-   - [ ] Add local-only licensed SMPL-X asset descriptor fields for the future
+   - [x] Add local-only licensed SMPL-X asset descriptor fields for the future
      full-mesh path.
-   - [ ] Reject missing licensed assets with a clear licensing-safe error when
+   - [x] Reject missing licensed assets with a clear licensing-safe error when
      the full-mesh path exists.
 
 2. Generate surface data.
@@ -90,6 +101,10 @@ for local licensed model assets and richer pose parameters.
   assets.
 - `make demo-public` includes the surface proxy in the generated teaching and
   public demo artifacts.
+- Local-only licensed SMPL-X asset descriptor registration validates an existing
+  file path without copying or committing the asset.
+- The future mesh path rejects joint-only motion records with a clear message
+  explaining that mesh-ready SMPL-X pose/shape parameters are required.
 
 ## Non-Goals
 
@@ -101,8 +116,9 @@ for local licensed model assets and richer pose parameters.
 
 ## Stop Condition
 
-Stopped for the first slice when a local SMPL-X capsule surface proxy can be
-generated, viewed in teaching playback, included in the public demo, and smoke
-tested without licensed SMPL-X assets. The remaining follow-on is full licensed
-SMPL-X mesh/body-model playback once local assets and richer pose fields are
-available.
+Stop for this slice when a local SMPL-X capsule surface proxy can be generated,
+viewed in teaching playback, included in the public demo, smoke tested without
+licensed SMPL-X assets, and the future licensed-asset path has a local-only
+descriptor plus clear rejection for missing assets or joint-only motion records.
+The remaining follow-on is full licensed SMPL-X mesh/body-model playback once
+local assets, richer pose fields, and a renderer are available.

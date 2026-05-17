@@ -18,7 +18,7 @@ an optional first Viser local runtime, optional source-media probing, local
 source-media materialization handoff, a fixture-only static public-demo fallback
 artifact, and a GitHub Actions workflow for the fixture public-demo lane. It
 does not yet have a checked-in GVHMR/GMR execution pipeline, simulator runtime
-pipeline, licensed SMPL-X mesh generation, verified live GitHub Pages URL,
+pipeline, full licensed SMPL-X mesh generation, verified live GitHub Pages URL,
 production Viser teaching UX, or broad static-analysis/release gates beyond the
 minimal `make lint` and `make build` surface.
 
@@ -70,7 +70,7 @@ of truth for the next waves.
 | --- | --- | --- |
 | [mvp-simulator-mesh-rendering.md](mvp-simulator-mesh-rendering.md) | implemented optional MuJoCo command, real G1 asset smoke, and GMR qpos application | MuJoCo render command, real Unitree G1 mesh proof, and imported GMR joint-angle qpos application. |
 | [mvp-native-gmr-runner.md](mvp-native-gmr-runner.md) | implemented first pickle adapter; local GMR execution remains external | Native GMR robot-motion pickle parsing beyond normalized JSON import. |
-| [mvp-smplx-body-surface-playback.md](mvp-smplx-body-surface-playback.md) | implemented surface proxy; licensed SMPL-X mesh remains follow-on | Dependency-light SMPL-X surface proxy and future licensed mesh/body-model playback. |
+| [mvp-smplx-body-surface-playback.md](mvp-smplx-body-surface-playback.md) | implemented surface proxy and licensed-asset boundary; full mesh generation remains follow-on | Dependency-light SMPL-X surface proxy, local-only licensed asset descriptor, and future mesh/body-model playback. |
 | [mvp-viser-multicamera-runtime.md](mvp-viser-multicamera-runtime.md) | implemented first optional server and generated multi-camera preview evidence | Local Viser runtime and dependency-light front/side/top visual smoke workflow. |
 | [mvp-rerun-pages-release.md](mvp-rerun-pages-release.md) | implemented optional SDK export; live Pages verification pending | True Rerun SDK `.rrd` export and verified live GitHub Pages URL. |
 | [mvp-feedback-routine-review.md](mvp-feedback-routine-review.md) | implemented | Broader key-frame/posture feedback and routine-level review. |
