@@ -81,7 +81,11 @@ artifact, or UI server.
   reference-video sync metadata, and normalized annotation manifests.
 - Fixture-only public-demo export generated under `outputs/public-demo/`,
   containing a scene/timeline contract, static HTML viewer, SVG screenshot, and
-  `.rrd`-named JSON fallback artifact for the future Rerun lane.
+  a default `.rrd`-named JSON fallback artifact.
+- Optional true Rerun SDK `.rrd` export is available through
+  `demo export-rerun --use-rerun-sdk` when the optional `rerun` extra is
+  installed. Live GitHub Pages verification still depends on repository Pages
+  settings.
 - `make demo-public` regenerates the fixture motion, routine feedback
   annotations, SMPL-X surface proxy, G1 visual/render, teaching-playback,
   public-demo, and smoke-check artifacts in one command.
@@ -149,6 +153,7 @@ PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/
 PYTHONPATH=src python -m neodojo render mujoco-g1 --model-descriptor path/to/registered-g1-model/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/g1-mujoco-render
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --smplx-surface outputs/smplx-surface/surfaces/smplx/manifest.json --out outputs/teaching-demo
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
+PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --use-rerun-sdk --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
@@ -190,10 +195,11 @@ provide local untracked robot assets before using it for real G1 evidence.
 optional SMPL-X surface proxy, and G1 manifests. `neodojo demo export-rerun` writes
 `outputs/public-demo/index.html`, `outputs/public-demo/scene.json`,
 `outputs/public-demo/screenshot.svg`, and `outputs/public-demo/neodojo-demo.rrd`;
-the `.rrd` is currently a JSON fallback artifact, not a real Rerun SDK
-recording. `make demo-public` regenerates the full fixture public-demo lane,
-including detected annotations and the SMPL-X surface proxy, and runs the smoke
-check. `make smoke-public`
+by default, the `.rrd` is a JSON fallback artifact, not a real Rerun SDK
+recording. Passing `--use-rerun-sdk` with the optional `rerun` extra installed
+writes a true Rerun recording. `make demo-public` regenerates the full fixture
+public-demo lane, including detected annotations and the SMPL-X surface proxy,
+and runs the smoke check. `make smoke-public`
 validates an existing `outputs/public-demo` artifact set. `make demo-html`
 writes `outputs/html-demo/index.html`, `outputs/html-demo/manifest.json`, and
 the local motion/track manifests it consumes. These artifacts use synthetic
@@ -223,8 +229,9 @@ when source id, trim, input path/checksum, and duration checks pass.
   `docs/plans/mvp-smplx-body-surface-playback.md`.
 - Simulator/Viser runtime integration and multi-camera offscreen capture:
   `docs/plans/mvp-viser-multicamera-runtime.md`.
-- True Rerun SDK `.rrd` export and verification of the live GitHub Pages URL:
-  `docs/plans/mvp-rerun-pages-release.md`.
+- Verification of the live GitHub Pages URL:
+  `docs/plans/mvp-rerun-pages-release.md`. True Rerun SDK `.rrd` export exists
+  as an optional command.
 
 ## Next Safe Task
 

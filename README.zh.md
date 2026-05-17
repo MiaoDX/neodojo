@@ -130,10 +130,11 @@ Viser (web 端三视角同步 + 关节轨迹 polyline + 时间轴)
 HTML 命令、规范化 imported-GMR G1 track 边界、静态 HTML demo 生成器，以及基于
 model descriptor 与 visual track 的本地 G1 SVG/HTML render evidence、GMR 原生
 pickle 规范化、dependency-light 的 SMPL-X surface proxy、可选 MuJoCo offscreen
-mesh render evidence，以及最小 lint/build/quality-check 命令。它也可以为后续 GPU
-GVHMR run 写出 dry-run 或 ffmpeg-backed 的本地 source-video handoff。但还没有提交到
-仓库的 GVHMR/GMR 执行 pipeline、仿真器运行时 pipeline、licensed SMPL-X mesh
-generation，或基于真实 Unitree G1 mesh assets 的已验证渲染。
+mesh render evidence、可选 true Rerun SDK `.rrd` export，以及最小
+lint/build/quality-check 命令。它也可以为后续 GPU GVHMR run 写出 dry-run 或
+ffmpeg-backed 的本地 source-video handoff。但还没有提交到仓库的 GVHMR/GMR 执行
+pipeline、仿真器运行时 pipeline、licensed SMPL-X mesh generation，或基于真实
+Unitree G1 mesh assets 的已验证渲染。
 
 现在可以运行：
 
@@ -157,6 +158,7 @@ PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/
 PYTHONPATH=src python -m neodojo render mujoco-g1 --model-descriptor path/to/registered-g1-model/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/g1-mujoco-render
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --smplx-surface outputs/smplx-surface/surfaces/smplx/manifest.json --out outputs/teaching-demo
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
+PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --use-rerun-sdk --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
@@ -205,8 +207,10 @@ playback manifest。这是一个 simulator-light HTML inspection path：SMPL-X j
 
 `neodojo demo export-rerun` 会写出内部 scene/timeline contract、fixture-only
 静态 public-demo HTML 页面、SVG screenshot，以及 `outputs/public-demo/` 下的
-`.rrd` 命名 recording artifact。在加入 `rerun-sdk` 之前，这个 `.rrd` 文件是如实
-标注的 JSON fallback artifact，不是真正的 Rerun SDK recording。
+`.rrd` 命名 recording artifact。默认情况下，这个 `.rrd` 文件是如实标注的 JSON
+fallback artifact，不是真正的 Rerun SDK recording。安装 optional `rerun` extra
+后，传入 `--use-rerun-sdk` 会写出真正的 Rerun SDK recording，并在 public-demo
+manifest 中标记 `rerun.actual_rrd: true`。
 
 `make verify` 会一次运行 lint、MVP plan quality checks、tests、wheel build 和
 public-demo smoke lane。
@@ -257,6 +261,8 @@ G1 retargeting 已经完成。
       anchors 和 posture terms
 - [x] fixture-only 静态 public-demo export，包含 scene/timeline contract、
       `.rrd` fallback artifact、HTML 与 SVG screenshot
+- [x] 可选 true Rerun SDK `.rrd` export；live GitHub Pages URL verification
+      仍依赖 repo settings
 - [x] 本地一条命令 `make demo-public`，以及用于 fixture public demo 的 GitHub
       Actions artifact/Page workflow
 - [x] 最小 `make lint` 与 `make build` 命令面

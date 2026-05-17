@@ -302,6 +302,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/public-demo/neodojo-demo.rrd"),
         help="output .rrd artifact path; sibling public-demo files are written next to it",
     )
+    demo_export.add_argument(
+        "--use-rerun-sdk",
+        action="store_true",
+        help="write a true Rerun SDK .rrd instead of the JSON fallback artifact",
+    )
     demo_smoke = demo_subparsers.add_parser(
         "smoke",
         help="validate generated public demo artifacts for CI",
@@ -598,6 +603,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 playback_manifest_path=args.playback,
                 recording_path=args.out,
                 g1_render_manifest_path=args.g1_render,
+                use_rerun_sdk=args.use_rerun_sdk,
             )
             print(f"wrote {result.html_path}")
             print(f"wrote {result.manifest_path}")

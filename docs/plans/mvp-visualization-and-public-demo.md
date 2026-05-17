@@ -1,6 +1,6 @@
 # MVP Visualization And Public Demo Plan
 
-Status: IMPLEMENTED WITH STATIC FALLBACK; TRUE RERUN SDK EXPORT AND PAGES PUBLISH REMAIN FOLLOW-ON
+Status: IMPLEMENTED WITH STATIC FALLBACK AND OPTIONAL RERUN SDK EXPORT; PAGES PUBLISH REMAINS FOLLOW-ON
 
 ## Goal
 
@@ -26,17 +26,17 @@ compatibility only and should not block this slice.
 
 `neodojo demo export-rerun` now writes the internal scene/timeline contract,
 static public-demo HTML, SVG screenshot, public-demo manifest, and a
-`.rrd`-named recording artifact under ignored output. Because `rerun-sdk` is not
-yet a project dependency, the `.rrd` file is explicitly marked as a JSON
-fallback artifact with `actual_rerun_rrd: false`; it is not presented as a real
-Rerun SDK recording.
+`.rrd`-named recording artifact under ignored output. By default, the `.rrd`
+file is explicitly marked as a JSON fallback artifact with
+`actual_rerun_rrd: false`; it is not presented as a real Rerun SDK recording.
+When the optional `rerun` extra is installed and `--use-rerun-sdk` is passed,
+the same command writes a true Rerun SDK recording.
 
 The static HTML page is the current CI/publishable artifact. It is fixture-only,
 shows SMPL-X and G1 labels, preserves the G1 non-scoring boundary, and embeds
-the scene contract for smoke checks. The true Rerun SDK `.rrd` writer and
-verified live GitHub Pages URL remain follow-on work. The DevEx/CI slice now
-stages the static artifact for Pages and publishes from `main` when repository
-Pages settings allow it.
+the scene contract for smoke checks. Verified live GitHub Pages URL evidence
+remains follow-on work. The DevEx/CI slice now stages the static artifact for
+Pages and publishes from `main` when repository Pages settings allow it.
 
 ## Dependencies
 
@@ -102,8 +102,8 @@ Pages settings allow it.
      key-frame markers into a `.rrd`-named fallback artifact.
    - [x] Include clear fixture-only labels when the source data is synthetic.
    - [x] Keep generated `.rrd` files out of tracked source.
-   - [ ] Replace the fallback artifact with a true Rerun SDK `.rrd` once the
-     dependency decision is made.
+   - [x] Add an optional true Rerun SDK `.rrd` path while preserving the default
+     fallback artifact.
 
 3. Add a static Rerun Web Viewer page.
    - [x] Generate a static HTML public-demo page from the scene/timeline
@@ -141,6 +141,8 @@ Pages settings allow it.
 - A scene/timeline manifest can be produced from existing playback artifacts.
 - A `.rrd`-named fallback export is generated under ignored output from fixture
   data and is explicitly marked `actual_rerun_rrd: false`.
+- An optional SDK export can generate a true `.rrd` and mark
+  `rerun.actual_rrd: true`.
 - A static public-demo page can load the scene locally.
 - An SVG screenshot shows nonblank SMPL-X/G1 tracks, labels, and fixture-only
   status.
@@ -164,5 +166,5 @@ Pages settings allow it.
 
 Stopped when a fixture-only but honest static public demo can be generated,
 visually smoke-tested, and staged for GitHub Pages through artifacts, with the
-scene/timeline contract ready for later Viser integration. True Rerun SDK export
-and verified live Pages publication remain follow-on work.
+scene/timeline contract ready for later Viser integration. Verified live Pages
+publication remains follow-on work.

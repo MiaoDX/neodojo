@@ -50,6 +50,17 @@ def _load_optional_render_manifest(path: Path | None) -> dict[str, Any] | None:
     return payload
 
 
+def _load_rerun_sdk() -> Any:
+    try:
+        import rerun as rr
+    except ModuleNotFoundError as exc:
+        raise ValueError(
+            "Rerun SDK export requires the optional rerun-sdk package; install with "
+            "`python -m pip install '.[rerun]'` or `python -m pip install rerun-sdk`"
+        ) from exc
+    return rr
+
+
 def build_scene_timeline(
     *,
     playback_manifest_path: Path,
@@ -200,6 +211,58 @@ def _track_svg(track: dict[str, Any], view: str, frame_index: int, stroke: str) 
     return "\n".join(lines + joints)
 
 
+def _track_line_strips(track: dict[str, Any], frame_index: int) -> list[list[list[float]]]:
+    frame = track["frames"][frame_index]
+    strips = []
+    for start, end in BONES:
+        if start in frame and end in frame:
+            strips.append([frame[start], frame[end]])
+    return strips
+
+
+def _write_rerun_recording(scene: dict[str, Any], recording_path: Path) -> dict[str, Any]:
+    rr = _load_rerun_sdk()
+    rr.init("neodojo_public_demo", spawn=False)
+    rr.save(recording_path)
+    try:
+        rr.log(
+            "neodojo/readme",
+            rr.TextDocument(
+                "neodojo fixture teaching scene. SMPL-X is the scoring source; Unitree G1 is visual-only.",
+                media_type="text/markdown",
+            ),
+            static=True,
+        )
+        rr.log(
+            "neodojo/public_labels",
+            rr.TextDocument("\n".join(scene["public_labels"]), media_type="text/plain"),
+            static=True,
+        )
+        frame_count = int((scene.get("timing") or {}).get("frame_count") or len(scene["tracks"]["smplx"]["frames"]))
+        for frame_index in range(frame_count):
+            rr.set_time("frame", sequence=frame_index)
+            for track_id, track in scene["tracks"].items():
+                frame = track["frames"][frame_index]
+                labels = list(frame)
+                positions = [frame[label] for label in labels]
+                rr.log(
+                    f"tracks/{track_id}/joints",
+                    rr.Points3D(positions, labels=labels, radii=0.025),
+                )
+                rr.log(
+                    f"tracks/{track_id}/bones",
+                    rr.LineStrips3D(_track_line_strips(track, frame_index), radii=0.01),
+                )
+    finally:
+        rr.disconnect()
+    return {
+        "schema": RERUN_RECORDING_EXPORT_SCHEMA,
+        "actual_rerun_rrd": True,
+        "format": "rerun_sdk_rrd",
+        "sdk_version": getattr(rr, "__version__", None),
+    }
+
+
 def _surface_svg(surface_proxy: dict[str, Any] | None, smplx_track: dict[str, Any], view: str, frame_index: int) -> str:
     if not surface_proxy:
         return ""
@@ -331,6 +394,7 @@ def write_public_demo(
     playback_manifest_path: Path,
     recording_path: Path,
     g1_render_manifest_path: Path | None = None,
+    use_rerun_sdk: bool = False,
 ) -> PublicDemoWriteResult:
     out_dir = recording_path.parent
     validate_output_dir(out_dir)
@@ -345,15 +409,18 @@ def write_public_demo(
     html_path = out_dir / "index.html"
     manifest_path = out_dir / "manifest.json"
 
-    recording = {
-        "schema": RERUN_RECORDING_EXPORT_SCHEMA,
-        "actual_rerun_rrd": False,
-        "format": "json_fallback_with_rrd_extension",
-        "reason": "rerun-sdk is not a project dependency yet; this artifact preserves the scene/timeline contract for the future Rerun exporter",
-        "scene": scene,
-    }
     _write_json(scene_path, scene)
-    _write_json(recording_path, recording)
+    if use_rerun_sdk:
+        recording = _write_rerun_recording(scene, recording_path)
+    else:
+        recording = {
+            "schema": RERUN_RECORDING_EXPORT_SCHEMA,
+            "actual_rerun_rrd": False,
+            "format": "json_fallback_with_rrd_extension",
+            "reason": "rerun-sdk is not a default project dependency; this artifact preserves the scene/timeline contract for the optional Rerun exporter",
+            "scene": scene,
+        }
+        _write_json(recording_path, recording)
     screenshot_path.write_text(_render_screenshot_svg(scene), encoding="utf-8")
 
     manifest = {
@@ -386,9 +453,9 @@ def write_public_demo(
         },
         "rerun": {
             "target": "Rerun Web Viewer",
-            "actual_rrd": False,
-            "sdk_version": None,
-            "fallback_reason": "rerun-sdk not installed",
+            "actual_rrd": bool(recording["actual_rerun_rrd"]),
+            "sdk_version": recording.get("sdk_version"),
+            "fallback_reason": None if recording["actual_rerun_rrd"] else "rerun-sdk not requested",
         },
         "visual_smoke_expectations": {
             "required_labels": [
@@ -427,6 +494,15 @@ def _require_nonblank(path: Path) -> str:
     return text
 
 
+def _require_nonblank_bytes(path: Path) -> bytes:
+    if not path.exists():
+        raise ValueError(f"public demo artifact is missing: {path}")
+    payload = path.read_bytes()
+    if not payload:
+        raise ValueError(f"public demo artifact is blank: {path}")
+    return payload
+
+
 def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
     manifest_path = _resolve_manifest_path(public_demo)
     manifest = _load_json(manifest_path)
@@ -447,8 +523,13 @@ def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
     html = _require_nonblank(html_path)
     scene = _load_json(scene_path)
     require_schema(scene, SCENE_TIMELINE_SCHEMA, "scene/timeline manifest")
-    recording = _load_json(recording_path)
-    require_schema(recording, RERUN_RECORDING_EXPORT_SCHEMA, "Rerun recording export")
+    if manifest.get("rerun", {}).get("actual_rrd"):
+        recording_bytes = _require_nonblank_bytes(recording_path)
+        if recording_bytes.startswith(b"{"):
+            raise ValueError("public demo manifest claims actual Rerun .rrd but recording is JSON")
+    else:
+        recording = _load_json(recording_path)
+        require_schema(recording, RERUN_RECORDING_EXPORT_SCHEMA, "Rerun recording export")
     screenshot = _require_nonblank(screenshot_path)
 
     smoke_text = "\n".join([html, screenshot])

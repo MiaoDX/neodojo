@@ -1,11 +1,11 @@
 # MVP Rerun Pages Release Plan
 
-Status: PLANNED; BLOCKED ON RERUN SDK INSTALL AND REPOSITORY PAGES SETTINGS
+Status: IMPLEMENTED OPTIONAL SDK EXPORT; LIVE PAGES VERIFICATION PENDING
 
 ## Goal
 
-Replace the current `.rrd` JSON fallback with a true Rerun recording and verify
-the live public demo path:
+Add a true Rerun recording path alongside the current `.rrd` JSON fallback and
+verify the live public demo path:
 
 ```text
 scene/timeline contract
@@ -16,8 +16,9 @@ scene/timeline contract
   -> README screenshot/GIF and live link
 ```
 
-The current static fallback remains honest and useful until the SDK and Pages
-environment are proven.
+The current static fallback remains honest and useful for default CI. The
+optional SDK path writes a true `.rrd` when `rerun-sdk` is installed. Live Pages
+verification still waits on repository settings.
 
 ## Dependencies
 
@@ -25,8 +26,7 @@ environment are proven.
   provides the public-demo scene contract and fallback artifact.
 - [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) provides CI artifact and
   Pages workflow scaffolding.
-- Rerun SDK can be installed in local/CI environments without unacceptable
-  runtime or cache cost.
+- Rerun SDK can be installed locally through the optional `rerun` extra.
 - GitHub Pages is enabled for the repository.
 
 ## Inputs
@@ -43,16 +43,27 @@ environment are proven.
 - CI smoke that validates recording presence and page nonblank state.
 - README.md and README.zh.md live demo link plus generated screenshot/GIF once
   Pages is verified.
+- CLI command:
+
+  ```bash
+  PYTHONPATH=src python -m neodojo demo export-rerun \
+    --playback outputs/teaching-demo/manifest.json \
+    --g1-render outputs/g1-render/manifest.json \
+    --use-rerun-sdk \
+    --out outputs/public-demo/neodojo-demo.rrd
+  ```
 
 ## Execution Tasks
 
 1. Add optional SDK export.
-   - [ ] Add dependency strategy for `rerun-sdk`.
-   - [ ] Log SMPL-X, G1, annotation, and camera tracks into a true `.rrd`.
-   - [ ] Keep fallback JSON path available when SDK is absent.
+   - [x] Add dependency strategy for `rerun-sdk` via the optional `rerun` extra.
+   - [x] Log SMPL-X and G1 joint/bone tracks plus public labels into a true
+     `.rrd`.
+   - [x] Keep fallback JSON path available when SDK is absent or not requested.
 
 2. Harden CI/Page publish.
-   - [ ] Cache/install SDK efficiently.
+   - [ ] Cache/install SDK efficiently if CI should publish true `.rrd` instead
+     of the default fallback.
    - [ ] Verify artifact upload and Pages deployment.
    - [ ] Capture or generate a screenshot/GIF from the published artifact.
 
@@ -62,11 +73,13 @@ environment are proven.
 
 ## Acceptance Evidence
 
-- A true `.rrd` opens in Rerun tooling or the Rerun web viewer.
-- CI produces and uploads the real recording and static viewer artifact.
-- The live GitHub Pages URL is verified.
+- Optional smoke writes a true `.rrd` with `rerun.actual_rrd: true` when
+  `rerun-sdk` is installed.
+- Default CI continues to produce and upload the fallback recording and static
+  viewer artifact without a heavy default dependency.
+- The live GitHub Pages URL is verified before README links are added.
 - README.md and README.zh.md link to the live fixture-only demo with matching
-  language.
+  language only after Pages verification.
 
 ## Non-Goals
 
@@ -77,6 +90,6 @@ environment are proven.
 
 ## Stop Condition
 
-Stop when the real Rerun SDK recording and live GitHub Pages fixture demo are
-verified, or when blockers are classified as SDK install, CI cache, or Pages
-configuration issues.
+Stopped for the SDK slice when the optional exporter wrote a true Rerun SDK
+recording and the fallback path remained available. Continue only when CI cache
+policy and repository Pages settings are available for live URL verification.

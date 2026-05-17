@@ -13,14 +13,14 @@ The current repo is still in bootstrap state. It has a fixture-only HTML demo
 generator, `make test`, `make demo-html`, `make demo-public`, versioned local
 artifact contracts, a normalized imported-GMR G1 track boundary, native GMR
 pickle normalization, an SMPL-X surface proxy, G1 SVG/HTML render evidence,
-optional source-media probing, local source-media
-materialization handoff, a fixture-only static public-demo fallback artifact,
-and a GitHub Actions workflow for the fixture public-demo lane. It does not yet
-have a checked-in GVHMR/GMR execution pipeline, simulator runtime pipeline,
-licensed SMPL-X mesh generation, MuJoCo/Genesis real mesh rendering, Viser UI,
-true Rerun SDK `.rrd` recording, verified live GitHub Pages URL, or broad
-static-analysis/release gates beyond the minimal `make lint` and `make build`
-surface.
+optional MuJoCo render evidence, optional true Rerun SDK `.rrd` export,
+optional source-media probing, local source-media materialization handoff, a
+fixture-only static public-demo fallback artifact, and a GitHub Actions workflow
+for the fixture public-demo lane. It does not yet have a checked-in GVHMR/GMR
+execution pipeline, simulator runtime pipeline, licensed SMPL-X mesh
+generation, verified real Unitree G1 asset render, Viser UI, verified live
+GitHub Pages URL, or broad static-analysis/release gates beyond the minimal
+`make lint` and `make build` surface.
 
 ## Shared Goal
 
@@ -72,7 +72,7 @@ of truth for the next waves.
 | [mvp-native-gmr-runner.md](mvp-native-gmr-runner.md) | implemented first pickle adapter; local GMR execution remains external | Native GMR robot-motion pickle parsing beyond normalized JSON import. |
 | [mvp-smplx-body-surface-playback.md](mvp-smplx-body-surface-playback.md) | implemented surface proxy; licensed SMPL-X mesh remains follow-on | Dependency-light SMPL-X surface proxy and future licensed mesh/body-model playback. |
 | [mvp-viser-multicamera-runtime.md](mvp-viser-multicamera-runtime.md) | planned; blocked on runtime dependency and interaction design | Local Viser runtime and multi-camera/offscreen workflow. |
-| [mvp-rerun-pages-release.md](mvp-rerun-pages-release.md) | planned; blocked on Rerun SDK install and repository Pages settings | True Rerun SDK `.rrd` export and verified live GitHub Pages URL. |
+| [mvp-rerun-pages-release.md](mvp-rerun-pages-release.md) | implemented optional SDK export; live Pages verification pending | True Rerun SDK `.rrd` export and verified live GitHub Pages URL. |
 | [mvp-feedback-routine-review.md](mvp-feedback-routine-review.md) | implemented | Broader key-frame/posture feedback and routine-level review. |
 | [mvp-gvhmr-source-validation.md](mvp-gvhmr-source-validation.md) | implemented validator; blocked on a real GVHMR export for final proof | Validation that imported GVHMR artifacts match the materialized source clip and trim. |
 | [mvp-quality-release-surface.md](mvp-quality-release-surface.md) | implemented first quality gate | Project-owned static quality check for MVP plan links and scaffolding beyond the minimal lint/build commands. |

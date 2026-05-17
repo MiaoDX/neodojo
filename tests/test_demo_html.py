@@ -773,6 +773,36 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(smoke.manifest_path.name, "manifest.json")
         self.assertEqual(len(smoke.checked_paths), 4)
 
+    @unittest.skipUnless(importlib.util.find_spec("rerun"), "rerun optional dependency is not installed")
+    def test_public_demo_can_write_true_rerun_recording(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+            )
+
+            result = write_public_demo(
+                playback_manifest_path=playback.manifest_path,
+                recording_path=root / "public-demo" / "neodojo-demo.rrd",
+                use_rerun_sdk=True,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            recording_bytes = result.recording_path.read_bytes()
+
+        self.assertTrue(manifest["rerun"]["actual_rrd"])
+        self.assertIsNotNone(manifest["rerun"]["sdk_version"])
+        self.assertGreater(len(recording_bytes), 128)
+        self.assertFalse(recording_bytes.startswith(b"{"))
+
     def test_public_demo_smoke_rejects_missing_label(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
