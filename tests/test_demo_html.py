@@ -8,6 +8,7 @@ from pathlib import Path
 from neodojo.demo_html import build_fixture, compute_feedback, render_demo_html, write_demo
 from neodojo.g1_visual import build_g1_visual_track, register_g1_model, write_fixture_g1_model_descriptor
 from neodojo.motion_contract import validate_output_dir, validate_scoring_source, write_fixture_motion_contract
+from neodojo.teaching_playback import write_teaching_playback_demo
 
 
 class DemoHtmlTests(unittest.TestCase):
@@ -183,6 +184,36 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(report["canonical_track"], "smplx")
         self.assertFalse(report["g1_scoring_allowed"])
         self.assertTrue(report["frame_count_match"])
+
+    def test_write_teaching_playback_demo_from_track_manifests(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            annotations = root / "annotations.json"
+            annotations.write_text('{"name": "fixture key frame", "key_frame": 5}\n', encoding="utf-8")
+
+            result = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+                annotations_path=annotations,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            html = result.html_path.read_text(encoding="utf-8")
+
+        self.assertEqual(manifest["frame_count"], 10)
+        self.assertEqual(manifest["key_frame"], 5)
+        self.assertEqual(manifest["scoring_source"], "smplx")
+        self.assertFalse(manifest["tracks"]["g1"]["scoring_allowed"])
+        self.assertEqual(manifest["annotation_name"], "fixture key frame")
+        self.assertEqual(manifest["evidence"]["rendered_tracks"], ["smplx", "g1"])
+        self.assertIn("Unitree G1 visual", html)
 
 
 if __name__ == "__main__":

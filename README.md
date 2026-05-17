@@ -157,9 +157,10 @@ embodied skills.
 🚧 **Bootstrap phase, with a fixture-only HTML demo.**
 
 See [`STATUS.md`](STATUS.md) for the current repo state, known constraints,
-and next safe task. There is now a small checked-in Python package, a local
-SMPL-X fixture motion-contract command, and a static HTML demo generator, but
-there is still no checked-in GVHMR/GMR/simulator runtime pipeline or CI gate.
+and next safe task. There is now a small checked-in Python package, local
+SMPL-X and G1 fixture artifact commands, a teaching-playback HTML command, and
+a static HTML demo generator, but there is still no checked-in
+GVHMR/GMR/simulator runtime pipeline or CI gate.
 
 What can be run now:
 
@@ -168,6 +169,7 @@ make test
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
+PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
 make demo-html
 ```
 
@@ -178,6 +180,11 @@ outputs or qigong teaching evidence.
 `neodojo robot-model register` and `neodojo tracks build` can write fixture G1
 model and visual-track manifests. These preserve the SMPL-X/G1 responsibility
 split but do not yet load a real Unitree G1 mesh or run GMR retargeting.
+
+`neodojo demo play` consumes the SMPL-X motion-record and G1 visual-track
+manifests together and writes `outputs/teaching-demo/index.html` plus a
+playback manifest. This is a simulator-light HTML inspection path: SMPL-X stays
+the scoring source and G1 stays non-scoring.
 
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local
@@ -194,6 +201,7 @@ In progress:
       geometry check
 - [x] Local fixture SMPL-X motion-record and teaching-track manifests
 - [x] Local fixture G1 model and visual-track manifests with scoring separation
+- [x] Local teaching playback command that consumes SMPL-X and G1 manifests
 - [ ] roboharness-style multi-camera offscreen capture integration
 - [ ] SMPL-X + Unitree G1 dual-track synchronized Viser UI
 - [ ] Automatic key-frame detection + geometry-constrained verbal

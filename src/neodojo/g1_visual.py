@@ -8,7 +8,14 @@ from pathlib import Path
 from typing import Any
 
 from .fixtures import FIXTURE_FPS, FIXTURE_JOINT_SET, derive_g1_like_frame
-from .motion_contract import TRACK_SCHEMA, _write_json, validate_output_dir, validate_scoring_source
+from .motion_contract import (
+    TRACK_SCHEMA,
+    _write_json,
+    load_motion_record_frames,
+    resolve_motion_record_manifest,
+    validate_output_dir,
+    validate_scoring_source,
+)
 
 ROBOT_MODEL_SCHEMA = "neodojo.robot_model.v1"
 COMPARISON_REPORT_SCHEMA = "neodojo.track_comparison.v1"
@@ -172,45 +179,14 @@ def register_g1_model(
     return RobotModelWriteResult(descriptor_path=descriptor_path)
 
 
-def _resolve_motion_manifest(motion_record: Path) -> Path:
-    if motion_record.is_file():
-        return motion_record
-
-    candidates = [
-        motion_record / "motion-record" / "manifest.json",
-        motion_record / "manifest.json",
-    ]
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    raise ValueError(f"could not find a motion-record manifest under {motion_record}")
-
-
-def _load_smplx_frames(motion_manifest_path: Path) -> tuple[dict[str, Any], list[dict[str, list[float]]]]:
-    manifest = json.loads(motion_manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("scoring_source") != "smplx":
-        raise ValueError("motion record must keep SMPL-X as scoring_source")
-
-    data_file = manifest.get("data_files", {}).get("smplx_frames")
-    if not data_file:
-        raise ValueError("motion-record manifest is missing data_files.smplx_frames")
-
-    data_path = motion_manifest_path.parent / data_file
-    data = json.loads(data_path.read_text(encoding="utf-8"))
-    frames = data.get("frames")
-    if not isinstance(frames, list) or len(frames) < 8:
-        raise ValueError("motion-record data must contain at least 8 SMPL-X frames")
-    return manifest, frames
-
-
 def build_g1_visual_track(
     motion_record: Path,
     out_dir: Path,
     model_descriptor_path: Path | None = None,
 ) -> G1TrackWriteResult:
     validate_output_dir(out_dir)
-    motion_manifest_path = _resolve_motion_manifest(motion_record)
-    motion_manifest, smplx_frames = _load_smplx_frames(motion_manifest_path)
+    motion_manifest_path = resolve_motion_record_manifest(motion_record)
+    motion_manifest, smplx_frames = load_motion_record_frames(motion_manifest_path)
 
     if model_descriptor_path is not None and not model_descriptor_path.exists():
         raise ValueError(f"G1 model descriptor does not exist: {model_descriptor_path}")
@@ -284,3 +260,36 @@ def build_g1_visual_track(
         track_data_path=track_data_path,
         comparison_report_path=report_path,
     )
+
+
+def resolve_g1_track_manifest(path: Path) -> Path:
+    if path.is_file():
+        return path
+
+    candidates = [
+        path / "tracks" / "g1" / "manifest.json",
+        path / "manifest.json",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise ValueError(f"could not find a G1 track manifest under {path}")
+
+
+def load_g1_track_frames(track_manifest_path: Path) -> tuple[dict[str, Any], list[dict[str, list[float]]]]:
+    manifest = json.loads(track_manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("track_id") != "g1":
+        raise ValueError("expected a G1 visual-track manifest")
+    if manifest.get("scoring_allowed"):
+        raise ValueError("G1 visual tracks cannot allow scoring")
+
+    data_file = manifest.get("data_files", {}).get("frames")
+    if not data_file:
+        raise ValueError("G1 track manifest is missing data_files.frames")
+
+    data_path = track_manifest_path.parent / data_file
+    data = json.loads(data_path.read_text(encoding="utf-8"))
+    frames = data.get("frames")
+    if not isinstance(frames, list) or len(frames) < 8:
+        raise ValueError("G1 track data must contain at least 8 frames")
+    return manifest, frames

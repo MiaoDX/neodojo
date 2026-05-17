@@ -7,6 +7,7 @@ from typing import Sequence
 from .demo_html import write_demo
 from .g1_visual import build_g1_visual_track, register_g1_model, write_fixture_g1_model_descriptor
 from .motion_contract import write_fixture_motion_contract
+from .teaching_playback import write_teaching_playback_demo
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -123,6 +124,35 @@ def build_parser() -> argparse.ArgumentParser:
         help="output directory for the G1 visual-track manifest and report",
     )
 
+    demo = subparsers.add_parser(
+        "demo",
+        help="write local teaching playback artifacts from track manifests",
+    )
+    demo_subparsers = demo.add_subparsers(dest="demo_command", required=True)
+    demo_play = demo_subparsers.add_parser(
+        "play",
+        help="write a self-contained teaching playback HTML demo from SMPL-X and G1 tracks",
+    )
+    demo_play.add_argument(
+        "--motion-record",
+        type=Path,
+        required=True,
+        help="motion-record root directory or manifest path",
+    )
+    demo_play.add_argument(
+        "--g1-track",
+        type=Path,
+        required=True,
+        help="G1 visual-track root directory or manifest path",
+    )
+    demo_play.add_argument("--annotations", type=Path, help="optional manual key-frame annotation JSON")
+    demo_play.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/teaching-demo"),
+        help="output directory for the teaching playback HTML and manifest",
+    )
+
     return parser
 
 
@@ -171,6 +201,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(f"wrote {result.track_manifest_path}")
             print(f"wrote {result.comparison_report_path}")
+            return 0
+
+        if args.command == "demo" and args.demo_command == "play":
+            result = write_teaching_playback_demo(
+                args.out,
+                motion_record=args.motion_record,
+                g1_track=args.g1_track,
+                annotations_path=args.annotations,
+            )
+            print(f"wrote {result.html_path}")
+            print(f"wrote {result.manifest_path}")
             return 0
     except ValueError as exc:
         parser.error(str(exc))

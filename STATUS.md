@@ -3,11 +3,11 @@
 neodojo is in bootstrap state with one fixture-only local demo.
 
 There is now a minimal checked-in Python package, a `make test` command,
-fixture-backed `motion-record`, `robot-model`, and `tracks` commands, and a
-`make demo-html` command that writes a self-contained synthetic web demo. There
-is still no checked-in GVHMR/GMR/simulator runtime pipeline, install workflow,
-lint command, build command, CI gate, real generated motion artifact, or UI
-server.
+fixture-backed `motion-record`, `robot-model`, `tracks`, and `demo play`
+commands, and a `make demo-html` command that writes a self-contained synthetic
+web demo. There is still no checked-in GVHMR/GMR/simulator runtime pipeline,
+install workflow, lint command, build command, CI gate, real generated motion
+artifact, or UI server.
 
 ## Current Truth
 
@@ -28,8 +28,8 @@ server.
 - Pre-GSD implementation phase split in
   `docs/plans/mvp-implementation-phases.md`.
 - Immediate local-first smoke path: fixture motion -> motion record -> SMPL-X
-  teaching-track manifest -> fixture G1 visual-track manifest -> local
-  inspection -> one geometry check.
+  teaching-track manifest -> fixture G1 visual-track manifest -> local teaching
+  playback HTML/manifest -> one geometry check.
 - Multi-camera offscreen rendering approach, likely reusing roboharness patterns.
 - Synchronized SMPL-X and Unitree G1 playback in Viser.
 - Key-frame detection and geometry-constrained verbal feedback for terms such as
@@ -41,6 +41,9 @@ server.
   local contract shape that later GVHMR/GMR imports should consume.
 - Fixture-backed Unitree G1 model descriptor, derived visual-track manifest, and
   comparison report with `g1_scoring_allowed: false`.
+- Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
+  proving that the SMPL-X and G1 manifests can be consumed together while
+  preserving the SMPL-X scoring boundary.
 
 ## Blockers And Constraints
 
@@ -66,6 +69,7 @@ make test
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
+PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
 make demo-html
 ```
 
@@ -74,19 +78,20 @@ and local motion contract. `neodojo motion-record create` writes fixture-backed
 SMPL-X motion-record and teaching-track manifests under the selected ignored
 output directory. `neodojo robot-model register` and `neodojo tracks build`
 write fixture G1 model/visual-track manifests and a comparison report that keeps
-G1 non-scoring. `make demo-html` writes `outputs/html-demo/index.html`,
-`outputs/html-demo/manifest.json`, and the local motion/track manifests it
-consumes. These artifacts use synthetic fixture motion only; they validate UI
-plumbing, trajectory drawing, timeline sync, the local SMPL-X/G1 scoring
-boundary, and one SMPL-X-based geometry check, not qigong correctness.
+G1 non-scoring. `neodojo demo play` writes `outputs/teaching-demo/index.html`
+and a playback manifest from the SMPL-X and G1 manifests. `make demo-html`
+writes `outputs/html-demo/index.html`, `outputs/html-demo/manifest.json`, and
+the local motion/track manifests it consumes. These artifacts use synthetic
+fixture motion only; they validate UI plumbing, trajectory drawing, timeline
+sync, the local SMPL-X/G1 scoring boundary, and one SMPL-X-based geometry check,
+not qigong correctness.
 
 ## Next Safe Task
 
-Continue the local-first plan from `docs/plans/mvp-implementation-phases.md`:
-implement `docs/plans/mvp-teaching-playback-demo.md` next by making playback
-consume the SMPL-X and G1 manifests together and producing screenshot/frame
-evidence for synchronized multi-view playback. Defer real GVHMR conversion to
-the later GPU gate.
+The next MVP capability is `docs/plans/mvp-real-conversion-gate.md`, but it is
+a deliberate GPU/local-dev gate. Do not run GVHMR full-video inference on this
+macOS CPU workspace; use a GPU-capable machine or an imported GVHMR artifact,
+then import it through the same motion-record contract.
 
 ## Background Evidence
 

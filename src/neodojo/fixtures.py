@@ -133,20 +133,30 @@ def compute_feedback(frame: dict[str, list[float]]) -> dict[str, Any]:
     }
 
 
-def build_fixture_from_smplx_frames(frames: list[dict[str, list[float]]]) -> dict[str, Any]:
+def build_fixture_from_smplx_frames(
+    frames: list[dict[str, list[float]]],
+    g1_frames: list[dict[str, list[float]]] | None = None,
+    key_frame: int | None = None,
+    fixture_only: bool = True,
+) -> dict[str, Any]:
     if len(frames) < 8:
         raise ValueError("fixture must include at least 8 frames")
 
-    g1_frames = [derive_g1_like_frame(frame) for frame in frames]
-    key_frame = len(frames) - 1
-    feedback = compute_feedback(frames[key_frame])
+    visual_frames = g1_frames if g1_frames is not None else [derive_g1_like_frame(frame) for frame in frames]
+    if len(visual_frames) != len(frames):
+        raise ValueError("SMPL-X and G1 visual tracks must have the same frame count")
+
+    selected_key_frame = len(frames) - 1 if key_frame is None else key_frame
+    if selected_key_frame < 0 or selected_key_frame >= len(frames):
+        raise ValueError("key_frame is outside the available frame range")
+    feedback = compute_feedback(frames[selected_key_frame])
 
     return {
-        "fixture_only": True,
+        "fixture_only": fixture_only,
         "routine": f"{FIXTURE_ROUTINE} {FIXTURE_FORM}",
         "fps": FIXTURE_FPS,
         "frame_count": len(frames),
-        "key_frame": key_frame,
+        "key_frame": selected_key_frame,
         "scoring_source": "smplx",
         "tracks": {
             "smplx": {
@@ -157,7 +167,7 @@ def build_fixture_from_smplx_frames(frames: list[dict[str, list[float]]]) -> dic
             "g1": {
                 "label": "Unitree G1 visual",
                 "role": "derived visual companion",
-                "frames": g1_frames,
+                "frames": visual_frames,
             },
         },
         "bones": BONES,

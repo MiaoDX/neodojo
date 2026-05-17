@@ -23,10 +23,11 @@
 
 ## Commands
 
-- `make test` runs the focused unit tests for the fixture demo generator, local motion contract, and G1 visual-track manifest boundary.
+- `make test` runs the focused unit tests for the fixture demo generator, local motion contract, G1 visual-track manifest boundary, and teaching playback manifest path.
 - `PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract` writes fixture-backed SMPL-X motion-record and teaching-track manifests.
 - `PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual` writes a fixture G1 model descriptor.
 - `PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual` writes a fixture-derived G1 visual-track manifest and comparison report.
+- `PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo` writes a fixture-only teaching playback HTML and manifest from the SMPL-X and G1 manifests.
 - `make demo-html` writes the self-contained fixture demo to `outputs/html-demo/index.html` plus the local motion/track manifests it consumes.
 - No canonical install, lint, build, or CI commands exist yet.
 - When adding code, add the command surface in the same change: package metadata, scripts or Make targets, focused tests, and README/docs updates.

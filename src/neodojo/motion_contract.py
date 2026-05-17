@@ -143,6 +143,37 @@ def write_fixture_motion_contract(out_dir: Path, frame_count: int = 96) -> Motio
     )
 
 
+def resolve_motion_record_manifest(motion_record: Path) -> Path:
+    if motion_record.is_file():
+        return motion_record
+
+    candidates = [
+        motion_record / "motion-record" / "manifest.json",
+        motion_record / "manifest.json",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise ValueError(f"could not find a motion-record manifest under {motion_record}")
+
+
+def load_motion_record_frames(motion_manifest_path: Path) -> tuple[dict[str, Any], list[dict[str, list[float]]]]:
+    manifest = json.loads(motion_manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("scoring_source") != "smplx":
+        raise ValueError("motion record must keep SMPL-X as scoring_source")
+
+    data_file = manifest.get("data_files", {}).get("smplx_frames")
+    if not data_file:
+        raise ValueError("motion-record manifest is missing data_files.smplx_frames")
+
+    data_path = motion_manifest_path.parent / data_file
+    data = json.loads(data_path.read_text(encoding="utf-8"))
+    frames = data.get("frames")
+    if not isinstance(frames, list) or len(frames) < 8:
+        raise ValueError("motion-record data must contain at least 8 SMPL-X frames")
+    return manifest, frames
+
+
 def load_track_frames(track_manifest_path: Path) -> list[dict[str, list[float]]]:
     manifest = json.loads(track_manifest_path.read_text(encoding="utf-8"))
     if manifest.get("track_id") != "smplx":

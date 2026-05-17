@@ -1,6 +1,6 @@
 # MVP Teaching Playback Demo Plan
 
-Status: QUEUED AFTER G1 VISUAL TRACK
+Status: IMPLEMENTED LOCALLY
 
 ## Goal
 
@@ -41,7 +41,7 @@ real GMR-derived.
 - A documented playback command such as:
 
   ```bash
-  neodojo demo play --tracks <tracks-dir> --annotations <annotations.json>
+  PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
   ```
 
 - Front/side/top synchronized playback for SMPL-X and G1.
@@ -51,6 +51,25 @@ real GMR-derived.
 - Screenshot or frame evidence for rendering/UI verification.
 - Tests for annotation parsing and geometry-constraint calculation.
 - Docs updates only after the playback command exists.
+
+## Implemented Local Path
+
+The first implementation uses the simulator-light fixture rendering path. It
+does not load a real Unitree G1 mesh, MuJoCo, Genesis, or Viser. The command
+loads the SMPL-X motion-record manifest and the derived G1 visual-track
+manifest, verifies matching frame counts, keeps `scoring_source: smplx`, and
+writes:
+
+- `outputs/teaching-demo/index.html`
+- `outputs/teaching-demo/manifest.json`
+
+The manifest records the source manifests, rendered track ids, trajectory
+joints, key frame, and SMPL-X-based feedback result.
+
+Local UI verification captured
+`outputs/teaching-demo/screenshot.png` with headless Chrome at 1440x1000. The
+screenshot shows synchronized SMPL-X teacher and Unitree G1 visual views,
+trajectory overlays, timeline controls, and the SMPL-X feedback panel.
 
 ## Rendering Path Decision
 
@@ -67,20 +86,20 @@ rendering on the local macOS CPU machine.
 
 ## Implementation Tasks
 
-- Select the first rendering/playback path and record the reason in the plan or
+- [x] Select the first rendering/playback path and record the reason in the plan or
   implementation notes.
-- Add annotation schema for manual key frames and geometric constraints.
-- Load SMPL-X and G1 track manifests through the same artifact contracts created
+- [x] Add annotation schema for manual key frames and geometric constraints.
+- [x] Load SMPL-X and G1 track manifests through the same artifact contracts created
   by earlier plans.
-- Render SMPL-X as the primary teaching track and G1 as the visual companion.
-- Add synchronized front/side/top views.
-- Implement trajectory extraction and polyline overlays for selected joints.
-- Add timeline, key-frame navigation, and current-frame readout.
-- Compute one deterministic SMPL-X-based feedback result, such as shoulder
+- [x] Render SMPL-X as the primary teaching track and G1 as the visual companion.
+- [x] Add synchronized front/side/top views.
+- [x] Implement trajectory extraction and polyline overlays for selected joints.
+- [x] Add timeline, key-frame navigation, and current-frame readout.
+- [x] Compute one deterministic SMPL-X-based feedback result, such as shoulder
   clearance or elbow drop.
-- Verify actual frames or screenshots rather than relying only on logs.
-- Keep fixture-only and real-artifact labels visible in generated artifacts.
-- Update README/STATUS only after the command really exists and proof evidence
+- [x] Verify actual frames or screenshots rather than relying only on logs.
+- [x] Keep fixture-only and real-artifact labels visible in generated artifacts.
+- [x] Update README/STATUS only after the command really exists and proof evidence
   is available.
 
 ## Acceptance Evidence
