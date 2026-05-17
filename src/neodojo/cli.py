@@ -23,6 +23,7 @@ from .recorder_capture import write_simulator_recorder_capture
 from .real_conversion import (
     DEFAULT_SOURCE_ID,
     DEFAULT_SOURCE_INDEX,
+    inspect_gvhmr_result,
     materialize_real_conversion_source,
     package_gvhmr_gpu_handoff,
     validate_gvhmr_source,
@@ -693,6 +694,22 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/gvhmr-gpu-handoff"),
         help="output directory for the GPU handoff manifest and README",
     )
+    real_inspect_gvhmr = real_subparsers.add_parser(
+        "inspect-gvhmr-result",
+        help="inspect a returned GVHMR hmr4d_results.pt or JSON summary for export readiness",
+    )
+    real_inspect_gvhmr.add_argument(
+        "--source",
+        type=Path,
+        required=True,
+        help="GVHMR hmr4d_results.pt, or a JSON summary/export with the same top-level shape",
+    )
+    real_inspect_gvhmr.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/gvhmr-result-inspection"),
+        help="output directory for the result inspection manifest",
+    )
     real_import_demo = real_subparsers.add_parser(
         "import-demo",
         help="validate an external GVHMR export and regenerate the local demo lane",
@@ -1025,6 +1042,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"wrote {result.manifest_path}")
             print(f"wrote {result.readme_path}")
             print(f"wrote {result.export_template_path}")
+            print(f"status {result.status}")
+            for path in result.checked_paths:
+                print(f"checked {path}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "inspect-gvhmr-result":
+            result = inspect_gvhmr_result(args.out, source=args.source)
+            print(f"wrote {result.manifest_path}")
             print(f"status {result.status}")
             for path in result.checked_paths:
                 print(f"checked {path}")

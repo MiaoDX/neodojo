@@ -15,12 +15,15 @@ self-contained synthetic web demo, minimal `make lint`, `make check`, and
 `make demo-public-browser` commands plus `make verify` and GitHub Actions
 workflow for the fixture public-demo artifact, browser capture, and generated
 capture bundle, `make gpu-handoff` for external GVHMR run metadata, and
-`make demo-real` for a validated external GVHMR JSON once a GPU artifact exists,
-with a verified live fixture-only GitHub Pages demo at
+`make gvhmr-inspect` for returned GVHMR result inspection, and `make demo-real`
+for a validated external GVHMR JSON once a GPU artifact exists, with a verified
+live fixture-only GitHub Pages demo at
 `https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, `real-conversion package-gpu-handoff` can package the handoff
 manifest, export template, and return command for the external GPU operator,
+`real-conversion inspect-gvhmr-result` can inspect returned GVHMR result keys and
+candidate SMPL-X parameter blocks,
 `real-conversion validate-source` can validate a GVHMR JSON export against that
 handoff before import, and `real-conversion import-demo` can regenerate the
 local demo lane from that validated export. There is
@@ -132,6 +135,14 @@ or hosted/live-client Viser capture.
   preserves source-materialization hash, trim, input-video checksum, expected
   `neodojo.gvhmr_smplx_joints.v1` export path, and the local return command. It
   does not copy source media or run GVHMR locally.
+- `make gvhmr-inspect GVHMR_RESULT=...` writes
+  `outputs/gvhmr-result-inspection/manifest.json`, a
+  `neodojo.gvhmr_result_inspection.v1` manifest that reports result keys,
+  candidate `smpl_params_global` / `smpl_params_incam` blocks, candidate joint
+  tensors, and whether the input is already a
+  `neodojo.gvhmr_smplx_joints.v1` export. Native `.pt` inspection requires
+  `torch` in the GVHMR/GPU environment; the default local path can inspect JSON
+  summaries/exports only.
 - `make demo-real SOURCE_MATERIALIZATION=... GVHMR_JSON=...` validates an
   externally produced GVHMR SMPL-X teaching-joints JSON against the
   source-materialization manifest, imports it into the motion-record contract,
@@ -203,6 +214,10 @@ or hosted/live-client Viser capture.
   README instructions, and a `neodojo.gvhmr_smplx_joints.v1` export template.
   The smoke used dry-run source materialization, so the handoff correctly
   reports `needs_materialization` until a real trimmed clip exists.
+- GVHMR result inspection smoke generated
+  `outputs/gvhmr-result-inspection-smoke/manifest.json` from the existing local
+  fixture export and reported `already_neodojo_export`. Unit tests also cover a
+  synthetic `smpl_params_global` summary and the no-`torch` `.pt` error path.
 - Source validation report generated under `outputs/real-conversion-validation/`
   for GVHMR teaching-joints JSON exports that declare matching materialization
   provenance. Passing validation writes a `.validated.json` import copy and
@@ -241,6 +256,7 @@ make build
 make demo-public
 make demo-public-browser
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
+make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
@@ -267,6 +283,7 @@ PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-dem
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff --source-materialization outputs/real-conversion-source/source-materialization.json --out outputs/gvhmr-gpu-handoff
+PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result --source outputs/real-conversion-gate/hmr4d_results.pt --out outputs/gvhmr-result-inspection
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
 PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
 make demo-html
@@ -386,10 +403,14 @@ artifacts for the later GPU GVHMR input handoff. `neodojo real-conversion
 package-gpu-handoff` packages that manifest into a GPU handoff directory with a
 machine-readable status, export template, provenance fields, upstream command
 template, and local return command; it does not copy media or run GVHMR
-locally. `neodojo real-conversion validate-source` compares the
-source-materialization manifest with GVHMR export provenance, writes a
-validation report, and emits a validated JSON import copy when source id, trim,
-input path/checksum, and duration checks pass. `neodojo
+locally. `neodojo real-conversion inspect-gvhmr-result` writes a result
+inspection manifest for a returned `hmr4d_results.pt` when `torch` is available
+in the GVHMR/GPU environment, or for a JSON summary/export locally. It reports
+top-level keys, candidate SMPL-X parameter blocks, and export guidance, but does
+not convert raw GVHMR `.pt` files locally. `neodojo real-conversion
+validate-source` compares the source-materialization manifest with GVHMR export
+provenance, writes a validation report, and emits a validated JSON import copy
+when source id, trim, input path/checksum, and duration checks pass. `neodojo
 real-conversion import-demo` wraps validation, motion import, annotations,
 surface proxy, G1 visual/render, teaching playback, public-demo, Viser preview,
 and capture-bundle generation for that external artifact under

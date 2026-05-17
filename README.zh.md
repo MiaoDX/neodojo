@@ -156,6 +156,7 @@ make build
 make demo-public
 make demo-public-browser
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
+make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
@@ -182,6 +183,7 @@ PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-dem
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff --source-materialization outputs/real-conversion-source/source-materialization.json --out outputs/gvhmr-gpu-handoff
+PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result --source outputs/real-conversion-gate/hmr4d_results.pt --out outputs/gvhmr-result-inspection
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
 PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
 make demo-html
@@ -301,8 +303,13 @@ artifacts 写给后续 GPU GVHMR input。`neodojo real-conversion package-gpu-ha
 manifest，写出 `outputs/gvhmr-gpu-handoff/manifest.json`、README，以及
 `gvhmr-smplx-joints.template.json`，用于保留 source hash、trim、input video
 checksum、预期 export schema 和返回本地 import command。这个 package 不复制媒体，
-也不会在本地运行 GVHMR。`neodojo real-conversion validate-source` 会把 GVHMR
-teaching-joints JSON export 与 source-materialization manifest 做 provenance 对照，
+也不会在本地运行 GVHMR。`neodojo real-conversion inspect-gvhmr-result` 和
+`make gvhmr-inspect GVHMR_RESULT=...` 会在 GVHMR/GPU 环境安装了 optional `torch`
+时检查返回的 `hmr4d_results.pt`，或者在默认本地环境检查 JSON summary。inspection
+manifest 会记录 top-level keys、候选的 `smpl_params_global` / `smpl_params_incam`
+parameter blocks，以及输入是否已经是 `neodojo.gvhmr_smplx_joints.v1` export。它仍不会
+在本地转换 raw GVHMR `.pt` 文件。`neodojo real-conversion validate-source` 会把
+GVHMR teaching-joints JSON export 与 source-materialization manifest 做 provenance 对照，
 写出 validation report，并在 provenance 匹配时生成 validated import JSON copy。
 `neodojo real-conversion import-demo` 和
 `make demo-real SOURCE_MATERIALIZATION=... GVHMR_JSON=...` 会验证外部 GVHMR
@@ -364,6 +371,7 @@ capture 或真实 Unitree G1 retargeting 已经完成。
 - [x] 本地 real-conversion prep manifest，默认 source 为 `03-006`
 - [x] 面向用户本地视频的 real-conversion source materialization handoff
 - [x] 本地 GVHMR GPU handoff package，包含 export template 与返回命令
+- [x] 本地 GVHMR result inspection manifest，用于返回的 `.pt` 或 JSON export
 - [x] 本地 GVHMR source-validation report 与 validated JSON import handoff
 - [x] 外部 GPU GVHMR export 可用后的一命令本地 real-artifact import demo
 详细 implementation queue 放在 [`docs/plans/`](docs/plans/)，之后可以再同步成

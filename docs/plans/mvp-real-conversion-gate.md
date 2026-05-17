@@ -1,6 +1,6 @@
 # MVP Real Conversion Gate Plan
 
-Status: LOCAL PREP, SOURCE MATERIALIZATION, GPU HANDOFF, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
+Status: LOCAL PREP, SOURCE MATERIALIZATION, GPU HANDOFF, RESULT INSPECTION, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
 
 ## Goal
 
@@ -86,6 +86,11 @@ path is acceptable and preferred.
   `make gpu-handoff` that records source-materialization hash, trimmed-video
   readiness, expected export schema, provenance fields, and the local return
   command without copying media.
+- A result inspection manifest from `neodojo real-conversion
+  inspect-gvhmr-result` or `make gvhmr-inspect` that reports top-level
+  `hmr4d_results.pt` keys and candidate SMPL-X parameter blocks when run in a
+  GVHMR/GPU environment with `torch`, or inspects JSON summaries/exports in the
+  default local environment.
 - A motion-record import run using
   `neodojo motion-record create --from-gvhmr-json`.
 - A one-command local import/demo run using
@@ -140,6 +145,22 @@ This writes `outputs/gvhmr-gpu-handoff/manifest.json`, a README, and
 `gvhmr-smplx-joints.template.json`. It reports `ready_for_gpu` only when the
 source-materialization manifest points to an existing materialized trimmed clip
 with matching checksum; dry-run handoffs correctly report `needs_materialization`.
+Inspect the returned GVHMR result structure before writing the final neodojo
+export:
+
+```bash
+PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result \
+  --source outputs/real-conversion-gate/hmr4d_results.pt \
+  --out outputs/gvhmr-result-inspection
+
+make gvhmr-inspect \
+  GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
+```
+
+Native `.pt` inspection requires `torch` and should normally run in the
+GVHMR/GPU environment. The command can inspect JSON summaries or existing
+`neodojo.gvhmr_smplx_joints.v1` exports in the default local environment. It
+does not convert raw `.pt` results locally.
 After the GPU run returns a `neodojo.gvhmr_smplx_joints.v1` export with
 matching provenance, validate it locally:
 
@@ -179,6 +200,9 @@ variables, when an external GMR/G1 visual artifact is available.
 - [x] Package a source-materialization manifest into a GPU handoff bundle with
   export template, provenance fields, readiness status, and local return
   command.
+- [x] Add a GVHMR result inspection command for returned `hmr4d_results.pt` or
+  JSON summaries so the export adapter can identify candidate SMPL-X parameter
+  blocks before writing `neodojo.gvhmr_smplx_joints.v1`.
 - [x] Validate a returned GVHMR export against the source-materialization
   manifest before importing the validated JSON copy.
 - [x] Add a local `real-conversion import-demo` / `make demo-real` wrapper that
@@ -205,9 +229,10 @@ variables, when an external GMR/G1 visual artifact is available.
 ## Current Blocker Classification
 
 The local, non-GPU side of this gate is complete through prep,
-source-materialization, GPU handoff packaging, returned-export validation,
-motion import, and `import-demo`/`make demo-real` demo regeneration. The
-remaining blocker is external to this macOS CPU workspace:
+source-materialization, GPU handoff packaging, returned-result inspection,
+returned-export validation, motion import, and `import-demo`/`make demo-real`
+demo regeneration. The remaining blocker is external to this macOS CPU
+workspace:
 
 - blocker type: source clip plus GPU artifact missing
 - missing input: a licensed or user-supplied local clip for source `03-006`, or

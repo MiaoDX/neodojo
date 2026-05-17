@@ -1,7 +1,8 @@
-.PHONY: all verify lint check test build demo-html demo-public demo-public-browser gpu-handoff demo-real smoke-public
+.PHONY: all verify lint check test build demo-html demo-public demo-public-browser gpu-handoff gvhmr-inspect demo-real smoke-public
 
 PYTHON ?= python3
 GPU_HANDOFF_OUT ?= outputs/gvhmr-gpu-handoff
+GVHMR_INSPECT_OUT ?= outputs/gvhmr-result-inspection
 REAL_DEMO_OUT ?= outputs/real-demo
 REAL_DEMO_ARGS = --source-materialization "$(SOURCE_MATERIALIZATION)" --gvhmr-json "$(GVHMR_JSON)" --out "$(REAL_DEMO_OUT)"
 ifdef G1_TRACK
@@ -55,6 +56,10 @@ demo-public-browser: demo-public
 gpu-handoff:
 	@test -n "$(SOURCE_MATERIALIZATION)" || (echo "SOURCE_MATERIALIZATION=path/to/source-materialization.json is required" && exit 2)
 	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion package-gpu-handoff --source-materialization "$(SOURCE_MATERIALIZATION)" --out "$(GPU_HANDOFF_OUT)"
+
+gvhmr-inspect:
+	@test -n "$(GVHMR_RESULT)" || (echo "GVHMR_RESULT=path/to/hmr4d_results.pt is required" && exit 2)
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion inspect-gvhmr-result --source "$(GVHMR_RESULT)" --out "$(GVHMR_INSPECT_OUT)"
 
 demo-real:
 	@test -n "$(SOURCE_MATERIALIZATION)" || (echo "SOURCE_MATERIALIZATION=path/to/source-materialization.json is required" && exit 2)

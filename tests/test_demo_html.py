@@ -31,6 +31,7 @@ from neodojo.quality import check_quality_surface
 from neodojo.recorder_capture import write_simulator_recorder_capture
 from neodojo.real_conversion import (
     _parse_ffprobe_payload,
+    inspect_gvhmr_result,
     materialize_real_conversion_source,
     package_gvhmr_gpu_handoff,
     validate_gvhmr_source,
@@ -1635,6 +1636,7 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(manifest["gpu_run"]["required"])
         self.assertIn("materialize-source", manifest["next_commands"]["materialize_source"])
         self.assertIn("package-gpu-handoff", manifest["next_commands"]["package_gpu_handoff"])
+        self.assertIn("inspect-gvhmr-result", manifest["next_commands"]["inspect_gvhmr_result"])
         self.assertIn("--from-gvhmr-json", manifest["next_commands"]["import_motion_record"])
         self.assertIn("import-demo", manifest["next_commands"]["import_demo"])
 
@@ -1829,6 +1831,72 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(result.status, "needs_materialization")
         self.assertFalse(manifest["gpu_input"]["exists"])
         self.assertFalse(manifest["gpu_input"]["materialized_ready"])
+
+    def test_gvhmr_result_inspection_reports_candidate_parameter_blocks(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "hmr4d-results-summary.json"
+            source.write_text(
+                json.dumps(
+                    {
+                        "smpl_params_global": {
+                            "global_orient": [[0.0, 0.0, 0.0] for _ in range(10)],
+                            "body_pose": [[0.0] * 63 for _ in range(10)],
+                            "betas": [0.0] * 10,
+                            "transl": [[0.0, 0.0, 0.0] for _ in range(10)],
+                        },
+                        "smpl_params_incam": {
+                            "global_orient": [[0.0, 0.0, 0.0] for _ in range(10)],
+                        },
+                        "K_fullimg": [[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]] for _ in range(10)],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = inspect_gvhmr_result(root / "inspection", source=source)
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "inspectable")
+        self.assertEqual(manifest["schema"], "neodojo.gvhmr_result_inspection.v1")
+        self.assertEqual(manifest["source_format"], "json")
+        self.assertIn("smpl_params_global", manifest["top_level_keys"])
+        self.assertEqual(manifest["candidate_smplx_parameter_blocks"][0]["key"], "smpl_params_global")
+        self.assertTrue(manifest["candidate_smplx_parameter_blocks"][0]["mesh_ready"])
+        self.assertEqual(manifest["export_guidance"]["expected_schema"], "neodojo.gvhmr_smplx_joints.v1")
+        self.assertTrue(manifest["export_guidance"]["requires_gpu_side_named_teaching_joints"])
+
+    def test_gvhmr_result_inspection_requires_torch_for_pt_without_optional_dependency(self) -> None:
+        if importlib.util.find_spec("torch"):
+            self.skipTest("torch optional dependency is installed")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "hmr4d_results.pt"
+            source.write_bytes(b"not loaded without torch")
+
+            with self.assertRaisesRegex(ValueError, "requires the optional torch"):
+                inspect_gvhmr_result(root / "inspection", source=source)
+
+    def test_gvhmr_result_inspection_detects_existing_neodojo_export(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "gvhmr-smplx-joints.json"
+            source.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gvhmr_smplx_joints.v1",
+                        "fps": 24,
+                        "frames": build_smplx_fixture_frames(10),
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = inspect_gvhmr_result(root / "inspection", source=source)
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "already_neodojo_export")
+        self.assertEqual(manifest["status"], "already_neodojo_export")
 
     def test_gvhmr_source_validation_writes_validated_export(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

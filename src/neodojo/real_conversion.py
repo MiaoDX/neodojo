@@ -9,12 +9,19 @@ from pathlib import Path
 from typing import Any
 
 from .contracts import local_file_metadata, require_schema, sha256_file
-from .motion_contract import GVHMR_JOINT_EXPORT_SCHEMA, _write_json, validate_output_dir
+from .motion_contract import (
+    GVHMR_JOINT_EXPORT_SCHEMA,
+    _SMPLX_FRAME_PARAMETER_FIELDS,
+    _SMPLX_REQUIRED_PARAMETER_FIELDS,
+    _write_json,
+    validate_output_dir,
+)
 
 REAL_CONVERSION_PREP_SCHEMA = "neodojo.real_conversion_prep.v1"
 SOURCE_MATERIALIZATION_SCHEMA = "neodojo.real_conversion_source_materialization.v1"
 GVHMR_SOURCE_VALIDATION_SCHEMA = "neodojo.gvhmr_source_validation.v1"
 GVHMR_GPU_HANDOFF_SCHEMA = "neodojo.gvhmr_gpu_handoff.v1"
+GVHMR_RESULT_INSPECTION_SCHEMA = "neodojo.gvhmr_result_inspection.v1"
 DEFAULT_SOURCE_INDEX = Path("video/original_videos.csv")
 DEFAULT_SOURCE_ID = "03-006"
 
@@ -43,6 +50,13 @@ class GvhmrGpuHandoffWriteResult:
     manifest_path: Path
     readme_path: Path
     export_template_path: Path
+    checked_paths: list[Path]
+    status: str
+
+
+@dataclass(frozen=True)
+class GvhmrResultInspectionWriteResult:
+    manifest_path: Path
     checked_paths: list[Path]
     status: str
 
@@ -722,6 +736,181 @@ def package_gvhmr_gpu_handoff(
     )
 
 
+def _load_gvhmr_result_object(source: Path) -> tuple[dict[str, Any], str]:
+    if not source.exists():
+        raise ValueError(f"GVHMR result does not exist: {source}")
+    if source.suffix.lower() == ".json":
+        return _load_json_object(source, "GVHMR result JSON"), "json"
+    try:
+        import torch
+    except ModuleNotFoundError as exc:
+        raise ValueError(
+            "inspecting native GVHMR .pt results requires the optional torch "
+            "dependency; run this command in the GVHMR/GPU environment or pass "
+            "a JSON summary/export instead"
+        ) from exc
+
+    try:
+        payload = torch.load(source, map_location="cpu")
+    except Exception as exc:
+        raise ValueError(f"failed to load GVHMR result with torch.load: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("GVHMR result must contain a dictionary")
+    return payload, "torch_pt"
+
+
+def _shape_of(value: Any) -> list[int] | None:
+    shape = getattr(value, "shape", None)
+    if shape is not None:
+        try:
+            return [int(dimension) for dimension in shape]
+        except (TypeError, ValueError):
+            return None
+    if isinstance(value, list):
+        shape_values = []
+        current: Any = value
+        while isinstance(current, list):
+            shape_values.append(len(current))
+            current = current[0] if current else None
+        return shape_values
+    return None
+
+
+def _dtype_of(value: Any) -> str | None:
+    dtype = getattr(value, "dtype", None)
+    return str(dtype) if dtype is not None else None
+
+
+def _summarize_value(value: Any, *, depth: int = 0) -> dict[str, Any]:
+    summary: dict[str, Any] = {
+        "type": type(value).__name__,
+        "shape": _shape_of(value),
+        "dtype": _dtype_of(value),
+    }
+    if isinstance(value, dict):
+        summary["key_count"] = len(value)
+        summary["keys"] = sorted(str(key) for key in value.keys())
+        if depth < 1:
+            summary["children"] = {
+                str(key): _summarize_value(child, depth=depth + 1)
+                for key, child in sorted(value.items(), key=lambda item: str(item[0]))
+            }
+    elif isinstance(value, (list, tuple)):
+        summary["length"] = len(value)
+    return summary
+
+
+def _candidate_smplx_parameter_blocks(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    candidates = []
+    for key, value in sorted(payload.items(), key=lambda item: str(item[0])):
+        if not isinstance(value, dict):
+            continue
+        field_shapes = {
+            field: _shape_of(field_value)
+            for field, field_value in value.items()
+            if _shape_of(field_value) is not None
+        }
+        required_present = [field for field in _SMPLX_REQUIRED_PARAMETER_FIELDS if field in value]
+        if not required_present and not str(key).startswith("smpl_params"):
+            continue
+        frame_shapes = {
+            field: shape
+            for field, shape in field_shapes.items()
+            if field in _SMPLX_FRAME_PARAMETER_FIELDS and shape
+        }
+        frame_counts = sorted({shape[0] for shape in frame_shapes.values() if shape})
+        candidates.append(
+            {
+                "key": str(key),
+                "required_fields_present": required_present,
+                "missing_required_fields": [
+                    field for field in _SMPLX_REQUIRED_PARAMETER_FIELDS if field not in value
+                ],
+                "field_shapes": field_shapes,
+                "frame_count_candidates": frame_counts,
+                "mesh_ready": set(_SMPLX_REQUIRED_PARAMETER_FIELDS).issubset(value.keys()),
+            }
+        )
+    return candidates
+
+
+def _candidate_joint_blocks(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    candidates = []
+    for key, value in sorted(payload.items(), key=lambda item: str(item[0])):
+        shape = _shape_of(value)
+        if not shape or len(shape) < 3:
+            continue
+        key_text = str(key).lower()
+        if "joint" not in key_text and key_text not in {"j3d", "kp3d"}:
+            continue
+        candidates.append(
+            {
+                "key": str(key),
+                "shape": shape,
+                "dtype": _dtype_of(value),
+                "note": "candidate numeric joint tensor; a GPU-side adapter must map it to named teaching joints",
+            }
+        )
+    return candidates
+
+
+def inspect_gvhmr_result(
+    out_dir: Path,
+    *,
+    source: Path,
+) -> GvhmrResultInspectionWriteResult:
+    validate_output_dir(out_dir)
+    payload, source_format = _load_gvhmr_result_object(source)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = out_dir / "manifest.json"
+
+    smplx_candidates = _candidate_smplx_parameter_blocks(payload)
+    joint_candidates = _candidate_joint_blocks(payload)
+    status = "inspectable"
+    if payload.get("schema") == GVHMR_JOINT_EXPORT_SCHEMA and isinstance(
+        payload.get("frames", payload.get("smplx_joints")),
+        list,
+    ):
+        status = "already_neodojo_export"
+    elif not smplx_candidates and not joint_candidates:
+        status = "no_candidate_blocks"
+
+    manifest = {
+        "schema": GVHMR_RESULT_INSPECTION_SCHEMA,
+        "status": status,
+        "source": _as_posix(source),
+        "source_resolved": _as_posix(source.resolve()),
+        "source_sha256": sha256_file(source),
+        "source_format": source_format,
+        "top_level_keys": sorted(str(key) for key in payload.keys()),
+        "top_level_summary": {
+            str(key): _summarize_value(value)
+            for key, value in sorted(payload.items(), key=lambda item: str(item[0]))
+        },
+        "candidate_smplx_parameter_blocks": smplx_candidates,
+        "candidate_joint_blocks": joint_candidates,
+        "export_guidance": {
+            "expected_schema": GVHMR_JOINT_EXPORT_SCHEMA,
+            "recommended_parameter_block": smplx_candidates[0]["key"] if smplx_candidates else None,
+            "requires_gpu_side_named_teaching_joints": True,
+            "notes": (
+                "GVHMR demo results are native model outputs. To import them into "
+                "neodojo, export named SMPL-X teaching joints plus provenance into "
+                "neodojo.gvhmr_smplx_joints.v1. If only SMPL-X parameters are "
+                "present, run the SMPL-X body model in the licensed GPU/GVHMR "
+                "environment and map the resulting joints to the neodojo teaching "
+                "joint names."
+            ),
+        },
+    }
+    _write_json(manifest_path, manifest)
+    return GvhmrResultInspectionWriteResult(
+        manifest_path=manifest_path,
+        checked_paths=[source, manifest_path],
+        status=status,
+    )
+
+
 def _comparison(
     *,
     name: str,
@@ -1013,6 +1202,11 @@ def write_real_conversion_prep(
                 "PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff "
                 "--source-materialization outputs/real-conversion-source/source-materialization.json "
                 "--out outputs/gvhmr-gpu-handoff"
+            ),
+            "inspect_gvhmr_result": (
+                "PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result "
+                "--source outputs/real-conversion-gate/hmr4d_results.pt "
+                "--out outputs/gvhmr-result-inspection"
             ),
             "import_motion_record": (
                 "PYTHONPATH=src python -m neodojo motion-record create "
