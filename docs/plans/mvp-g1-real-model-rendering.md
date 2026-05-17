@@ -140,8 +140,8 @@ PYTHONPATH=src python -m neodojo robot-model register \
 7. Verify visually.
    - [x] Capture front/side/top SVG evidence.
    - [x] Keep outputs ignored and document how to reproduce the frame locally.
-   - [ ] Confirm a MuJoCo/Genesis image contains a real robot mesh, not only
-     line joints.
+   - [x] Confirm a MuJoCo image contains a real robot mesh, not only line
+     joints; covered by [mvp-simulator-mesh-rendering.md](mvp-simulator-mesh-rendering.md).
 
 ## Acceptance Criteria
 
@@ -172,7 +172,7 @@ PYTHONPATH=src python -m neodojo robot-model register \
   GMR JSON is supported by `mvp-gmr-import-track.md`.
 - SMPL-X mesh/body-surface rendering; the current teaching demo still uses
   skeleton joints.
-- MuJoCo/Genesis real robot mesh rendering from registered G1 assets.
+- Genesis or broader simulator mesh rendering beyond the optional MuJoCo proof.
 - Viser synchronized 3D playback.
 - Multi-camera offscreen capture hardening.
 - Broader key-frame detection and geometry feedback beyond the first narrow
