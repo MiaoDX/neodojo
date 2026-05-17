@@ -78,6 +78,14 @@ jobs:
             outputs/gvhmr-gpu-input-archive-smoke/manifest.json
             outputs/gvhmr-gpu-input-archive-smoke/neodojo-gvhmr-gpu-input.tar.gz
           if-no-files-found: error
+      - name: GPU execution probe
+        run: make gpu-execution-probe
+      - name: Upload GPU execution probe artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neodojo-gpu-execution-probe
+          path: outputs/gvhmr-gpu-execution-probe/manifest.json
+          if-no-files-found: error
       - name: Install browser runtime
         run: python -m playwright install --with-deps chromium
       - name: Build public demo with browser capture
