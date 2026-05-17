@@ -14,10 +14,10 @@ self-contained synthetic web demo, minimal `make lint`, `make check`, and
 `make build` commands, `make demo-public` / optional
 `make demo-public-browser` commands plus `make verify` and GitHub Actions
 workflow for the fixture public-demo artifact, browser capture, and generated
-capture bundle, `make gpu-handoff` for external GVHMR run metadata, and
-`make gvhmr-inspect` for returned GVHMR result inspection, and `make demo-real`
-for a validated external GVHMR JSON once a GPU artifact exists, with a verified
-live fixture-only GitHub Pages demo at
+capture bundle, `make real-handoff` and `make gpu-handoff` for external GVHMR
+run metadata, `make gvhmr-inspect` for returned GVHMR result inspection, and
+`make demo-real` for a validated external GVHMR JSON once a GPU artifact
+exists, with a verified live fixture-only GitHub Pages demo at
 `https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, `real-conversion package-gpu-handoff` can package the handoff
@@ -213,6 +213,13 @@ or hosted/live-client Viser capture.
   `outputs/real-conversion-source/` when a local video is supplied, writing
   dry-run ffmpeg commands or ignored trimmed clip/reference-frame artifacts for
   the later GPU run.
+- `make real-handoff` smoke generated
+  `outputs/real-handoff-smoke/prep/real-conversion-prep.json`,
+  `outputs/real-handoff-smoke/source-materialized/source-materialization.json`,
+  and `outputs/real-handoff-smoke/gpu-handoff/manifest.json` from an ignored
+  local `.mp4` placeholder. The smoke used default dry-run materialization, so
+  the GPU handoff correctly reports `needs_materialization` while still writing
+  the copyable exporter bundle metadata.
 - GVHMR GPU handoff package generated under `outputs/gvhmr-gpu-handoff-smoke/`
   in local smoke, writing `neodojo.gvhmr_gpu_handoff.v1` manifest metadata,
   README instructions, a copyable `source-materialization.json`,
@@ -261,6 +268,7 @@ make test
 make build
 make demo-public
 make demo-public-browser
+make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
@@ -405,7 +413,10 @@ materialize-source` consumes that prep manifest and a local video to write a
 source-materialization manifest. With `--dry-run`, it records the ffmpeg trim
 and reference-frame extraction commands without processing media. Without
 `--dry-run`, it requires ffmpeg and writes ignored trimmed-video and frame
-artifacts for the later GPU GVHMR input handoff. `neodojo real-conversion
+artifacts for the later GPU GVHMR input handoff. `make real-handoff
+LOCAL_VIDEO=...` runs prep, dry-run source materialization by default, and GPU
+handoff packaging in one command; set `REAL_DRY_RUN=0` to actually trim/extract
+media when ffmpeg is installed. `neodojo real-conversion
 package-gpu-handoff` packages that manifest into a GPU handoff directory with a
 machine-readable status, export template, provenance fields, upstream command
 template, copyable source-materialization metadata, GPU-side neodojo export

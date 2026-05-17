@@ -1,6 +1,12 @@
-.PHONY: all verify lint check test build demo-html demo-public demo-public-browser gpu-handoff gvhmr-inspect demo-real smoke-public
+.PHONY: all verify lint check test build demo-html demo-public demo-public-browser real-handoff gpu-handoff gvhmr-inspect demo-real smoke-public
 
 PYTHON ?= python3
+REAL_SOURCE_ID ?= 03-006
+REAL_START ?= 0
+REAL_END ?= 12
+REAL_PREP_OUT ?= outputs/real-conversion-gate
+REAL_SOURCE_OUT ?= outputs/real-conversion-source
+REAL_DRY_RUN ?= 1
 GPU_HANDOFF_OUT ?= outputs/gvhmr-gpu-handoff
 GVHMR_INSPECT_OUT ?= outputs/gvhmr-result-inspection
 REAL_DEMO_OUT ?= outputs/real-demo
@@ -13,6 +19,11 @@ REAL_DEMO_ARGS += --model-descriptor "$(MODEL_DESCRIPTOR)"
 endif
 ifdef USE_RERUN_SDK
 REAL_DEMO_ARGS += --use-rerun-sdk
+endif
+ifeq ($(REAL_DRY_RUN),0)
+REAL_MATERIALIZE_FLAGS =
+else
+REAL_MATERIALIZE_FLAGS = --dry-run
 endif
 
 all: verify
@@ -52,6 +63,12 @@ demo-public-browser: demo-public
 	rm -rf outputs/browser-capture
 	PYTHONPATH=src $(PYTHON) -m neodojo demo browser-smoke --public-demo outputs/public-demo --out outputs/browser-capture
 	PYTHONPATH=src $(PYTHON) -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --browser-capture outputs/browser-capture --out outputs/capture
+
+real-handoff:
+	@test -n "$(LOCAL_VIDEO)" || (echo "LOCAL_VIDEO=path/to/local-source.mp4 is required" && exit 2)
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion prepare --id "$(REAL_SOURCE_ID)" --start "$(REAL_START)" --end "$(REAL_END)" --local-video "$(LOCAL_VIDEO)" --out "$(REAL_PREP_OUT)"
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion materialize-source --prep "$(REAL_PREP_OUT)/real-conversion-prep.json" --local-video "$(LOCAL_VIDEO)" $(REAL_MATERIALIZE_FLAGS) --out "$(REAL_SOURCE_OUT)"
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion package-gpu-handoff --source-materialization "$(REAL_SOURCE_OUT)/source-materialization.json" --out "$(GPU_HANDOFF_OUT)"
 
 gpu-handoff:
 	@test -n "$(SOURCE_MATERIALIZATION)" || (echo "SOURCE_MATERIALIZATION=path/to/source-materialization.json is required" && exit 2)

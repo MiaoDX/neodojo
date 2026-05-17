@@ -129,10 +129,16 @@ The local source handoff command is:
 
 ```bash
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
+
+make real-handoff \
+  LOCAL_VIDEO=path/to/local-source.mp4
 ```
 
 Without `--dry-run`, the same command requires ffmpeg and writes an ignored
 trimmed clip plus reference frames under `outputs/real-conversion-source/`.
+`make real-handoff` wraps source prep, dry-run materialization by default, and
+GPU handoff packaging; set `REAL_DRY_RUN=0` to actually trim/extract media when
+ffmpeg is installed.
 Package the materialized source metadata for the external GPU operator:
 
 ```bash
@@ -211,6 +217,9 @@ variables, when an external GMR/G1 visual artifact is available.
 - [x] Package a source-materialization manifest into a GPU handoff bundle with
   export template, provenance fields, readiness status, and local return
   command.
+- [x] Add `make real-handoff LOCAL_VIDEO=...` to run local prep,
+  materialization, and GPU handoff packaging as one command without running
+  GVHMR locally.
 - [x] Add a GPU-side exporter helper to the handoff bundle for turning
   `hmr4d_results.pt` plus licensed SMPL-X assets into
   `neodojo.gvhmr_smplx_joints.v1`.
