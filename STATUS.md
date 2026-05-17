@@ -168,12 +168,13 @@ or hosted/live-client Viser capture.
   direct roboharness integration or video artifact.
 - `make check` validates MVP plan links and minimum plan scaffolding, and is
   included in `make verify` and the GitHub Actions workflow.
-- `.github/workflows/public-demo.yml` runs tests, builds a wheel, installs the
-  optional Playwright browser runtime, builds the fixture public demo with
-  browser capture, uploads the standalone public-demo artifact, browser-capture
-  artifact, and capture-bundle artifact containing the capture manifest and
-  referenced generated evidence, and publishes the static public-demo output to
-  GitHub Pages from `main` when the repository variable
+- `.github/workflows/public-demo.yml` runs tests, builds a wheel, runs the
+  dry-run real-conversion handoff smoke, installs the optional Playwright
+  browser runtime, builds the fixture public demo with browser capture, uploads
+  the standalone public-demo artifact, browser-capture artifact, and
+  capture-bundle artifact containing the capture manifest and referenced
+  generated evidence, and publishes the static public-demo output to GitHub
+  Pages from `main` when the repository variable
   `NEODOJO_DEPLOY_PAGES=true` is set.
 - GitHub Actions run
   `https://github.com/MiaoDX/neodojo/actions/runs/25999641059` verified the

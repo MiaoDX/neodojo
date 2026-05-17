@@ -223,7 +223,8 @@ variables, when an external GMR/G1 visual artifact is available.
   materialization, and GPU handoff packaging as one command without running
   GVHMR locally.
 - [x] Include a dependency-light `make real-handoff-smoke` target in
-  `make verify` so CI exercises the handoff command surface without real media.
+  `make verify` and the GitHub Actions workflow so CI exercises the handoff
+  command surface without real media.
 - [x] Add a GPU-side exporter helper to the handoff bundle for turning
   `hmr4d_results.pt` plus licensed SMPL-X assets into
   `neodojo.gvhmr_smplx_joints.v1`.

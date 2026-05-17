@@ -49,19 +49,20 @@ against `outputs/public-demo` and `neodojo capture bundle` to write
 `outputs/capture/manifest.json`.
 
 `make verify` now wraps the default dependency-light local lane: lint, plan
-quality checks, tests, wheel build, and `make demo-public`. `make
-demo-public-browser` adds the optional Playwright-backed Chromium screenshot
-capture and refreshes the capture bundle with browser evidence.
+quality checks, tests, wheel build, `make demo-public`, and
+`make real-handoff-smoke`. `make demo-public-browser` adds the optional
+Playwright-backed Chromium screenshot capture and refreshes the capture bundle
+with browser evidence.
 
 `.github/workflows/public-demo.yml` installs the package, runs lint, plan
-quality checks, tests, wheel build, installs Chromium through the optional
-Playwright browser extra, and runs `make demo-public-browser`. It uploads
-`outputs/public-demo` as the standalone public-demo artifact, uploads
-`outputs/browser-capture` as browser evidence, uploads a capture-bundle artifact
-containing `outputs/capture` plus the referenced public-demo, browser-capture,
-Viser runtime, and G1 render evidence, and uploads the public-demo directory as
-the GitHub Pages artifact. The deploy job runs only on `main` outside pull
-requests when Pages is configured and
+quality checks, tests, wheel build, runs `make real-handoff-smoke`, installs
+Chromium through the optional Playwright browser extra, and runs
+`make demo-public-browser`. It uploads `outputs/public-demo` as the standalone
+public-demo artifact, uploads `outputs/browser-capture` as browser evidence,
+uploads a capture-bundle artifact containing `outputs/capture` plus the
+referenced public-demo, browser-capture, Viser runtime, and G1 render evidence,
+and uploads the public-demo directory as the GitHub Pages artifact. The deploy
+job runs only on `main` outside pull requests when Pages is configured and
 `NEODOJO_DEPLOY_PAGES=true` is set as a repository variable. Pages is now
 configured and the live fixture-only URL is verified at
 `https://miaodx.com/neodojo/`.

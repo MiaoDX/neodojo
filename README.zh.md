@@ -273,8 +273,8 @@ headless Chromium public-demo screenshot manifest。传入 `--recorder-capture`
 时，它会收录 `neodojo capture recorder` 生成的可选 MuJoCo simulator-recorder
 evidence；直接 roboharness 与 live-runtime recording 仍是 follow-on work。
 
-`make verify` 会一次运行 lint、MVP plan quality checks、tests、wheel build，以及
-public-demo + capture-bundle smoke lane。
+`make verify` 会一次运行 lint、MVP plan quality checks、tests、wheel build、
+public-demo + capture-bundle smoke lane，以及 dry-run real-handoff smoke lane。
 `make demo-public` 会用一个本地命令重新生成 fixture motion contract、detected
 annotations、SMPL-X surface proxy、G1 visual track、G1 render evidence、teaching
 playback、Viser runtime preview、public-demo artifact、generated capture bundle，
@@ -286,9 +286,9 @@ capture bundle。
 `make smoke-public` 会验证现有的
 `outputs/public-demo` artifact set。
 `.github/workflows/public-demo.yml` 里的 GitHub Actions workflow 会运行同一条 fixture
-lane 和 browser capture，上传 public-demo、browser-capture 与 capture-bundle
-artifacts，并在 repository variable `NEODOJO_DEPLOY_PAGES=true` 时把 fixture-only
-public demo 发布到 GitHub Pages。
+lane、browser capture 和 `make real-handoff-smoke`，上传 public-demo、
+browser-capture 与 capture-bundle artifacts，并在 repository variable
+`NEODOJO_DEPLOY_PAGES=true` 时把 fixture-only public demo 发布到 GitHub Pages。
 `make lint` 目前是 syntax/import bytecode compile check；`make check` 会验证
 MVP plan links 和最低限度的 plan scaffolding；`make build` 会把 wheel 写到被忽略的
 `outputs/dist/`。

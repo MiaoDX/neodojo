@@ -37,6 +37,8 @@ jobs:
         run: make test
       - name: Build wheel
         run: make build
+      - name: Real conversion handoff smoke
+        run: make real-handoff-smoke
       - name: Install browser runtime
         run: python -m playwright install --with-deps chromium
       - name: Build public demo with browser capture

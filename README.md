@@ -316,8 +316,9 @@ headless Chromium public-demo screenshot manifest from
 direct MuJoCo simulator-recorder evidence from `neodojo capture recorder`.
 Direct roboharness and live-runtime recording remain follow-on work.
 
-`make verify` runs lint, MVP plan quality checks, tests, wheel build, and the
-public-demo plus capture-bundle smoke lane.
+`make verify` runs lint, MVP plan quality checks, tests, wheel build, the
+public-demo plus capture-bundle smoke lane, and the dry-run real-handoff smoke
+lane.
 `make demo-public` regenerates the fixture motion contract, detected
 annotations, SMPL-X surface proxy, G1 visual track, G1 render evidence,
 teaching playback, Viser runtime preview, public-demo artifact, generated
@@ -330,9 +331,10 @@ bundle with that browser evidence.
 validates an existing
 `outputs/public-demo` artifact set. The GitHub Actions workflow at
 `.github/workflows/public-demo.yml` runs the fixture lane with browser capture,
-uploads the standalone public-demo, browser-capture, and capture-bundle
-artifacts, and publishes the fixture-only public demo to GitHub Pages when
-`NEODOJO_DEPLOY_PAGES=true` is set as a repository variable.
+also runs `make real-handoff-smoke`, uploads the standalone public-demo,
+browser-capture, and capture-bundle artifacts, and publishes the fixture-only
+public demo to GitHub Pages when `NEODOJO_DEPLOY_PAGES=true` is set as a
+repository variable.
 `make lint` is currently a syntax/import bytecode compile check; `make check`
 validates MVP plan links and minimum plan scaffolding; `make build` writes a
 wheel under ignored `outputs/dist/`.
