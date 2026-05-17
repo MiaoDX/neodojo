@@ -5,7 +5,12 @@ from pathlib import Path
 from typing import Sequence
 
 from .demo_html import write_demo
-from .g1_visual import build_g1_visual_track, register_g1_model, write_fixture_g1_model_descriptor
+from .g1_visual import (
+    build_g1_visual_track,
+    import_gmr_json_track,
+    register_g1_model,
+    write_fixture_g1_model_descriptor,
+)
 from .g1_render import write_g1_render
 from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
 from .public_demo import smoke_check_public_demo, write_public_demo
@@ -131,6 +136,32 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("outputs/g1-visual"),
         help="output directory for the G1 visual-track manifest and report",
+    )
+    tracks_import = tracks_subparsers.add_parser(
+        "import-gmr-json",
+        help="import an external GMR Unitree G1 JSON export into the visual-track contract",
+    )
+    tracks_import.add_argument(
+        "--source",
+        type=Path,
+        required=True,
+        help="external neodojo.gmr_unitree_g1_track.v1 JSON export",
+    )
+    tracks_import.add_argument(
+        "--motion-record",
+        type=Path,
+        help="optional source motion-record root directory or manifest path for frame/timing validation",
+    )
+    tracks_import.add_argument(
+        "--model-descriptor",
+        type=Path,
+        help="optional Unitree G1 model descriptor manifest",
+    )
+    tracks_import.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/g1-visual"),
+        help="output directory for the imported G1 visual-track manifest and report",
     )
 
     demo = subparsers.add_parser(
@@ -325,6 +356,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = build_g1_visual_track(
                 args.motion_record,
                 args.out,
+                model_descriptor_path=args.model_descriptor,
+            )
+            print(f"wrote {result.track_manifest_path}")
+            print(f"wrote {result.comparison_report_path}")
+            return 0
+
+        if args.command == "tracks" and args.tracks_command == "import-gmr-json":
+            result = import_gmr_json_track(
+                args.out,
+                args.source,
+                motion_record=args.motion_record,
                 model_descriptor_path=args.model_descriptor,
             )
             print(f"wrote {result.track_manifest_path}")

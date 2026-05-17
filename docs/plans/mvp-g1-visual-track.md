@@ -25,6 +25,17 @@ the robot work coherent without pulling in GPU video conversion.
 - Local GMR is optional; an imported GMR output path or fixture-derived G1-like
   track is acceptable for the first local proof.
 
+## Implemented Local Path
+
+`neodojo tracks build` writes the fixture-derived G1 visual-track manifest used
+by local demos and CI.
+
+`neodojo tracks import-gmr-json` now imports an external normalized
+`neodojo.gmr_unitree_g1_track.v1` JSON export into the same G1 visual-track
+manifest shape. The import preserves Unitree G1 joint-angle frames for
+provenance, validates frame/timing alignment against an optional SMPL-X motion
+record, and keeps `scoring_allowed: false`.
+
 ## Inputs
 
 - SMPL-X motion-record manifest.
@@ -39,7 +50,7 @@ the robot work coherent without pulling in GPU video conversion.
 - G1 model/asset descriptor with provenance and validation result.
 - G1 visual-track manifest.
 - Fixture-derived G1-like track mode for local smoke tests.
-- Optional imported or locally generated GMR `unitree_g1` track support.
+- Imported GMR `unitree_g1` JSON track support.
 - A comparison report with frame count, fps, joint coverage, dropped frames,
   provenance, and known loss points such as torso and hand DOF.
 - Tests for G1 model descriptor validation, track manifest creation, and
@@ -78,8 +89,8 @@ the robot work coherent without pulling in GPU video conversion.
 - Keep the initial validator dependency-light. Add MuJoCo or another parser
   only if needed for reliable local load evidence.
 - Implement fixture-derived G1-like track generation before requiring GMR.
-- Implement a GMR adapter for `unitree_g1`, with import fallback if local GMR
-  dependencies are not stable on macOS.
+- Implement a normalized GMR JSON import adapter for `unitree_g1`, while
+  leaving native GMR execution/parsing as follow-on work.
 - Validate frame count and timing alignment between SMPL-X and G1 tracks.
 - Validate that G1 tracks always have `scoring_allowed: false`.
 - Add diagnostics for torso DOF mismatch, hand/gripper simplification,
@@ -93,6 +104,8 @@ the robot work coherent without pulling in GPU video conversion.
 - Missing mesh/model paths produce clear validation errors.
 - A fixture or dry-run can build a G1 visual-track manifest from one SMPL-X
   motion record.
+- A normalized external GMR JSON export can build a G1 visual-track manifest
+  with imported joint-angle frames.
 - The G1 track is marked as derived and rejected as a scoring source.
 - The comparison report explicitly shows SMPL-X as canonical and G1 as derived.
 - No Unitree assets, generated tracks, or large model files are committed by

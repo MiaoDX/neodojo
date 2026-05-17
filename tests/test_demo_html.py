@@ -6,9 +6,14 @@ import unittest
 from pathlib import Path
 
 from neodojo.demo_html import build_fixture, compute_feedback, render_demo_html, write_demo
-from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames
+from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames, derive_g1_like_frame
 from neodojo.g1_render import write_g1_render
-from neodojo.g1_visual import build_g1_visual_track, register_g1_model, write_fixture_g1_model_descriptor
+from neodojo.g1_visual import (
+    build_g1_visual_track,
+    import_gmr_json_track,
+    register_g1_model,
+    write_fixture_g1_model_descriptor,
+)
 from neodojo.motion_contract import (
     load_motion_record_frames,
     validate_output_dir,
@@ -270,6 +275,69 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(report["canonical_track"], "smplx")
         self.assertFalse(report["g1_scoring_allowed"])
         self.assertTrue(report["frame_count_match"])
+
+    def test_import_gmr_json_track_from_motion_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            _, smplx_frames = load_motion_record_frames(motion.motion_record_manifest_path)
+            source = root / "gmr-unitree-g1.json"
+            source.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gmr_unitree_g1_track.v1",
+                        "robot": "unitree_g1",
+                        "fps": 24,
+                        "frames": [
+                            {
+                                "visual_joints": derive_g1_like_frame(frame),
+                                "joint_angles": {
+                                    "left_hip_pitch_joint": index * 0.01,
+                                    "right_hip_pitch_joint": -index * 0.01,
+                                    "waist_yaw_joint": 0.0,
+                                },
+                            }
+                            for index, frame in enumerate(smplx_frames)
+                        ],
+                        "provenance": {"gmr_command": "fixture export"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = import_gmr_json_track(root / "g1", source, motion_record=motion.out_dir)
+            track = json.loads(result.track_manifest_path.read_text(encoding="utf-8"))
+            data = json.loads(result.track_data_path.read_text(encoding="utf-8"))
+            report = json.loads(result.comparison_report_path.read_text(encoding="utf-8"))
+
+        self.assertFalse(track["fixture_only"])
+        self.assertEqual(track["derivation"], "imported_gmr_unitree_g1")
+        self.assertFalse(track["scoring_allowed"])
+        self.assertEqual(track["pose_stream"]["kind"], "unitree_g1_joint_angles")
+        self.assertEqual(track["pose_stream"]["joint_angle_count"], 3)
+        self.assertEqual(len(data["frames"]), 10)
+        self.assertEqual(len(data["joint_angles"]), 10)
+        self.assertTrue(report["frame_count_match"])
+        self.assertTrue(report["fps_match"])
+
+    def test_import_gmr_json_track_rejects_missing_joint_angles(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            frames = build_smplx_fixture_frames(10)
+            source = root / "bad-gmr-unitree-g1.json"
+            source.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gmr_unitree_g1_track.v1",
+                        "robot": "unitree_g1",
+                        "frames": [{"visual_joints": derive_g1_like_frame(frame)} for frame in frames],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "joint_angles"):
+                import_gmr_json_track(root / "g1", source)
 
     def test_write_g1_render_from_registered_model(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -165,8 +165,8 @@ PYTHONPATH=src python -m neodojo robot-model register \
 
 ## Follow-On Gaps After This Plan
 
-- Real GMR adapter or imported GMR output support for full Unitree G1 joint
-  angles.
+- Native GMR execution/parsing from upstream pickle/NumPy outputs. Normalized
+  imported GMR JSON is now supported by `mvp-gmr-import-track.md`.
 - SMPL-X mesh/body-surface rendering; the current teaching demo still uses
   skeleton joints.
 - MuJoCo/Genesis real robot mesh rendering from registered G1 assets.
