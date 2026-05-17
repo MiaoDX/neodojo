@@ -9,7 +9,7 @@ an imported-GMR G1 track boundary, local G1 SVG/HTML render evidence, teaching
 playback HTML, public-demo artifacts, an optional first Viser local runtime,
 real-conversion prep, and local source-media materialization handoff. It does
 not contain the GVHMR/GMR/simulator runtime pipeline, production teaching UI,
-or MuJoCo/Genesis real mesh rendering.
+or GMR-driven real Unitree G1 mesh playback.
 
 ## MVP Data Flow
 

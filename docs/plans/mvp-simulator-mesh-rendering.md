@@ -1,6 +1,6 @@
 # MVP Simulator Mesh Rendering Plan
 
-Status: IMPLEMENTED OPTIONAL MUJOCO COMMAND; FINAL G1 ASSET PROOF PENDING
+Status: IMPLEMENTED OPTIONAL MUJOCO COMMAND AND REAL G1 ASSET SMOKE; GMR QPOS APPLICATION PENDING
 
 ## Goal
 
@@ -18,8 +18,11 @@ registered G1 model descriptor
 
 This proves the command and manifest path for real robot geometry while SMPL-X
 remains the only teaching feedback source. The first automated smoke uses a
-tiny synthetic MJCF model because real Unitree G1 assets must remain
-user-supplied and untracked.
+tiny synthetic MJCF model because real Unitree G1 assets must remain untracked.
+The asset-load proof has also been verified locally with an untracked clone of
+`https://github.com/unitreerobotics/unitree_mujoco` at revision
+`517e161b4a89d1a62831357314d8aa6d90d9c18d`, registering
+`unitree_robots/g1/g1_29dof.xml` and rendering front/side/top PNG frames.
 
 ## Dependencies
 
@@ -68,7 +71,8 @@ user-supplied and untracked.
    - [x] Resolve URDF/MJCF and mesh-root paths from the descriptor.
    - [x] Fail clearly when assets are missing or fixture descriptors are used
      without an explicit fixture flag.
-   - [ ] Verify against a real user-supplied Unitree G1 asset bundle.
+   - [x] Verify against a real local, untracked Unitree G1 asset bundle from
+     the upstream `unitreerobotics/unitree_mujoco` repository.
 
 3. Render evidence.
    - [x] Render a neutral-pose first slice from the registered model.
@@ -91,8 +95,10 @@ user-supplied and untracked.
   fallback.
 - Generated mesh renders stay under ignored output paths.
 - Docs do not claim the simulator path exists until the command and smoke pass.
-- Final real Unitree G1 proof remains pending until user-supplied G1 assets are
-  provided locally.
+- Real Unitree G1 asset-load proof has been verified from an untracked local
+  asset clone; generated renders remain under ignored output paths.
+- Applying imported GMR joint angles to real-model qpos remains follow-on until
+  a matching joint stream and asset convention are selected.
 
 ## Non-Goals
 
@@ -104,7 +110,7 @@ user-supplied and untracked.
 
 ## Stop Condition
 
-Stopped for the first slice when the optional MuJoCo command rendered nonblank
-PNG frames from a registered MJCF descriptor and wrote a render manifest that
-preserves the SMPL-X/G1 scoring boundary. Continue only when local real Unitree
-G1 assets are available for final asset proof and qpos application.
+Stopped for the real-asset smoke slice when the optional MuJoCo command rendered
+nonblank PNG frames from an untracked local Unitree G1 MJCF descriptor and wrote
+a render manifest that preserves the SMPL-X/G1 scoring boundary. Continue only
+when applying imported GMR joint angles to real-model qpos becomes necessary.

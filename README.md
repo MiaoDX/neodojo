@@ -167,8 +167,8 @@ an optional first Viser local runtime, and minimal lint/build/quality-check
 commands. It can also write a dry-run or ffmpeg-backed local source-video
 handoff for a later GPU GVHMR run. There is still no checked-in GVHMR/GMR
 execution pipeline, simulator runtime pipeline, licensed SMPL-X mesh
-generation, production teaching UI, or verified render from real Unitree G1
-mesh assets.
+generation, production teaching UI, or GMR-driven real Unitree G1 mesh
+playback.
 
 What can be run now:
 
@@ -234,9 +234,10 @@ URDF/MJCF descriptors are accepted without that flag. This is local render
 evidence, not MuJoCo/Genesis simulator mesh rendering.
 `neodojo render mujoco-g1` is the optional MuJoCo offscreen renderer for
 registered URDF/MJCF descriptors. It requires installing the `sim` extra or the
-`mujoco` package and still needs local, untracked robot assets for a real
-Unitree G1 proof; the built-in optional smoke verifies the path with a tiny
-synthetic MJCF model.
+`mujoco` package and local, untracked robot assets for a real Unitree G1 proof.
+The built-in optional smoke verifies the path with a tiny synthetic MJCF model,
+and the real asset-load path has been verified locally with an untracked clone
+of `unitreerobotics/unitree_mujoco` `g1_29dof.xml`.
 
 `neodojo demo play` consumes the SMPL-X motion-record, optional SMPL-X surface
 proxy, and G1 visual-track manifests together, then writes
@@ -313,7 +314,7 @@ In progress:
 - [x] Local G1 SVG/HTML render evidence command with front/side/top frames and
       `g1_scoring_allowed: false`
 - [x] Optional MuJoCo offscreen mesh render command, smoke-tested with a tiny
-      MJCF model; final real G1 asset proof still needs local assets
+      MJCF model and an untracked local Unitree G1 asset clone
 - [x] Local teaching playback command that consumes SMPL-X and G1 manifests
 - [x] Deterministic SMPL-X opening-form routine feedback review with multiple
       key-frame anchors and posture terms
@@ -333,8 +334,7 @@ In progress:
 - [x] Local real-conversion source materialization handoff for a user-supplied
       video
 - [x] Local GVHMR source-validation report and validated JSON import handoff
-- [ ] MuJoCo/Genesis real Unitree G1 mesh rendering from user-supplied URDF/MJCF
-      and meshes
+- [ ] applying imported GMR joint angles to real Unitree G1 MuJoCo qpos
 - [ ] roboharness-style multi-camera offscreen capture integration
 - [ ] production Viser teaching UX beyond the first optional local runtime
 

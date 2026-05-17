@@ -18,10 +18,10 @@ an optional first Viser local runtime, optional source-media probing, local
 source-media materialization handoff, a fixture-only static public-demo fallback
 artifact, and a GitHub Actions workflow for the fixture public-demo lane. It
 does not yet have a checked-in GVHMR/GMR execution pipeline, simulator runtime
-pipeline, licensed SMPL-X mesh generation, verified real Unitree G1 asset
-render, verified live GitHub Pages URL, production Viser teaching UX, or broad
-static-analysis/release gates beyond the minimal `make lint` and `make build`
-surface.
+pipeline, licensed SMPL-X mesh generation, GMR qpos application on a real
+Unitree G1 mesh, verified live GitHub Pages URL, production Viser teaching UX,
+or broad static-analysis/release gates beyond the minimal `make lint` and
+`make build` surface.
 
 ## Shared Goal
 
@@ -69,7 +69,7 @@ of truth for the next waves.
 
 | Plan | Status | Gap Covered |
 | --- | --- | --- |
-| [mvp-simulator-mesh-rendering.md](mvp-simulator-mesh-rendering.md) | implemented optional MuJoCo command; final G1 asset proof pending | MuJoCo render command and final real Unitree G1 mesh proof. |
+| [mvp-simulator-mesh-rendering.md](mvp-simulator-mesh-rendering.md) | implemented optional MuJoCo command and real G1 asset smoke; GMR qpos pending | MuJoCo render command, real Unitree G1 mesh proof, and future qpos application. |
 | [mvp-native-gmr-runner.md](mvp-native-gmr-runner.md) | implemented first pickle adapter; local GMR execution remains external | Native GMR robot-motion pickle parsing beyond normalized JSON import. |
 | [mvp-smplx-body-surface-playback.md](mvp-smplx-body-surface-playback.md) | implemented surface proxy; licensed SMPL-X mesh remains follow-on | Dependency-light SMPL-X surface proxy and future licensed mesh/body-model playback. |
 | [mvp-viser-multicamera-runtime.md](mvp-viser-multicamera-runtime.md) | implemented first optional server; offscreen capture pending | Local Viser runtime and multi-camera/offscreen workflow. |
