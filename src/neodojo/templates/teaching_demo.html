@@ -404,7 +404,7 @@
         </section>
 
         <section class="panel legend">
-          <div class="legend-row"><span class="swatch" style="background: var(--surface); height: 10px;"></span><span>SMPL-X surface proxy</span></div>
+          <div class="legend-row"><span class="swatch" style="background: var(--surface); height: 10px;"></span><span id="surfaceLegend">SMPL-X surface proxy</span></div>
           <div class="legend-row"><span class="swatch" style="background: var(--smplx);"></span><span>SMPL-X skeleton</span></div>
           <div class="legend-row"><span class="swatch" style="background: var(--g1);"></span><span>G1 skeleton</span></div>
           <div class="legend-row"><span class="swatch" style="background: var(--wrist);"></span><span>Wrist trajectory</span></div>
@@ -542,6 +542,26 @@
         ctx.lineTo(bx, by);
         ctx.stroke();
       }
+      const vertices = surface.frames[currentFrame].vertices || [];
+      const faces = surface.frames[currentFrame].faces || surface.faces || [];
+      if (vertices.length && faces.length) {
+        ctx.fillStyle = "rgba(20, 124, 114, 0.08)";
+        ctx.strokeStyle = "rgba(20, 124, 114, 0.18)";
+        ctx.lineWidth = 1;
+        for (const face of faces.slice(0, 500)) {
+          if (!Array.isArray(face) || face.length !== 3) {
+            continue;
+          }
+          const projected = face.map((index) => toCanvas(project(vertices[index], view), view, width, height));
+          ctx.beginPath();
+          ctx.moveTo(projected[0][0], projected[0][1]);
+          ctx.lineTo(projected[1][0], projected[1][1]);
+          ctx.lineTo(projected[2][0], projected[2][1]);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
     }
 
     function drawSkeleton(ctx, pose, track, view, width, height) {
@@ -587,9 +607,11 @@
 
     function updateMetrics() {
       const feedback = DEMO.feedback;
+      const surfaceLabel = DEMO.surface_proxy ? DEMO.surface_proxy.label || "SMPL-X surface proxy" : "off";
       frameReadout.textContent = `Frame ${frame}`;
       frameMetric.textContent = `${frame + 1} / ${frameCount}`;
-      surfaceMetric.textContent = DEMO.surface_proxy ? "proxy" : "off";
+      surfaceMetric.textContent = DEMO.surface_proxy && DEMO.surface_proxy.licensed_smplx_mesh ? "mesh" : (DEMO.surface_proxy ? "proxy" : "off");
+      document.getElementById("surfaceLegend").textContent = surfaceLabel;
       timeline.value = String(frame);
       feedbackStatus.textContent = feedback.passed ? "pass" : "check";
       feedbackStatus.classList.toggle("fail", !feedback.passed);

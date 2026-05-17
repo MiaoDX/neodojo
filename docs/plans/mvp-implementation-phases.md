@@ -21,9 +21,9 @@ MuJoCo simulator recorder-capture integration, and a GitHub Actions workflow
 with verified fixture-only Pages publication plus optional browser-rendered
 public-demo screenshot capture. It
 does not yet have a checked-in GVHMR/GMR execution pipeline, simulator runtime
-pipeline, full licensed SMPL-X mesh generation, hosted/live-client Viser
-capture, or broad static-analysis/release gates beyond the minimal `make lint` and
-`make build` surface.
+pipeline, built-in official SMPL-X body-model renderer, hosted/live-client
+Viser capture, or broad static-analysis/release gates beyond the minimal
+`make lint` and `make build` surface.
 
 ## Shared Goal
 
@@ -76,8 +76,8 @@ of truth for the next waves.
 | --- | --- | --- |
 | [mvp-simulator-mesh-rendering.md](mvp-simulator-mesh-rendering.md) | implemented optional MuJoCo command, real G1 asset smoke, and GMR qpos application | MuJoCo render command, real Unitree G1 mesh proof, and imported GMR joint-angle qpos application. |
 | [mvp-native-gmr-runner.md](mvp-native-gmr-runner.md) | implemented first pickle adapter; local GMR execution remains external | Native GMR robot-motion pickle parsing beyond normalized JSON import. |
-| [mvp-smplx-body-surface-playback.md](mvp-smplx-body-surface-playback.md) | implemented surface proxy, licensed-asset boundary, and parameter import; full mesh rendering remains follow-on | Dependency-light SMPL-X surface proxy, local-only licensed asset descriptor, imported SMPL-X parameter boundary, and future mesh/body-model playback. |
-| [mvp-smplx-licensed-mesh-rendering.md](mvp-smplx-licensed-mesh-rendering.md) | blocked on local licensed assets and renderer choice | Full licensed SMPL-X mesh/body-model playback beyond the capsule proxy, local asset descriptor, and imported parameter boundary. |
+| [mvp-smplx-body-surface-playback.md](mvp-smplx-body-surface-playback.md) | implemented surface proxy, licensed-asset boundary, parameter import, and external mesh-frame import | Dependency-light SMPL-X surface proxy, local-only licensed asset descriptor, imported SMPL-X parameter boundary, and optional mesh surface playback. |
+| [mvp-smplx-licensed-mesh-rendering.md](mvp-smplx-licensed-mesh-rendering.md) | implemented external licensed mesh-frame import; official body-model execution remains external | Licensed SMPL-X mesh surface playback through local externally generated mesh-frame evidence. |
 | [mvp-viser-multicamera-runtime.md](mvp-viser-multicamera-runtime.md) | implemented first optional server, camera/anchor controls, and generated multi-camera preview evidence | Local Viser runtime, camera/annotation controls, and dependency-light front/side/top visual smoke workflow. |
 | [mvp-viser-production-teaching-ui.md](mvp-viser-production-teaching-ui.md) | implemented first production review-loop contract and controls | Production local Viser teaching UX beyond the first optional runtime controls and generated previews. |
 | [mvp-rerun-pages-release.md](mvp-rerun-pages-release.md) | implemented optional SDK export and verified live Pages publication | True Rerun SDK `.rrd` export and verified live GitHub Pages URL. |

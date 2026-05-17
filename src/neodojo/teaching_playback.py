@@ -16,7 +16,7 @@ from .motion_contract import (
     resolve_motion_record_manifest,
     validate_output_dir,
 )
-from .smplx_surface import load_smplx_surface_proxy, resolve_smplx_surface_manifest
+from .smplx_surface import load_smplx_surface_layer, resolve_smplx_surface_manifest
 
 
 @dataclass(frozen=True)
@@ -104,6 +104,18 @@ def _reference_video_sync(reference_video: Path | None, trim_start_seconds: floa
     }
 
 
+def _surface_label(surface_manifest: dict[str, Any]) -> str:
+    if surface_manifest.get("licensed_smplx_mesh"):
+        return "SMPL-X licensed mesh surface"
+    return "SMPL-X surface proxy"
+
+
+def _surface_layer_key(surface_manifest: dict[str, Any]) -> str:
+    if surface_manifest.get("licensed_smplx_mesh"):
+        return "smplx_mesh"
+    return "smplx_proxy"
+
+
 def write_teaching_playback_demo(
     out_dir: Path,
     motion_record: Path,
@@ -124,12 +136,13 @@ def write_teaching_playback_demo(
 
     smplx_surface_manifest_path: Path | None = None
     surface_manifest: dict[str, Any] | None = None
-    surface_frames: list[dict[str, Any]] | None = None
+    surface_data: dict[str, Any] | None = None
     if smplx_surface is not None:
         smplx_surface_manifest_path = resolve_smplx_surface_manifest(smplx_surface)
-        surface_manifest, surface_frames = load_smplx_surface_proxy(smplx_surface_manifest_path)
+        surface_manifest, surface_data = load_smplx_surface_layer(smplx_surface_manifest_path)
+        surface_frames = surface_data["frames"]
         if len(surface_frames) != len(smplx_frames):
-            raise ValueError("SMPL-X surface proxy frame count must match the source motion record")
+            raise ValueError("SMPL-X surface frame count must match the source motion record")
 
     key_frame, annotation_name, annotation_manifest, routine_review = _normalize_annotation_manifest(
         annotations_path,
@@ -144,14 +157,19 @@ def write_teaching_playback_demo(
     )
     if routine_review is not None:
         fixture["routine_review"] = routine_review
-    if surface_manifest is not None and surface_frames is not None:
-        fixture["surface_proxy"] = {
+    if surface_manifest is not None and surface_data is not None:
+        surface_payload = {
             "track_id": "smplx",
-            "label": "SMPL-X surface proxy",
+            "label": _surface_label(surface_manifest),
             "surface_kind": surface_manifest.get("surface_kind"),
-            "licensed_smplx_mesh": False,
+            "licensed_smplx_mesh": bool(surface_manifest.get("licensed_smplx_mesh", False)),
             "scoring_allowed": False,
-            "frames": surface_frames,
+            "frames": surface_data["frames"],
+        }
+        if isinstance(surface_data.get("faces"), list):
+            surface_payload["faces"] = surface_data["faces"]
+        fixture["surface_proxy"] = {
+            **surface_payload,
         }
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -161,11 +179,12 @@ def write_teaching_playback_demo(
 
     surface_layers: dict[str, Any] = {}
     if surface_manifest is not None and smplx_surface_manifest_path is not None:
-        surface_layers["smplx_proxy"] = {
+        surface_layers[_surface_layer_key(surface_manifest)] = {
             "role": surface_manifest.get("role"),
             "manifest": _relative_path(smplx_surface_manifest_path, manifest_path.parent),
             "surface_kind": surface_manifest.get("surface_kind"),
-            "licensed_smplx_mesh": False,
+            "label": _surface_label(surface_manifest),
+            "licensed_smplx_mesh": bool(surface_manifest.get("licensed_smplx_mesh", False)),
             "scoring_allowed": False,
         }
 
@@ -202,7 +221,7 @@ def write_teaching_playback_demo(
         "evidence": {
             "kind": "html_frame_payload",
             "rendered_tracks": ["smplx", "g1"],
-            "rendered_surface_layers": ["smplx_proxy"] if surface_manifest else [],
+            "rendered_surface_layers": list(surface_layers),
             "trajectory_joints": fixture["trajectory_joints"],
         },
     }

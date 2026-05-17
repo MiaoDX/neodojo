@@ -37,9 +37,11 @@ from neodojo.real_conversion import (
 )
 from neodojo.smplx_surface import (
     load_smplx_asset_descriptor,
+    load_smplx_surface_layer,
     load_smplx_surface_proxy,
     register_smplx_asset_descriptor,
     validate_smplx_mesh_generation_inputs,
+    write_smplx_mesh_surface,
     write_smplx_surface_proxy,
 )
 from neodojo.teaching_playback import write_teaching_playback_demo
@@ -720,7 +722,7 @@ class DemoHtmlTests(unittest.TestCase):
                 model_descriptor_path=model.descriptor_path,
             )
 
-            with self.assertRaisesRegex(ValueError, "surface proxy frame count"):
+            with self.assertRaisesRegex(ValueError, "surface frame count"):
                 write_teaching_playback_demo(
                     root / "teaching-demo",
                     motion.out_dir,
@@ -814,11 +816,10 @@ class DemoHtmlTests(unittest.TestCase):
             manifest = json.loads(motion.motion_record_manifest_path.read_text(encoding="utf-8"))
             parameter_data = json.loads(motion.smplx_parameters_data_path.read_text(encoding="utf-8"))
 
-            with self.assertRaisesRegex(ValueError, "intentionally not implemented yet"):
-                validate_smplx_mesh_generation_inputs(
-                    motion_record=motion.out_dir,
-                    asset_descriptor=descriptor.descriptor_path,
-                )
+            validation = validate_smplx_mesh_generation_inputs(
+                motion_record=motion.out_dir,
+                asset_descriptor=descriptor.descriptor_path,
+            )
 
         self.assertEqual(manifest["smplx_parameters"]["schema"], "neodojo.smplx_parameters.v1")
         self.assertTrue(manifest["smplx_parameters"]["mesh_ready"])
@@ -830,6 +831,114 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("global_orient", parameter_data["fields"])
         self.assertIn("body_pose", parameter_data["fields"])
         self.assertIn("betas", parameter_data["fields"])
+        self.assertTrue(validation["valid"])
+        self.assertEqual(validation["renderer_boundary"]["backend"], "external_licensed_smplx_mesh_frames.v1")
+        self.assertEqual(validation["motion_record"]["frame_count"], frame_count)
+
+    def test_smplx_mesh_surface_import_integrates_with_playback_and_public_demo(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            frame_count = 10
+            source = root / "gvhmr-smplx-joints.json"
+            source.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gvhmr_smplx_joints.v1",
+                        "routine": "Baduanjin",
+                        "form": "Two Hands Hold Up the Heavens",
+                        "fps": 30,
+                        "frames": build_smplx_fixture_frames(frame_count),
+                        "smplx_parameters": {
+                            "parameterization": "smplx_axis_angle",
+                            "global_orient": [[0.0, 0.0, 0.0] for _ in range(frame_count)],
+                            "body_pose": [[0.0] * 63 for _ in range(frame_count)],
+                            "transl": [[0.0, 0.0, 0.0] for _ in range(frame_count)],
+                            "betas": [0.0] * 10,
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            motion = write_gvhmr_json_motion_contract(root / "motion", source)
+            asset = root / "SMPLX_NEUTRAL.npz"
+            asset.write_bytes(b"licensed fixture asset placeholder")
+            descriptor = register_smplx_asset_descriptor(
+                root / "assets-out",
+                model_path=asset,
+                license_name="local licensed fixture",
+            )
+            mesh_frames = root / "smplx-mesh-frames.json"
+            mesh_frames.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.smplx_mesh_frames.v1",
+                        "frame_count": frame_count,
+                        "faces": [[0, 1, 2], [0, 2, 3]],
+                        "frames": [
+                            {
+                                "vertices": [
+                                    [-0.15, 1.0 + frame * 0.01, 0.0],
+                                    [0.15, 1.0 + frame * 0.01, 0.0],
+                                    [0.15, 1.35 + frame * 0.01, 0.02],
+                                    [-0.15, 1.35 + frame * 0.01, 0.02],
+                                ]
+                            }
+                            for frame in range(frame_count)
+                        ],
+                        "provenance": {
+                            "renderer": "fixture-safe external licensed SMPL-X renderer stand-in",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            mesh = write_smplx_mesh_surface(
+                root / "smplx-mesh",
+                motion_record=motion.out_dir,
+                asset_descriptor=descriptor.descriptor_path,
+                mesh_frames=mesh_frames,
+            )
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            surface_manifest, surface_data = load_smplx_surface_layer(mesh.manifest_path)
+            validation = json.loads(mesh.validation_path.read_text(encoding="utf-8"))
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+                smplx_surface=mesh.manifest_path,
+            )
+            public = write_public_demo(
+                playback_manifest_path=playback.manifest_path,
+                recording_path=root / "public-demo" / "neodojo-demo.rrd",
+            )
+            smoke = smoke_check_public_demo(root / "public-demo")
+            playback_manifest = json.loads(playback.manifest_path.read_text(encoding="utf-8"))
+            playback_html = playback.html_path.read_text(encoding="utf-8")
+            public_manifest = json.loads(public.manifest_path.read_text(encoding="utf-8"))
+            scene = json.loads(public.scene_path.read_text(encoding="utf-8"))
+            screenshot = public.screenshot_path.read_text(encoding="utf-8")
+
+        self.assertEqual(surface_manifest["schema"], "neodojo.smplx_mesh_surface.v1")
+        self.assertEqual(surface_manifest["surface_kind"], "licensed_smplx_mesh_external_frames")
+        self.assertTrue(surface_manifest["licensed_smplx_mesh"])
+        self.assertFalse(surface_manifest["scoring_allowed"])
+        self.assertEqual(surface_data["vertex_count"], 4)
+        self.assertEqual(surface_data["face_count"], 2)
+        self.assertEqual(validation["mesh_frames"]["vertex_count"], 4)
+        self.assertEqual(playback_manifest["surface_layers"]["smplx_mesh"]["surface_kind"], "licensed_smplx_mesh_external_frames")
+        self.assertEqual(playback_manifest["evidence"]["rendered_surface_layers"], ["smplx_mesh"])
+        self.assertIn("SMPL-X licensed mesh surface", playback_html)
+        self.assertEqual(scene["surface_proxy"]["label"], "SMPL-X licensed mesh surface")
+        self.assertTrue(scene["surface_proxy"]["licensed_smplx_mesh"])
+        self.assertTrue(public_manifest["surface_layers"]["smplx_mesh"]["licensed_smplx_mesh"])
+        self.assertFalse(public_manifest["surface_layers"]["smplx_mesh"]["scoring_allowed"])
+        self.assertIn("SMPL-X licensed mesh surface", screenshot)
+        self.assertEqual(len(smoke.checked_paths), 4)
 
     def test_gvhmr_json_motion_contract_rejects_bad_smplx_parameter_shape(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -10,7 +10,7 @@ from .fixtures import BONES, TRAJECTORY_JOINTS
 from .g1_render import G1_RENDER_SCHEMA
 from .g1_visual import load_g1_track_frames
 from .motion_contract import _relative_path, _write_json, load_motion_record_frames, validate_output_dir
-from .smplx_surface import load_smplx_surface_proxy
+from .smplx_surface import load_smplx_surface_layer
 
 SCENE_TIMELINE_SCHEMA = "neodojo.scene_timeline.v1"
 RERUN_RECORDING_EXPORT_SCHEMA = "neodojo.rerun_recording_export.v1"
@@ -61,6 +61,20 @@ def _load_rerun_sdk() -> Any:
     return rr
 
 
+def _surface_label(surface_manifest: dict[str, Any], layer_manifest: dict[str, Any] | None = None) -> str:
+    if layer_manifest and isinstance(layer_manifest.get("label"), str):
+        return layer_manifest["label"]
+    if surface_manifest.get("licensed_smplx_mesh"):
+        return "SMPL-X licensed mesh surface"
+    return "SMPL-X surface proxy"
+
+
+def _surface_layer_key(surface_layer: dict[str, Any] | None) -> str:
+    if surface_layer and surface_layer.get("licensed_smplx_mesh"):
+        return "smplx_mesh"
+    return "smplx_proxy"
+
+
 def build_scene_timeline(
     *,
     playback_manifest_path: Path,
@@ -77,22 +91,30 @@ def build_scene_timeline(
         raise ValueError("SMPL-X and G1 tracks must have matching frame counts")
 
     surface_proxy = None
+    surface_manifest_reference = None
     surface_layers = playback.get("surface_layers", {})
     if isinstance(surface_layers, dict):
-        smplx_proxy = surface_layers.get("smplx_proxy")
-        if isinstance(smplx_proxy, dict) and smplx_proxy.get("manifest"):
-            surface_manifest_path = _resolve_relative(playback_manifest_path, smplx_proxy["manifest"])
-            surface_manifest, surface_frames = load_smplx_surface_proxy(surface_manifest_path)
+        for layer_key in ("smplx_mesh", "smplx_proxy"):
+            layer = surface_layers.get(layer_key)
+            if not isinstance(layer, dict) or not layer.get("manifest"):
+                continue
+            surface_manifest_reference = layer["manifest"]
+            surface_manifest_path = _resolve_relative(playback_manifest_path, surface_manifest_reference)
+            surface_manifest, surface_data = load_smplx_surface_layer(surface_manifest_path)
+            surface_frames = surface_data["frames"]
             if len(surface_frames) != len(smplx_frames):
-                raise ValueError("SMPL-X surface proxy must match playback frame count")
+                raise ValueError("SMPL-X surface layer must match playback frame count")
             surface_proxy = {
-                "label": "SMPL-X surface proxy",
+                "label": _surface_label(surface_manifest, layer),
                 "surface_kind": surface_manifest.get("surface_kind"),
-                "licensed_smplx_mesh": False,
+                "licensed_smplx_mesh": bool(surface_manifest.get("licensed_smplx_mesh", False)),
                 "scoring_allowed": False,
                 "frames": surface_frames,
-                "manifest": smplx_proxy["manifest"],
+                "manifest": surface_manifest_reference,
             }
+            if isinstance(surface_data.get("faces"), list):
+                surface_proxy["faces"] = surface_data["faces"]
+            break
 
     render_manifest = _load_optional_render_manifest(g1_render_manifest_path)
     fixture_only = bool(playback.get("fixture_only") or g1_manifest.get("fixture_only"))
@@ -117,6 +139,7 @@ def build_scene_timeline(
             "motion_record": playback["motion_record"],
             "g1_track": playback["tracks"]["g1"]["manifest"],
             "g1_render": str(g1_render_manifest_path) if g1_render_manifest_path else None,
+            "smplx_surface": surface_manifest_reference,
         },
         "timing": playback.get("timing") or motion_manifest.get("timing"),
         "coordinates": playback.get("coordinates") or motion_manifest.get("coordinates"),
@@ -156,7 +179,7 @@ def build_scene_timeline(
             "Unitree G1 visual",
             "G1 non-scoring",
             "Routine feedback",
-            *(["SMPL-X surface proxy"] if surface_proxy else []),
+            *([surface_proxy["label"]] if surface_proxy else []),
             *feedback_anchor_labels,
         ],
         "scoring_source": "smplx",
@@ -270,7 +293,7 @@ def _surface_svg(surface_proxy: dict[str, Any] | None, smplx_track: dict[str, An
     points = [_project(point, view) for point in frame.values()]
     bounds = _bounds(points)
     surface_frame = surface_proxy["frames"][frame_index]
-    lines = []
+    elements = []
     for capsule in surface_frame.get("capsules", []):
         start = capsule.get("start")
         end = capsule.get("end")
@@ -279,11 +302,29 @@ def _surface_svg(surface_proxy: dict[str, Any] | None, smplx_track: dict[str, An
         x1, y1 = _scale(_project(start, view), bounds)
         x2, y2 = _scale(_project(end, view), bounds)
         width = max(8, float(capsule.get("radius_m", 0.04)) * 180)
-        lines.append(
+        elements.append(
             f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
             f'stroke="#147c72" stroke-opacity="0.16" stroke-width="{width:.1f}" stroke-linecap="round"/>'
         )
-    return "\n".join(lines)
+    vertices = surface_frame.get("vertices")
+    faces = surface_frame.get("faces") or surface_proxy.get("faces")
+    if isinstance(vertices, list) and isinstance(faces, list):
+        mesh_points = [_project(vertex, view) for vertex in vertices if isinstance(vertex, list) and len(vertex) == 3]
+        if mesh_points:
+            bounds = _bounds(points + mesh_points)
+        for face in faces[:400]:
+            if not isinstance(face, list) or len(face) != 3:
+                continue
+            try:
+                projected = [_scale(_project(vertices[index], view), bounds) for index in face]
+            except (IndexError, TypeError):
+                continue
+            path = " ".join(f"{x:.1f},{y:.1f}" for x, y in projected)
+            elements.append(
+                f'<polygon points="{path}" fill="#147c72" fill-opacity="0.08" '
+                f'stroke="#147c72" stroke-opacity="0.18" stroke-width="1"/>'
+            )
+    return "\n".join(elements)
 
 
 def _render_screenshot_svg(scene: dict[str, Any]) -> str:
@@ -295,7 +336,8 @@ def _render_screenshot_svg(scene: dict[str, Any]) -> str:
     feedback = scene.get("feedback") or {}
     anchors = scene.get("feedback_anchor_labels") or []
     anchor_text = ", ".join(anchors[:3]) if anchors else "none"
-    surface_text = "true" if scene.get("surface_proxy") else "false"
+    surface_layer = scene.get("surface_proxy")
+    surface_text = surface_layer.get("label") if surface_layer else "off"
     return "\n".join(
         [
             '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img">',
@@ -313,7 +355,7 @@ def _render_screenshot_svg(scene: dict[str, Any]) -> str:
             f'<g transform="translate(704 210)">{g1}</g>',
             f'<text x="56" y="684" class="muted">Scoring source: SMPL-X. G1 scoring allowed: false. Feedback passed: {feedback.get("passed")}</text>',
             f'<text x="696" y="672" class="muted">Routine feedback anchors: {anchor_text}</text>',
-            f'<text x="696" y="696" class="muted">SMPL-X surface proxy: {surface_text}</text>',
+            f'<text x="696" y="696" class="muted">SMPL-X surface layer: {surface_text}</text>',
             "</svg>",
         ]
     )
@@ -329,7 +371,7 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
     if not isinstance(routine_summary, dict):
         routine_summary = {}
     surface_proxy = scene.get("surface_proxy")
-    surface_label = "SMPL-X surface proxy" if surface_proxy else "off"
+    surface_label = surface_proxy.get("label") if surface_proxy else "off"
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -425,6 +467,7 @@ def write_public_demo(
         _write_json(recording_path, recording)
     screenshot_path.write_text(_render_screenshot_svg(scene), encoding="utf-8")
 
+    surface_key = _surface_layer_key(scene.get("surface_proxy"))
     manifest = {
         "schema": PUBLIC_DEMO_SCHEMA,
         "fixture_only": bool(scene["fixture_only"]),
@@ -444,12 +487,17 @@ def write_public_demo(
             "scoring_source": "smplx",
         },
         "surface_layers": {
-            "smplx_proxy": {
+            surface_key: {
                 "available": bool(scene.get("surface_proxy")),
                 "surface_kind": scene.get("surface_proxy", {}).get("surface_kind")
                 if scene.get("surface_proxy")
                 else None,
-                "licensed_smplx_mesh": False,
+                "label": scene.get("surface_proxy", {}).get("label") if scene.get("surface_proxy") else None,
+                "licensed_smplx_mesh": bool(
+                    scene.get("surface_proxy", {}).get("licensed_smplx_mesh", False)
+                    if scene.get("surface_proxy")
+                    else False
+                ),
                 "scoring_allowed": False,
             }
         },
@@ -465,7 +513,7 @@ def write_public_demo(
                 "Unitree G1 visual",
                 "fixture-only",
                 "Routine feedback",
-                *(["SMPL-X surface proxy"] if scene.get("surface_proxy") else []),
+                *([scene["surface_proxy"]["label"]] if scene.get("surface_proxy") else []),
             ],
             "nonblank_artifacts": ["index.html", "screenshot.svg"],
         },

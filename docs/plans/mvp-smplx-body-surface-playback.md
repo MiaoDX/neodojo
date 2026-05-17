@@ -1,6 +1,6 @@
 # MVP SMPL-X Body Surface Playback Plan
 
-Status: IMPLEMENTED SURFACE PROXY, LICENSED-ASSET BOUNDARY, AND PARAMETER IMPORT; FULL MESH RENDERING REMAINS FOLLOW-ON
+Status: IMPLEMENTED SURFACE PROXY, LICENSED-ASSET BOUNDARY, PARAMETER IMPORT, AND EXTERNAL MESH-FRAME IMPORT
 
 ## Goal
 
@@ -10,19 +10,18 @@ than joints and bones:
 ```text
 SMPL-X motion record
   -> dependency-light capsule surface proxy from teaching joints
-  -> optional future licensed local SMPL-X model assets
-  -> lightweight body surface or mesh frames
+  -> optional licensed local SMPL-X model asset descriptor
+  -> lightweight proxy or external mesh frames
   -> teaching playback/public-demo surface layer
 ```
 
 The first implemented surface layer improves fixture/public demo inspection
-while preserving the SMPL-X joint track as the feedback/scoring source. It is
-not a licensed SMPL-X body-model mesh. Full SMPL-X mesh generation still waits
-for local licensed model assets, richer pose parameters, and a future
-licensed-asset-safe renderer. The local asset descriptor and mesh-input gate now
-exist so missing assets or joint-only motion records fail clearly. Imported
-GVHMR JSON can now preserve optional `smplx_parameters` in a versioned data file
-so future mesh generation has a stable pose/shape parameter boundary.
+while preserving the SMPL-X joint track as the feedback/scoring source. The
+default fixture path is still the capsule proxy and is not a licensed SMPL-X
+body-model mesh. The follow-on mesh path now imports externally generated local
+mesh frames through a licensed-asset-safe manifest boundary. Imported GVHMR JSON
+can preserve optional `smplx_parameters` in a versioned data file so the mesh
+import path has a stable pose/shape parameter boundary.
 
 ## Dependencies
 
@@ -31,17 +30,17 @@ so future mesh generation has a stable pose/shape parameter boundary.
 - [mvp-teaching-playback-demo.md](mvp-teaching-playback-demo.md) provides the
   current joint/bone playback.
 - The first proxy path needs only the existing teaching joints.
-- Future full-mesh generation requires local rights to SMPL-X model assets kept
-  outside git.
+- External mesh-frame import requires local rights to SMPL-X model assets kept
+  outside git and mesh frames generated outside the repo.
 
 ## Inputs
 
 - SMPL-X motion-record manifest.
-- Optional local SMPL-X model asset path and license/provenance notes for the
-  future full-mesh path.
+- Optional local SMPL-X model asset path and license/provenance notes for mesh
+  evidence.
 - Existing teaching joints for the current capsule proxy.
-- Shape/pose parameters or export fields sufficient to reconstruct a body
-  surface for the future full-mesh path.
+- Shape/pose parameters or export fields sufficient to validate external mesh
+  evidence.
 - Playback scene/timeline contract.
 
 ## Outputs
@@ -54,6 +53,8 @@ so future mesh generation has a stable pose/shape parameter boundary.
   fallback behavior.
 - Optional `neodojo.smplx_parameters.v1` motion-record data file when an
   imported GVHMR JSON provides mesh-ready pose/shape parameters.
+- Optional `neodojo.smplx_mesh_surface.v1` manifest when a local external
+  `neodojo.smplx_mesh_frames.v1` JSON is supplied.
 - CLI command:
 
   ```bash
@@ -82,7 +83,9 @@ so future mesh generation has a stable pose/shape parameter boundary.
    - [x] Reject missing licensed assets with a clear licensing-safe error when
      the full-mesh path exists.
    - [x] Preserve optional imported SMPL-X pose/shape parameters in a versioned
-     motion-record data file for the future full-mesh path.
+     motion-record data file for the mesh evidence path.
+   - [x] Add a versioned external mesh-frame import boundary for licensed mesh
+     evidence.
 
 2. Generate surface data.
    - [x] Choose a lightweight capsule/silhouette proxy derived from teaching
@@ -90,12 +93,16 @@ so future mesh generation has a stable pose/shape parameter boundary.
    - [x] Keep generated surface artifacts under ignored `outputs/`.
    - [x] Preserve timing, coordinate, and contact metadata from the motion
      record.
+   - [x] Validate external mesh frames with constant topology, numeric vertices,
+     and triangular faces.
 
 3. Integrate playback.
    - [x] Add an optional surface layer to the teaching playback manifest.
    - [x] Render the surface proxy behind SMPL-X joints in the teaching demo.
    - [x] Carry the surface proxy into the public-demo scene, HTML, screenshot,
      and smoke labels.
+   - [x] Carry the optional licensed mesh surface into the same teaching/public
+     playback layer without changing scoring semantics.
    - [x] Keep joint/bone playback working without SMPL-X assets.
 
 ## Acceptance Evidence
@@ -112,11 +119,11 @@ so future mesh generation has a stable pose/shape parameter boundary.
 - External GVHMR JSON imports can preserve optional `smplx_parameters` with
   `global_orient`, `body_pose`, `betas`, and optional frame fields in
   `motion-record/smplx-parameters.json`.
-- The future mesh path rejects joint-only motion records with a clear message
+- The mesh path rejects joint-only motion records with a clear message
   explaining that mesh-ready SMPL-X pose/shape parameters are required.
 - When mesh-ready parameters are present, the mesh path validates the parameter
-  data and licensed asset descriptor before stopping at the intentionally
-  unimplemented renderer boundary.
+  data, licensed asset descriptor, local mesh frames, vertices, and faces before
+  writing visual-only mesh evidence.
 
 ## Non-Goals
 
@@ -125,14 +132,14 @@ so future mesh generation has a stable pose/shape parameter boundary.
 - High-fidelity rendering or photorealistic body video.
 - Hand/face refinement.
 - Claiming the capsule proxy is a real SMPL-X mesh.
+- Executing or redistributing official SMPL-X body-model assets in the default
+  repo command surface.
 
 ## Stop Condition
 
 Stop for this slice when a local SMPL-X capsule surface proxy can be generated,
 viewed in teaching playback, included in the public demo, smoke tested without
-licensed SMPL-X assets, and the future licensed-asset path has a local-only
-descriptor, optional imported SMPL-X parameter preservation, and clear
-rejection for missing assets, joint-only motion records, or the unimplemented
-renderer. The remaining follow-on is full licensed SMPL-X mesh/body-model
-playback once local assets, mesh-ready pose fields, and a renderer are
-available together.
+licensed SMPL-X assets, and the licensed-asset path has a local-only descriptor,
+optional imported SMPL-X parameter preservation, external mesh-frame import, and
+clear rejection for missing assets, joint-only motion records, or invalid mesh
+frames.

@@ -29,7 +29,7 @@ from .real_conversion import (
 )
 from .smplx_surface import (
     register_smplx_asset_descriptor,
-    validate_smplx_mesh_generation_inputs,
+    write_smplx_mesh_surface,
     write_smplx_surface_proxy,
 )
 from .teaching_playback import write_teaching_playback_demo
@@ -164,7 +164,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     surface_mesh = surface_subparsers.add_parser(
         "mesh",
-        help="validate inputs for the future licensed SMPL-X mesh path",
+        help="import local licensed SMPL-X mesh-frame evidence into the surface contract",
     )
     surface_mesh.add_argument(
         "--motion-record",
@@ -179,10 +179,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="local-only SMPL-X asset descriptor manifest or root directory",
     )
     surface_mesh.add_argument(
+        "--mesh-frames",
+        type=Path,
+        required=True,
+        help="local neodojo.smplx_mesh_frames.v1 JSON from an external licensed SMPL-X renderer",
+    )
+    surface_mesh.add_argument(
         "--out",
         type=Path,
         default=Path("outputs/smplx-mesh"),
-        help="reserved output directory for future licensed SMPL-X mesh artifacts",
+        help="output directory for local-only SMPL-X mesh surface artifacts",
     )
 
     robot_model = subparsers.add_parser(
@@ -322,7 +328,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="G1 visual-track root directory or manifest path",
     )
     demo_play.add_argument("--annotations", type=Path, help="optional manual key-frame annotation JSON")
-    demo_play.add_argument("--smplx-surface", type=Path, help="optional SMPL-X surface proxy manifest")
+    demo_play.add_argument("--smplx-surface", type=Path, help="optional SMPL-X surface proxy or mesh manifest")
     demo_play.add_argument("--reference-video", type=Path, help="optional local-only original video reference")
     demo_play.add_argument(
         "--reference-trim-start",
@@ -715,11 +721,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
 
         if args.command == "smplx-surface" and args.surface_command == "mesh":
-            validate_smplx_mesh_generation_inputs(
+            result = write_smplx_mesh_surface(
+                args.out,
                 motion_record=args.motion_record,
                 asset_descriptor=args.asset_descriptor,
+                mesh_frames=args.mesh_frames,
             )
-            parser.error("unexpected SMPL-X mesh validation success")
+            print(f"wrote {result.manifest_path}")
+            print(f"wrote {result.data_path}")
+            print(f"wrote {result.validation_path}")
+            return 0
 
         if args.command == "robot-model" and args.robot_command == "register":
             if args.fixture:
