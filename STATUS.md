@@ -5,11 +5,12 @@ neodojo is in bootstrap state with one fixture-only local demo.
 There is now a minimal checked-in Python package, a `make test` command,
 fixture-backed and external-JSON `motion-record` paths, `robot-model`,
 `tracks`, `render g1`, `demo play`, `demo export-rerun`, and
-`real-conversion prepare` commands, and a `make demo-html` command that writes a
-self-contained synthetic web demo. There is still no checked-in
-GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real mesh rendering,
-install workflow, lint command, build command, CI gate, real generated motion
-artifact, or UI server.
+`real-conversion prepare` commands, a `make demo-html` command that writes a
+self-contained synthetic web demo, and a `make demo-public` command plus GitHub
+Actions workflow for the fixture public-demo artifact. There is still no
+checked-in GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real mesh
+rendering, lint command, build command, real generated motion artifact, or UI
+server.
 
 ## Current Truth
 
@@ -56,6 +57,11 @@ artifact, or UI server.
 - Fixture-only public-demo export generated under `outputs/public-demo/`,
   containing a scene/timeline contract, static HTML viewer, SVG screenshot, and
   `.rrd`-named JSON fallback artifact for the future Rerun lane.
+- `make demo-public` regenerates the fixture motion, G1 visual/render,
+  teaching-playback, public-demo, and smoke-check artifacts in one command.
+- `.github/workflows/public-demo.yml` runs tests, builds the fixture public demo,
+  uploads the artifact, and can publish the static output to GitHub Pages from
+  `main` when Pages is enabled.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
@@ -88,6 +94,8 @@ artifact, or UI server.
 
 ```bash
 make test
+make demo-public
+make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
@@ -114,7 +122,9 @@ G1 manifests. `neodojo demo export-rerun` writes
 `outputs/public-demo/index.html`, `outputs/public-demo/scene.json`,
 `outputs/public-demo/screenshot.svg`, and `outputs/public-demo/neodojo-demo.rrd`;
 the `.rrd` is currently a JSON fallback artifact, not a real Rerun SDK
-recording. `make demo-html`
+recording. `make demo-public` regenerates the full fixture public-demo lane and
+runs the smoke check. `make smoke-public` validates an existing
+`outputs/public-demo` artifact set. `make demo-html`
 writes `outputs/html-demo/index.html`, `outputs/html-demo/manifest.json`, and
 the local motion/track manifests it consumes. These artifacts use synthetic
 fixture motion only; they validate UI plumbing, trajectory drawing, timeline
@@ -133,20 +143,18 @@ later GPU run and does not download video or execute GVHMR.
   still a derived visual skeleton.
 - SMPL-X mesh/body-surface playback; current demos draw joints and bones.
 - Simulator/Viser runtime integration and multi-camera offscreen capture.
-- True Rerun SDK `.rrd` export and GitHub Pages publishing.
+- True Rerun SDK `.rrd` export and verification of the live GitHub Pages URL.
 - Feedback beyond the first fixture geometry check: automatic key-frame
   detection, more posture terms, and routine-level review.
 - Rich source media probing beyond local file checksum/extension validation and
   source-index duration/resolution metadata.
-- Install, lint, build, and CI command surfaces.
+- Lint and build command surfaces.
 
 ## Next Safe Task
 
-The next MVP capability is `docs/plans/mvp-devex-ci-surface.md`: add the
-one-command public-demo orchestration, visual smoke checks, artifact upload,
-and GitHub Pages workflow before returning to
-`docs/plans/mvp-real-conversion-gate.md`. Do not run GVHMR full-video inference
-on this macOS CPU workspace; use a GPU-capable machine to export a GVHMR SMPL-X
+The next MVP capability is `docs/plans/mvp-real-conversion-gate.md` for the
+later GPU artifact import path. Do not run GVHMR full-video inference on this
+macOS CPU workspace; use a GPU-capable machine to export a GVHMR SMPL-X
 teaching-joints JSON artifact, then import it through
 `neodojo motion-record create --from-gvhmr-json`.
 

@@ -1,6 +1,6 @@
 # MVP DevEx And CI Surface Plan
 
-Status: PLANNED NON-GPU SLICE
+Status: IMPLEMENTED
 
 ## Goal
 
@@ -33,6 +33,20 @@ surface and workflow exist.
   the current runnable surface until this slice adds more.
 - GitHub Pages publishing requires repository settings and workflow permissions
   that may need manual owner configuration.
+
+## Implemented Local Path
+
+`make demo-public` now regenerates the fixture motion contract, fixture G1
+model descriptor, G1 visual track, G1 SVG/HTML render evidence, teaching
+playback HTML/manifest, public-demo scene, `.rrd` fallback artifact, SVG
+screenshot, and public-demo manifest. It then runs `neodojo demo smoke` against
+`outputs/public-demo`.
+
+`.github/workflows/public-demo.yml` installs the package, runs `make test`,
+runs `make demo-public`, uploads `outputs/public-demo` as a workflow artifact,
+and uploads the same directory as the GitHub Pages artifact. The deploy job runs
+only on `main` outside pull requests. Pages still requires repository Pages
+configuration to expose a live URL.
 
 ## Inputs
 
@@ -75,63 +89,66 @@ surface and workflow exist.
 ## Execution Tasks
 
 1. Choose the orchestration surface.
-   - Prefer one Make target if it matches the current repo shape.
-   - Use a Python CLI command only when it keeps artifact paths and validation
-     more explicit.
-   - Keep commands small and reproducible.
+   - [x] Use `make demo-public` as the one local command.
+   - [x] Use `neodojo demo smoke` for explicit artifact validation.
+   - [x] Keep commands small and reproducible.
 
 2. Add minimal dev setup only when necessary.
-   - Add package metadata, dependency groups, or scripts if CI needs them.
-   - Do not add install/lint/build claims before the commands exist and pass.
-   - Keep optional heavyweight visualization dependencies out of the default
-     path unless they are required for the public demo.
+   - [x] Reuse existing `pyproject.toml` and editable install in CI.
+   - [x] Do not add lint/build claims.
+   - [x] Keep optional heavyweight visualization dependencies out of the
+     default path.
 
 3. Build the local demo-public flow.
-   - Generate motion-record and teaching-track fixtures.
-   - Generate G1 visual-track fixtures or consume the current fixture manifest.
-   - Generate teaching playback HTML/manifest.
-   - Export Rerun `.rrd` and static viewer page.
-   - Capture screenshot/GIF evidence.
-   - Write a public-demo manifest.
+   - [x] Generate motion-record and teaching-track fixtures.
+   - [x] Generate G1 visual-track fixtures.
+   - [x] Generate G1 render evidence and teaching playback HTML/manifest.
+   - [x] Export `.rrd` fallback artifact and static viewer page.
+   - [x] Capture SVG screenshot evidence.
+   - [x] Write a public-demo manifest.
 
 4. Add CI validation.
-   - Run `make test` or the focused equivalent.
-   - Run the public demo generation command.
-   - Validate every generated manifest.
-   - Upload generated outputs as CI artifacts without committing them.
+   - [x] Run `make test`.
+   - [x] Run `make demo-public`.
+   - [x] Validate generated public-demo artifacts with `neodojo demo smoke`.
+   - [x] Upload generated outputs as CI artifacts without committing them.
 
 5. Add visual smoke checks.
-   - Open generated HTML/Rerun pages in headless browser automation.
-   - Check that pages are nonblank.
-   - Check expected text or scene labels for SMPL-X, G1, fixture-only status,
-     selected trajectories, and scoring-source metadata.
-   - Save screenshots as artifacts.
+   - [x] Check generated HTML, scene, `.rrd` fallback, and SVG screenshot are
+     nonblank.
+   - [x] Check expected text or scene labels for SMPL-X, G1, fixture-only
+     status, and scoring-source metadata.
+   - [x] Save SVG screenshots as artifacts.
+   - [ ] Add browser-rendered screenshot capture if/when a browser dependency
+     becomes part of CI.
 
 6. Publish to GitHub Pages.
-   - Stage only static public-demo assets in the Pages artifact.
-   - Do not publish source videos, generated motion files, checkpoints, logs, or
-     large private artifacts.
-   - Keep repository owner setup steps explicit if Pages permissions are not
-     configured in code.
+   - [x] Stage only static public-demo assets in the Pages artifact.
+   - [x] Do not publish source videos, generated motion files, checkpoints,
+     logs, or large private artifacts.
+   - [x] Keep repository owner setup implicit in GitHub Pages settings; no live
+     URL is claimed in docs.
 
 7. Update docs after verification.
-   - README.md and README.zh.md may link to the GitHub Pages demo only after
-     the workflow and artifact exist.
-   - STATUS.md should list new commands only after they run locally.
-   - Keep fixture-only limitations visible in every user-facing mention.
+   - [x] README.md and README.zh.md describe the local command and workflow but
+     do not link a Pages URL.
+   - [x] STATUS.md lists new commands only after they run locally.
+   - [x] Keep fixture-only limitations visible in every user-facing mention.
 
 ## Acceptance Evidence
 
 - One local command regenerates the fixture public-demo artifacts from a clean
   ignored output directory.
-- Unit tests and manifest validation pass locally and in CI.
-- CI uploads the generated Rerun recording, static viewer page, screenshot/GIF,
-  and public-demo manifest as artifacts.
+- Unit tests and manifest validation pass locally; CI is configured to run the
+  same commands.
+- CI uploads the generated `.rrd` fallback recording, static viewer page, SVG
+  screenshot, and public-demo manifest as artifacts.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
-- GitHub Pages can publish only safe static demo assets.
-- README.md and README.zh.md mention the public demo only after the Pages URL
-  exists and both clearly mark it fixture-only.
+- GitHub Pages can publish only safe static demo assets once repository Pages is
+  enabled.
+- README.md and README.zh.md mention the public demo command and workflow
+  without claiming a live Pages URL.
 - Generated outputs, screenshots, `.rrd`, videos, logs, and large artifacts
   remain out of tracked source except for deliberate publish artifacts.
 
@@ -146,6 +163,7 @@ surface and workflow exist.
 
 ## Stop Condition
 
-Stop when a clean checkout can run one non-GPU public-demo command locally, CI
-can regenerate and visually smoke-test the same artifact set, and GitHub Pages
-publishing can run without tracking generated outputs in the source branch.
+Stopped when a clean checkout can run one non-GPU public-demo command locally,
+CI can regenerate and visually smoke-test the same artifact set, and GitHub
+Pages publishing can run without tracking generated outputs in the source
+branch.

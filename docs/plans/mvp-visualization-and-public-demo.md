@@ -34,7 +34,9 @@ Rerun SDK recording.
 The static HTML page is the current CI/publishable artifact. It is fixture-only,
 shows SMPL-X and G1 labels, preserves the G1 non-scoring boundary, and embeds
 the scene contract for smoke checks. The true Rerun SDK `.rrd` writer and
-GitHub Pages publication are left to the DevEx/CI slice.
+verified live GitHub Pages URL remain follow-on work. The DevEx/CI slice now
+stages the static artifact for Pages and publishes from `main` when repository
+Pages settings allow it.
 
 ## Dependencies
 
@@ -163,4 +165,4 @@ GitHub Pages publication are left to the DevEx/CI slice.
 Stopped when a fixture-only but honest static public demo can be generated,
 visually smoke-tested, and staged for GitHub Pages through artifacts, with the
 scene/timeline contract ready for later Viser integration. True Rerun SDK export
-and Pages publication remain in the DevEx/CI queue.
+and verified live Pages publication remain follow-on work.

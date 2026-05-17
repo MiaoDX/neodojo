@@ -129,12 +129,14 @@ Viser (web 端三视角同步 + 关节轨迹 polyline + 时间轴)
 一个很小的 Python package、本地 SMPL-X 与 G1 fixture artifact 命令、教学 playback
 HTML 命令、静态 HTML demo 生成器，以及基于 model descriptor 与 visual track 的本地
 G1 SVG/HTML render evidence。但还没有提交到仓库的 GVHMR/GMR/仿真器运行时
-pipeline、MuJoCo/Genesis 真实 mesh 渲染或 CI gate。
+pipeline、MuJoCo/Genesis 真实 mesh 渲染或更完整的 lint/build gate。
 
 现在可以运行：
 
 ```bash
 make test
+make demo-public
+make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
@@ -172,6 +174,12 @@ descriptor 不需要这个开关。这是本地 render evidence，不是 MuJoCo/
 `.rrd` 命名 recording artifact。在加入 `rerun-sdk` 之前，这个 `.rrd` 文件是如实
 标注的 JSON fallback artifact，不是真正的 Rerun SDK recording。
 
+`make demo-public` 会用一个本地命令重新生成 fixture motion contract、G1 visual
+track、G1 render evidence、teaching playback、public-demo artifact，并运行 smoke
+check。`make smoke-public` 会验证现有的 `outputs/public-demo` artifact set。
+`.github/workflows/public-demo.yml` 里的 GitHub Actions workflow 会运行同一条 fixture
+lane，上传 artifact，并在 repo 启用 Pages 后发布到 GitHub Pages。
+
 `neodojo real-conversion prepare` 会为后续 GPU gate 写出 source metadata、trim
 metadata 和下一步命令提示。它不会下载源视频，也不会运行 GVHMR。
 
@@ -193,6 +201,8 @@ G1 retargeting 已经完成。
 - [x] 本地 teaching playback 命令，可同时消费 SMPL-X 与 G1 manifests
 - [x] fixture-only 静态 public-demo export，包含 scene/timeline contract、
       `.rrd` fallback artifact、HTML 与 SVG screenshot
+- [x] 本地一条命令 `make demo-public`，以及用于 fixture public demo 的 GitHub
+      Actions artifact/Page workflow
 - [x] 本地 real-conversion prep manifest，默认 source 为 `03-006`
 - [ ] 基于用户本地 URDF/MJCF 与 meshes 的 MuJoCo/Genesis 真实 Unitree G1 mesh 渲染
 - [ ] roboharness 风格的多视角离屏录制集成

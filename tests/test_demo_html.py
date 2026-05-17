@@ -16,7 +16,7 @@ from neodojo.motion_contract import (
     write_fixture_motion_contract,
     write_gvhmr_json_motion_contract,
 )
-from neodojo.public_demo import build_scene_timeline, write_public_demo
+from neodojo.public_demo import build_scene_timeline, smoke_check_public_demo, write_public_demo
 from neodojo.real_conversion import write_real_conversion_prep
 from neodojo.teaching_playback import write_teaching_playback_demo
 
@@ -467,6 +467,7 @@ class DemoHtmlTests(unittest.TestCase):
                 g1_render_manifest_path=render.manifest_path,
                 recording_path=root / "public-demo" / "neodojo-demo.rrd",
             )
+            smoke = smoke_check_public_demo(root / "public-demo")
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
             recording = json.loads(result.recording_path.read_text(encoding="utf-8"))
             scene = json.loads(result.scene_path.read_text(encoding="utf-8"))
@@ -484,6 +485,35 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("Unitree G1 visual", html)
         self.assertIn("fixture-only", html)
         self.assertIn("SMPL-X teacher", screenshot)
+        self.assertEqual(smoke.manifest_path.name, "manifest.json")
+        self.assertEqual(len(smoke.checked_paths), 4)
+
+    def test_public_demo_smoke_rejects_missing_label(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+            )
+            result = write_public_demo(
+                playback_manifest_path=playback.manifest_path,
+                recording_path=root / "public-demo" / "neodojo-demo.rrd",
+            )
+            html = result.html_path.read_text(encoding="utf-8").replace("Unitree G1 visual", "Unitree visual")
+            result.html_path.write_text(html, encoding="utf-8")
+            screenshot = result.screenshot_path.read_text(encoding="utf-8").replace("Unitree G1 visual", "Unitree visual")
+            result.screenshot_path.write_text(screenshot, encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "missing"):
+                smoke_check_public_demo(root / "public-demo")
 
     def test_scene_timeline_preserves_scoring_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

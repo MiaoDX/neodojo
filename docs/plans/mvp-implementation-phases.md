@@ -10,10 +10,12 @@ handoff routing. Use the linked plan files as the execution source of truth for
 each slice.
 
 The current repo is still in bootstrap state. It has a fixture-only HTML demo
-generator, `make test`, and `make demo-html`. It does not yet have a checked-in
-GVHMR/GMR/simulator runtime pipeline, real Unitree G1 rendering, Viser UI,
-Rerun public demo, GitHub Pages publish path, install workflow, lint command,
-build command, or CI gate.
+generator, `make test`, `make demo-html`, `make demo-public`, versioned local
+artifact contracts, G1 SVG/HTML render evidence, a fixture-only static
+public-demo fallback artifact, and a GitHub Actions workflow for the fixture
+public-demo lane. It does not yet have a checked-in GVHMR/GMR/simulator runtime
+pipeline, MuJoCo/Genesis real mesh rendering, Viser UI, true Rerun SDK `.rrd`
+recording, verified live GitHub Pages URL, lint command, or build command.
 
 ## Shared Goal
 
@@ -41,10 +43,10 @@ local/user-supplied source video
 | 1 | [mvp-local-motion-contract.md](mvp-local-motion-contract.md) | done | Turn fixture motion and imported GVHMR-shaped outputs into one project-owned SMPL-X motion contract. | Fixture and external GVHMR teaching-joints JSON inputs both write the same SMPL-X motion-record and teaching-track manifests. |
 | 2 | [mvp-g1-visual-track.md](mvp-g1-visual-track.md) | done | Add the Unitree G1 visual-track boundary: model provenance, derived track manifest, and scoring separation. | G1 assets/tracks are validated as derived visual artifacts and cannot become the scoring source. |
 | 3 | [mvp-teaching-playback-demo.md](mvp-teaching-playback-demo.md) | done | Create the inspectable multi-view teaching playback with trajectories and one manual feedback proof. | The local `demo play` command consumes SMPL-X/G1 manifests and writes fixture-only HTML playback plus manifest evidence. |
-| 4 | [mvp-g1-real-model-rendering.md](mvp-g1-real-model-rendering.md) | planned local non-GPU slice | Load a user-supplied real Unitree G1 URDF/MJCF and render robot evidence instead of the current canvas skeleton. | A local render manifest and screenshot/frame prove the real G1 model loads and remains non-scoring. |
-| 5 | [mvp-pipeline-contract-hardening.md](mvp-pipeline-contract-hardening.md) | planned non-GPU slice | Version and validate source, motion, teaching, G1, render, playback, annotation, and public-demo contracts before broader orchestration. | Existing fixture paths and future import paths pass through explicit versioned manifest boundaries with source-media provenance and local video-sync metadata. |
+| 4 | [mvp-g1-real-model-rendering.md](mvp-g1-real-model-rendering.md) | implemented local SVG evidence; simulator mesh rendering remains follow-on | Load a user-supplied real Unitree G1 URDF/MJCF and render robot evidence instead of the current canvas skeleton. | A local render manifest and front/side/top SVG frame evidence prove the registered descriptor path remains non-scoring. |
+| 5 | [mvp-pipeline-contract-hardening.md](mvp-pipeline-contract-hardening.md) | implemented | Version and validate source, motion, teaching, G1, render, playback, annotation, and public-demo contracts before broader orchestration. | Existing fixture paths and future import paths pass through explicit versioned manifest boundaries with source-media provenance and local video-sync metadata. |
 | 6 | [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md) | implemented with static fallback | Define one internal scene/timeline contract and make a fixture-only public demo artifact. | A fixture-only `.rrd` fallback artifact, static viewer page, public-demo manifest, and SVG screenshot can be generated and visually smoke-tested. |
-| 7 | [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) | planned non-GPU slice | Add one-command public-demo orchestration and CI artifact/Page publishing for the fixture lane. | A clean checkout can regenerate, validate, visually smoke-test, upload, and publish the non-GPU fixture demo without tracking generated outputs. |
+| 7 | [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) | implemented | Add one-command public-demo orchestration and CI artifact/Page publishing for the fixture lane. | A clean checkout can regenerate, validate, visually smoke-test, upload, and publish the non-GPU fixture demo without tracking generated outputs. |
 | 8 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata; final stop condition still requires a real GVHMR artifact imported through the hardened contracts. |
 
 The numbered plans are semantically independent execution slices, not

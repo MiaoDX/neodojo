@@ -6,7 +6,11 @@
   `docs/technical-roadmap.md` and `docs/humanoid-platform-evaluation.md` for
   background research.
 - `README.zh.md` is the Chinese README. Keep the English and Chinese README files aligned when changing project positioning, status, or roadmap claims.
-- This repo is currently in bootstrap state with a fixture-only HTML demo. Do not claim a working GVHMR/GMR/simulator runtime pipeline, install workflow, lint command, build command, or CI gate exists until it is added.
+- This repo is currently in bootstrap state with fixture-only demos and a
+  fixture-only public-demo CI lane. Do not claim a working
+  GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis mesh renderer, Viser UI,
+  lint command, build command, or true Rerun/Pages publication exists until it
+  is added and verified.
 
 ## Project Shape
 
@@ -31,9 +35,13 @@
 - `PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --allow-fixture-model --out outputs/g1-render` writes local SVG/HTML G1 render evidence and a render manifest from the descriptor and visual track; this is not MuJoCo/Genesis mesh rendering.
 - `PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo` writes a fixture-only teaching playback HTML and manifest from the SMPL-X and G1 manifests; optional `--reference-video` preserves local-only original-video sync metadata.
 - `PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd` writes a fixture-only static public-demo HTML page, scene/timeline contract, SVG screenshot, public-demo manifest, and `.rrd`-named JSON fallback artifact.
+- `PYTHONPATH=src python -m neodojo demo smoke --public-demo outputs/public-demo` validates the generated fixture public-demo manifest, HTML, scene, `.rrd` fallback artifact, and SVG screenshot for nonblank expected labels and scoring-source metadata.
 - `PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate` writes ignored source/trim metadata for the later GPU gate without downloading video or running GVHMR.
 - `make demo-html` writes the self-contained fixture demo to `outputs/html-demo/index.html` plus the local motion/track manifests it consumes.
-- No canonical install, lint, build, or CI commands exist yet.
+- `make demo-public` regenerates the fixture motion contract, G1 visual/render artifacts, teaching playback, public-demo artifact, and smoke check in one local command.
+- `make smoke-public` validates an existing `outputs/public-demo` artifact set.
+- `.github/workflows/public-demo.yml` runs the fixture public-demo lane in CI and can publish the static artifact to GitHub Pages from `main` when Pages is enabled.
+- No canonical lint or build commands exist yet.
 - When adding code, add the command surface in the same change: package metadata, scripts or Make targets, focused tests, and README/docs updates.
 - Prefer small, reproducible Python entrypoints for pipeline work before adding broad framework structure.
 

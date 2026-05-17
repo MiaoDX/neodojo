@@ -8,7 +8,7 @@ from .demo_html import write_demo
 from .g1_visual import build_g1_visual_track, register_g1_model, write_fixture_g1_model_descriptor
 from .g1_render import write_g1_render
 from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
-from .public_demo import write_public_demo
+from .public_demo import smoke_check_public_demo, write_public_demo
 from .real_conversion import DEFAULT_SOURCE_ID, DEFAULT_SOURCE_INDEX, write_real_conversion_prep
 from .teaching_playback import write_teaching_playback_demo
 
@@ -189,6 +189,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/public-demo/neodojo-demo.rrd"),
         help="output .rrd artifact path; sibling public-demo files are written next to it",
     )
+    demo_smoke = demo_subparsers.add_parser(
+        "smoke",
+        help="validate generated public demo artifacts for CI",
+    )
+    demo_smoke.add_argument(
+        "--public-demo",
+        type=Path,
+        default=Path("outputs/public-demo"),
+        help="public-demo directory or manifest path",
+    )
 
     render = subparsers.add_parser(
         "render",
@@ -345,6 +355,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"wrote {result.scene_path}")
             print(f"wrote {result.recording_path}")
             print(f"wrote {result.screenshot_path}")
+            return 0
+
+        if args.command == "demo" and args.demo_command == "smoke":
+            result = smoke_check_public_demo(args.public_demo)
+            print(f"validated {result.manifest_path}")
+            for path in result.checked_paths:
+                print(f"validated {path}")
             return 0
 
         if args.command == "render" and args.render_command == "g1":

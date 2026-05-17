@@ -161,13 +161,15 @@ and next safe task. There is now a small checked-in Python package, local
 SMPL-X and G1 fixture artifact commands, a teaching-playback HTML command, a
 static HTML demo generator, and local SVG/HTML G1 render evidence from a model
 descriptor plus visual track. There is still no checked-in
-GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real mesh rendering, or CI
-gate.
+GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real mesh rendering, or
+broader lint/build gate.
 
 What can be run now:
 
 ```bash
 make test
+make demo-public
+make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
@@ -207,6 +209,13 @@ recording artifact under `outputs/public-demo/`. Until `rerun-sdk` is added,
 the `.rrd` file is an honest JSON fallback artifact, not a real Rerun SDK
 recording.
 
+`make demo-public` regenerates the fixture motion contract, G1 visual track,
+G1 render evidence, teaching playback, public-demo artifact, and smoke check in
+one local command. `make smoke-public` validates an existing
+`outputs/public-demo` artifact set. The GitHub Actions workflow at
+`.github/workflows/public-demo.yml` runs the same fixture lane, uploads the
+artifact, and can publish it to GitHub Pages when Pages is enabled for the repo.
+
 `neodojo real-conversion prepare` writes source metadata, trim metadata, and
 next-command hints for the later GPU gate. It does not download the source
 video or run GVHMR.
@@ -232,6 +241,8 @@ In progress:
 - [x] Local teaching playback command that consumes SMPL-X and G1 manifests
 - [x] Fixture-only static public-demo export with scene/timeline contract,
       `.rrd` fallback artifact, HTML, and SVG screenshot
+- [x] One-command local `make demo-public` flow and GitHub Actions artifact/Page
+      workflow for the fixture public demo
 - [x] Local real-conversion prep manifest for source `03-006`
 - [ ] MuJoCo/Genesis real Unitree G1 mesh rendering from user-supplied URDF/MJCF
       and meshes

@@ -24,6 +24,12 @@ class PublicDemoWriteResult:
     screenshot_path: Path
 
 
+@dataclass(frozen=True)
+class PublicDemoSmokeResult:
+    manifest_path: Path
+    checked_paths: list[Path]
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -303,4 +309,54 @@ def write_public_demo(
         scene_path=scene_path,
         recording_path=recording_path,
         screenshot_path=screenshot_path,
+    )
+
+
+def _resolve_manifest_path(public_demo: Path) -> Path:
+    if public_demo.is_file():
+        return public_demo
+    return public_demo / "manifest.json"
+
+
+def _require_nonblank(path: Path) -> str:
+    if not path.exists():
+        raise ValueError(f"public demo artifact is missing: {path}")
+    text = path.read_text(encoding="utf-8")
+    if not text.strip():
+        raise ValueError(f"public demo artifact is blank: {path}")
+    return text
+
+
+def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
+    manifest_path = _resolve_manifest_path(public_demo)
+    manifest = _load_json(manifest_path)
+    require_schema(manifest, PUBLIC_DEMO_SCHEMA, "public-demo manifest")
+    if manifest.get("scoring_source") != "smplx":
+        raise ValueError("public demo must keep SMPL-X as scoring_source")
+    if manifest.get("tracks", {}).get("g1", {}).get("scoring_allowed"):
+        raise ValueError("public demo cannot allow G1 scoring")
+
+    required_labels = manifest.get("visual_smoke_expectations", {}).get("required_labels", [])
+    if not required_labels:
+        raise ValueError("public demo manifest must define required visual smoke labels")
+
+    html_path = manifest_path.parent / manifest["html"]
+    scene_path = manifest_path.parent / manifest["scene"]
+    recording_path = manifest_path.parent / manifest["recording"]
+    screenshot_path = manifest_path.parent / manifest["screenshot"]
+    html = _require_nonblank(html_path)
+    scene = _load_json(scene_path)
+    require_schema(scene, SCENE_TIMELINE_SCHEMA, "scene/timeline manifest")
+    recording = _load_json(recording_path)
+    require_schema(recording, RERUN_RECORDING_EXPORT_SCHEMA, "Rerun recording export")
+    screenshot = _require_nonblank(screenshot_path)
+
+    smoke_text = "\n".join([html, screenshot])
+    missing = [label for label in required_labels if label not in smoke_text]
+    if missing:
+        raise ValueError(f"public demo visual smoke labels are missing: {', '.join(missing)}")
+
+    return PublicDemoSmokeResult(
+        manifest_path=manifest_path,
+        checked_paths=[html_path, scene_path, recording_path, screenshot_path],
     )
