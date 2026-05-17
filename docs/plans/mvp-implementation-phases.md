@@ -73,7 +73,7 @@ of truth for the next waves.
 | --- | --- | --- |
 | [mvp-simulator-mesh-rendering.md](mvp-simulator-mesh-rendering.md) | implemented optional MuJoCo command, real G1 asset smoke, and GMR qpos application | MuJoCo render command, real Unitree G1 mesh proof, and imported GMR joint-angle qpos application. |
 | [mvp-native-gmr-runner.md](mvp-native-gmr-runner.md) | implemented first pickle adapter; local GMR execution remains external | Native GMR robot-motion pickle parsing beyond normalized JSON import. |
-| [mvp-smplx-body-surface-playback.md](mvp-smplx-body-surface-playback.md) | implemented surface proxy and licensed-asset boundary; full mesh generation remains follow-on | Dependency-light SMPL-X surface proxy, local-only licensed asset descriptor, and future mesh/body-model playback. |
+| [mvp-smplx-body-surface-playback.md](mvp-smplx-body-surface-playback.md) | implemented surface proxy, licensed-asset boundary, and parameter import; full mesh rendering remains follow-on | Dependency-light SMPL-X surface proxy, local-only licensed asset descriptor, imported SMPL-X parameter boundary, and future mesh/body-model playback. |
 | [mvp-viser-multicamera-runtime.md](mvp-viser-multicamera-runtime.md) | implemented first optional server, camera/anchor controls, and generated multi-camera preview evidence | Local Viser runtime, camera/annotation controls, and dependency-light front/side/top visual smoke workflow. |
 | [mvp-rerun-pages-release.md](mvp-rerun-pages-release.md) | implemented optional SDK export and verified live Pages publication | True Rerun SDK `.rrd` export and verified live GitHub Pages URL. |
 | [mvp-feedback-routine-review.md](mvp-feedback-routine-review.md) | implemented | Broader key-frame/posture feedback and routine-level review. |

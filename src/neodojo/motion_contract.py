@@ -19,6 +19,20 @@ from .fixtures import (
 MOTION_RECORD_SCHEMA = "neodojo.motion_record.v1"
 TRACK_SCHEMA = "neodojo.track.v1"
 GVHMR_JOINT_EXPORT_SCHEMA = "neodojo.gvhmr_smplx_joints.v1"
+SMPLX_PARAMETER_SCHEMA = "neodojo.smplx_parameters.v1"
+
+_SMPLX_REQUIRED_PARAMETER_FIELDS = ("global_orient", "body_pose", "betas")
+_SMPLX_FRAME_PARAMETER_FIELDS = {
+    "global_orient",
+    "body_pose",
+    "transl",
+    "left_hand_pose",
+    "right_hand_pose",
+    "jaw_pose",
+    "leye_pose",
+    "reye_pose",
+    "expression",
+}
 
 
 @dataclass(frozen=True)
@@ -28,6 +42,7 @@ class MotionContractWriteResult:
     motion_record_data_path: Path
     smplx_track_manifest_path: Path
     smplx_track_data_path: Path
+    smplx_parameters_data_path: Path | None = None
 
 
 def _write_json(path: Path, payload: dict[str, Any] | list[Any]) -> None:
@@ -183,6 +198,75 @@ def _normalize_teaching_frames(raw_frames: Any) -> list[dict[str, list[float]]]:
     return frames
 
 
+def _numeric_array_shape(value: Any, label: str) -> list[int]:
+    if not isinstance(value, list) or not value:
+        raise ValueError(f"{label} must be a non-empty numeric array")
+
+    def shape(node: Any, path: str) -> list[int]:
+        if isinstance(node, list):
+            if not node:
+                raise ValueError(f"{path} must not contain empty arrays")
+            child_shapes = [shape(child, f"{path}[]") for child in node]
+            first_shape = child_shapes[0]
+            if any(child_shape != first_shape for child_shape in child_shapes):
+                raise ValueError(f"{path} must be rectangular")
+            return [len(node), *first_shape]
+        if isinstance(node, bool) or not isinstance(node, (int, float)):
+            raise ValueError(f"{path} must contain only numeric values")
+        return []
+
+    return shape(value, label)
+
+
+def _normalize_smplx_parameters(raw_parameters: Any, frame_count: int) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    if raw_parameters is None:
+        return None
+    if not isinstance(raw_parameters, dict):
+        raise ValueError("GVHMR joint export smplx_parameters must be an object when provided")
+
+    parameterization = raw_parameters.get("parameterization", "smplx")
+    if not isinstance(parameterization, str) or not parameterization.strip():
+        raise ValueError("smplx_parameters.parameterization must be a non-empty string")
+
+    fields: dict[str, dict[str, Any]] = {}
+    parameter_values: dict[str, Any] = {}
+    metadata_keys = {"schema", "parameterization", "source", "provenance", "notes"}
+    for field_name, value in sorted(raw_parameters.items()):
+        if field_name in metadata_keys:
+            continue
+        if not isinstance(field_name, str) or not field_name:
+            raise ValueError("SMPL-X parameter field names must be non-empty strings")
+        shape = _numeric_array_shape(value, f"smplx_parameters.{field_name}")
+        if field_name in _SMPLX_FRAME_PARAMETER_FIELDS and shape[0] != frame_count:
+            raise ValueError(
+                f"smplx_parameters.{field_name} frame count {shape[0]} "
+                f"does not match teaching frame count {frame_count}"
+            )
+        fields[field_name] = {"shape": shape}
+        parameter_values[field_name] = value
+
+    if not fields:
+        raise ValueError("GVHMR joint export smplx_parameters must contain at least one numeric field")
+
+    missing = [field for field in _SMPLX_REQUIRED_PARAMETER_FIELDS if field not in fields]
+    summary = {
+        "schema": SMPLX_PARAMETER_SCHEMA,
+        "parameterization": parameterization,
+        "frame_count": frame_count,
+        "fields": fields,
+        "required_fields": list(_SMPLX_REQUIRED_PARAMETER_FIELDS),
+        "missing_required_fields": missing,
+        "mesh_ready": not missing,
+    }
+    data = {
+        "schema": SMPLX_PARAMETER_SCHEMA,
+        "parameterization": parameterization,
+        "frame_count": frame_count,
+        "fields": parameter_values,
+    }
+    return summary, data
+
+
 def _write_motion_contract(
     out_dir: Path,
     frames: list[dict[str, list[float]]],
@@ -193,6 +277,7 @@ def _write_motion_contract(
     form: str,
     fps: int | float,
     provenance: dict[str, Any],
+    smplx_parameters: dict[str, Any] | None = None,
 ) -> MotionContractWriteResult:
     validate_output_dir(out_dir)
     timing = _timing_metadata(fps, len(frames))
@@ -201,6 +286,7 @@ def _write_motion_contract(
     motion_dir = out_dir / "motion-record"
     track_dir = out_dir / "tracks" / "smplx"
     motion_data_path = motion_dir / "smplx-joints.json"
+    smplx_parameters_data_path = motion_dir / "smplx-parameters.json"
     motion_manifest_path = motion_dir / "manifest.json"
     track_data_path = track_dir / "joints.json"
     track_manifest_path = track_dir / "manifest.json"
@@ -234,6 +320,15 @@ def _write_motion_contract(
             "smplx_frames": _relative_path(motion_data_path, motion_manifest_path.parent),
         },
     }
+    normalized_parameters = _normalize_smplx_parameters(smplx_parameters, len(frames))
+    if normalized_parameters is not None:
+        parameter_summary, parameter_data = normalized_parameters
+        parameter_data_file = _relative_path(smplx_parameters_data_path, motion_manifest_path.parent)
+        motion_manifest["smplx_parameters"] = {
+            **parameter_summary,
+            "data_file": parameter_data_file,
+        }
+        motion_manifest["data_files"]["smplx_parameters"] = parameter_data_file
     track_manifest = {
         "schema": TRACK_SCHEMA,
         "track_id": "smplx",
@@ -255,6 +350,8 @@ def _write_motion_contract(
     validate_scoring_source({"smplx": track_manifest}, scoring_source=motion_manifest["scoring_source"])
 
     _write_json(motion_data_path, motion_data)
+    if normalized_parameters is not None:
+        _write_json(smplx_parameters_data_path, parameter_data)
     _write_json(motion_manifest_path, motion_manifest)
     _write_json(track_data_path, track_data)
     _write_json(track_manifest_path, track_manifest)
@@ -265,6 +362,7 @@ def _write_motion_contract(
         motion_record_data_path=motion_data_path,
         smplx_track_manifest_path=track_manifest_path,
         smplx_track_data_path=track_data_path,
+        smplx_parameters_data_path=smplx_parameters_data_path if normalized_parameters is not None else None,
     )
 
 
@@ -326,6 +424,7 @@ def write_gvhmr_json_motion_contract(out_dir: Path, source_path: Path) -> Motion
         form=form,
         fps=fps,
         provenance=provenance,
+        smplx_parameters=payload.get("smplx_parameters"),
     )
 
 

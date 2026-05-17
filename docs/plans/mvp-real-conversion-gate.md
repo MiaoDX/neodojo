@@ -84,6 +84,8 @@ path is acceptable and preferred.
   source, trim command, optional generated clip/frames, and GVHMR input handoff.
 - A motion-record import run using
   `neodojo motion-record create --from-gvhmr-json`.
+- Optional `neodojo.smplx_parameters.v1` data under the motion record when the
+  GVHMR export includes mesh-ready SMPL-X pose/shape parameters.
 - A short report stating whether downstream local contracts needed changes.
 
 ## Implemented Local Prep And Source Handoff

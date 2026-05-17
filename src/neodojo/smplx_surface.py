@@ -12,6 +12,7 @@ from .motion_contract import (
     _write_json,
     load_motion_record_frames,
     resolve_motion_record_manifest,
+    SMPLX_PARAMETER_SCHEMA,
     validate_output_dir,
 )
 
@@ -209,12 +210,34 @@ def validate_smplx_mesh_generation_inputs(*, motion_record: Path, asset_descript
             f"mesh-ready parameters. Asset descriptor was valid for {descriptor.get('variant') or 'SMPL-X'}."
         )
 
-    required = ["global_orient", "body_pose", "betas"]
-    missing = [field for field in required if field not in smplx_parameters]
+    missing = smplx_parameters.get("missing_required_fields")
+    if not isinstance(missing, list):
+        fields = smplx_parameters.get("fields", {})
+        missing = [field for field in ["global_orient", "body_pose", "betas"] if field not in fields]
     if missing:
         raise ValueError(
             "licensed SMPL-X mesh generation requires SMPL-X parameter fields: "
             + ", ".join(missing)
+        )
+
+    data_file = smplx_parameters.get("data_file") or motion_manifest.get("data_files", {}).get("smplx_parameters")
+    if not isinstance(data_file, str) or not data_file:
+        raise ValueError("SMPL-X parameter metadata is missing data_file")
+    data_path = motion_manifest_path.parent / data_file
+    if not data_path.exists():
+        raise ValueError(f"SMPL-X parameter data file is missing: {data_path}")
+    parameter_data = json.loads(data_path.read_text(encoding="utf-8"))
+    require_schema(parameter_data, SMPLX_PARAMETER_SCHEMA, "SMPL-X parameter data")
+    if parameter_data.get("frame_count") != motion_manifest.get("frame_count"):
+        raise ValueError("SMPL-X parameter data frame_count must match the motion record")
+    data_fields = parameter_data.get("fields")
+    if not isinstance(data_fields, dict):
+        raise ValueError("SMPL-X parameter data must contain fields")
+    missing_data = [field for field in ["global_orient", "body_pose", "betas"] if field not in data_fields]
+    if missing_data:
+        raise ValueError(
+            "SMPL-X parameter data is missing required fields: "
+            + ", ".join(missing_data)
         )
 
     raise ValueError(

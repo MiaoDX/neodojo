@@ -778,6 +778,80 @@ class DemoHtmlTests(unittest.TestCase):
                     asset_descriptor=descriptor.descriptor_path,
                 )
 
+    def test_gvhmr_json_motion_contract_preserves_smplx_parameters(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            frame_count = 10
+            source = root / "gvhmr-smplx-joints.json"
+            source.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gvhmr_smplx_joints.v1",
+                        "routine": "Baduanjin",
+                        "form": "Two Hands Hold Up the Heavens",
+                        "fps": 30,
+                        "frames": build_smplx_fixture_frames(frame_count),
+                        "smplx_parameters": {
+                            "parameterization": "smplx_axis_angle",
+                            "global_orient": [[0.0, 0.0, 0.0] for _ in range(frame_count)],
+                            "body_pose": [[0.0] * 63 for _ in range(frame_count)],
+                            "transl": [[0.0, 0.0, 0.0] for _ in range(frame_count)],
+                            "betas": [0.0] * 10,
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            motion = write_gvhmr_json_motion_contract(root / "motion", source)
+            asset = root / "SMPLX_NEUTRAL.npz"
+            asset.write_bytes(b"licensed fixture asset placeholder")
+            descriptor = register_smplx_asset_descriptor(
+                root / "assets-out",
+                model_path=asset,
+                license_name="local licensed fixture",
+            )
+            manifest = json.loads(motion.motion_record_manifest_path.read_text(encoding="utf-8"))
+            parameter_data = json.loads(motion.smplx_parameters_data_path.read_text(encoding="utf-8"))
+
+            with self.assertRaisesRegex(ValueError, "intentionally not implemented yet"):
+                validate_smplx_mesh_generation_inputs(
+                    motion_record=motion.out_dir,
+                    asset_descriptor=descriptor.descriptor_path,
+                )
+
+        self.assertEqual(manifest["smplx_parameters"]["schema"], "neodojo.smplx_parameters.v1")
+        self.assertTrue(manifest["smplx_parameters"]["mesh_ready"])
+        self.assertEqual(manifest["smplx_parameters"]["missing_required_fields"], [])
+        self.assertEqual(manifest["data_files"]["smplx_parameters"], "smplx-parameters.json")
+        self.assertEqual(parameter_data["schema"], "neodojo.smplx_parameters.v1")
+        self.assertEqual(parameter_data["frame_count"], frame_count)
+        self.assertEqual(parameter_data["parameterization"], "smplx_axis_angle")
+        self.assertIn("global_orient", parameter_data["fields"])
+        self.assertIn("body_pose", parameter_data["fields"])
+        self.assertIn("betas", parameter_data["fields"])
+
+    def test_gvhmr_json_motion_contract_rejects_bad_smplx_parameter_shape(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "bad-gvhmr-smplx-joints.json"
+            source.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gvhmr_smplx_joints.v1",
+                        "frames": build_smplx_fixture_frames(10),
+                        "smplx_parameters": {
+                            "global_orient": [[0.0, 0.0, 0.0] for _ in range(9)],
+                            "body_pose": [[0.0] * 63 for _ in range(10)],
+                            "betas": [0.0] * 10,
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "global_orient frame count"):
+                write_gvhmr_json_motion_contract(root / "motion", source)
+
     def test_detected_annotations_drive_teaching_playback_key_frame(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

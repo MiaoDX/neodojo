@@ -209,9 +209,12 @@ make demo-html
 
 `neodojo motion-record create` writes fixture-backed SMPL-X motion-record and
 teaching-track manifests, or imports an external GVHMR SMPL-X teaching-joints
-JSON export with `--from-gvhmr-json`. The repo still does not run GVHMR locally
-or parse raw GVHMR `.pt` files; the JSON path is the CPU-side import boundary
-for a later GPU run.
+JSON export with `--from-gvhmr-json`. If that JSON also includes
+`smplx_parameters`, the importer preserves mesh-ready pose/shape parameter
+metadata and writes `motion-record/smplx-parameters.json` for the future
+licensed mesh path. The repo still does not run GVHMR locally or parse raw
+GVHMR `.pt` files; the JSON path is the CPU-side import boundary for a later
+GPU run.
 
 `neodojo annotations detect` writes an explicit SMPL-X-only annotation manifest
 and routine feedback report for opening stance, settled support, and
@@ -226,7 +229,9 @@ mesh is generated and all feedback still reads SMPL-X joints.
 an existing licensed SMPL-X model file without copying it. `neodojo
 smplx-surface mesh` is a validation gate for the future full-mesh path; with
 current joint-only motion records it fails clearly and asks for mesh-ready
-SMPL-X pose/shape parameters.
+SMPL-X pose/shape parameters. When a motion record includes imported
+`smplx_parameters`, the gate validates the parameter data and asset descriptor
+before stopping at the unimplemented renderer boundary.
 
 `neodojo robot-model register` and `neodojo tracks build` can write fixture G1
 model and visual-track manifests. These preserve the SMPL-X/G1 responsibility
@@ -330,6 +335,8 @@ In progress:
       geometry check
 - [x] Local fixture SMPL-X motion-record and teaching-track manifests
 - [x] External GVHMR teaching-joints JSON import into the same motion contract
+- [x] Optional imported SMPL-X pose/shape parameter contract for future licensed
+      mesh generation
 - [x] Dependency-light SMPL-X surface proxy layer in teaching/public demos
 - [x] Local-only licensed SMPL-X asset descriptor and full-mesh input gate
 - [x] Local fixture G1 model and visual-track manifests with scoring separation
