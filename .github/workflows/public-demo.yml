@@ -47,7 +47,7 @@ jobs:
           path: outputs/public-demo
 
   deploy:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.NEODOJO_DEPLOY_PAGES == 'true'
     needs: build
     runs-on: ubuntu-latest
     environment:

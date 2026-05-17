@@ -27,7 +27,8 @@ verification still waits on repository settings.
 - [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) provides CI artifact and
   Pages workflow scaffolding.
 - Rerun SDK can be installed locally through the optional `rerun` extra.
-- GitHub Pages is enabled for the repository.
+- GitHub Pages is enabled for the repository, and the repository variable
+  `NEODOJO_DEPLOY_PAGES=true` is set when deployment should run.
 
 ## Inputs
 
@@ -78,6 +79,8 @@ verification still waits on repository settings.
 - Default CI continues to produce and upload the fallback recording and static
   viewer artifact without a heavy default dependency.
 - The live GitHub Pages URL is verified before README links are added.
+- Default CI remains green and still uploads the public-demo artifact when Pages
+  deployment is not enabled.
 - README.md and README.zh.md link to the live fixture-only demo with matching
   language only after Pages verification.
 
@@ -92,4 +95,5 @@ verification still waits on repository settings.
 
 Stopped for the SDK slice when the optional exporter wrote a true Rerun SDK
 recording and the fallback path remained available. Continue only when CI cache
-policy and repository Pages settings are available for live URL verification.
+policy, repository Pages settings, and the `NEODOJO_DEPLOY_PAGES` deploy toggle
+are available for live URL verification.

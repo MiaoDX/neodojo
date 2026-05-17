@@ -226,7 +226,8 @@ annotations、SMPL-X surface proxy、G1 visual track、G1 render evidence、teac
 playback、public-demo artifact，并运行 smoke check。`make smoke-public` 会验证现有的
 `outputs/public-demo` artifact set。
 `.github/workflows/public-demo.yml` 里的 GitHub Actions workflow 会运行同一条 fixture
-lane，上传 artifact，并在 repo 启用 Pages 后发布到 GitHub Pages。
+lane，上传 artifact，并在 repo 启用 Pages 且 repository variable
+`NEODOJO_DEPLOY_PAGES=true` 后发布到 GitHub Pages。
 `make lint` 目前是 syntax/import bytecode compile check；`make check` 会验证
 MVP plan links 和最低限度的 plan scaffolding；`make build` 会把 wheel 写到被忽略的
 `outputs/dist/`。

@@ -51,8 +51,9 @@ wheel build, and `make demo-public`.
 quality checks, tests, wheel build, and `make demo-public`, uploads
 `outputs/public-demo` as a workflow artifact, and uploads the same directory as
 the GitHub Pages artifact. The deploy job runs only on `main` outside pull
-requests. Pages still requires repository Pages configuration to expose a live
-URL.
+requests when Pages is configured and `NEODOJO_DEPLOY_PAGES=true` is set as a
+repository variable. Pages still requires repository Pages configuration to
+expose a live URL.
 
 ## Inputs
 
@@ -133,8 +134,9 @@ URL.
    - [x] Stage only static public-demo assets in the Pages artifact.
    - [x] Do not publish source videos, generated motion files, checkpoints,
      logs, or large private artifacts.
-   - [x] Keep repository owner setup implicit in GitHub Pages settings; no live
-     URL is claimed in docs.
+   - [x] Keep repository owner setup explicit through the
+     `NEODOJO_DEPLOY_PAGES` repository variable; no live URL is claimed in
+     docs.
 
 7. Update docs after verification.
    - [x] README.md and README.zh.md describe the local command and workflow but
@@ -153,7 +155,7 @@ URL.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages can publish only safe static demo assets once repository Pages is
-  enabled.
+  enabled and the deploy toggle is set.
 - README.md and README.zh.md mention the public demo command and workflow
   without claiming a live Pages URL.
 - Generated outputs, screenshots, `.rrd`, videos, logs, and large artifacts

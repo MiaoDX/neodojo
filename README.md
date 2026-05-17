@@ -270,7 +270,8 @@ teaching playback, public-demo artifact, and smoke check in one local command.
 validates an existing
 `outputs/public-demo` artifact set. The GitHub Actions workflow at
 `.github/workflows/public-demo.yml` runs the same fixture lane, uploads the
-artifact, and can publish it to GitHub Pages when Pages is enabled for the repo.
+artifact, and can publish it to GitHub Pages when Pages is enabled for the repo
+and `NEODOJO_DEPLOY_PAGES=true` is set as a repository variable.
 `make lint` is currently a syntax/import bytecode compile check; `make check`
 validates MVP plan links and minimum plan scaffolding; `make build` writes a
 wheel under ignored `outputs/dist/`.

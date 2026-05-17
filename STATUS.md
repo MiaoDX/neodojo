@@ -98,7 +98,8 @@ generated motion artifact, or production UI server.
   included in `make verify` and the GitHub Actions workflow.
 - `.github/workflows/public-demo.yml` runs tests, builds the fixture public demo,
   builds a wheel, uploads the artifact, and can publish the static output to
-  GitHub Pages from `main` when Pages is enabled.
+  GitHub Pages from `main` when Pages is enabled and the repository variable
+  `NEODOJO_DEPLOY_PAGES=true` is set.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
