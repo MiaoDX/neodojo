@@ -33,6 +33,9 @@ but it is required before calling the MVP an end-to-end neodojo proof.
 - [mvp-source-media-materialization.md](mvp-source-media-materialization.md)
   prepares a dry-run or ffmpeg-backed trimmed clip/reference-frame bundle for
   the GPU run without committing media.
+- [mvp-gvhmr-source-validation.md](mvp-gvhmr-source-validation.md) validates
+  the returned GVHMR JSON export against the materialized source clip before
+  the artifact is imported as a real proof.
 - [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md)
   and [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) are not required to run
   GVHMR, but they should provide the fixture public-demo lane that the imported
@@ -113,8 +116,15 @@ PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outpu
 
 Without `--dry-run`, the same command requires ffmpeg and writes an ignored
 trimmed clip plus reference frames under `outputs/real-conversion-source/`.
-Both commands avoid downloading video, running GVHMR, or proving qigong
-correctness.
+After the GPU run returns a `neodojo.gvhmr_smplx_joints.v1` export with
+matching provenance, validate it locally:
+
+```bash
+PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
+```
+
+These commands avoid downloading video, running GVHMR locally, or proving
+qigong correctness.
 
 ## Execution Tasks
 
@@ -126,6 +136,8 @@ correctness.
   local file is supplied.
 - [x] Materialize, or dry-run materialize, the trimmed local source clip and
   reference-frame handoff for the GPU run.
+- [x] Validate a returned GVHMR export against the source-materialization
+  manifest before importing the validated JSON copy.
 - [ ] Run GVHMR on a GPU-capable environment.
 - [ ] Export the SMPL-X result directory with enough metadata for reproducibility.
 - [ ] Convert or export the GVHMR result into

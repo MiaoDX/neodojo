@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from neodojo.annotations import detect_opening_form_keyframe, write_detected_annotations
+from neodojo.contracts import sha256_file
 from neodojo.demo_html import build_fixture, compute_feedback, render_demo_html, write_demo
 from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames, derive_g1_like_frame
 from neodojo.g1_render import write_g1_render
@@ -27,6 +28,7 @@ from neodojo.quality import check_quality_surface
 from neodojo.real_conversion import (
     _parse_ffprobe_payload,
     materialize_real_conversion_source,
+    validate_gvhmr_source,
     write_real_conversion_prep,
 )
 from neodojo.teaching_playback import write_teaching_playback_demo
@@ -876,6 +878,128 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["outputs"]["extracted_frame_count"], 0)
         self.assertEqual(manifest["ffmpeg"]["commands"][0]["kind"], "trim_clip")
         self.assertIn("trimmed-clip.mp4", manifest["gpu_handoff"]["trimmed_video_argument"])
+
+    def test_gvhmr_source_validation_writes_validated_export(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            materialization = root / "source-materialization.json"
+            materialization.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.real_conversion_source_materialization.v1",
+                        "source_prep": {"source_id": "03-006"},
+                        "trim": {
+                            "start_seconds": 0.25,
+                            "end_seconds": 1.75,
+                            "duration_seconds": 1.5,
+                        },
+                        "outputs": {
+                            "trimmed_video_path": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                            "trimmed_video": {"sha256": "abc123"},
+                        },
+                        "gpu_handoff": {
+                            "trimmed_video_argument": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            gvhmr = root / "gvhmr-smplx-joints.json"
+            gvhmr.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gvhmr_smplx_joints.v1",
+                        "routine": "Baduanjin",
+                        "form": "Two Hands Hold Up the Heavens",
+                        "fps": 24,
+                        "frames": build_smplx_fixture_frames(36),
+                        "provenance": {
+                            "source_materialization_manifest": str(materialization),
+                            "source_materialization_sha256": sha256_file(materialization),
+                            "source_id": "03-006",
+                            "trim": {
+                                "start_seconds": 0.25,
+                                "end_seconds": 1.75,
+                                "duration_seconds": 1.5,
+                            },
+                            "input_video": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                            "input_video_sha256": "abc123",
+                            "gpu_command": "python tools/demo/demo.py --video trimmed-clip.mp4",
+                            "runtime": "test gpu",
+                            "upstream_version": "gvhmr-test",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            validation = validate_gvhmr_source(
+                root / "validation",
+                source_materialization=materialization,
+                gvhmr_json=gvhmr,
+            )
+            report = json.loads(validation.report_path.read_text(encoding="utf-8"))
+            validated_export = json.loads(validation.validated_export_path.read_text(encoding="utf-8"))
+            motion = write_gvhmr_json_motion_contract(root / "motion", validation.validated_export_path)
+            motion_manifest = json.loads(motion.motion_record_manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(validation.status, "validated")
+        self.assertTrue(report["passed"])
+        self.assertEqual(report["schema"], "neodojo.gvhmr_source_validation.v1")
+        self.assertEqual(validated_export["source_validation"]["status"], "validated")
+        self.assertEqual(
+            motion_manifest["provenance"]["source_validation"]["schema"],
+            "neodojo.gvhmr_source_validation.v1",
+        )
+
+    def test_gvhmr_source_validation_reports_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            materialization = root / "source-materialization.json"
+            materialization.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.real_conversion_source_materialization.v1",
+                        "source_prep": {"source_id": "03-006"},
+                        "trim": {"start_seconds": 0.0, "end_seconds": 1.0, "duration_seconds": 1.0},
+                        "outputs": {"trimmed_video_path": "trimmed.mp4", "trimmed_video": None},
+                        "gpu_handoff": {"trimmed_video_argument": "trimmed.mp4"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            gvhmr = root / "gvhmr-smplx-joints.json"
+            gvhmr.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gvhmr_smplx_joints.v1",
+                        "routine": "Baduanjin",
+                        "form": "Two Hands Hold Up the Heavens",
+                        "fps": 24,
+                        "frames": build_smplx_fixture_frames(24),
+                        "provenance": {
+                            "source_materialization_manifest": str(materialization),
+                            "source_materialization_sha256": sha256_file(materialization),
+                            "source_id": "03-999",
+                            "trim": {"start_seconds": 0.0, "end_seconds": 1.0, "duration_seconds": 1.0},
+                            "input_video": "trimmed.mp4",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            validation = validate_gvhmr_source(
+                root / "validation",
+                source_materialization=materialization,
+                gvhmr_json=gvhmr,
+            )
+            report = json.loads(validation.report_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(validation.status, "failed")
+        self.assertFalse(report["passed"])
+        self.assertIsNone(validation.validated_export_path)
+        self.assertIn("source_id", [check["name"] for check in report["checks"] if check["status"] == "fail"])
 
     def test_real_conversion_prep_rejects_unknown_source_id(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -1,6 +1,6 @@
 # MVP GVHMR Source Validation Plan
 
-Status: PLANNED; BLOCKED ON A REAL GVHMR EXPORT
+Status: IMPLEMENTED VALIDATOR; BLOCKED ON A REAL GVHMR EXPORT FOR FINAL PROOF
 
 ## Goal
 
@@ -46,18 +46,18 @@ motion artifacts.
 ## Execution Tasks
 
 1. Define provenance fields.
-   - [ ] Require source-materialization manifest path or digest in the GVHMR
+   - [x] Require source-materialization manifest path or digest in the GVHMR
      export provenance.
-   - [ ] Record GPU command, runtime, upstream version, and input video path.
+   - [x] Record GPU command, runtime, upstream version, and input video path.
 
 2. Add validation command.
-   - [ ] Compare source id, trim window, expected input path, and checksums.
-   - [ ] Compare motion duration against trim duration within tolerance.
-   - [ ] Classify missing provenance separately from mismatch.
+   - [x] Compare source id, trim window, expected input path, and checksums.
+   - [x] Compare motion duration against trim duration within tolerance.
+   - [x] Classify missing provenance separately from mismatch.
 
 3. Wire import gate.
-   - [ ] Run validation before claiming a real conversion artifact.
-   - [ ] Keep import possible for debugging, but label unvalidated artifacts.
+   - [x] Run validation before claiming a real conversion artifact.
+   - [x] Keep import possible for debugging, but label unvalidated artifacts.
 
 ## Acceptance Evidence
 
@@ -65,6 +65,9 @@ motion artifacts.
 - Mismatched source/trim/checksum data fails with actionable errors.
 - The motion-record manifest preserves source-validation status.
 - Docs state whether the real artifact is validated or only imported.
+- `neodojo real-conversion validate-source` writes
+  `neodojo.gvhmr_source_validation.v1` reports and, when validation passes,
+  `gvhmr-smplx-joints.validated.json` for import.
 
 ## Non-Goals
 
@@ -75,6 +78,6 @@ motion artifacts.
 
 ## Stop Condition
 
-Stop when the first real GVHMR export can be tied back to the materialized
-source clip, or when missing provenance blocks the claim and the required export
-fields are documented.
+Stopped for the local slice when a GVHMR export can be validated against a
+source-materialization manifest and converted into an importable validated JSON
+copy. Final real-artifact proof still waits for a GPU-produced GVHMR export.

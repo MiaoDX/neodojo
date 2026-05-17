@@ -11,9 +11,10 @@ minimal `make lint`, `make check`, and `make build` commands, and a
 `make demo-public` command plus `make verify` and GitHub Actions workflow for
 the fixture public-demo artifact. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
-GVHMR run. There is still no checked-in GVHMR/GMR/simulator runtime pipeline,
-MuJoCo/Genesis real mesh rendering, real generated motion artifact, or UI
-server.
+GVHMR run, and `real-conversion validate-source` can validate a GVHMR JSON
+export against that handoff before import. There is still no checked-in
+GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real mesh rendering, real
+generated motion artifact, or UI server.
 
 ## Current Truth
 
@@ -88,6 +89,10 @@ server.
   `outputs/real-conversion-source/` when a local video is supplied, writing
   dry-run ffmpeg commands or ignored trimmed clip/reference-frame artifacts for
   the later GPU run.
+- Source validation report generated under `outputs/real-conversion-validation/`
+  for GVHMR teaching-joints JSON exports that declare matching materialization
+  provenance. Passing validation writes a `.validated.json` import copy and
+  preserves source-validation status in the motion-record provenance.
 
 ## Blockers And Constraints
 
@@ -127,6 +132,7 @@ PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contra
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
+PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
 make demo-html
 ```
 
@@ -175,7 +181,10 @@ materialize-source` consumes that prep manifest and a local video to write a
 source-materialization manifest. With `--dry-run`, it records the ffmpeg trim
 and reference-frame extraction commands without processing media. Without
 `--dry-run`, it requires ffmpeg and writes ignored trimmed-video and frame
-artifacts for the later GPU GVHMR input handoff.
+artifacts for the later GPU GVHMR input handoff. `neodojo real-conversion
+validate-source` compares the source-materialization manifest with GVHMR export
+provenance, writes a validation report, and emits a validated JSON import copy
+when source id, trim, input path/checksum, and duration checks pass.
 
 ## Remaining Non-GPU Gaps
 
@@ -190,9 +199,6 @@ artifacts for the later GPU GVHMR input handoff.
   `docs/plans/mvp-viser-multicamera-runtime.md`.
 - True Rerun SDK `.rrd` export and verification of the live GitHub Pages URL:
   `docs/plans/mvp-rerun-pages-release.md`.
-- Validation that an imported real GVHMR artifact was produced from the exact
-  materialized source clip and trim window:
-  `docs/plans/mvp-gvhmr-source-validation.md`.
 
 ## Next Safe Task
 

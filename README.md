@@ -187,6 +187,7 @@ PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contra
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
+PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
 make demo-html
 ```
 
@@ -249,6 +250,9 @@ local video and writes a source-materialization manifest. With `--dry-run`, it
 records exact ffmpeg trim and reference-frame extraction commands without
 processing media. Without `--dry-run`, it requires ffmpeg and writes ignored
 trimmed-video and reference-frame artifacts for the later GPU GVHMR input.
+`neodojo real-conversion validate-source` compares a GVHMR teaching-joints JSON
+export against the source-materialization manifest, writes a validation report,
+and emits a validated import JSON copy when provenance matches.
 
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local
@@ -284,6 +288,7 @@ In progress:
 - [x] Local real-conversion prep manifest for source `03-006`
 - [x] Local real-conversion source materialization handoff for a user-supplied
       video
+- [x] Local GVHMR source-validation report and validated JSON import handoff
 - [ ] MuJoCo/Genesis real Unitree G1 mesh rendering from user-supplied URDF/MJCF
       and meshes
 - [ ] roboharness-style multi-camera offscreen capture integration

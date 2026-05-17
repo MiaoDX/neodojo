@@ -311,6 +311,11 @@ def write_gvhmr_json_motion_contract(out_dir: Path, source_path: Path) -> Motion
         "source_artifact_resolved": _as_posix(source_path.resolve()),
         "accuracy_role": "imported SMPL-X teaching joints; not a fixture",
     }
+    source_validation = payload.get("source_validation")
+    if source_validation is not None:
+        if not isinstance(source_validation, dict):
+            raise ValueError("GVHMR joint export source_validation must be an object when provided")
+        provenance["source_validation"] = source_validation
 
     return _write_motion_contract(
         out_dir,

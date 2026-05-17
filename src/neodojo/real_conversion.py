@@ -8,11 +8,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .contracts import local_file_metadata, require_schema
-from .motion_contract import _write_json, validate_output_dir
+from .contracts import local_file_metadata, require_schema, sha256_file
+from .motion_contract import GVHMR_JOINT_EXPORT_SCHEMA, _write_json, validate_output_dir
 
 REAL_CONVERSION_PREP_SCHEMA = "neodojo.real_conversion_prep.v1"
 SOURCE_MATERIALIZATION_SCHEMA = "neodojo.real_conversion_source_materialization.v1"
+GVHMR_SOURCE_VALIDATION_SCHEMA = "neodojo.gvhmr_source_validation.v1"
 DEFAULT_SOURCE_INDEX = Path("video/original_videos.csv")
 DEFAULT_SOURCE_ID = "03-006"
 
@@ -27,6 +28,13 @@ class SourceMaterializationWriteResult:
     manifest_path: Path
     trimmed_video_path: Path
     frames_dir: Path
+
+
+@dataclass(frozen=True)
+class SourceValidationWriteResult:
+    report_path: Path
+    validated_export_path: Path | None
+    status: str
 
 
 def _as_posix(path: Path) -> str:
@@ -198,6 +206,18 @@ def _load_prep_manifest(prep: Path) -> tuple[Path, dict[str, Any]]:
         raise ValueError("real conversion prep manifest must be a JSON object")
     require_schema(payload, REAL_CONVERSION_PREP_SCHEMA, "real conversion prep manifest")
     return manifest_path, payload
+
+
+def _load_json_object(path: Path, label: str) -> dict[str, Any]:
+    if not path.exists():
+        raise ValueError(f"{label} does not exist: {path}")
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"failed to parse {label}: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ValueError(f"{label} must be a JSON object")
+    return payload
 
 
 def _trim_from_manifest(payload: dict[str, Any]) -> dict[str, float]:
@@ -491,6 +511,198 @@ def materialize_real_conversion_source(
     )
 
 
+def _comparison(
+    *,
+    name: str,
+    expected: Any,
+    actual: Any,
+    required: bool = True,
+    tolerance: float | None = None,
+) -> dict[str, Any]:
+    missing = actual is None
+    delta = None
+    if missing:
+        status = "missing" if required else "skipped"
+        passed = not required
+    elif tolerance is not None and isinstance(expected, (int, float)) and isinstance(actual, (int, float)):
+        delta = abs(float(expected) - float(actual))
+        passed = delta <= tolerance
+        status = "pass" if passed else "fail"
+    else:
+        passed = actual == expected
+        status = "pass" if passed else "fail"
+    return {
+        "name": name,
+        "required": required,
+        "status": status,
+        "passed": passed,
+        "expected": expected,
+        "actual": actual,
+        "delta": round(delta, 6) if isinstance(delta, float) else None,
+        "tolerance": tolerance,
+    }
+
+
+def _nested(payload: dict[str, Any], *keys: str) -> Any:
+    value: Any = payload
+    for key in keys:
+        if not isinstance(value, dict):
+            return None
+        value = value.get(key)
+    return value
+
+
+def _as_float(value: Any) -> float | None:
+    if isinstance(value, bool) or value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _motion_duration(payload: dict[str, Any]) -> tuple[int | None, float | None, float | None]:
+    frames = payload.get("frames", payload.get("smplx_joints"))
+    frame_count = len(frames) if isinstance(frames, list) else None
+    fps = _as_float(payload.get("fps"))
+    duration = round(frame_count / fps, 6) if frame_count is not None and fps else None
+    return frame_count, fps, duration
+
+
+def validate_gvhmr_source(
+    out_dir: Path,
+    *,
+    source_materialization: Path,
+    gvhmr_json: Path,
+) -> SourceValidationWriteResult:
+    validate_output_dir(out_dir)
+    materialization = _load_json_object(source_materialization, "source materialization manifest")
+    require_schema(materialization, SOURCE_MATERIALIZATION_SCHEMA, "source materialization manifest")
+    export = _load_json_object(gvhmr_json, "GVHMR SMPL-X export")
+    require_schema(export, GVHMR_JOINT_EXPORT_SCHEMA, "GVHMR SMPL-X export")
+
+    provenance = export.get("provenance")
+    provenance_missing = not isinstance(provenance, dict)
+    provenance = provenance if isinstance(provenance, dict) else {}
+    materialization_sha256 = sha256_file(source_materialization)
+    trim = materialization.get("trim", {})
+    trim = trim if isinstance(trim, dict) else {}
+    output = materialization.get("outputs", {})
+    output = output if isinstance(output, dict) else {}
+    trimmed_video = output.get("trimmed_video")
+    trimmed_video = trimmed_video if isinstance(trimmed_video, dict) else {}
+    frame_count, fps, motion_duration = _motion_duration(export)
+    expected_duration = _as_float(trim.get("duration_seconds"))
+    duration_tolerance = max(0.35, min(1.0, expected_duration * 0.05)) if expected_duration else 0.35
+
+    checks = [
+        _comparison(
+            name="source_materialization_manifest",
+            expected=_as_posix(source_materialization),
+            actual=provenance.get("source_materialization_manifest"),
+        ),
+        _comparison(
+            name="source_materialization_sha256",
+            expected=materialization_sha256,
+            actual=provenance.get("source_materialization_sha256"),
+        ),
+        _comparison(
+            name="source_id",
+            expected=_nested(materialization, "source_prep", "source_id"),
+            actual=provenance.get("source_id"),
+        ),
+        _comparison(
+            name="trim_start_seconds",
+            expected=_as_float(trim.get("start_seconds")),
+            actual=_as_float(_nested(provenance, "trim", "start_seconds")),
+            tolerance=0.001,
+        ),
+        _comparison(
+            name="trim_end_seconds",
+            expected=_as_float(trim.get("end_seconds")),
+            actual=_as_float(_nested(provenance, "trim", "end_seconds")),
+            tolerance=0.001,
+        ),
+        _comparison(
+            name="trim_duration_seconds",
+            expected=expected_duration,
+            actual=_as_float(_nested(provenance, "trim", "duration_seconds")),
+            tolerance=0.001,
+        ),
+        _comparison(
+            name="input_video_path",
+            expected=_nested(materialization, "gpu_handoff", "trimmed_video_argument"),
+            actual=provenance.get("input_video"),
+        ),
+        _comparison(
+            name="input_video_sha256",
+            expected=trimmed_video.get("sha256"),
+            actual=provenance.get("input_video_sha256"),
+            required=trimmed_video.get("sha256") is not None,
+        ),
+        _comparison(
+            name="motion_duration_matches_trim",
+            expected=expected_duration,
+            actual=motion_duration,
+            tolerance=duration_tolerance,
+        ),
+    ]
+    status = "missing_provenance" if provenance_missing else "validated"
+    if any(check["required"] and not check["passed"] for check in checks):
+        status = "failed" if not provenance_missing else "missing_provenance"
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    report_path = out_dir / "source-validation.json"
+    validated_export_path = out_dir / "gvhmr-smplx-joints.validated.json"
+    report = {
+        "schema": GVHMR_SOURCE_VALIDATION_SCHEMA,
+        "status": status,
+        "passed": status == "validated",
+        "source_materialization": _as_posix(source_materialization),
+        "source_materialization_sha256": materialization_sha256,
+        "gvhmr_json": _as_posix(gvhmr_json),
+        "motion": {
+            "frame_count": frame_count,
+            "fps": fps,
+            "duration_seconds": motion_duration,
+        },
+        "checks": checks,
+        "provenance": {
+            "available": not provenance_missing,
+            "gpu_command": provenance.get("gpu_command"),
+            "runtime": provenance.get("runtime"),
+            "upstream_version": provenance.get("upstream_version"),
+        },
+    }
+    _write_json(report_path, report)
+    validated_path: Path | None = None
+    if status == "validated":
+        validated_export = {
+            **export,
+            "source_validation": {
+                "schema": GVHMR_SOURCE_VALIDATION_SCHEMA,
+                "status": status,
+                "report": _relative_path_for_validation(report_path, validated_export_path.parent),
+                "source_materialization_sha256": materialization_sha256,
+            },
+        }
+        _write_json(validated_export_path, validated_export)
+        validated_path = validated_export_path
+
+    return SourceValidationWriteResult(
+        report_path=report_path,
+        validated_export_path=validated_path,
+        status=status,
+    )
+
+
+def _relative_path_for_validation(path: Path, start: Path) -> str:
+    try:
+        return str(path.relative_to(start)).replace("\\", "/")
+    except ValueError:
+        return _as_posix(path)
+
+
 def _source_media_metadata(planned_video_path: Path, local_video: Path | None, trim: dict[str, Any]) -> dict[str, Any]:
     media: dict[str, Any] | None = None
     media_probe: dict[str, Any] | None = None
@@ -588,7 +800,14 @@ def write_real_conversion_prep(
             ),
             "import_motion_record": (
                 "PYTHONPATH=src python -m neodojo motion-record create "
-                f"--from-gvhmr-json {_as_posix(export_json_path)} --out outputs/real-motion-contract"
+                "--from-gvhmr-json outputs/real-conversion-validation/gvhmr-smplx-joints.validated.json "
+                "--out outputs/real-motion-contract"
+            ),
+            "validate_gvhmr_source": (
+                "PYTHONPATH=src python -m neodojo real-conversion validate-source "
+                "--source-materialization outputs/real-conversion-source/source-materialization.json "
+                f"--gvhmr-json {_as_posix(export_json_path)} "
+                "--out outputs/real-conversion-validation"
             ),
             "build_g1_track": (
                 "PYTHONPATH=src python -m neodojo tracks build "

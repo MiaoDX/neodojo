@@ -20,6 +20,7 @@ from .real_conversion import (
     DEFAULT_SOURCE_ID,
     DEFAULT_SOURCE_INDEX,
     materialize_real_conversion_source,
+    validate_gvhmr_source,
     write_real_conversion_prep,
 )
 from .teaching_playback import write_teaching_playback_demo
@@ -385,6 +386,28 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/real-conversion-source"),
         help="output directory for trimmed source and frame-reference artifacts",
     )
+    real_validate = real_subparsers.add_parser(
+        "validate-source",
+        help="validate a GVHMR SMPL-X export against the materialized source handoff",
+    )
+    real_validate.add_argument(
+        "--source-materialization",
+        type=Path,
+        required=True,
+        help="source-materialization.json from real-conversion materialize-source",
+    )
+    real_validate.add_argument(
+        "--gvhmr-json",
+        type=Path,
+        required=True,
+        help="external neodojo.gvhmr_smplx_joints.v1 JSON export",
+    )
+    real_validate.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/real-conversion-validation"),
+        help="output directory for source validation report and validated export copy",
+    )
 
     return parser
 
@@ -532,6 +555,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"wrote {result.manifest_path}")
             print(f"prepared {result.trimmed_video_path}")
             print(f"prepared {result.frames_dir}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "validate-source":
+            result = validate_gvhmr_source(
+                args.out,
+                source_materialization=args.source_materialization,
+                gvhmr_json=args.gvhmr_json,
+            )
+            print(f"wrote {result.report_path}")
+            if result.validated_export_path is not None:
+                print(f"wrote {result.validated_export_path}")
+            if result.status != "validated":
+                raise ValueError(f"GVHMR source validation status is {result.status}; see {result.report_path}")
             return 0
     except ValueError as exc:
         parser.error(str(exc))
