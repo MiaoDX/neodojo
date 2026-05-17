@@ -154,6 +154,14 @@ or hosted/live-client Viser capture.
   demo-public-browser` passed, the `neodojo-browser-capture` artifact contained
   a 1280x720 PNG and `neodojo.browser_capture.v1` manifest, the downloaded
   capture bundle recorded `real_browser_capture: true`, and Pages deployed.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26001523722` verified the
+  latest fixture public-demo lane on `main` after the SMPL-X mesh surface import:
+  lint, plan checks, tests, wheel build, browser capture, artifact upload, and
+  Pages deploy passed. The downloaded public-demo artifact passes
+  `neodojo demo smoke`, the browser-capture artifact contains a 1280x720 PNG,
+  and the capture-bundle artifact records `real_browser_capture: true` with 11
+  nonblank generated evidence artifacts.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
@@ -361,6 +369,13 @@ path. Do not run GVHMR
 full-video inference on this macOS CPU workspace; use a GPU-capable machine to
 export a GVHMR SMPL-X teaching-joints JSON artifact, then import it through
 `neodojo motion-record create --from-gvhmr-json`.
+
+The current blocker is external to the local non-GPU pipeline: no local
+licensed/user-supplied source clip plus GPU-produced
+`neodojo.gvhmr_smplx_joints.v1` export is present in this workspace. Once that
+artifact exists, the remaining task is to validate it with
+`real-conversion validate-source`, import it into the motion-record contract,
+and regenerate the same public-demo lane with real-artifact inputs.
 
 ## Background Evidence
 
