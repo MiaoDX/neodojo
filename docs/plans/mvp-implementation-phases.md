@@ -17,7 +17,8 @@ optional MuJoCo render evidence, optional true Rerun SDK `.rrd` export,
 an optional first Viser local runtime, optional source-media probing, local
 source-media materialization handoff, a fixture-only static public-demo fallback
 artifact, a generated roboharness-style capture bundle boundary, and a GitHub
-Actions workflow with verified fixture-only Pages publication. It
+Actions workflow with verified fixture-only Pages publication plus optional
+browser-rendered public-demo screenshot capture. It
 does not yet have a checked-in GVHMR/GMR execution pipeline, simulator runtime
 pipeline, full licensed SMPL-X mesh generation, production Viser teaching UX,
 or broad static-analysis/release gates beyond the minimal `make lint` and
@@ -40,6 +41,7 @@ local/user-supplied source video
   -> Rerun public demo artifact
   -> CI-published fixture demo
   -> generated multi-camera capture bundle
+  -> optional browser-rendered public-demo capture
   -> multi-view playback or Viser playback
   -> detected key-frame feedback proof
 ```
@@ -56,11 +58,11 @@ local/user-supplied source video
 | 6 | [mvp-g1-real-model-rendering.md](mvp-g1-real-model-rendering.md) | implemented local SVG evidence; simulator mesh rendering remains follow-on | Load a user-supplied real Unitree G1 URDF/MJCF and render robot evidence instead of the current canvas skeleton. | A local render manifest and front/side/top SVG frame evidence prove the registered descriptor path remains non-scoring. |
 | 7 | [mvp-pipeline-contract-hardening.md](mvp-pipeline-contract-hardening.md) | implemented | Version and validate source, motion, teaching, G1, render, playback, annotation, and public-demo contracts before broader orchestration. | Existing fixture paths and future import paths pass through explicit versioned manifest boundaries with source-media provenance and local video-sync metadata. |
 | 8 | [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md) | implemented with static fallback | Define one internal scene/timeline contract and make a fixture-only public demo artifact. | A fixture-only `.rrd` fallback artifact, static viewer page, public-demo manifest, and SVG screenshot can be generated and visually smoke-tested. |
-| 9 | [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) | implemented | Add one-command public-demo orchestration and CI artifact/Page publishing for the fixture lane. | A clean checkout can regenerate, validate, visually smoke-test, upload, and publish the non-GPU fixture demo without tracking generated outputs. |
+| 9 | [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) | implemented with optional browser capture CI lane | Add one-command public-demo orchestration and CI artifact/Page publishing for the fixture lane. | A clean checkout can regenerate, validate, browser-smoke, upload, and publish the non-GPU fixture demo without tracking generated outputs. |
 | 10 | [mvp-lint-build-surface.md](mvp-lint-build-surface.md) | implemented | Add the minimal lint/build command surface and all-in-one local verification target. | `make verify` runs lint, plan quality checks, tests, wheel build, and public-demo generation without tracking generated artifacts. |
 | 11 | [mvp-source-media-probing.md](mvp-source-media-probing.md) | implemented metadata probe | Record optional ffprobe metadata for local source videos without copying media. | Source prep records probe success/failure, duration, resolution, codec, and frame-rate metadata when available. |
 | 12 | [mvp-source-media-materialization.md](mvp-source-media-materialization.md) | implemented local handoff | Turn source prep plus a local video into a dry-run or ffmpeg-backed trimmed-clip/reference-frame handoff. | A source-materialization manifest records source validation, commands, generated outputs when available, and the GVHMR input handoff path without committing media. |
-| 13 | [mvp-roboharness-capture-boundary.md](mvp-roboharness-capture-boundary.md) | implemented first generated-evidence bundle; real recorder remains follow-on | Collect public-demo, Viser preview, and G1 render artifacts into one roboharness-style multi-camera evidence manifest. | `make demo-public` writes a validated capture bundle manifest without claiming real offscreen recording. |
+| 13 | [mvp-roboharness-capture-boundary.md](mvp-roboharness-capture-boundary.md) | implemented generated bundle and browser public-demo capture; roboharness/simulator recorder remains follow-on | Collect public-demo, browser capture, Viser preview, and G1 render artifacts into one roboharness-style multi-camera evidence manifest. | `make demo-public` writes a validated generated capture bundle, and `make demo-public-browser` adds optional real browser screenshot evidence without claiming direct roboharness/simulator recording. |
 | 14 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep/materialization ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata and source materialization can prepare the trimmed input; final stop condition still requires a real GVHMR artifact imported through the hardened contracts. |
 
 ## Future Gap Plans
@@ -95,7 +97,8 @@ necessarily separate GSD phases. The grouping boundary is:
 10. lint/build command surface
 11. source media probing
 12. source media materialization
-13. generated multi-camera capture bundle
+13. generated multi-camera capture bundle plus optional browser public-demo
+    capture
 14. later real conversion gate
 
 The current local-first order intentionally puts real G1 model rendering before
@@ -142,6 +145,7 @@ Allowed locally:
 - Rerun fixture export, static viewer generation, and GitHub Pages artifact
   staging
 - generated multi-camera capture bundle manifests from existing local evidence
+- optional browser-rendered public-demo screenshot capture
 - CI orchestration for fixture-only tests, generated demo artifacts, and visual
   smoke checks
 

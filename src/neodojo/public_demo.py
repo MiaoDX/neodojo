@@ -295,6 +295,7 @@ def _render_screenshot_svg(scene: dict[str, Any]) -> str:
     feedback = scene.get("feedback") or {}
     anchors = scene.get("feedback_anchor_labels") or []
     anchor_text = ", ".join(anchors[:3]) if anchors else "none"
+    surface_text = "true" if scene.get("surface_proxy") else "false"
     return "\n".join(
         [
             '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img">',
@@ -311,7 +312,8 @@ def _render_screenshot_svg(scene: dict[str, Any]) -> str:
             f'<g transform="translate(80 210)">{surface}{smplx}</g>',
             f'<g transform="translate(704 210)">{g1}</g>',
             f'<text x="56" y="684" class="muted">Scoring source: SMPL-X. G1 scoring allowed: false. Feedback passed: {feedback.get("passed")}</text>',
-            f'<text x="696" y="684" class="muted">Routine feedback anchors: {anchor_text}. SMPL-X surface proxy: {bool(scene.get("surface_proxy"))}</text>',
+            f'<text x="696" y="672" class="muted">Routine feedback anchors: {anchor_text}</text>',
+            f'<text x="696" y="696" class="muted">SMPL-X surface proxy: {surface_text}</text>',
             "</svg>",
         ]
     )

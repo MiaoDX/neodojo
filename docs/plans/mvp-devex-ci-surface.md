@@ -1,6 +1,6 @@
 # MVP DevEx And CI Surface Plan
 
-Status: IMPLEMENTED AND CI VERIFIED
+Status: IMPLEMENTED WITH OPTIONAL BROWSER CAPTURE CI LANE
 
 ## Goal
 
@@ -15,6 +15,7 @@ one local command
   -> Rerun public-demo export
   -> screenshot smoke check
   -> generated capture bundle
+  -> optional browser-rendered screenshot capture
   -> uploaded artifact
   -> GitHub Pages publish
 ```
@@ -47,16 +48,20 @@ front/side/top Viser preview screenshots. It then runs `neodojo demo smoke`
 against `outputs/public-demo` and `neodojo capture bundle` to write
 `outputs/capture/manifest.json`.
 
-`make verify` now wraps the full local lane: lint, plan quality checks, tests,
-wheel build, and `make demo-public`.
+`make verify` now wraps the default dependency-light local lane: lint, plan
+quality checks, tests, wheel build, and `make demo-public`. `make
+demo-public-browser` adds the optional Playwright-backed Chromium screenshot
+capture and refreshes the capture bundle with browser evidence.
 
 `.github/workflows/public-demo.yml` installs the package, runs lint, plan
-quality checks, tests, wheel build, and `make demo-public`, uploads
-`outputs/public-demo` as the standalone public-demo artifact, uploads a
-capture-bundle artifact containing `outputs/capture` plus the referenced
-public-demo, Viser runtime, and G1 render evidence, and uploads the public-demo
-directory as the GitHub Pages artifact. The deploy job runs only on `main`
-outside pull requests when Pages is configured and
+quality checks, tests, wheel build, installs Chromium through the optional
+Playwright browser extra, and runs `make demo-public-browser`. It uploads
+`outputs/public-demo` as the standalone public-demo artifact, uploads
+`outputs/browser-capture` as browser evidence, uploads a capture-bundle artifact
+containing `outputs/capture` plus the referenced public-demo, browser-capture,
+Viser runtime, and G1 render evidence, and uploads the public-demo directory as
+the GitHub Pages artifact. The deploy job runs only on `main` outside pull
+requests when Pages is configured and
 `NEODOJO_DEPLOY_PAGES=true` is set as a repository variable. Pages is now
 configured and the live fixture-only URL is verified at
 `https://miaodx.com/neodojo/`.
@@ -89,6 +94,7 @@ expected fixture-only labels.
 
   ```bash
   make demo-public
+  make demo-public-browser
   ```
 
   or an equivalent CLI flow that regenerates all non-GPU demo artifacts from
@@ -134,10 +140,13 @@ expected fixture-only labels.
    - [x] Capture SVG screenshot evidence.
    - [x] Write a public-demo manifest.
    - [x] Write a generated multi-camera capture bundle manifest.
+   - [x] Add optional browser-rendered public-demo screenshot capture.
 
 4. Add CI validation.
    - [x] Run `make test`.
    - [x] Run `make demo-public`.
+   - [x] Run `make demo-public-browser` in CI after installing the optional
+     browser runtime.
    - [x] Validate generated public-demo artifacts with `neodojo demo smoke`.
    - [x] Upload generated outputs as CI artifacts without committing them.
 
@@ -147,8 +156,8 @@ expected fixture-only labels.
    - [x] Check expected text or scene labels for SMPL-X, G1, fixture-only
      status, and scoring-source metadata.
    - [x] Save SVG screenshots as artifacts.
-   - [ ] Add browser-rendered screenshot capture if/when a browser dependency
-     becomes part of CI.
+   - [x] Add browser-rendered screenshot capture with optional Playwright
+     dependency in CI.
 
 6. Publish to GitHub Pages.
    - [x] Stage only static public-demo assets in the Pages artifact.
@@ -171,16 +180,19 @@ expected fixture-only labels.
 - Unit tests and manifest validation pass locally; CI is configured to run the
   same commands.
 - CI uploads the generated `.rrd` fallback recording, static viewer page, SVG
-  screenshot, public-demo manifest, and a generated capture bundle artifact with
-  referenced evidence, verified by run `25999641059`.
+  screenshot, public-demo manifest, browser-rendered PNG screenshot, and a
+  generated capture bundle artifact with referenced evidence. The pre-browser
+  lane was verified by run `25999641059`; the browser lane is verified by the
+  current workflow after this slice lands.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages publishes only safe static demo assets once repository Pages is
   enabled and the deploy toggle is set.
 - README.md and README.zh.md mention the public demo command, workflow,
   verified live URL, and fixture-only status.
-- Generated outputs, screenshots, `.rrd`, videos, logs, and large artifacts
-  remain out of tracked source except for deliberate publish artifacts.
+- Generated outputs, screenshots, `.rrd`, videos, logs, browser captures, and
+  large artifacts remain out of tracked source except for deliberate publish
+  artifacts.
 
 ## Non-Goals
 

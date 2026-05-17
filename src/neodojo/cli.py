@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .annotations import write_detected_annotations
+from .browser_capture import write_public_demo_browser_capture
 from .capture_bundle import write_capture_bundle
 from .demo_html import write_demo
 from .g1_visual import (
@@ -403,6 +404,30 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/public-demo"),
         help="public-demo directory or manifest path",
     )
+    demo_browser = demo_subparsers.add_parser(
+        "browser-smoke",
+        help="render the public demo in headless Chromium and capture a screenshot",
+    )
+    demo_browser.add_argument(
+        "--public-demo",
+        type=Path,
+        default=Path("outputs/public-demo"),
+        help="public-demo directory or manifest path",
+    )
+    demo_browser.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/browser-capture"),
+        help="output directory for browser screenshot evidence",
+    )
+    demo_browser.add_argument("--width", type=int, default=1280, help="browser viewport width")
+    demo_browser.add_argument("--height", type=int, default=720, help="browser viewport height")
+    demo_browser.add_argument(
+        "--timeout-ms",
+        type=int,
+        default=10_000,
+        help="browser navigation and assertion timeout in milliseconds",
+    )
 
     capture = subparsers.add_parser(
         "capture",
@@ -430,6 +455,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("outputs/g1-render"),
         help="G1 render evidence directory or manifest path",
+    )
+    capture_bundle.add_argument(
+        "--browser-capture",
+        type=Path,
+        help="optional browser-capture directory or manifest from `neodojo demo browser-smoke`",
     )
     capture_bundle.add_argument(
         "--out",
@@ -785,12 +815,26 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(f"validated {path}")
             return 0
 
+        if args.command == "demo" and args.demo_command == "browser-smoke":
+            result = write_public_demo_browser_capture(
+                public_demo=args.public_demo,
+                out_dir=args.out,
+                width=args.width,
+                height=args.height,
+                timeout_ms=args.timeout_ms,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"wrote {result.screenshot_path}")
+            print(f"captured {result.url}")
+            return 0
+
         if args.command == "capture" and args.capture_command == "bundle":
             result = write_capture_bundle(
                 args.out,
                 public_demo=args.public_demo,
                 viser_runtime=args.viser_runtime,
                 g1_render=args.g1_render,
+                browser_capture=args.browser_capture,
             )
             print(f"wrote {result.manifest_path}")
             for path in result.checked_paths:

@@ -16,6 +16,7 @@ neodojo = "neodojo.cli:main"
 sim = ["mujoco>=3.3,<4"]
 rerun = ["rerun-sdk>=0.32,<1"]
 viser = ["viser>=1.0,<2"]
+browser = ["playwright>=1.56,<2"]
 
 [tool.setuptools]
 package-dir = { "" = "src" }

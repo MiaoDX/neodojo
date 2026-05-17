@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .browser_capture import BROWSER_CAPTURE_SCHEMA
 from .contracts import PUBLIC_DEMO_SCHEMA, require_schema
 from .g1_render import G1_RENDER_SCHEMA
 from .motion_contract import _relative_path, _write_json, validate_output_dir
@@ -150,12 +151,32 @@ def _load_g1_render(g1_render: Path) -> tuple[Path, dict[str, Any], dict[str, Pa
     return manifest_path, manifest, paths
 
 
+def _load_browser_capture(browser_capture: Path) -> tuple[Path, dict[str, Any], Path]:
+    manifest_path = _resolve_manifest_path(browser_capture, "manifest.json")
+    manifest = _load_json(manifest_path)
+    require_schema(manifest, BROWSER_CAPTURE_SCHEMA, "browser-capture manifest")
+    if not manifest.get("real_browser_capture"):
+        raise ValueError("browser-capture manifest must set real_browser_capture")
+    if manifest.get("scoring_source") != "smplx":
+        raise ValueError("browser-capture input must keep SMPL-X as scoring_source")
+    if manifest.get("g1_scoring_allowed"):
+        raise ValueError("browser-capture input cannot allow G1 scoring")
+
+    screenshot_ref = manifest.get("screenshot")
+    if not isinstance(screenshot_ref, str) or not screenshot_ref:
+        raise ValueError("browser-capture manifest must include screenshot")
+    screenshot_path = _resolve_artifact(manifest_path, screenshot_ref)
+    _require_nonblank(screenshot_path, "browser-capture screenshot")
+    return manifest_path, manifest, screenshot_path
+
+
 def write_capture_bundle(
     out_dir: Path,
     *,
     public_demo: Path,
     viser_runtime: Path,
     g1_render: Path,
+    browser_capture: Path | None = None,
 ) -> CaptureBundleWriteResult:
     validate_output_dir(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -164,14 +185,20 @@ def write_capture_bundle(
     public_manifest_path, public_manifest, public_artifacts, public_checked = _load_public_demo(public_demo)
     viser_manifest_path, viser_manifest, viser_paths = _load_viser_runtime(viser_runtime)
     g1_render_manifest_path, g1_render_manifest, g1_render_paths = _load_g1_render(g1_render)
+    browser_manifest_path = None
+    browser_manifest = None
+    browser_screenshot_path = None
+    if browser_capture is not None:
+        browser_manifest_path, browser_manifest, browser_screenshot_path = _load_browser_capture(browser_capture)
 
-    checked_paths = _unique_paths(
-        [
-            *public_checked,
-            *viser_paths.values(),
-            *g1_render_paths.values(),
-        ]
-    )
+    checked_candidates = [
+        *public_checked,
+        *viser_paths.values(),
+        *g1_render_paths.values(),
+    ]
+    if browser_screenshot_path is not None:
+        checked_candidates.append(browser_screenshot_path)
+    checked_paths = _unique_paths(checked_candidates)
 
     def rel(path: Path) -> str:
         return _relative_path(path, manifest_path.parent)
@@ -185,18 +212,25 @@ def write_capture_bundle(
             or g1_render_manifest.get("fixture_only")
         ),
         "source": {
-            "kind": "generated_evidence_only",
-            "real_offscreen_recorder": False,
+            "kind": "generated_evidence_plus_browser_capture"
+            if browser_manifest
+            else "generated_evidence_only",
+            "real_browser_capture": bool(browser_manifest),
+            "real_offscreen_recorder": bool(browser_manifest),
+            "real_simulator_recorder": False,
+            "real_roboharness_integration": False,
             "notes": (
                 "This bundle validates existing generated artifacts in a "
-                "roboharness-style multi-camera evidence shape. It is not a "
-                "browser, simulator, or video recorder."
+                "roboharness-style multi-camera evidence shape. Browser capture "
+                "is included only when an optional browser-capture manifest is "
+                "provided; simulator/video recorder integration remains follow-on."
             ),
         },
         "inputs": {
             "public_demo": rel(public_manifest_path),
             "viser_runtime": rel(viser_manifest_path),
             "g1_render": rel(g1_render_manifest_path),
+            "browser_capture": rel(browser_manifest_path) if browser_manifest_path else None,
         },
         "artifact_groups": {
             "public_demo": {
@@ -221,6 +255,18 @@ def write_capture_bundle(
                     for view, path in g1_render_paths.items()
                 },
             },
+            **(
+                {
+                    "browser_capture": {
+                        "kind": browser_manifest.get("capture_kind"),
+                        "screenshot": rel(browser_screenshot_path),
+                        "viewport": browser_manifest.get("viewport"),
+                        "real_browser_capture": True,
+                    }
+                }
+                if browser_manifest is not None and browser_screenshot_path is not None
+                else {}
+            ),
         },
         "views": {
             view: {
@@ -249,12 +295,13 @@ def write_capture_bundle(
             "public_demo_smoke_checked": True,
             "viser_preview_smoke_checked": True,
             "g1_render_frame_smoke_checked": True,
+            "browser_capture_smoke_checked": bool(browser_manifest),
         },
         "scoring_source": "smplx",
         "g1_scoring_allowed": False,
         "follow_on": {
-            "real_roboharness_integration": "replace generated SVG/HTML evidence with live offscreen camera capture when the simulator/browser recorder is selected",
-            "production_viser_capture": "capture live-client screenshots after browser automation becomes part of the runtime verification lane",
+            "real_roboharness_integration": "replace generated SVG/HTML evidence with a direct roboharness or simulator camera recorder when selected",
+            "production_viser_capture": "capture live-client Viser screenshots after browser automation targets the runtime client, not only the static public demo",
         },
     }
     _write_json(manifest_path, manifest)

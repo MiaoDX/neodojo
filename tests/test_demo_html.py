@@ -1114,6 +1114,76 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertGreaterEqual(manifest["verification"]["nonblank_artifact_count"], 10)
         self.assertEqual(set(manifest["verification"]["required_views"]), {"front", "side", "top"})
 
+    def test_capture_bundle_can_include_browser_capture(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            render = write_g1_render(
+                root / "render",
+                model_descriptor_path=model.descriptor_path,
+                g1_track=g1.track_manifest_path,
+                allow_fixture_model=True,
+            )
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+            )
+            public = write_public_demo(
+                playback_manifest_path=playback.manifest_path,
+                g1_render_manifest_path=render.manifest_path,
+                recording_path=root / "public-demo" / "neodojo-demo.rrd",
+            )
+            viser = write_viser_runtime_contract(
+                root / "viser-runtime",
+                playback_manifest_path=playback.manifest_path,
+                g1_render_manifest_path=render.manifest_path,
+            )
+            browser_dir = root / "browser-capture"
+            browser_dir.mkdir()
+            browser_screenshot = browser_dir / "public-demo-browser.png"
+            browser_screenshot.write_bytes(b"browser screenshot bytes")
+            (browser_dir / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.browser_capture.v1",
+                        "capture_kind": "playwright_chromium_public_demo_screenshot",
+                        "real_browser_capture": True,
+                        "fixture_only": True,
+                        "public_demo": "../public-demo/manifest.json",
+                        "screenshot": "public-demo-browser.png",
+                        "viewport": {"width": 1280, "height": 720},
+                        "scoring_source": "smplx",
+                        "g1_scoring_allowed": False,
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = write_capture_bundle(
+                root / "capture",
+                public_demo=public.manifest_path,
+                viser_runtime=viser.manifest_path,
+                g1_render=render.manifest_path,
+                browser_capture=browser_dir,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertTrue(manifest["source"]["real_browser_capture"])
+        self.assertTrue(manifest["source"]["real_offscreen_recorder"])
+        self.assertFalse(manifest["source"]["real_roboharness_integration"])
+        self.assertEqual(
+            manifest["artifact_groups"]["browser_capture"]["screenshot"],
+            "../browser-capture/public-demo-browser.png",
+        )
+        self.assertTrue(manifest["verification"]["browser_capture_smoke_checked"])
+
     def test_capture_bundle_rejects_missing_viser_preview(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

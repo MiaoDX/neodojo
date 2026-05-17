@@ -164,7 +164,8 @@ proxy, a teaching-playback HTML command, a static HTML demo generator, local
 SVG/HTML G1 render evidence from a model descriptor plus visual track, optional
 MuJoCo offscreen mesh render evidence, optional true Rerun SDK `.rrd` export,
 an optional first Viser local runtime, a generated roboharness-style capture
-bundle manifest, and minimal lint/build/quality-check
+bundle manifest, optional browser-rendered public-demo screenshot capture, and
+minimal lint/build/quality-check
 commands. It can also write a dry-run or ffmpeg-backed local source-video
 handoff for a later GPU GVHMR run. There is still no checked-in GVHMR/GMR
 execution pipeline, simulator runtime pipeline, licensed SMPL-X mesh
@@ -184,6 +185,7 @@ make check
 make test
 make build
 make demo-public
+make demo-public-browser
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
@@ -200,7 +202,9 @@ PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contra
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --use-rerun-sdk --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo demo serve-viser --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/viser-runtime
+PYTHONPATH=src python -m neodojo demo browser-smoke --public-demo outputs/public-demo --out outputs/browser-capture
 PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --out outputs/capture
+PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --browser-capture outputs/browser-capture --out outputs/capture
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
@@ -288,8 +292,10 @@ scoring/G1 visual labels; it is not the final teaching UI.
 roboharness-style multi-camera evidence manifest. It validates the public-demo
 artifacts, Viser front/side/top preview screenshots, and G1 front/side/top
 render frames while preserving `scoring_source: smplx` and
-`g1_scoring_allowed: false`. This is a generated evidence boundary, not a real
-browser, simulator, or video recorder.
+`g1_scoring_allowed: false`. Passing `--browser-capture` includes a real
+headless Chromium public-demo screenshot manifest from
+`neodojo demo browser-smoke`; direct roboharness and simulator video recording
+remain follow-on work.
 
 `make verify` runs lint, MVP plan quality checks, tests, wheel build, and the
 public-demo plus capture-bundle smoke lane.
@@ -297,11 +303,16 @@ public-demo plus capture-bundle smoke lane.
 annotations, SMPL-X surface proxy, G1 visual track, G1 render evidence,
 teaching playback, Viser runtime preview, public-demo artifact, generated
 capture bundle, and smoke check in one local command.
+`make demo-public-browser` runs the same lane, then uses the optional
+Playwright browser extra to render the public-demo HTML in Chromium, write
+`outputs/browser-capture/public-demo-browser.png`, and refresh the capture
+bundle with that browser evidence.
 `make smoke-public`
 validates an existing
 `outputs/public-demo` artifact set. The GitHub Actions workflow at
-`.github/workflows/public-demo.yml` runs the same fixture lane, uploads the
-artifact, and publishes the fixture-only public demo to GitHub Pages when
+`.github/workflows/public-demo.yml` runs the fixture lane with browser capture,
+uploads the standalone public-demo, browser-capture, and capture-bundle
+artifacts, and publishes the fixture-only public demo to GitHub Pages when
 `NEODOJO_DEPLOY_PAGES=true` is set as a repository variable.
 `make lint` is currently a syntax/import bytecode compile check; `make check`
 validates MVP plan links and minimum plan scaffolding; `make build` writes a
@@ -364,6 +375,8 @@ In progress:
       public-demo lane
 - [x] Generated roboharness-style multi-camera capture evidence bundle that
       validates public-demo, Viser preview, and G1 render artifacts
+- [x] Optional browser-rendered Chromium screenshot capture for the public demo,
+      wired into the CI capture bundle
 - [x] One-command local `make demo-public` flow and GitHub Actions artifact/Page
       workflow for the fixture public demo
 - [x] Minimal `make lint` and `make build` command surface
@@ -374,8 +387,8 @@ In progress:
 - [x] Local real-conversion source materialization handoff for a user-supplied
       video
 - [x] Local GVHMR source-validation report and validated JSON import handoff
-- [ ] real roboharness/browser offscreen recording beyond the generated capture
-      bundle
+- [ ] real roboharness or simulator offscreen recording beyond the generated
+      bundle and browser-rendered public-demo screenshot
 - [ ] production Viser teaching polish beyond the first optional local runtime,
       camera/annotation controls, and generated preview screenshots
 
@@ -388,8 +401,8 @@ can later be mirrored into GitHub issues.
 
 - 🤖 [roboharness](https://github.com/MiaoDX/roboharness) — eyes for
   robot simulation agents. neodojo currently mirrors its multi-camera evidence
-  pattern through a generated capture bundle; direct recorder integration is
-  still follow-on work.
+  pattern through a generated capture bundle and browser-rendered public-demo
+  screenshot; direct simulator recorder integration is still follow-on work.
 - 🦾 [robowbc](https://github.com/MiaoDX/robowbc) — whole-body control
   showcase built on roboharness.
 

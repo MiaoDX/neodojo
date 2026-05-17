@@ -1,6 +1,6 @@
 # MVP Roboharness Capture Boundary Plan
 
-Status: IMPLEMENTED FIRST GENERATED-EVIDENCE BUNDLE; REAL OFFSCREEN RECORDER REMAINS FOLLOW-ON
+Status: IMPLEMENTED GENERATED BUNDLE AND BROWSER PUBLIC-DEMO CAPTURE; ROBOHARNESS/SIMULATOR RECORDER REMAINS FOLLOW-ON
 
 ## Goal
 
@@ -11,15 +11,17 @@ simulator/browser recorder dependency yet:
 public-demo artifact
   -> Viser front/side/top preview evidence
   -> G1 front/side/top render evidence
+  -> optional browser-rendered public-demo screenshot evidence
   -> capture bundle manifest
   -> CI artifact
 ```
 
 This slice gives the pipeline one explicit place to collect and validate
 multi-camera evidence. It stays honest that the first implementation validates
-generated SVG/HTML/recording artifacts only; it is not a real roboharness
-integration, live browser capture, simulator video recorder, or production
-teaching UI.
+generated SVG/HTML/recording artifacts and, when the optional browser lane is
+installed, a real headless Chromium rendering of the public-demo HTML. It is
+still not a direct roboharness integration, simulator video recorder, live
+Viser browser capture, or production teaching UI.
 
 ## Dependencies
 
@@ -39,6 +41,8 @@ teaching UI.
   manifest with front/side/top generated preview screenshots.
 - `outputs/g1-render/manifest.json` or an equivalent G1 render manifest with
   front/side/top frame evidence.
+- Optional `outputs/browser-capture/manifest.json` from
+  `neodojo demo browser-smoke`.
 - Existing fixture-only labels and SMPL-X/G1 scoring metadata.
 
 ## Outputs
@@ -52,7 +56,10 @@ teaching UI.
   - public-demo HTML, scene, recording, and screenshot artifacts
   - Viser front/side/top generated preview screenshots
   - G1 front/side/top render frames
-- CI artifact upload that includes `outputs/capture` alongside the public demo.
+- Optional browser-rendered public-demo screenshot manifest using
+  `neodojo.browser_capture.v1`.
+- CI artifact upload that includes `outputs/capture` and optional
+  `outputs/browser-capture` alongside the public demo.
 - README, README.zh, STATUS, and plan-index updates that describe the boundary
   as generated evidence, not a real recorder.
 
@@ -69,15 +76,20 @@ teaching UI.
      screenshot evidence.
    - [x] Require Viser front/side/top preview screenshots and expected labels.
    - [x] Require G1 front/side/top render frames and nonblank payloads.
+   - [x] Optionally validate browser-rendered public-demo screenshot evidence.
 
 3. Add command and orchestration.
    - [x] Add `neodojo capture bundle`.
+   - [x] Add `neodojo demo browser-smoke` for optional headless Chromium
+     public-demo capture.
    - [x] Run it from `make demo-public` after public-demo and Viser artifacts
      are generated.
+   - [x] Run `make demo-public-browser` in CI to include browser capture.
    - [x] Upload the capture bundle in the CI workflow artifact set.
 
 4. Add tests.
    - [x] Test the happy path from fixture motion through capture manifest.
+   - [x] Test optional browser-capture manifest inclusion.
    - [x] Test missing multi-camera evidence fails clearly.
    - [x] Keep optional roboharness, browser, simulator, and Viser dependencies
      out of the default test path.
@@ -95,31 +107,37 @@ teaching UI.
 - The manifest contains front, side, and top view entries.
 - The command fails if a referenced Viser preview or G1 frame is missing or
   blank.
+- When browser capture is supplied, the bundle references the Chromium PNG
+  screenshot and marks `real_browser_capture: true` without claiming direct
+  roboharness integration.
 - The manifest preserves `scoring_source: smplx` and
   `g1_scoring_allowed: false`.
-- CI uploads the capture bundle as an artifact without committing generated
-  outputs.
+- CI uploads the capture bundle and browser-capture artifacts without
+  committing generated outputs.
 
 ## Non-Goals
 
 - Importing or depending on roboharness in the default repo path.
 - Recording simulator video.
 - Browser-driven screenshot capture of the live Viser client.
+- Making Playwright a default dependency for `make demo-public`.
 - Replacing the Rerun/GitHub Pages public-demo artifact.
 - Proving qigong motion correctness or a real GVHMR/GMR conversion.
 
 ## Follow-On Gaps After This Plan
 
-- Replace generated SVG evidence with a real offscreen simulator/browser
-  recorder once the runtime target is selected.
-- Add live-client Viser browser capture when browser automation becomes part of
-  the verification lane.
+- Replace generated SVG evidence and public-demo browser screenshots with a
+  real offscreen simulator or roboharness recorder once the runtime target is
+  selected.
+- Add live-client Viser browser capture when browser automation targets the
+  local runtime client, not only the static public demo.
 - Decide whether a future roboharness dependency should be optional, vendored,
   or integrated through a manifest-only adapter.
 
 ## Stop Condition
 
 Stop when the default fixture lane produces a validated capture bundle manifest,
-the bundle is included in CI artifacts, tests cover missing view evidence, and
-docs clearly distinguish the generated evidence boundary from a real
-roboharness/offscreen recording integration.
+the optional browser lane can add a real Chromium public-demo screenshot to the
+bundle, the bundle is included in CI artifacts, tests cover missing view
+evidence, and docs clearly distinguish generated/browser evidence from a direct
+roboharness or simulator recorder integration.
