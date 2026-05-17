@@ -199,6 +199,15 @@ or hosted/live-client Viser capture.
   and the capture-bundle artifact records `real_browser_capture: true`,
   `public_demo_smoke_checked: true`, and 11 nonblank generated evidence
   artifacts.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26003369563` verified the
+  metadata-only real-handoff smoke artifact on `main`: lint, plan checks, tests,
+  wheel build, `make real-handoff-smoke`, handoff artifact upload, browser
+  capture, capture-bundle upload, Pages artifact upload, and Pages deploy
+  passed. The downloaded `neodojo-real-handoff-smoke` artifact contains the
+  prep manifest, source-materialization manifest, GPU handoff manifest, README,
+  source-materialization copy, GVHMR export template, and GPU-side exporter
+  helper, and contains no video files.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.

@@ -1,6 +1,6 @@
 # MVP DevEx And CI Surface Plan
 
-Status: IMPLEMENTED WITH BROWSER CAPTURE AND REAL-HANDOFF ARTIFACT CI CONFIGURED
+Status: IMPLEMENTED WITH BROWSER CAPTURE AND REAL-HANDOFF ARTIFACT CI VERIFIED
 
 ## Goal
 
@@ -86,6 +86,16 @@ browser-capture CI lane on `main`: Chromium installed through Playwright,
 `make demo-public-browser` passed, `neodojo-browser-capture` contained a
 1280x720 PNG plus `neodojo.browser_capture.v1` manifest, the capture bundle
 recorded `real_browser_capture: true`, and Pages deployed.
+
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26003369563` verified the
+metadata-only real-handoff smoke artifact on `main`: lint, plan quality checks,
+tests, wheel build, `make real-handoff-smoke`, handoff artifact upload, browser
+capture, capture-bundle upload, Pages artifact upload, and Pages deployment
+passed. The downloaded `neodojo-real-handoff-smoke` artifact contained the
+prep manifest, source-materialization manifest, GPU handoff manifest, README,
+source-materialization copy, GVHMR export template, and GPU-side exporter
+helper, and contained no video files.
 
 ## Inputs
 
@@ -194,7 +204,7 @@ recorded `real_browser_capture: true`, and Pages deployed.
   screenshot, public-demo manifest, browser-rendered PNG screenshot, generated
   capture bundle artifact with referenced evidence, and metadata-only
   real-handoff smoke artifact without source media, verified by runs
-  `25999641059` and `26000413142` for the public-demo/browser/capture lanes.
+  `25999641059`, `26000413142`, and `26003369563`.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages publishes only safe static demo assets once repository Pages is

@@ -141,7 +141,9 @@ GPU handoff packaging; set `REAL_DRY_RUN=0` to actually trim/extract media when
 ffmpeg is installed. `make real-handoff-smoke` exercises the same default
 dry-run handoff path with an ignored placeholder `.mp4` and runs inside
 `make verify`. CI uploads the resulting metadata-only handoff bundle as
-`neodojo-real-handoff-smoke` without uploading the placeholder source media.
+`neodojo-real-handoff-smoke` without uploading the placeholder source media;
+GitHub Actions run `26003369563` verified that artifact contains the expected
+prep/source/handoff metadata and no video files.
 Package the materialized source metadata for the external GPU operator:
 
 ```bash
