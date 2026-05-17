@@ -180,6 +180,31 @@ variables, when an external GMR/G1 visual artifact is available.
 - [ ] Fix only contract issues that are necessary for real GVHMR output.
 - [x] Keep all large/generated artifacts out of git.
 
+## Current Blocker Classification
+
+The local, non-GPU side of this gate is complete through prep,
+source-materialization, returned-export validation, motion import, and
+`import-demo`/`make demo-real` demo regeneration. The remaining blocker is
+external to this macOS CPU workspace:
+
+- blocker type: source clip plus GPU artifact missing
+- missing input: a licensed or user-supplied local clip for source `03-006`, or
+  an explicitly selected replacement clip with rights understood
+- missing runtime: a GPU-capable GVHMR environment such as Colab, RunPod,
+  Modal, Hugging Face Jobs, or another CUDA machine
+- missing artifact: a `neodojo.gvhmr_smplx_joints.v1` JSON export with
+  provenance matching `source-materialization.json`
+- not currently implicated: local schema, validation, import, playback,
+  public-demo, Viser preview, or capture-bundle contracts
+
+When the external artifact exists, the next command is:
+
+```bash
+make demo-real \
+  SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json \
+  GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
+```
+
 ## Acceptance Evidence
 
 - A real GVHMR output directory exists outside git.
