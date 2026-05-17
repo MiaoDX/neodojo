@@ -5,6 +5,7 @@ import json
 import shutil
 import subprocess
 from dataclasses import dataclass
+from importlib import resources
 from pathlib import Path
 from typing import Any
 
@@ -50,6 +51,7 @@ class GvhmrGpuHandoffWriteResult:
     manifest_path: Path
     readme_path: Path
     export_template_path: Path
+    exporter_script_path: Path
     checked_paths: list[Path]
     status: str
 
@@ -557,6 +559,7 @@ def _write_gpu_handoff_readme(
     input_video: str | None,
     expected_export_json: str,
     upstream_command: str,
+    exporter_command: str,
     local_import_command: str,
 ) -> None:
     body = "\n".join(
@@ -572,6 +575,7 @@ def _write_gpu_handoff_readme(
             "",
             f"- `{manifest_path.name}`: machine-readable handoff manifest.",
             "- `gvhmr-smplx-joints.template.json`: JSON shape and provenance fields to preserve in the returned export.",
+            "- `export_neodojo_gvhmr.py`: GPU-side helper for converting `hmr4d_results.pt` plus a licensed local SMPL-X model into the neodojo export schema.",
             "",
             "## GPU Input",
             "",
@@ -582,6 +586,12 @@ def _write_gpu_handoff_readme(
             _markdown_command(upstream_command),
             "",
             "Fill in the concrete GVHMR environment, checkpoint, and output directory on the GPU machine.",
+            "",
+            "## GPU-Side neodojo Export Helper",
+            "",
+            _markdown_command(exporter_command),
+            "",
+            "Run this after GVHMR writes `hmr4d_results.pt`. It requires `torch`, `smplx`, and licensed local SMPL-X assets on the GPU machine.",
             "",
             "## Return Artifact",
             "",
@@ -613,6 +623,7 @@ def package_gvhmr_gpu_handoff(
     manifest_path = out_dir / "manifest.json"
     readme_path = out_dir / "README.md"
     export_template_path = out_dir / "gvhmr-smplx-joints.template.json"
+    exporter_script_path = out_dir / "export_neodojo_gvhmr.py"
 
     source_hash = sha256_file(source_materialization)
     trim = materialization.get("trim") if isinstance(materialization.get("trim"), dict) else {}
@@ -649,6 +660,21 @@ def package_gvhmr_gpu_handoff(
         f"--gvhmr-json {expected_export} "
         "--out outputs/real-demo"
     )
+    exporter_command = (
+        "python export_neodojo_gvhmr.py "
+        "--hmr4d-results <gvhmr-output-dir>/hmr4d_results.pt "
+        "--smplx-model-dir <path-to-licensed-smplx-model-dir> "
+        f"--template {_as_posix(export_template_path)} "
+        f"--source-materialization {_as_posix(source_materialization)} "
+        f"--out {expected_export} "
+        "--parameter-block smpl_params_global "
+        "--fps 30 "
+        "--routine Baduanjin "
+        "--form \"Two Hands Hold Up the Heavens\" "
+        "--runtime \"<GPU runtime and hardware>\" "
+        "--upstream-version \"<GVHMR commit or package version>\" "
+        "--gpu-command \"<actual GVHMR command>\""
+    )
     provenance = {
         "source_materialization_manifest": _as_posix(source_materialization),
         "source_materialization_sha256": source_hash,
@@ -674,6 +700,10 @@ def package_gvhmr_gpu_handoff(
         "provenance": provenance,
     }
     _write_json(export_template_path, export_template)
+    exporter_script = resources.files("neodojo.templates").joinpath("gvhmr_export_neodojo.py").read_text(
+        encoding="utf-8"
+    )
+    exporter_script_path.write_text(exporter_script, encoding="utf-8")
 
     manifest = {
         "schema": GVHMR_GPU_HANDOFF_SCHEMA,
@@ -700,9 +730,11 @@ def package_gvhmr_gpu_handoff(
             "schema": GVHMR_JOINT_EXPORT_SCHEMA,
             "path": expected_export,
             "template": _as_posix(export_template_path),
+            "gpu_exporter_script": _as_posix(exporter_script_path),
         },
         "commands": {
             "upstream_gvhmr": upstream_command,
+            "gpu_export_neodojo": exporter_command,
             "local_import_demo": local_import_command,
         },
         "provenance_to_preserve": provenance,
@@ -721,16 +753,18 @@ def package_gvhmr_gpu_handoff(
         input_video=input_video,
         expected_export_json=expected_export,
         upstream_command=upstream_command,
+        exporter_command=exporter_command,
         local_import_command=local_import_command,
     )
 
-    checked_paths = [manifest_path, readme_path, export_template_path, source_materialization]
+    checked_paths = [manifest_path, readme_path, export_template_path, exporter_script_path, source_materialization]
     if input_exists and input_video_path is not None:
         checked_paths.append(input_video_path)
     return GvhmrGpuHandoffWriteResult(
         manifest_path=manifest_path,
         readme_path=readme_path,
         export_template_path=export_template_path,
+        exporter_script_path=exporter_script_path,
         checked_paths=checked_paths,
         status=status,
     )

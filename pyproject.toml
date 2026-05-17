@@ -25,4 +25,4 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-neodojo = ["templates/*.html"]
+neodojo = ["templates/*.html", "templates/*.py"]

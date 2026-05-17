@@ -1042,6 +1042,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"wrote {result.manifest_path}")
             print(f"wrote {result.readme_path}")
             print(f"wrote {result.export_template_path}")
+            print(f"wrote {result.exporter_script_path}")
             print(f"status {result.status}")
             for path in result.checked_paths:
                 print(f"checked {path}")

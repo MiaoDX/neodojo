@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 import importlib.util
+import py_compile
 import socket
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -1786,6 +1788,8 @@ class DemoHtmlTests(unittest.TestCase):
             )
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
             template = json.loads(result.export_template_path.read_text(encoding="utf-8"))
+            exporter_exists = result.exporter_script_path.exists()
+            exporter_script = result.exporter_script_path.read_text(encoding="utf-8")
             readme = result.readme_path.read_text(encoding="utf-8")
 
         self.assertEqual(result.status, "ready_for_gpu")
@@ -1797,9 +1801,57 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(template["schema"], "neodojo.gvhmr_smplx_joints.v1")
         self.assertTrue(template["template_only"])
         self.assertEqual(template["provenance"]["source_id"], "03-006")
+        self.assertTrue(exporter_exists)
+        self.assertEqual(manifest["expected_export"]["gpu_exporter_script"], str(result.exporter_script_path))
+        self.assertIn("gpu_export_neodojo", manifest["commands"])
+        self.assertIn("export_neodojo_gvhmr.py", manifest["commands"]["gpu_export_neodojo"])
         self.assertIn("real-conversion import-demo", manifest["commands"]["local_import_demo"])
+        self.assertIn("Export GVHMR hmr4d_results.pt", exporter_script)
+        self.assertIn("export_neodojo_gvhmr.py", readme)
         self.assertIn("GVHMR GPU Handoff", readme)
         self.assertIn(trimmed, result.checked_paths)
+        self.assertIn(result.exporter_script_path, result.checked_paths)
+
+    def test_gpu_handoff_exporter_script_is_dependency_lazy_for_help(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            trimmed = root / "trimmed-clip.mp4"
+            trimmed.write_bytes(b"fixture trimmed video bytes")
+            materialization = root / "source-materialization.json"
+            materialization.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.real_conversion_source_materialization.v1",
+                        "status": "materialized",
+                        "source_prep": {"source_id": "03-006"},
+                        "trim": {"start_seconds": 0.0, "end_seconds": 12.0, "duration_seconds": 12.0},
+                        "outputs": {
+                            "trimmed_video_path": str(trimmed),
+                            "trimmed_video": {"sha256": sha256_file(trimmed)},
+                        },
+                        "validation": {"gvhmr_input_ready": True},
+                        "gpu_handoff": {
+                            "trimmed_video_argument": str(trimmed),
+                            "expected_export_json": "outputs/real-conversion-gate/gvhmr-smplx-joints.json",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = package_gvhmr_gpu_handoff(root / "handoff", source_materialization=materialization)
+            py_compile.compile(str(result.exporter_script_path), doraise=True)
+
+            completed = subprocess.run(
+                ["python3", str(result.exporter_script_path), "--help"],
+                capture_output=True,
+                encoding="utf-8",
+                check=False,
+            )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("--hmr4d-results", completed.stdout)
+        self.assertIn("--smplx-model-dir", completed.stdout)
 
     def test_real_conversion_gpu_handoff_reports_dry_run_not_ready(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

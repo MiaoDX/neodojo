@@ -300,10 +300,12 @@ manifest 与本地视频，写出 source-materialization manifest。传入 `--dr
 `--dry-run` 时，它需要 ffmpeg，并把 ignored trimmed-video 与 reference-frame
 artifacts 写给后续 GPU GVHMR input。`neodojo real-conversion package-gpu-handoff`
 和 `make gpu-handoff SOURCE_MATERIALIZATION=...` 会读取 source-materialization
-manifest，写出 `outputs/gvhmr-gpu-handoff/manifest.json`、README，以及
-`gvhmr-smplx-joints.template.json`，用于保留 source hash、trim、input video
-checksum、预期 export schema 和返回本地 import command。这个 package 不复制媒体，
-也不会在本地运行 GVHMR。`neodojo real-conversion inspect-gvhmr-result` 和
+manifest，写出 `outputs/gvhmr-gpu-handoff/manifest.json`、README、
+`gvhmr-smplx-joints.template.json`，以及 `export_neodojo_gvhmr.py`，用于保留
+source hash、trim、input video checksum、预期 export schema、GPU-side export
+command 和返回本地 import command。这个 exporter helper 设计为在 GPU 环境跑完
+GVHMR 后使用，并需要 `torch`、`smplx` 和本地 licensed SMPL-X assets；这个 package
+不复制媒体，也不会在本地运行 GVHMR。`neodojo real-conversion inspect-gvhmr-result` 和
 `make gvhmr-inspect GVHMR_RESULT=...` 会在 GVHMR/GPU 环境安装了 optional `torch`
 时检查返回的 `hmr4d_results.pt`，或者在默认本地环境检查 JSON summary。inspection
 manifest 会记录 top-level keys、候选的 `smpl_params_global` / `smpl_params_incam`
@@ -371,6 +373,7 @@ capture 或真实 Unitree G1 retargeting 已经完成。
 - [x] 本地 real-conversion prep manifest，默认 source 为 `03-006`
 - [x] 面向用户本地视频的 real-conversion source materialization handoff
 - [x] 本地 GVHMR GPU handoff package，包含 export template 与返回命令
+- [x] 随 handoff 打包的 GPU-side GVHMR-to-neodojo export helper
 - [x] 本地 GVHMR result inspection manifest，用于返回的 `.pt` 或 JSON export
 - [x] 本地 GVHMR source-validation report 与 validated JSON import handoff
 - [x] 外部 GPU GVHMR export 可用后的一命令本地 real-artifact import demo

@@ -347,9 +347,12 @@ trimmed-video and reference-frame artifacts for the later GPU GVHMR input.
 `neodojo real-conversion package-gpu-handoff` and `make gpu-handoff
 SOURCE_MATERIALIZATION=...` consume a source-materialization manifest and write
 `outputs/gvhmr-gpu-handoff/manifest.json`, a README, and a
-`gvhmr-smplx-joints.template.json` that preserve the exact source hash, trim,
-input video checksum, expected export schema, and local import command for the
-external GPU operator. This package does not copy media or run GVHMR locally.
+`gvhmr-smplx-joints.template.json` plus `export_neodojo_gvhmr.py` that preserve
+the exact source hash, trim, input video checksum, expected export schema,
+GPU-side export command, and local import command for the external GPU
+operator. The exporter helper is intended to run after GVHMR in the GPU
+environment with `torch`, `smplx`, and licensed local SMPL-X assets; this
+package does not copy media or run GVHMR locally.
 `neodojo real-conversion inspect-gvhmr-result` and `make gvhmr-inspect
 GVHMR_RESULT=...` inspect a returned `hmr4d_results.pt` when the optional
 `torch` dependency is available in the GVHMR/GPU environment, or a JSON summary
@@ -430,6 +433,7 @@ In progress:
 - [x] Local real-conversion source materialization handoff for a user-supplied
       video
 - [x] Local GVHMR GPU handoff package with export template and return command
+- [x] GPU-side GVHMR-to-neodojo export helper packaged with the handoff
 - [x] Local GVHMR result inspection manifest for returned `.pt` or JSON export
 - [x] Local GVHMR source-validation report and validated JSON import handoff
 - [x] One-command local real-artifact import demo after an external GPU GVHMR

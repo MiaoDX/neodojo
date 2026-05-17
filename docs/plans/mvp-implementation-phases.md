@@ -64,7 +64,7 @@ local/user-supplied source video
 | 11 | [mvp-source-media-probing.md](mvp-source-media-probing.md) | implemented metadata probe | Record optional ffprobe metadata for local source videos without copying media. | Source prep records probe success/failure, duration, resolution, codec, and frame-rate metadata when available. |
 | 12 | [mvp-source-media-materialization.md](mvp-source-media-materialization.md) | implemented local handoff | Turn source prep plus a local video into a dry-run or ffmpeg-backed trimmed-clip/reference-frame handoff. | A source-materialization manifest records source validation, commands, generated outputs when available, and the GVHMR input handoff path without committing media. |
 | 13 | [mvp-roboharness-capture-boundary.md](mvp-roboharness-capture-boundary.md) | implemented generated bundle and browser public-demo capture; CI verified | Collect public-demo, browser capture, Viser preview, G1 render, and optional recorder artifacts into one roboharness-style multi-camera evidence manifest. | `make demo-public` writes a validated generated capture bundle, and `make demo-public-browser` adds optional real browser screenshot evidence without claiming direct roboharness integration. |
-| 14 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep/materialization/gpu-handoff/result-inspection/validation/import-demo ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata, source materialization can prepare the trimmed input, `make gpu-handoff` can package the external GPU handoff, `make gvhmr-inspect` can inspect returned result structure, and `make demo-real` can validate/import a returned export; final stop condition still requires a real GVHMR artifact from a GPU run. |
+| 14 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep/materialization/gpu-handoff/export-helper/result-inspection/validation/import-demo ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata, source materialization can prepare the trimmed input, `make gpu-handoff` can package the external GPU handoff and GPU-side exporter helper, `make gvhmr-inspect` can inspect returned result structure, and `make demo-real` can validate/import a returned export; final stop condition still requires a real GVHMR artifact from a GPU run. |
 
 ## Future Gap Plans
 
@@ -84,6 +84,7 @@ of truth for the next waves.
 | [mvp-roboharness-simulator-recorder.md](mvp-roboharness-simulator-recorder.md) | implemented first MuJoCo simulator recorder contract | Direct roboharness, simulator, or live-runtime recorder evidence beyond generated capture bundles and public-demo browser screenshots. |
 | [mvp-feedback-routine-review.md](mvp-feedback-routine-review.md) | implemented | Broader key-frame/posture feedback and routine-level review. |
 | [mvp-gvhmr-source-validation.md](mvp-gvhmr-source-validation.md) | implemented validator; blocked on a real GVHMR export for final proof | Validation that imported GVHMR artifacts match the materialized source clip and trim. |
+| [mvp-gvhmr-export-adapter.md](mvp-gvhmr-export-adapter.md) | implemented GPU-side export helper; real artifact still external | Standalone GPU-side helper packaged with the handoff to convert GVHMR `hmr4d_results.pt` plus licensed SMPL-X assets into the neodojo import schema. |
 | [mvp-quality-release-surface.md](mvp-quality-release-surface.md) | implemented first quality gate | Project-owned static quality check for MVP plan links and scaffolding beyond the minimal lint/build commands. |
 
 The numbered plans are semantically independent execution slices, not
@@ -249,6 +250,8 @@ docs:
   - path: docs/plans/mvp-feedback-routine-review.md
     type: SPEC
   - path: docs/plans/mvp-gvhmr-source-validation.md
+    type: SPEC
+  - path: docs/plans/mvp-gvhmr-export-adapter.md
     type: SPEC
   - path: docs/plans/mvp-quality-release-surface.md
     type: SPEC

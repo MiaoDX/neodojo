@@ -1,6 +1,6 @@
 # MVP Real Conversion Gate Plan
 
-Status: LOCAL PREP, SOURCE MATERIALIZATION, GPU HANDOFF, RESULT INSPECTION, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
+Status: LOCAL PREP, SOURCE MATERIALIZATION, GPU HANDOFF, EXPORT HELPER, RESULT INSPECTION, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
 
 ## Goal
 
@@ -36,6 +36,9 @@ but it is required before calling the MVP an end-to-end neodojo proof.
 - [mvp-gvhmr-source-validation.md](mvp-gvhmr-source-validation.md) validates
   the returned GVHMR JSON export against the materialized source clip before
   the artifact is imported as a real proof.
+- [mvp-gvhmr-export-adapter.md](mvp-gvhmr-export-adapter.md) packages a
+  GPU-side helper script for converting GVHMR `hmr4d_results.pt` plus licensed
+  local SMPL-X assets into the neodojo JSON import schema.
 - [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md)
   and [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) are not required to run
   GVHMR, but they should provide the fixture public-demo lane that the imported
@@ -84,8 +87,8 @@ path is acceptable and preferred.
   source, trim command, optional generated clip/frames, and GVHMR input handoff.
 - A GPU handoff package from `neodojo real-conversion package-gpu-handoff` or
   `make gpu-handoff` that records source-materialization hash, trimmed-video
-  readiness, expected export schema, provenance fields, and the local return
-  command without copying media.
+  readiness, expected export schema, provenance fields, a GPU-side exporter
+  helper script, and the local return command without copying media.
 - A result inspection manifest from `neodojo real-conversion
   inspect-gvhmr-result` or `make gvhmr-inspect` that reports top-level
   `hmr4d_results.pt` keys and candidate SMPL-X parameter blocks when run in a
@@ -141,10 +144,15 @@ make gpu-handoff \
   SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
 ```
 
-This writes `outputs/gvhmr-gpu-handoff/manifest.json`, a README, and
-`gvhmr-smplx-joints.template.json`. It reports `ready_for_gpu` only when the
-source-materialization manifest points to an existing materialized trimmed clip
-with matching checksum; dry-run handoffs correctly report `needs_materialization`.
+This writes `outputs/gvhmr-gpu-handoff/manifest.json`, a README,
+`gvhmr-smplx-joints.template.json`, and `export_neodojo_gvhmr.py`. It reports
+`ready_for_gpu` only when the source-materialization manifest points to an
+existing materialized trimmed clip with matching checksum; dry-run handoffs
+correctly report `needs_materialization`.
+After GVHMR writes `hmr4d_results.pt` on the GPU machine, the packaged exporter
+can be run there with a licensed local SMPL-X model directory to write the
+expected `neodojo.gvhmr_smplx_joints.v1` JSON. The exporter remains a GPU-side
+handoff helper; it is not exercised by default on the local CPU workspace.
 Inspect the returned GVHMR result structure before writing the final neodojo
 export:
 
@@ -200,6 +208,9 @@ variables, when an external GMR/G1 visual artifact is available.
 - [x] Package a source-materialization manifest into a GPU handoff bundle with
   export template, provenance fields, readiness status, and local return
   command.
+- [x] Add a GPU-side exporter helper to the handoff bundle for turning
+  `hmr4d_results.pt` plus licensed SMPL-X assets into
+  `neodojo.gvhmr_smplx_joints.v1`.
 - [x] Add a GVHMR result inspection command for returned `hmr4d_results.pt` or
   JSON summaries so the export adapter can identify candidate SMPL-X parameter
   blocks before writing `neodojo.gvhmr_smplx_joints.v1`.
@@ -230,9 +241,9 @@ variables, when an external GMR/G1 visual artifact is available.
 
 The local, non-GPU side of this gate is complete through prep,
 source-materialization, GPU handoff packaging, returned-result inspection,
-returned-export validation, motion import, and `import-demo`/`make demo-real`
-demo regeneration. The remaining blocker is external to this macOS CPU
-workspace:
+GPU-side export-helper packaging, returned-export validation, motion import,
+and `import-demo`/`make demo-real` demo regeneration. The remaining blocker is
+external to this macOS CPU workspace:
 
 - blocker type: source clip plus GPU artifact missing
 - missing input: a licensed or user-supplied local clip for source `03-006`, or
