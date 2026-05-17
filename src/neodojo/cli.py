@@ -154,6 +154,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="G1 visual-track root directory or manifest path",
     )
     demo_play.add_argument("--annotations", type=Path, help="optional manual key-frame annotation JSON")
+    demo_play.add_argument("--reference-video", type=Path, help="optional local-only original video reference")
+    demo_play.add_argument(
+        "--reference-trim-start",
+        type=float,
+        default=0.0,
+        help="trim start offset, in seconds, for optional reference video sync",
+    )
     demo_play.add_argument(
         "--out",
         type=Path,
@@ -298,6 +305,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 motion_record=args.motion_record,
                 g1_track=args.g1_track,
                 annotations_path=args.annotations,
+                reference_video=args.reference_video,
+                reference_trim_start_seconds=args.reference_trim_start,
             )
             print(f"wrote {result.html_path}")
             print(f"wrote {result.manifest_path}")

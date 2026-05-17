@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .contracts import require_schema
 from .fixtures import (
     FIXTURE_FORM,
     FIXTURE_FPS,
@@ -78,6 +79,69 @@ def _as_posix(path: Path) -> str:
     return str(path).replace(os.sep, "/")
 
 
+def _timing_metadata(fps: int | float, frame_count: int) -> dict[str, Any]:
+    return {
+        "fps": fps,
+        "frame_count": frame_count,
+        "duration_seconds": round(frame_count / float(fps), 6),
+        "start_frame": 0,
+        "end_frame": frame_count - 1,
+    }
+
+
+def _contact_windows(contact_flags: list[bool]) -> list[dict[str, int]]:
+    windows: list[dict[str, int]] = []
+    start: int | None = None
+    for index, contact in enumerate(contact_flags):
+        if contact and start is None:
+            start = index
+        elif not contact and start is not None:
+            windows.append({"start_frame": start, "end_frame": index - 1})
+            start = None
+    if start is not None:
+        windows.append({"start_frame": start, "end_frame": len(contact_flags) - 1})
+    return windows
+
+
+def _normalization_metadata(frames: list[dict[str, list[float]]]) -> tuple[dict[str, Any], dict[str, Any]]:
+    left_ankles = [frame["left_ankle"][1] for frame in frames if "left_ankle" in frame]
+    right_ankles = [frame["right_ankle"][1] for frame in frames if "right_ankle" in frame]
+    floor_height = round(min(left_ankles + right_ankles), 4)
+    tolerance = 0.02
+    left_contacts = [abs(frame["left_ankle"][1] - floor_height) <= tolerance for frame in frames]
+    right_contacts = [abs(frame["right_ankle"][1] - floor_height) <= tolerance for frame in frames]
+    coordinates = {
+        "schema": "neodojo.coordinates.v1",
+        "units": "meters",
+        "world_up_axis": "y",
+        "facing_axis": "z+",
+        "root_joint": "pelvis",
+        "floor_height_m": floor_height,
+        "normalization": "fixture/imported joints normalized into neodojo local y-up coordinates",
+    }
+    contact = {
+        "schema": "neodojo.contact.v1",
+        "source": "derived_from_ankle_height",
+        "floor_height_m": floor_height,
+        "contact_tolerance_m": tolerance,
+        "feet": {
+            "left": {
+                "contact_ratio": round(sum(left_contacts) / len(frames), 4),
+                "contact_windows": _contact_windows(left_contacts),
+            },
+            "right": {
+                "contact_ratio": round(sum(right_contacts) / len(frames), 4),
+                "contact_windows": _contact_windows(right_contacts),
+            },
+        },
+        "diagnostics": {
+            "advisory": True,
+            "notes": "contact is derived from normalized joint height and is not a physics contact solve",
+        },
+    }
+    return coordinates, contact
+
+
 def _require_text(payload: dict[str, Any], key: str, fallback: str) -> str:
     value = payload.get(key, fallback)
     if not isinstance(value, str) or not value.strip():
@@ -131,6 +195,8 @@ def _write_motion_contract(
     provenance: dict[str, Any],
 ) -> MotionContractWriteResult:
     validate_output_dir(out_dir)
+    timing = _timing_metadata(fps, len(frames))
+    coordinates, contact = _normalization_metadata(frames)
 
     motion_dir = out_dir / "motion-record"
     track_dir = out_dir / "tracks" / "smplx"
@@ -158,6 +224,9 @@ def _write_motion_contract(
         "form": form,
         "fps": fps,
         "frame_count": len(frames),
+        "timing": timing,
+        "coordinates": coordinates,
+        "contact": contact,
         "joint_set": FIXTURE_JOINT_SET,
         "scoring_source": "smplx",
         "provenance": provenance,
@@ -174,6 +243,9 @@ def _write_motion_contract(
         "scoring_allowed": True,
         "fps": fps,
         "frame_count": len(frames),
+        "timing": timing,
+        "coordinates": coordinates,
+        "contact": contact,
         "joint_set": FIXTURE_JOINT_SET,
         "data_files": {
             "frames": _relative_path(track_data_path, track_manifest_path.parent),
@@ -222,6 +294,7 @@ def write_gvhmr_json_motion_contract(out_dir: Path, source_path: Path) -> Motion
         raise ValueError(f"failed to parse GVHMR joint export JSON: {exc}") from exc
     if not isinstance(payload, dict):
         raise ValueError("GVHMR joint export must be a JSON object")
+    require_schema(payload, GVHMR_JOINT_EXPORT_SCHEMA, "GVHMR joint export")
 
     raw_frames = payload.get("frames", payload.get("smplx_joints"))
     frames = _normalize_teaching_frames(raw_frames)
@@ -267,6 +340,7 @@ def resolve_motion_record_manifest(motion_record: Path) -> Path:
 
 def load_motion_record_frames(motion_manifest_path: Path) -> tuple[dict[str, Any], list[dict[str, list[float]]]]:
     manifest = json.loads(motion_manifest_path.read_text(encoding="utf-8"))
+    require_schema(manifest, MOTION_RECORD_SCHEMA, "motion-record manifest")
     if manifest.get("scoring_source") != "smplx":
         raise ValueError("motion record must keep SMPL-X as scoring_source")
 
@@ -284,6 +358,7 @@ def load_motion_record_frames(motion_manifest_path: Path) -> tuple[dict[str, Any
 
 def load_track_frames(track_manifest_path: Path) -> list[dict[str, list[float]]]:
     manifest = json.loads(track_manifest_path.read_text(encoding="utf-8"))
+    require_schema(manifest, TRACK_SCHEMA, "track manifest")
     if manifest.get("track_id") != "smplx":
         raise ValueError("only SMPL-X teaching tracks are supported in the local motion contract")
     if not manifest.get("scoring_allowed"):

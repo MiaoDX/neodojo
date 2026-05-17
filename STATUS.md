@@ -49,6 +49,9 @@ command, CI gate, real generated motion artifact, or UI server.
   proving the render manifest, front/side/top frame evidence, and G1
   non-scoring boundary. Fixture descriptors require explicit
   `--allow-fixture-model`.
+- Hardened artifact manifests now carry schema ids, shared timing,
+  coordinate/floor/contact metadata, source-media provenance, optional
+  reference-video sync metadata, and normalized annotation manifests.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
@@ -123,14 +126,14 @@ later GPU run and does not download video or execute GVHMR.
 - Simulator/Viser runtime integration and multi-camera offscreen capture.
 - Feedback beyond the first fixture geometry check: automatic key-frame
   detection, more posture terms, and routine-level review.
-- Rights-preserving source media handling beyond metadata and trim prep.
+- Rich source media probing beyond local file checksum/extension validation and
+  source-index duration/resolution metadata.
 - Install, lint, build, and CI command surfaces.
 
 ## Next Safe Task
 
-The next MVP capability is the non-GPU contract/public-demo/CI sequence:
-`docs/plans/mvp-pipeline-contract-hardening.md`,
-`docs/plans/mvp-visualization-and-public-demo.md`, and
+The next MVP capability is the non-GPU public-demo/CI sequence:
+`docs/plans/mvp-visualization-and-public-demo.md` and
 `docs/plans/mvp-devex-ci-surface.md` before returning to
 `docs/plans/mvp-real-conversion-gate.md`. Do not run GVHMR full-video inference
 on this macOS CPU workspace; use a GPU-capable machine to export a GVHMR SMPL-X

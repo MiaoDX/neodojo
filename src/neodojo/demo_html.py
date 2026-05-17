@@ -6,6 +6,7 @@ from importlib import resources
 from pathlib import Path
 from typing import Any
 
+from .contracts import HTML_DEMO_SCHEMA
 from .fixtures import build_fixture, build_fixture_from_smplx_frames, compute_feedback
 from .motion_contract import load_track_frames, write_fixture_motion_contract
 
@@ -34,13 +35,18 @@ def write_demo(out_dir: Path, frame_count: int = 96) -> DemoWriteResult:
     html_path = out_dir / "index.html"
     manifest_path = out_dir / "manifest.json"
     html_path.write_text(render_demo_html(fixture), encoding="utf-8")
+    motion_manifest = json.loads(contract.motion_record_manifest_path.read_text(encoding="utf-8"))
     manifest_path.write_text(
         json.dumps(
             {
+                "schema": HTML_DEMO_SCHEMA,
                 "fixture_only": True,
                 "html": "index.html",
                 "motion_record": "motion-record/manifest.json",
                 "frame_count": fixture["frame_count"],
+                "timing": motion_manifest.get("timing"),
+                "coordinates": motion_manifest.get("coordinates"),
+                "contact": motion_manifest.get("contact"),
                 "scoring_source": fixture["scoring_source"],
                 "tracks": {
                     "smplx": {

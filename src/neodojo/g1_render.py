@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .contracts import require_schema
 from .fixtures import BONES, TRAJECTORY_JOINTS
 from .g1_visual import ROBOT_MODEL_SCHEMA, SUPPORTED_ROBOT, load_g1_track_frames, resolve_g1_track_manifest
 from .motion_contract import _relative_path, _write_json, validate_output_dir
@@ -25,8 +26,7 @@ def _load_model_descriptor(path: Path, *, allow_fixture_model: bool) -> dict[str
         raise ValueError(f"G1 model descriptor does not exist: {path}")
 
     descriptor = json.loads(path.read_text(encoding="utf-8"))
-    if descriptor.get("schema") != ROBOT_MODEL_SCHEMA:
-        raise ValueError("expected a neodojo robot-model descriptor")
+    require_schema(descriptor, ROBOT_MODEL_SCHEMA, "G1 model descriptor")
     if descriptor.get("robot") != SUPPORTED_ROBOT:
         raise ValueError("only Unitree G1 descriptors are supported")
     if not descriptor.get("validation", {}).get("loadable"):
@@ -225,6 +225,9 @@ def write_g1_render(
         "track_fixture_only": bool(g1_manifest.get("fixture_only")),
         "pose_stream": g1_manifest.get("derivation", "unknown"),
         "frame_count": len(frames),
+        "timing": g1_manifest.get("timing"),
+        "coordinates": g1_manifest.get("coordinates"),
+        "contact": g1_manifest.get("contact"),
         "selected_frame": frame_index,
         "camera_definitions": {
             "front": {"projection_axes": ["x", "y"]},

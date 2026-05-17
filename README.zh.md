@@ -164,7 +164,7 @@ descriptor 不需要这个开关。这是本地 render evidence，不是 MuJoCo/
 `neodojo demo play` 会把 SMPL-X motion-record 和 G1 visual-track manifests
 一起读入，并写出 `outputs/teaching-demo/index.html` 与 playback manifest。这是
 一个 simulator-light HTML inspection path：SMPL-X 仍是 scoring source，G1 仍然
-不可用于评分。
+不可用于评分。它也可以通过 `--reference-video` 保留可选的本地-only 原视频同步元数据。
 
 `neodojo real-conversion prepare` 会为后续 GPU gate 写出 source metadata、trim
 metadata 和下一步命令提示。它不会下载源视频，也不会运行 GVHMR。

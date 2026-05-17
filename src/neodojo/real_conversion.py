@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .contracts import local_file_metadata
 from .motion_contract import _write_json, validate_output_dir
 
 REAL_CONVERSION_PREP_SCHEMA = "neodojo.real_conversion_prep.v1"
@@ -61,6 +62,39 @@ def _validate_trim(start_seconds: float, end_seconds: float, source_duration: fl
     }
 
 
+def _source_media_metadata(planned_video_path: Path, local_video: Path | None, trim: dict[str, Any]) -> dict[str, Any]:
+    media: dict[str, Any] | None = None
+    validation = {
+        "local_file_supplied": local_video is not None,
+        "local_file_validated": False,
+        "media_committed_to_repo": False,
+    }
+    if local_video is not None:
+        media = local_file_metadata(
+            local_video,
+            label="local source video",
+            allowed_suffixes={".mp4", ".mov", ".m4v", ".webm"},
+        )
+        validation["local_file_validated"] = True
+
+    return {
+        "schema": "neodojo.source_media.v1",
+        "planned_local_path": _as_posix(planned_video_path),
+        "local_file": media,
+        "validation": validation,
+        "reference_video_sync": {
+            "schema": "neodojo.reference_video_sync.v1",
+            "local_only": True,
+            "available": media is not None,
+            "media": media,
+            "trim_start_seconds": trim["start_seconds"],
+            "trim_end_seconds": trim["end_seconds"],
+            "frame_zero_offset_seconds": trim["start_seconds"],
+            "sync_confidence": "trim metadata only" if media is not None else "missing local file",
+        },
+    }
+
+
 def write_real_conversion_prep(
     out_dir: Path,
     *,
@@ -76,6 +110,7 @@ def write_real_conversion_prep(
     source_duration = _require_float(row["duration_seconds"], "duration_seconds")
     trim = _validate_trim(start_seconds, end_seconds, source_duration)
     planned_video_path = local_video or Path(row["recommended_output_path"])
+    source_media = _source_media_metadata(planned_video_path, local_video, trim)
 
     manifest_path = out_dir / "real-conversion-prep.json"
     export_json_path = out_dir / "gvhmr-smplx-joints.json"
@@ -99,6 +134,7 @@ def write_real_conversion_prep(
             "local_video_path": _as_posix(planned_video_path),
             "rights_notes": rights_notes,
         },
+        "source_media": source_media,
         "trim": trim,
         "gpu_run": {
             "required": True,

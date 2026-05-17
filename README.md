@@ -197,7 +197,8 @@ evidence, not MuJoCo/Genesis simulator mesh rendering.
 `neodojo demo play` consumes the SMPL-X motion-record and G1 visual-track
 manifests together and writes `outputs/teaching-demo/index.html` plus a
 playback manifest. This is a simulator-light HTML inspection path: SMPL-X stays
-the scoring source and G1 stays non-scoring.
+the scoring source and G1 stays non-scoring. It can also preserve optional
+local-only original-video sync metadata with `--reference-video`.
 
 `neodojo real-conversion prepare` writes source metadata, trim metadata, and
 next-command hints for the later GPU gate. It does not download the source

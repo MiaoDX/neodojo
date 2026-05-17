@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .contracts import ANNOTATION_SCHEMA, PLAYBACK_SCHEMA, local_file_metadata, require_schema
 from .demo_html import render_demo_html
 from .fixtures import build_fixture_from_smplx_frames
 from .g1_visual import load_g1_track_frames, resolve_g1_track_manifest
@@ -23,20 +24,60 @@ class TeachingPlaybackWriteResult:
     manifest_path: Path
 
 
-def _load_annotation_key_frame(annotations_path: Path | None, frame_count: int) -> tuple[int, str | None]:
+def _normalize_annotation_manifest(annotations_path: Path | None, frame_count: int) -> tuple[int, str | None, dict[str, Any] | None]:
     if annotations_path is None:
-        return frame_count - 1, None
+        return frame_count - 1, None, None
 
     annotations = json.loads(annotations_path.read_text(encoding="utf-8"))
-    key_frame = annotations.get("key_frame")
+    if not isinstance(annotations, dict):
+        raise ValueError("annotations file must contain a JSON object")
+
+    if annotations.get("schema") is None:
+        key_frame = annotations.get("key_frame")
+        name = annotations.get("name")
+        keyframes = [{"name": name or "manual key frame", "frame": key_frame, "terms": [], "constraints": []}]
+        normalized = {
+            "schema": ANNOTATION_SCHEMA,
+            "source_format": "legacy_key_frame",
+            "keyframes": keyframes,
+        }
+    else:
+        require_schema(annotations, ANNOTATION_SCHEMA, "annotation manifest")
+        keyframes = annotations.get("keyframes")
+        if not isinstance(keyframes, list) or not keyframes:
+            raise ValueError("annotation manifest must contain non-empty keyframes")
+        normalized = annotations
+
+    first_keyframe = keyframes[0]
+    if not isinstance(first_keyframe, dict):
+        raise ValueError("annotation keyframes must be objects")
+    key_frame = first_keyframe.get("frame")
     if not isinstance(key_frame, int):
-        raise ValueError("annotations file must contain integer key_frame")
+        raise ValueError("annotation keyframe must contain integer frame")
     if key_frame < 0 or key_frame >= frame_count:
         raise ValueError("annotation key_frame is outside the available frame range")
-    name = annotations.get("name")
+    name = first_keyframe.get("name")
     if name is not None and not isinstance(name, str):
         raise ValueError("annotations name must be a string when provided")
-    return key_frame, name
+    return key_frame, name, normalized
+
+
+def _reference_video_sync(reference_video: Path | None, trim_start_seconds: float = 0.0) -> dict[str, Any] | None:
+    if reference_video is None:
+        return None
+    media = local_file_metadata(
+        reference_video,
+        label="reference video",
+        allowed_suffixes={".mp4", ".mov", ".m4v", ".webm"},
+    )
+    return {
+        "schema": "neodojo.reference_video_sync.v1",
+        "local_only": True,
+        "media": media,
+        "trim_start_seconds": round(trim_start_seconds, 3),
+        "frame_zero_offset_seconds": round(trim_start_seconds, 3),
+        "sync_confidence": "local path and trim metadata only",
+    }
 
 
 def write_teaching_playback_demo(
@@ -44,6 +85,8 @@ def write_teaching_playback_demo(
     motion_record: Path,
     g1_track: Path,
     annotations_path: Path | None = None,
+    reference_video: Path | None = None,
+    reference_trim_start_seconds: float = 0.0,
 ) -> TeachingPlaybackWriteResult:
     validate_output_dir(out_dir)
     motion_manifest_path = resolve_motion_record_manifest(motion_record)
@@ -54,7 +97,10 @@ def write_teaching_playback_demo(
     if len(smplx_frames) != len(g1_frames):
         raise ValueError("SMPL-X and G1 tracks must have matching frame counts")
 
-    key_frame, annotation_name = _load_annotation_key_frame(annotations_path, len(smplx_frames))
+    key_frame, annotation_name, annotation_manifest = _normalize_annotation_manifest(
+        annotations_path,
+        len(smplx_frames),
+    )
     fixture_only = bool(motion_manifest.get("fixture_only") or g1_manifest.get("fixture_only"))
     fixture = build_fixture_from_smplx_frames(
         smplx_frames,
@@ -69,6 +115,7 @@ def write_teaching_playback_demo(
     html_path.write_text(render_demo_html(fixture), encoding="utf-8")
 
     manifest = {
+        "schema": PLAYBACK_SCHEMA,
         "fixture_only": fixture_only,
         "html": "index.html",
         "motion_record": _relative_path(motion_manifest_path, manifest_path.parent),
@@ -87,9 +134,14 @@ def write_teaching_playback_demo(
         "annotation_name": annotation_name,
         "frame_count": len(smplx_frames),
         "fps": motion_manifest.get("fps"),
+        "timing": motion_manifest.get("timing"),
+        "coordinates": motion_manifest.get("coordinates"),
+        "contact": motion_manifest.get("contact"),
         "key_frame": key_frame,
         "scoring_source": "smplx",
         "feedback": fixture["feedback"],
+        "annotation_manifest": annotation_manifest,
+        "reference_video_sync": _reference_video_sync(reference_video, reference_trim_start_seconds),
         "evidence": {
             "kind": "html_frame_payload",
             "rendered_tracks": ["smplx", "g1"],

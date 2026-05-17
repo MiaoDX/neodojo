@@ -10,6 +10,7 @@ from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames
 from neodojo.g1_render import write_g1_render
 from neodojo.g1_visual import build_g1_visual_track, register_g1_model, write_fixture_g1_model_descriptor
 from neodojo.motion_contract import (
+    load_motion_record_frames,
     validate_output_dir,
     validate_scoring_source,
     write_fixture_motion_contract,
@@ -126,9 +127,24 @@ class DemoHtmlTests(unittest.TestCase):
             frames = build_smplx_fixture_frames(8)
             del frames[0][TEACHING_JOINTS[0]]
             source = root / "bad-gvhmr-smplx-joints.json"
-            source.write_text(json.dumps({"frames": frames}), encoding="utf-8")
+            source.write_text(
+                json.dumps({"schema": "neodojo.gvhmr_smplx_joints.v1", "frames": frames}),
+                encoding="utf-8",
+            )
 
             with self.assertRaisesRegex(ValueError, "missing teaching joints"):
+                write_gvhmr_json_motion_contract(root / "motion", source)
+
+    def test_gvhmr_json_motion_contract_rejects_future_schema(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "future-gvhmr-smplx-joints.json"
+            source.write_text(
+                json.dumps({"schema": "neodojo.gvhmr_smplx_joints.v2", "frames": build_smplx_fixture_frames(8)}),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "must use schema neodojo.gvhmr_smplx_joints.v1"):
                 write_gvhmr_json_motion_contract(root / "motion", source)
 
     def test_gvhmr_json_motion_contract_rejects_missing_export_file(self) -> None:
@@ -136,6 +152,17 @@ class DemoHtmlTests(unittest.TestCase):
             root = Path(temp_dir)
             with self.assertRaisesRegex(ValueError, "does not exist"):
                 write_gvhmr_json_motion_contract(root / "motion", root / "missing.json")
+
+    def test_motion_contract_rejects_future_manifest_schema(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            result = write_fixture_motion_contract(root / "motion", frame_count=10)
+            manifest = json.loads(result.motion_record_manifest_path.read_text(encoding="utf-8"))
+            manifest["schema"] = "neodojo.motion_record.v2"
+            result.motion_record_manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "must use schema neodojo.motion_record.v1"):
+                load_motion_record_frames(result.motion_record_manifest_path)
 
     def test_rejects_non_smplx_scoring_source(self) -> None:
         smplx = {"track_id": "smplx", "scoring_allowed": True}
@@ -355,12 +382,62 @@ class DemoHtmlTests(unittest.TestCase):
             html = result.html_path.read_text(encoding="utf-8")
 
         self.assertEqual(manifest["frame_count"], 10)
+        self.assertEqual(manifest["schema"], "neodojo.playback_manifest.v1")
         self.assertEqual(manifest["key_frame"], 5)
         self.assertEqual(manifest["scoring_source"], "smplx")
         self.assertFalse(manifest["tracks"]["g1"]["scoring_allowed"])
         self.assertEqual(manifest["annotation_name"], "fixture key frame")
+        self.assertEqual(manifest["annotation_manifest"]["schema"], "neodojo.annotation.v1")
+        self.assertIn("coordinates", manifest)
+        self.assertIn("contact", manifest)
         self.assertEqual(manifest["evidence"]["rendered_tracks"], ["smplx", "g1"])
         self.assertIn("Unitree G1 visual", html)
+
+    def test_teaching_playback_accepts_annotation_manifest_and_reference_video(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            annotations = root / "annotations.json"
+            annotations.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.annotation.v1",
+                        "keyframes": [
+                            {
+                                "name": "raise hands apex",
+                                "frame": 6,
+                                "terms": ["sink shoulders", "drop elbows"],
+                                "constraints": [{"source": "smplx", "kind": "elbow_drop"}],
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            reference = root / "reference.mp4"
+            reference.write_bytes(b"fixture reference video bytes")
+
+            result = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+                annotations_path=annotations,
+                reference_video=reference,
+                reference_trim_start_seconds=1.25,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(manifest["key_frame"], 6)
+        self.assertEqual(manifest["annotation_name"], "raise hands apex")
+        self.assertEqual(manifest["reference_video_sync"]["media"]["suffix"], ".mp4")
+        self.assertEqual(manifest["reference_video_sync"]["trim_start_seconds"], 1.25)
+        self.assertEqual(len(manifest["reference_video_sync"]["media"]["sha256"]), 64)
 
     def test_write_real_conversion_prep_from_source_index(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -391,8 +468,42 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["source"]["id"], "03-006")
         self.assertEqual(manifest["source"]["title_english"], "Two Hands Hold Up the Heavens")
         self.assertEqual(manifest["trim"]["duration_seconds"], 7.5)
+        self.assertFalse(manifest["source_media"]["validation"]["local_file_validated"])
         self.assertTrue(manifest["gpu_run"]["required"])
         self.assertIn("--from-gvhmr-json", manifest["next_commands"]["import_motion_record"])
+
+    def test_real_conversion_prep_records_local_video_checksum(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source_index = root / "sources.csv"
+            source_index.write_text(
+                "\n".join(
+                    [
+                        "category_order,category_chinese,category_slug,item_order,article_title_chinese,title_english,selected_quality,available_qualities,source_size_bytes,source_size_mib,width,height,resolution,duration_seconds,duration_minutes,bit_rate_kbps,codec,article_url,source_mp4_url,recommended_output_path,probe_error",
+                        "3,八段锦,03_baduanjin,6,5八段锦两手托天理三焦,Two Hands Hold Up the Heavens,SD,\"LD,SD\",45028780,42.94,1280,720,1280x720,220.843,3.68,1631.2,h264,https://example.invalid/article,https://example.invalid/source.mp4,video/03_baduanjin/006_two-hands-hold-up-the-heavens.mp4,",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            local_video = root / "source.mp4"
+            local_video.write_bytes(b"fixture source video bytes")
+
+            result = write_real_conversion_prep(
+                root / "prep",
+                source_index=source_index,
+                source_id="03-006",
+                local_video=local_video,
+                start_seconds=1.5,
+                end_seconds=9.0,
+                rights_notes="local proof only",
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertTrue(manifest["source_media"]["validation"]["local_file_validated"])
+        self.assertEqual(manifest["source_media"]["local_file"]["suffix"], ".mp4")
+        self.assertEqual(len(manifest["source_media"]["local_file"]["sha256"]), 64)
+        self.assertTrue(manifest["source_media"]["reference_video_sync"]["available"])
 
     def test_real_conversion_prep_rejects_unknown_source_id(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .contracts import require_schema
 from .fixtures import FIXTURE_FPS, FIXTURE_JOINT_SET, derive_g1_like_frame
 from .motion_contract import (
     TRACK_SCHEMA,
@@ -217,6 +218,9 @@ def build_g1_visual_track(
         "scoring_allowed": False,
         "fps": motion_manifest.get("fps", FIXTURE_FPS),
         "frame_count": len(g1_frames),
+        "timing": motion_manifest.get("timing"),
+        "coordinates": motion_manifest.get("coordinates"),
+        "contact": motion_manifest.get("contact"),
         "joint_set": FIXTURE_JOINT_SET,
         "data_files": {
             "frames": _relative_path(track_data_path, track_manifest_path.parent),
@@ -278,6 +282,7 @@ def resolve_g1_track_manifest(path: Path) -> Path:
 
 def load_g1_track_frames(track_manifest_path: Path) -> tuple[dict[str, Any], list[dict[str, list[float]]]]:
     manifest = json.loads(track_manifest_path.read_text(encoding="utf-8"))
+    require_schema(manifest, TRACK_SCHEMA, "G1 visual-track manifest")
     if manifest.get("track_id") != "g1":
         raise ValueError("expected a G1 visual-track manifest")
     if manifest.get("scoring_allowed"):
