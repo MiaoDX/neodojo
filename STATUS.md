@@ -131,10 +131,11 @@ or hosted/live-client Viser capture.
   bundle with that browser evidence.
 - `make gpu-handoff SOURCE_MATERIALIZATION=...` writes
   `outputs/gvhmr-gpu-handoff/manifest.json`, a README, and
-  `gvhmr-smplx-joints.template.json` plus `export_neodojo_gvhmr.py` for an
-  external GVHMR run. The manifest preserves source-materialization hash, trim,
-  input-video checksum, expected `neodojo.gvhmr_smplx_joints.v1` export path,
-  a GPU-side export command, and the local return command. The exporter helper
+  `source-materialization.json`, `gvhmr-smplx-joints.template.json`, and
+  `export_neodojo_gvhmr.py` for an external GVHMR run. The manifest preserves
+  source-materialization hash, trim, input-video checksum, expected
+  `neodojo.gvhmr_smplx_joints.v1` export path, a GPU-side export command, and
+  the local return command. The exporter helper uses bundle-local filenames and
   is intended to run after GVHMR in the GPU environment with `torch`, `smplx`,
   and licensed local SMPL-X assets. It does not copy source media or run GVHMR
   locally.
@@ -214,9 +215,10 @@ or hosted/live-client Viser capture.
   the later GPU run.
 - GVHMR GPU handoff package generated under `outputs/gvhmr-gpu-handoff-smoke/`
   in local smoke, writing `neodojo.gvhmr_gpu_handoff.v1` manifest metadata,
-  README instructions, a `neodojo.gvhmr_smplx_joints.v1` export template, and
-  the standalone `export_neodojo_gvhmr.py` GPU-side exporter helper. The smoke
-  used dry-run source materialization, so the handoff correctly reports
+  README instructions, a copyable `source-materialization.json`,
+  `neodojo.gvhmr_smplx_joints.v1` export template, and the standalone
+  `export_neodojo_gvhmr.py` GPU-side exporter helper. The smoke used dry-run
+  source materialization, so the handoff correctly reports
   `needs_materialization` until a real trimmed clip exists.
 - GVHMR result inspection smoke generated
   `outputs/gvhmr-result-inspection-smoke/manifest.json` from the existing local
@@ -406,8 +408,9 @@ and reference-frame extraction commands without processing media. Without
 artifacts for the later GPU GVHMR input handoff. `neodojo real-conversion
 package-gpu-handoff` packages that manifest into a GPU handoff directory with a
 machine-readable status, export template, provenance fields, upstream command
-template, GPU-side neodojo export helper, and local return command; it does not
-copy media or run GVHMR locally. `neodojo real-conversion
+template, copyable source-materialization metadata, GPU-side neodojo export
+helper, and local return command; it does not copy media or run GVHMR locally.
+`neodojo real-conversion
 inspect-gvhmr-result` writes a result
 inspection manifest for a returned `hmr4d_results.pt` when `torch` is available
 in the GVHMR/GPU environment, or for a JSON summary/export locally. It reports

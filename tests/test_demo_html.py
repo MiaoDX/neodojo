@@ -1789,6 +1789,9 @@ class DemoHtmlTests(unittest.TestCase):
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
             template = json.loads(result.export_template_path.read_text(encoding="utf-8"))
             exporter_exists = result.exporter_script_path.exists()
+            source_materialization_copy = json.loads(
+                result.source_materialization_copy_path.read_text(encoding="utf-8")
+            )
             exporter_script = result.exporter_script_path.read_text(encoding="utf-8")
             readme = result.readme_path.read_text(encoding="utf-8")
 
@@ -1801,16 +1804,29 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(template["schema"], "neodojo.gvhmr_smplx_joints.v1")
         self.assertTrue(template["template_only"])
         self.assertEqual(template["provenance"]["source_id"], "03-006")
+        self.assertEqual(source_materialization_copy["schema"], "neodojo.real_conversion_source_materialization.v1")
         self.assertTrue(exporter_exists)
+        self.assertEqual(
+            manifest["source_materialization_copy"],
+            str(result.source_materialization_copy_path),
+        )
         self.assertEqual(manifest["expected_export"]["gpu_exporter_script"], str(result.exporter_script_path))
+        self.assertEqual(manifest["expected_export"]["gpu_bundle_output"], "gvhmr-smplx-joints.json")
+        self.assertTrue(manifest["gpu_bundle"]["copyable"])
+        self.assertEqual(manifest["gpu_bundle"]["files"]["source_materialization"], "source-materialization.json")
         self.assertIn("gpu_export_neodojo", manifest["commands"])
         self.assertIn("export_neodojo_gvhmr.py", manifest["commands"]["gpu_export_neodojo"])
+        self.assertIn("--template gvhmr-smplx-joints.template.json", manifest["commands"]["gpu_export_neodojo"])
+        self.assertIn("--source-materialization source-materialization.json", manifest["commands"]["gpu_export_neodojo"])
+        self.assertIn("--out gvhmr-smplx-joints.json", manifest["commands"]["gpu_export_neodojo"])
         self.assertIn("real-conversion import-demo", manifest["commands"]["local_import_demo"])
         self.assertIn("Export GVHMR hmr4d_results.pt", exporter_script)
         self.assertIn("export_neodojo_gvhmr.py", readme)
+        self.assertIn("source-materialization.json", readme)
         self.assertIn("GVHMR GPU Handoff", readme)
         self.assertIn(trimmed, result.checked_paths)
         self.assertIn(result.exporter_script_path, result.checked_paths)
+        self.assertIn(result.source_materialization_copy_path, result.checked_paths)
 
     def test_gpu_handoff_exporter_script_is_dependency_lazy_for_help(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

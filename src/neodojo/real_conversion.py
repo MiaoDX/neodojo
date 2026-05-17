@@ -52,6 +52,7 @@ class GvhmrGpuHandoffWriteResult:
     readme_path: Path
     export_template_path: Path
     exporter_script_path: Path
+    source_materialization_copy_path: Path
     checked_paths: list[Path]
     status: str
 
@@ -558,6 +559,7 @@ def _write_gpu_handoff_readme(
     status: str,
     input_video: str | None,
     expected_export_json: str,
+    returned_export_filename: str,
     upstream_command: str,
     exporter_command: str,
     local_import_command: str,
@@ -574,6 +576,7 @@ def _write_gpu_handoff_readme(
             "## Files",
             "",
             f"- `{manifest_path.name}`: machine-readable handoff manifest.",
+            "- `source-materialization.json`: copy of the local source/trim handoff metadata for the GPU machine.",
             "- `gvhmr-smplx-joints.template.json`: JSON shape and provenance fields to preserve in the returned export.",
             "- `export_neodojo_gvhmr.py`: GPU-side helper for converting `hmr4d_results.pt` plus a licensed local SMPL-X model into the neodojo export schema.",
             "",
@@ -595,7 +598,7 @@ def _write_gpu_handoff_readme(
             "",
             "## Return Artifact",
             "",
-            f"Write the returned neodojo export to `{expected_export_json}` and include the provenance fields from the template.",
+            f"The GPU helper writes `{returned_export_filename}` in the handoff directory. Return that JSON with the handoff bundle, then keep or copy it to `{expected_export_json}` for local validation.",
             "",
             "## Local Validation And Demo",
             "",
@@ -624,6 +627,7 @@ def package_gvhmr_gpu_handoff(
     readme_path = out_dir / "README.md"
     export_template_path = out_dir / "gvhmr-smplx-joints.template.json"
     exporter_script_path = out_dir / "export_neodojo_gvhmr.py"
+    source_materialization_copy_path = out_dir / "source-materialization.json"
 
     source_hash = sha256_file(source_materialization)
     trim = materialization.get("trim") if isinstance(materialization.get("trim"), dict) else {}
@@ -648,8 +652,10 @@ def package_gvhmr_gpu_handoff(
     expected_export = (
         _as_posix(expected_export_json)
         if expected_export_json is not None
-        else str(gpu_handoff.get("expected_export_json") or out_dir / "gvhmr-smplx-joints.json")
+        else _as_posix(out_dir / "gvhmr-smplx-joints.json")
     )
+    suggested_export = gpu_handoff.get("expected_export_json")
+    suggested_export = suggested_export if isinstance(suggested_export, str) else None
     upstream_command = str(
         gpu_handoff.get("command_template")
         or "python tools/demo/demo.py --video <trimmed-video> --output_root <gvhmr-output-dir>"
@@ -664,9 +670,9 @@ def package_gvhmr_gpu_handoff(
         "python export_neodojo_gvhmr.py "
         "--hmr4d-results <gvhmr-output-dir>/hmr4d_results.pt "
         "--smplx-model-dir <path-to-licensed-smplx-model-dir> "
-        f"--template {_as_posix(export_template_path)} "
-        f"--source-materialization {_as_posix(source_materialization)} "
-        f"--out {expected_export} "
+        f"--template {export_template_path.name} "
+        f"--source-materialization {source_materialization_copy_path.name} "
+        f"--out {Path(expected_export).name} "
         "--parameter-block smpl_params_global "
         "--fps 30 "
         "--routine Baduanjin "
@@ -704,6 +710,7 @@ def package_gvhmr_gpu_handoff(
         encoding="utf-8"
     )
     exporter_script_path.write_text(exporter_script, encoding="utf-8")
+    _write_json(source_materialization_copy_path, materialization)
 
     manifest = {
         "schema": GVHMR_GPU_HANDOFF_SCHEMA,
@@ -711,6 +718,7 @@ def package_gvhmr_gpu_handoff(
         "fixture_only": False,
         "media_committed_to_repo": False,
         "source_materialization": _as_posix(source_materialization),
+        "source_materialization_copy": _as_posix(source_materialization_copy_path),
         "source_materialization_sha256": source_hash,
         "source": {
             "source_id": source_prep.get("source_id"),
@@ -729,8 +737,22 @@ def package_gvhmr_gpu_handoff(
         "expected_export": {
             "schema": GVHMR_JOINT_EXPORT_SCHEMA,
             "path": expected_export,
+            "suggested_path_from_source_prep": suggested_export,
             "template": _as_posix(export_template_path),
             "gpu_exporter_script": _as_posix(exporter_script_path),
+            "gpu_bundle_output": Path(expected_export).name,
+        },
+        "gpu_bundle": {
+            "copyable": True,
+            "files": {
+                "manifest": manifest_path.name,
+                "readme": readme_path.name,
+                "source_materialization": source_materialization_copy_path.name,
+                "export_template": export_template_path.name,
+                "exporter_script": exporter_script_path.name,
+                "returned_export": Path(expected_export).name,
+            },
+            "notes": "Copy this directory plus the materialized trimmed video to the GPU machine; the exporter command uses bundle-local filenames.",
         },
         "commands": {
             "upstream_gvhmr": upstream_command,
@@ -752,12 +774,20 @@ def package_gvhmr_gpu_handoff(
         status=status,
         input_video=input_video,
         expected_export_json=expected_export,
+        returned_export_filename=Path(expected_export).name,
         upstream_command=upstream_command,
         exporter_command=exporter_command,
         local_import_command=local_import_command,
     )
 
-    checked_paths = [manifest_path, readme_path, export_template_path, exporter_script_path, source_materialization]
+    checked_paths = [
+        manifest_path,
+        readme_path,
+        export_template_path,
+        exporter_script_path,
+        source_materialization_copy_path,
+        source_materialization,
+    ]
     if input_exists and input_video_path is not None:
         checked_paths.append(input_video_path)
     return GvhmrGpuHandoffWriteResult(
@@ -765,6 +795,7 @@ def package_gvhmr_gpu_handoff(
         readme_path=readme_path,
         export_template_path=export_template_path,
         exporter_script_path=exporter_script_path,
+        source_materialization_copy_path=source_materialization_copy_path,
         checked_paths=checked_paths,
         status=status,
     )

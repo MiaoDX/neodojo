@@ -145,14 +145,17 @@ make gpu-handoff \
 ```
 
 This writes `outputs/gvhmr-gpu-handoff/manifest.json`, a README,
-`gvhmr-smplx-joints.template.json`, and `export_neodojo_gvhmr.py`. It reports
-`ready_for_gpu` only when the source-materialization manifest points to an
-existing materialized trimmed clip with matching checksum; dry-run handoffs
-correctly report `needs_materialization`.
+`source-materialization.json`, `gvhmr-smplx-joints.template.json`, and
+`export_neodojo_gvhmr.py`. It reports `ready_for_gpu` only when the
+source-materialization manifest points to an existing materialized trimmed clip
+with matching checksum; dry-run handoffs correctly report
+`needs_materialization`.
 After GVHMR writes `hmr4d_results.pt` on the GPU machine, the packaged exporter
 can be run there with a licensed local SMPL-X model directory to write the
 expected `neodojo.gvhmr_smplx_joints.v1` JSON. The exporter remains a GPU-side
-handoff helper; it is not exercised by default on the local CPU workspace.
+handoff helper; it is not exercised by default on the local CPU workspace. Its
+command uses bundle-local filenames so the handoff directory can be copied to a
+GPU machine without rewriting paths.
 Inspect the returned GVHMR result structure before writing the final neodojo
 export:
 

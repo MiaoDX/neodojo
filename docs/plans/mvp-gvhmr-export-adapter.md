@@ -42,6 +42,8 @@ export helper instead of only a blank JSON template.
 ## Outputs
 
 - `export_neodojo_gvhmr.py` in every `package-gpu-handoff` output directory.
+- A bundled `source-materialization.json` copy so the GPU export command does
+  not depend on repo-local paths after the handoff directory is copied.
 - Handoff manifest fields pointing to that exporter and the command template.
 - README instructions for running GVHMR first, then the exporter, then the
   local `make demo-real` return path.
@@ -60,9 +62,12 @@ export helper instead of only a blank JSON template.
 
 2. Wire the helper into the handoff bundle.
    - [x] Copy the exporter into `outputs/gvhmr-gpu-handoff/`.
+   - [x] Copy `source-materialization.json` into the handoff bundle.
    - [x] Record it in the manifest under the expected export and command
      sections.
-   - [x] Mention it in the generated handoff README.
+   - [x] Use bundle-local filenames in the GPU-side exporter command.
+   - [x] Mention the exporter and source-materialization copy in the generated
+     handoff README.
 
 3. Verify locally without pretending to run GVHMR.
    - [x] Compile the generated exporter script.
@@ -74,11 +79,14 @@ export helper instead of only a blank JSON template.
 
 - `make gpu-handoff SOURCE_MATERIALIZATION=...` writes
   `export_neodojo_gvhmr.py` beside `manifest.json`, `README.md`, and
-  `gvhmr-smplx-joints.template.json`.
+  `gvhmr-smplx-joints.template.json`, plus a copyable
+  `source-materialization.json`.
 - The handoff manifest records `commands.gpu_export_neodojo` and
   `expected_export.gpu_exporter_script`.
 - The generated README has a GPU-side exporter command after the upstream
   GVHMR command.
+- The GPU-side exporter command uses bundle-local filenames for the template,
+  source-materialization manifest, and returned JSON.
 - Unit tests compile the generated exporter and run `--help` without optional
   GPU dependencies installed.
 - Docs continue to state that actual GVHMR inference, SMPL-X model execution,
