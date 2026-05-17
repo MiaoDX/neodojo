@@ -248,6 +248,17 @@ motion artifact, or hosted/live-client Viser capture.
   `neodojo.gvhmr_gpu_input_archive.v1` manifest with `media_included: false`
   and `safe_for_git: true`; archive members are metadata/scripts only and no
   `.mp4`, `.pt`, `.pkl`, or `.npz` files are present.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26005182190` verified the
+  current `main` public-demo lane after the one-command GPU archive target
+  landed: lint, plan checks, tests, wheel build, real-handoff smoke, GPU input
+  bundle smoke, GPU input archive smoke, browser capture, public-demo artifact
+  upload, capture-bundle upload, Pages artifact upload, and Pages deploy
+  passed. The downloaded `neodojo-public-demo` artifact contains `index.html`,
+  `scene.json`, `manifest.json`, `screenshot.svg`, and
+  `neodojo-demo.rrd`; the live Pages manifest remains fixture-only and carries
+  the expected SMPL-X teacher, Unitree G1 visual, routine feedback, and SMPL-X
+  surface proxy labels.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
@@ -273,6 +284,14 @@ motion artifact, or hosted/live-client Viser capture.
   the copyable exporter bundle metadata. CI uploads the metadata-only handoff
   smoke files as `neodojo-real-handoff-smoke` without including the placeholder
   `.mp4`.
+- `make real-gpu-archive LOCAL_VIDEO=...` has been smoke-tested against an
+  ignored local Bilibili candidate. The command wrote
+  `outputs/real-gpu-archive-command-smoke/gpu-input-archive/manifest.json`
+  with `status: archive_with_media`, `media_included: true`, and
+  `safe_for_git: false`; the archive members include `RUN_ON_GPU.md`,
+  `run_gvhmr_neodojo.sh`, `export_neodojo_gvhmr.py`,
+  `gvhmr-smplx-joints.template.json`, `source-materialization.json`, and
+  `source/trimmed-clip.mp4`.
 - GVHMR GPU handoff package generated under `outputs/gvhmr-gpu-handoff-smoke/`
   in local smoke, writing `neodojo.gvhmr_gpu_handoff.v1` manifest metadata,
   README instructions, a copyable `source-materialization.json`,
@@ -547,7 +566,9 @@ ignored Bilibili Baduanjin source candidate has been materialized under
 `outputs/real-handoff-local-bilibili/` and a copyable media-including GPU input
 bundle exists under `outputs/gvhmr-gpu-input-local-bilibili/`, with a
 `run_gvhmr_neodojo.sh` runner, rights marked unconfirmed, and media kept out of
-git. A local ignored transfer archive has also been generated at
+git. The same media-containing archive can now be regenerated in one command
+with `make real-gpu-archive LOCAL_VIDEO=...`. A local ignored transfer archive
+has also been generated at
 `outputs/gvhmr-gpu-input-archive-local-bilibili/neodojo-gvhmr-gpu-input.tar.gz`;
 its manifest reports `archive_with_media`, `media_included: true`, and
 `safe_for_git: false`, and the extracted archive has been checked to contain

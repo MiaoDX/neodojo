@@ -54,6 +54,10 @@ validation boundaries.
   media-containing ignored archive.
 - The archive manifest reports `archive_with_media`, `media_included: true`,
   and `safe_for_git: false`.
+- The local smoke artifact at
+  `outputs/real-gpu-archive-command-smoke/gpu-input-archive/manifest.json`
+  records `source_id: local-archive-command-smoke`, a 2-second trim, and
+  `ready_for_gpu_with_media` input status.
 - Extracting the archive shows the trimmed clip, `RUN_ON_GPU.md`,
   `run_gvhmr_neodojo.sh`, `export_neodojo_gvhmr.py`, the export template, and
   source metadata.
