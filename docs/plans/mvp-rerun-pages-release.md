@@ -1,6 +1,6 @@
 # MVP Rerun Pages Release Plan
 
-Status: IMPLEMENTED OPTIONAL SDK EXPORT; LIVE PAGES VERIFICATION PENDING
+Status: IMPLEMENTED OPTIONAL SDK EXPORT AND VERIFIED LIVE PAGES PUBLICATION
 
 ## Goal
 
@@ -18,7 +18,7 @@ scene/timeline contract
 
 The current static fallback remains honest and useful for default CI. The
 optional SDK path writes a true `.rrd` when `rerun-sdk` is installed. Live Pages
-verification still waits on repository settings.
+publication is verified at `https://miaodx.com/neodojo/`.
 
 ## Dependencies
 
@@ -63,14 +63,14 @@ verification still waits on repository settings.
    - [x] Keep fallback JSON path available when SDK is absent or not requested.
 
 2. Harden CI/Page publish.
-   - [ ] Cache/install SDK efficiently if CI should publish true `.rrd` instead
-     of the default fallback.
-   - [ ] Verify artifact upload and Pages deployment.
-   - [ ] Capture or generate a screenshot/GIF from the published artifact.
+   - [x] Keep default CI on the lightweight fallback `.rrd`; install/cache the
+     SDK only if future policy requires true `.rrd` publication.
+   - [x] Verify artifact upload and Pages deployment.
+   - [x] Verify the published SVG screenshot from the live artifact.
 
 3. Update public docs.
-   - [ ] Add live demo link only after Pages URL is verified.
-   - [ ] Mark the demo fixture-only until a real GVHMR artifact enters.
+   - [x] Add live demo link only after Pages URL is verified.
+   - [x] Mark the demo fixture-only until a real GVHMR artifact enters.
 
 ## Acceptance Evidence
 
@@ -78,8 +78,8 @@ verification still waits on repository settings.
   `rerun-sdk` is installed.
 - Default CI continues to produce and upload the fallback recording and static
   viewer artifact without a heavy default dependency, verified by GitHub
-  Actions run `25998306700`.
-- The live GitHub Pages URL is verified before README links are added.
+  Actions run `25999641059`.
+- The live GitHub Pages URL is verified at `https://miaodx.com/neodojo/`.
 - Default CI remains green and still uploads the public-demo artifact when Pages
   deployment is not enabled.
 - README.md and README.zh.md link to the live fixture-only demo with matching
@@ -94,7 +94,7 @@ verification still waits on repository settings.
 
 ## Stop Condition
 
-Stopped for the SDK slice when the optional exporter wrote a true Rerun SDK
-recording and the fallback path remained available. Continue only when CI cache
-policy, repository Pages settings, and the `NEODOJO_DEPLOY_PAGES` deploy toggle
-are available for live URL verification.
+Stopped when the optional exporter can write a true Rerun SDK recording, the
+default fallback path remains available, CI publishes the fixture-only static
+artifact through GitHub Pages, and README.md/README.zh.md link to the verified
+fixture-only live URL and screenshot.

@@ -17,11 +17,11 @@ optional MuJoCo render evidence, optional true Rerun SDK `.rrd` export,
 an optional first Viser local runtime, optional source-media probing, local
 source-media materialization handoff, a fixture-only static public-demo fallback
 artifact, a generated roboharness-style capture bundle boundary, and a GitHub
-Actions workflow for the fixture public-demo lane. It
+Actions workflow with verified fixture-only Pages publication. It
 does not yet have a checked-in GVHMR/GMR execution pipeline, simulator runtime
-pipeline, full licensed SMPL-X mesh generation, verified live GitHub Pages URL,
-production Viser teaching UX, or broad static-analysis/release gates beyond the
-minimal `make lint` and `make build` surface.
+pipeline, full licensed SMPL-X mesh generation, production Viser teaching UX,
+or broad static-analysis/release gates beyond the minimal `make lint` and
+`make build` surface.
 
 ## Shared Goal
 
@@ -75,7 +75,7 @@ of truth for the next waves.
 | [mvp-native-gmr-runner.md](mvp-native-gmr-runner.md) | implemented first pickle adapter; local GMR execution remains external | Native GMR robot-motion pickle parsing beyond normalized JSON import. |
 | [mvp-smplx-body-surface-playback.md](mvp-smplx-body-surface-playback.md) | implemented surface proxy and licensed-asset boundary; full mesh generation remains follow-on | Dependency-light SMPL-X surface proxy, local-only licensed asset descriptor, and future mesh/body-model playback. |
 | [mvp-viser-multicamera-runtime.md](mvp-viser-multicamera-runtime.md) | implemented first optional server, camera/anchor controls, and generated multi-camera preview evidence | Local Viser runtime, camera/annotation controls, and dependency-light front/side/top visual smoke workflow. |
-| [mvp-rerun-pages-release.md](mvp-rerun-pages-release.md) | implemented optional SDK export; live Pages verification pending | True Rerun SDK `.rrd` export and verified live GitHub Pages URL. |
+| [mvp-rerun-pages-release.md](mvp-rerun-pages-release.md) | implemented optional SDK export and verified live Pages publication | True Rerun SDK `.rrd` export and verified live GitHub Pages URL. |
 | [mvp-feedback-routine-review.md](mvp-feedback-routine-review.md) | implemented | Broader key-frame/posture feedback and routine-level review. |
 | [mvp-gvhmr-source-validation.md](mvp-gvhmr-source-validation.md) | implemented validator; blocked on a real GVHMR export for final proof | Validation that imported GVHMR artifacts match the materialized source clip and trim. |
 | [mvp-quality-release-surface.md](mvp-quality-release-surface.md) | implemented first quality gate | Project-owned static quality check for MVP plan links and scaffolding beyond the minimal lint/build commands. |
@@ -169,10 +169,10 @@ PBHC fixtures may be useful bootstrap data, but only as externally referenced
 development samples. Do not commit copied `.pkl` or `.npz` files. Record source
 URL, license, checksum, and local path in a manifest.
 
-The public demo lane starts from the bootstrap fixture lane. It may publish
-fixture-only Rerun Web Viewer artifacts through GitHub Pages after the
-generation and CI surface exists, but it must remain visibly labeled as
-fixture-only until a real GVHMR artifact enters the same contracts.
+The public demo lane starts from the bootstrap fixture lane. It publishes the
+fixture-only public artifact through GitHub Pages at
+`https://miaodx.com/neodojo/` and must remain visibly labeled as fixture-only
+until a real GVHMR artifact enters the same contracts.
 
 ## Shared Compute Notes
 

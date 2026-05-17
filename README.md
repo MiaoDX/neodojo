@@ -171,6 +171,10 @@ execution pipeline, simulator runtime pipeline, licensed SMPL-X mesh
 generation, production teaching UI, or end-to-end real generated motion
 artifact.
 
+Fixture-only public demo: [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
+
+![Fixture-only neodojo public demo screenshot](https://miaodx.com/neodojo/screenshot.svg)
+
 What can be run now:
 
 ```bash
@@ -292,8 +296,8 @@ capture bundle, and smoke check in one local command.
 validates an existing
 `outputs/public-demo` artifact set. The GitHub Actions workflow at
 `.github/workflows/public-demo.yml` runs the same fixture lane, uploads the
-artifact, and can publish it to GitHub Pages when Pages is enabled for the repo
-and `NEODOJO_DEPLOY_PAGES=true` is set as a repository variable.
+artifact, and publishes the fixture-only public demo to GitHub Pages when
+`NEODOJO_DEPLOY_PAGES=true` is set as a repository variable.
 `make lint` is currently a syntax/import bytecode compile check; `make check`
 validates MVP plan links and minimum plan scaffolding; `make build` writes a
 wheel under ignored `outputs/dist/`.
@@ -344,8 +348,8 @@ In progress:
       key-frame anchors and posture terms
 - [x] Fixture-only static public-demo export with scene/timeline contract,
       `.rrd` fallback artifact, HTML, and SVG screenshot
-- [x] Optional true Rerun SDK `.rrd` export; live GitHub Pages URL verification
-      remains repository-setting dependent
+- [x] Optional true Rerun SDK `.rrd` export; live fixture-only GitHub Pages URL
+      verified at [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
 - [x] Optional first Viser local runtime with synchronized SMPL-X/G1 tracks,
       frame slider, camera/annotation controls, trajectory overlays, and
       scoring-source labels

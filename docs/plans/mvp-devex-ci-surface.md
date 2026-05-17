@@ -56,20 +56,22 @@ quality checks, tests, wheel build, and `make demo-public`, uploads
 capture-bundle artifact containing `outputs/capture` plus the referenced
 public-demo, Viser runtime, and G1 render evidence, and uploads the public-demo
 directory as the GitHub Pages artifact. The deploy job runs only on `main`
-outside pull
-requests when Pages is configured and `NEODOJO_DEPLOY_PAGES=true` is set as a
-repository variable. Pages still requires repository Pages configuration to
-expose a live URL.
+outside pull requests when Pages is configured and
+`NEODOJO_DEPLOY_PAGES=true` is set as a repository variable. Pages is now
+configured and the live fixture-only URL is verified at
+`https://miaodx.com/neodojo/`.
 
 GitHub Actions run
-`https://github.com/MiaoDX/neodojo/actions/runs/25999494355` verified the
+`https://github.com/MiaoDX/neodojo/actions/runs/25999641059` verified the
 default CI lane on `main`: lint, plan quality checks, tests, wheel build,
 public-demo generation, public-demo artifact upload, capture-bundle artifact
-upload, and Pages artifact upload completed. The downloaded
+upload, Pages artifact upload, and Pages deployment completed. The downloaded
 `neodojo-public-demo` artifact passed
-`PYTHONPATH=src python3 -m neodojo demo smoke --public-demo outputs/ci-public-demo-final2`,
+`PYTHONPATH=src python3 -m neodojo demo smoke --public-demo outputs/ci-public-demo-latest`,
 and the downloaded `neodojo-capture-bundle` artifact contained all manifest
-references needed for the generated multi-camera evidence bundle.
+references needed for the generated multi-camera evidence bundle. The live
+`https://miaodx.com/neodojo/` HTML, screenshot SVG, and manifest returned the
+expected fixture-only labels.
 
 ## Inputs
 
@@ -153,12 +155,12 @@ references needed for the generated multi-camera evidence bundle.
    - [x] Do not publish source videos, generated motion files, checkpoints,
      logs, or large private artifacts.
    - [x] Keep repository owner setup explicit through the
-     `NEODOJO_DEPLOY_PAGES` repository variable; no live URL is claimed in
-     docs.
+     `NEODOJO_DEPLOY_PAGES` repository variable.
+   - [x] Verify the live Pages URL before adding public README links.
 
 7. Update docs after verification.
-   - [x] README.md and README.zh.md describe the local command and workflow but
-     do not link a Pages URL.
+   - [x] README.md and README.zh.md describe the local command, workflow, and
+     verified Pages URL.
    - [x] STATUS.md lists new commands only after they run locally.
    - [x] Keep fixture-only limitations visible in every user-facing mention.
 
@@ -170,13 +172,13 @@ references needed for the generated multi-camera evidence bundle.
   same commands.
 - CI uploads the generated `.rrd` fallback recording, static viewer page, SVG
   screenshot, public-demo manifest, and a generated capture bundle artifact with
-  referenced evidence, verified by run `25999494355`.
+  referenced evidence, verified by run `25999641059`.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
-- GitHub Pages can publish only safe static demo assets once repository Pages is
+- GitHub Pages publishes only safe static demo assets once repository Pages is
   enabled and the deploy toggle is set.
-- README.md and README.zh.md mention the public demo command and workflow
-  without claiming a live Pages URL.
+- README.md and README.zh.md mention the public demo command, workflow,
+  verified live URL, and fixture-only status.
 - Generated outputs, screenshots, `.rrd`, videos, logs, and large artifacts
   remain out of tracked source except for deliberate publish artifacts.
 

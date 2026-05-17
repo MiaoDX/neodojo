@@ -12,10 +12,11 @@ fixture-backed and external-JSON `motion-record` paths, `robot-model`,
 self-contained synthetic web demo, minimal `make lint`, `make check`, and
 `make build` commands, and a `make demo-public` command plus `make verify` and
 GitHub Actions workflow for the fixture public-demo artifact and generated
-capture bundle. `real-conversion materialize-source` can also prepare a
-dry-run or ffmpeg-backed local source clip handoff for a later GPU GVHMR run,
-and `real-conversion validate-source` can validate a GVHMR JSON export against
-that handoff before import. There is
+capture bundle, with a verified live fixture-only GitHub Pages demo at
+`https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
+prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
+GVHMR run, and `real-conversion validate-source` can validate a GVHMR JSON
+export against that handoff before import. There is
 still no checked-in GVHMR/GMR execution pipeline, simulator runtime pipeline,
 full licensed SMPL-X mesh generation, real generated motion artifact, or
 production UI server.
@@ -94,8 +95,8 @@ production UI server.
   a default `.rrd`-named JSON fallback artifact.
 - Optional true Rerun SDK `.rrd` export is available through
   `demo export-rerun --use-rerun-sdk` when the optional `rerun` extra is
-  installed. Live GitHub Pages verification still depends on repository Pages
-  settings.
+  installed. The fixture-only GitHub Pages public demo is verified at
+  `https://miaodx.com/neodojo/`.
 - Optional first Viser local runtime is available through `demo serve-viser`
   when the optional `viser` extra is installed. It loads the shared
   scene/timeline contract, shows synchronized SMPL-X and G1 3D tracks,
@@ -117,15 +118,16 @@ production UI server.
 - `.github/workflows/public-demo.yml` runs tests, builds the fixture public demo,
   builds a wheel, uploads the standalone public-demo artifact plus a
   capture-bundle artifact containing the capture manifest and referenced
-  generated evidence, and can publish the static public-demo output to GitHub
-  Pages from `main` when Pages is enabled and the repository variable
-  `NEODOJO_DEPLOY_PAGES=true` is set.
+  generated evidence, and publishes the static public-demo output to GitHub
+  Pages from `main` when the repository variable `NEODOJO_DEPLOY_PAGES=true` is
+  set.
 - GitHub Actions run
-  `https://github.com/MiaoDX/neodojo/actions/runs/25999494355` verified the
+  `https://github.com/MiaoDX/neodojo/actions/runs/25999641059` verified the
   default CI lane on `main`, uploaded the `neodojo-public-demo` and
   `neodojo-capture-bundle` artifacts, produced a CI-generated `index.html` that
-  passes `neodojo demo smoke`, and produced a capture-bundle artifact whose
-  manifest references resolve inside the downloaded bundle.
+  passes `neodojo demo smoke`, produced a capture-bundle artifact whose
+  manifest references resolve inside the downloaded bundle, and deployed the
+  fixture-only Pages URL `https://miaodx.com/neodojo/`.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
@@ -297,9 +299,6 @@ when source id, trim, input path/checksum, and duration checks pass.
   bundle:
   `docs/plans/mvp-roboharness-capture-boundary.md`. The first generated
   evidence bundle exists and is wired into `make demo-public`.
-- Verification of the live GitHub Pages URL:
-  `docs/plans/mvp-rerun-pages-release.md`. True Rerun SDK `.rrd` export exists
-  as an optional command.
 
 ## Next Safe Task
 

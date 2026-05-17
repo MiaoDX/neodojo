@@ -1,6 +1,6 @@
 # MVP Visualization And Public Demo Plan
 
-Status: IMPLEMENTED WITH STATIC FALLBACK AND OPTIONAL RERUN SDK EXPORT; PAGES PUBLISH REMAINS FOLLOW-ON
+Status: IMPLEMENTED WITH STATIC FALLBACK, OPTIONAL RERUN SDK EXPORT, AND VERIFIED PAGES PUBLISH
 
 ## Goal
 
@@ -35,8 +35,9 @@ the same command writes a true Rerun SDK recording.
 The static HTML page is the current CI/publishable artifact. It is fixture-only,
 shows SMPL-X and G1 labels, preserves the G1 non-scoring boundary, and embeds
 the scene contract for smoke checks. Verified live GitHub Pages URL evidence
-remains follow-on work. The DevEx/CI slice now stages the static artifact for
-Pages and publishes from `main` when repository Pages settings allow it.
+is now available at `https://miaodx.com/neodojo/`. The DevEx/CI slice stages
+the static artifact for Pages and publishes from `main` when the deploy toggle
+is enabled.
 
 ## Dependencies
 
@@ -133,8 +134,8 @@ Pages and publishes from `main` when repository Pages settings allow it.
 
 7. Update human docs only after publishing exists.
    - [x] README.md and README.zh.md document the local command and fixture-only
-     status without claiming GitHub Pages publication.
-   - [ ] Add the GitHub Pages link and embedded screenshot/GIF only after the
+     status.
+   - [x] Add the GitHub Pages link and embedded screenshot/GIF only after the
      workflow publishes the artifact.
 
 ## Acceptance Evidence
@@ -167,5 +168,5 @@ Pages and publishes from `main` when repository Pages settings allow it.
 
 Stopped when a fixture-only but honest static public demo can be generated,
 visually smoke-tested, and staged for GitHub Pages through artifacts, with the
-scene/timeline contract ready for the optional Viser runtime. Verified live
-Pages publication remains follow-on work.
+scene/timeline contract ready for the optional Viser runtime, and the live
+Pages artifact verified at `https://miaodx.com/neodojo/`.
