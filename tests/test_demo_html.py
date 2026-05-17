@@ -1176,7 +1176,7 @@ class DemoHtmlTests(unittest.TestCase):
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
 
         self.assertTrue(manifest["source"]["real_browser_capture"])
-        self.assertTrue(manifest["source"]["real_offscreen_recorder"])
+        self.assertFalse(manifest["source"]["real_offscreen_recorder"])
         self.assertFalse(manifest["source"]["real_roboharness_integration"])
         self.assertEqual(
             manifest["artifact_groups"]["browser_capture"]["screenshot"],

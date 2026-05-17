@@ -216,7 +216,7 @@ def write_capture_bundle(
             if browser_manifest
             else "generated_evidence_only",
             "real_browser_capture": bool(browser_manifest),
-            "real_offscreen_recorder": bool(browser_manifest),
+            "real_offscreen_recorder": False,
             "real_simulator_recorder": False,
             "real_roboharness_integration": False,
             "notes": (
