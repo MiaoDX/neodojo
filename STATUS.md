@@ -121,9 +121,11 @@ production UI server.
   Pages from `main` when Pages is enabled and the repository variable
   `NEODOJO_DEPLOY_PAGES=true` is set.
 - GitHub Actions run
-  `https://github.com/MiaoDX/neodojo/actions/runs/25998662280` verified the
-  default CI lane on `main`, uploaded the `neodojo-public-demo` artifact, and
-  produced a CI-generated `index.html` that passes `neodojo demo smoke`.
+  `https://github.com/MiaoDX/neodojo/actions/runs/25999494355` verified the
+  default CI lane on `main`, uploaded the `neodojo-public-demo` and
+  `neodojo-capture-bundle` artifacts, produced a CI-generated `index.html` that
+  passes `neodojo demo smoke`, and produced a capture-bundle artifact whose
+  manifest references resolve inside the downloaded bundle.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.

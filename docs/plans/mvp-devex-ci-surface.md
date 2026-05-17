@@ -62,11 +62,14 @@ repository variable. Pages still requires repository Pages configuration to
 expose a live URL.
 
 GitHub Actions run
-`https://github.com/MiaoDX/neodojo/actions/runs/25998306700` verified the
+`https://github.com/MiaoDX/neodojo/actions/runs/25999494355` verified the
 default CI lane on `main`: lint, plan quality checks, tests, wheel build,
-public-demo generation, artifact upload, and Pages artifact upload completed.
-The downloaded `neodojo-public-demo` artifact passed
-`PYTHONPATH=src python3 -m neodojo demo smoke --public-demo outputs/ci-public-demo`.
+public-demo generation, public-demo artifact upload, capture-bundle artifact
+upload, and Pages artifact upload completed. The downloaded
+`neodojo-public-demo` artifact passed
+`PYTHONPATH=src python3 -m neodojo demo smoke --public-demo outputs/ci-public-demo-final2`,
+and the downloaded `neodojo-capture-bundle` artifact contained all manifest
+references needed for the generated multi-camera evidence bundle.
 
 ## Inputs
 
@@ -167,8 +170,7 @@ The downloaded `neodojo-public-demo` artifact passed
   same commands.
 - CI uploads the generated `.rrd` fallback recording, static viewer page, SVG
   screenshot, public-demo manifest, and a generated capture bundle artifact with
-  referenced evidence, verified by run `25998306700` for the original
-  public-demo lane and by later runs after the capture bundle was added.
+  referenced evidence, verified by run `25999494355`.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages can publish only safe static demo assets once repository Pages is
