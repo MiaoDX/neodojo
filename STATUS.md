@@ -20,10 +20,11 @@ capture bundle, and metadata-only real-handoff smoke artifact,
 real-gpu-archive`, `make gpu-input-archive-smoke`, and
 `make gpu-execution-probe` for external GVHMR run metadata, transfer
 bundles/archives, CI-safe GPU runner packaging, reproducible GPU/provider
-readiness classification, and a tracked external-GPU operator runbook, `make
-gvhmr-inspect` for returned GVHMR result inspection, and `make demo-real` for a
-validated external GVHMR JSON once a GPU artifact exists, with a verified live
-fixture-only GitHub Pages demo at
+readiness classification, metadata-only CI GPU execution probe artifacts, and a
+tracked external-GPU operator runbook, `make gvhmr-inspect` for returned GVHMR
+result inspection, and `make demo-real` for a validated external GVHMR JSON
+once a GPU artifact exists, with a verified live fixture-only GitHub Pages demo
+at
 `https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, `real-conversion package-gpu-handoff` can package the handoff
@@ -260,6 +261,17 @@ motion artifact, or hosted/live-client Viser capture.
   `neodojo-demo.rrd`; the live Pages manifest remains fixture-only and carries
   the expected SMPL-X teacher, Unitree G1 visual, routine feedback, and SMPL-X
   surface proxy labels.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26005618093` verified the
+  GPU execution probe artifact on `main`: lint, plan checks, tests, wheel
+  build, real-handoff smoke, GPU input bundle smoke, GPU input archive smoke,
+  `make gpu-execution-probe`, probe artifact upload, browser capture,
+  public-demo artifact upload, capture-bundle upload, Pages artifact upload,
+  and Pages deploy passed. The downloaded `neodojo-gpu-execution-probe`
+  artifact contains `neodojo.gvhmr_gpu_execution_probe.v1`, reports
+  `external_gpu_artifact_missing`, `safe_for_git: true`,
+  `secret_values_recorded: false`, no local CUDA, no Docker GPU runtime, and no
+  configured provider candidates.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.

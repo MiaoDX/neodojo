@@ -111,6 +111,14 @@ passed, the `neodojo-gpu-input-bundle-smoke` artifact uploaded
 `run_gvhmr_neodojo.sh`, and Pages deployed. The artifact does not include
 source media.
 
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26005618093` verified the
+metadata-only GPU execution probe artifact on `main`: `make
+gpu-execution-probe` passed, the `neodojo-gpu-execution-probe` artifact
+uploaded `neodojo.gvhmr_gpu_execution_probe.v1`, no secret values were recorded,
+and the artifact classified the CI runner as `external_gpu_artifact_missing`
+with no local CUDA, Docker GPU runtime, or configured GPU provider candidate.
+
 ## Inputs
 
 - Existing fixture generation commands.
@@ -230,7 +238,7 @@ source media.
 - CI uploads the metadata-only GPU input archive smoke artifact with no source
   media.
 - CI uploads the metadata-only GPU execution probe artifact with command/env-key
-  readiness evidence and no secret values.
+  readiness evidence and no secret values, verified by run `26005618093`.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages publishes only safe static demo assets once repository Pages is
