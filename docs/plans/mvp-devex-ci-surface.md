@@ -1,6 +1,6 @@
 # MVP DevEx And CI Surface Plan
 
-Status: IMPLEMENTED
+Status: IMPLEMENTED AND CI VERIFIED
 
 ## Goal
 
@@ -54,6 +54,13 @@ the GitHub Pages artifact. The deploy job runs only on `main` outside pull
 requests when Pages is configured and `NEODOJO_DEPLOY_PAGES=true` is set as a
 repository variable. Pages still requires repository Pages configuration to
 expose a live URL.
+
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/25998306700` verified the
+default CI lane on `main`: lint, plan quality checks, tests, wheel build,
+public-demo generation, artifact upload, and Pages artifact upload completed.
+The downloaded `neodojo-public-demo` artifact passed
+`PYTHONPATH=src python3 -m neodojo demo smoke --public-demo outputs/ci-public-demo`.
 
 ## Inputs
 
@@ -151,7 +158,8 @@ expose a live URL.
 - Unit tests and manifest validation pass locally; CI is configured to run the
   same commands.
 - CI uploads the generated `.rrd` fallback recording, static viewer page, SVG
-  screenshot, and public-demo manifest as artifacts.
+  screenshot, and public-demo manifest as artifacts, verified by run
+  `25998306700`.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages can publish only safe static demo assets once repository Pages is

@@ -77,7 +77,8 @@ verification still waits on repository settings.
 - Optional smoke writes a true `.rrd` with `rerun.actual_rrd: true` when
   `rerun-sdk` is installed.
 - Default CI continues to produce and upload the fallback recording and static
-  viewer artifact without a heavy default dependency.
+  viewer artifact without a heavy default dependency, verified by GitHub
+  Actions run `25998306700`.
 - The live GitHub Pages URL is verified before README links are added.
 - Default CI remains green and still uploads the public-demo artifact when Pages
   deployment is not enabled.

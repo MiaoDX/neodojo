@@ -100,6 +100,10 @@ generated motion artifact, or production UI server.
   builds a wheel, uploads the artifact, and can publish the static output to
   GitHub Pages from `main` when Pages is enabled and the repository variable
   `NEODOJO_DEPLOY_PAGES=true` is set.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/25998306700` verified the
+  default CI lane on `main`, uploaded the `neodojo-public-demo` artifact, and
+  produced a CI-generated `index.html` that passes `neodojo demo smoke`.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
