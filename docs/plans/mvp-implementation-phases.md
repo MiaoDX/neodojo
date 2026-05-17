@@ -68,7 +68,7 @@ of truth for the next waves.
 
 | Plan | Status | Gap Covered |
 | --- | --- | --- |
-| [mvp-simulator-mesh-rendering.md](mvp-simulator-mesh-rendering.md) | planned; blocked on user-supplied G1 assets and simulator dependency | MuJoCo/Genesis real Unitree G1 mesh rendering. |
+| [mvp-simulator-mesh-rendering.md](mvp-simulator-mesh-rendering.md) | implemented optional MuJoCo command; final G1 asset proof pending | MuJoCo render command and final real Unitree G1 mesh proof. |
 | [mvp-native-gmr-runner.md](mvp-native-gmr-runner.md) | implemented first pickle adapter; local GMR execution remains external | Native GMR robot-motion pickle parsing beyond normalized JSON import. |
 | [mvp-smplx-body-surface-playback.md](mvp-smplx-body-surface-playback.md) | implemented surface proxy; licensed SMPL-X mesh remains follow-on | Dependency-light SMPL-X surface proxy and future licensed mesh/body-model playback. |
 | [mvp-viser-multicamera-runtime.md](mvp-viser-multicamera-runtime.md) | planned; blocked on runtime dependency and interaction design | Local Viser runtime and multi-camera/offscreen workflow. |

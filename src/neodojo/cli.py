@@ -13,7 +13,7 @@ from .g1_visual import (
     write_fixture_g1_model_descriptor,
 )
 from .gmr_native import normalize_gmr_pickle
-from .g1_render import write_g1_render
+from .g1_render import write_g1_mujoco_render, write_g1_render
 from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
 from .public_demo import smoke_check_public_demo, write_public_demo
 from .quality import check_quality_surface
@@ -345,6 +345,33 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/g1-render"),
         help="output directory for G1 render evidence",
     )
+    render_mujoco_g1 = render_subparsers.add_parser(
+        "mujoco-g1",
+        help="write MuJoCo offscreen mesh render evidence from a registered G1 descriptor",
+    )
+    render_mujoco_g1.add_argument(
+        "--model-descriptor",
+        type=Path,
+        required=True,
+        help="Unitree G1 robot-model descriptor manifest",
+    )
+    render_mujoco_g1.add_argument(
+        "--g1-track",
+        type=Path,
+        required=True,
+        help="G1 visual-track root directory or manifest path",
+    )
+    render_mujoco_g1.add_argument(
+        "--allow-fixture-model",
+        action="store_true",
+        help="accepted for CLI symmetry, but MuJoCo rendering still requires registered assets",
+    )
+    render_mujoco_g1.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/g1-mujoco-render"),
+        help="output directory for MuJoCo render evidence",
+    )
 
     quality = subparsers.add_parser(
         "quality",
@@ -588,6 +615,19 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         if args.command == "render" and args.render_command == "g1":
             result = write_g1_render(
+                args.out,
+                model_descriptor_path=args.model_descriptor,
+                g1_track=args.g1_track,
+                allow_fixture_model=args.allow_fixture_model,
+            )
+            print(f"wrote {result.html_path}")
+            print(f"wrote {result.manifest_path}")
+            for path in result.frame_paths.values():
+                print(f"wrote {path}")
+            return 0
+
+        if args.command == "render" and args.render_command == "mujoco-g1":
+            result = write_g1_mujoco_render(
                 args.out,
                 model_descriptor_path=args.model_descriptor,
                 g1_track=args.g1_track,

@@ -12,6 +12,9 @@ requires-python = ">=3.9"
 [project.scripts]
 neodojo = "neodojo.cli:main"
 
+[project.optional-dependencies]
+sim = ["mujoco>=3.3,<4"]
+
 [tool.setuptools]
 package-dir = { "" = "src" }
 

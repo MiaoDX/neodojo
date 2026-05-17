@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import binascii
+import struct
+import zlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -12,6 +15,7 @@ from .motion_contract import _relative_path, _write_json, validate_output_dir
 
 G1_RENDER_SCHEMA = "neodojo.g1_render.v1"
 G1_RENDER_BACKEND = "neodojo_svg_schematic.v1"
+G1_MUJOCO_RENDER_BACKEND = "mujoco_python_offscreen.v1"
 
 
 @dataclass(frozen=True)
@@ -174,6 +178,105 @@ def _render_html(manifest: dict[str, Any], frame_names: list[str]) -> str:
 """
 
 
+def _render_image_html(manifest: dict[str, Any], frame_paths: dict[str, Path]) -> str:
+    cards = "\n".join(
+        f'<section><h2>{name.title()}</h2><img src="frames/{path.name}" alt="{name} G1 simulator render"></section>'
+        for name, path in frame_paths.items()
+    )
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>neodojo G1 MuJoCo render evidence</title>
+  <style>
+    body {{ margin: 0; background: #eef2f6; color: #17212b; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }}
+    header {{ display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 18px 20px; background: #fff; border-bottom: 1px solid #d8e0e8; }}
+    h1 {{ margin: 0; font-size: 18px; }}
+    .badge {{ border: 1px solid #d8e0e8; border-radius: 999px; padding: 6px 10px; color: #66717f; font-size: 12px; font-weight: 700; }}
+    main {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 14px; }}
+    section {{ min-width: 0; background: #fff; border: 1px solid #d8e0e8; border-radius: 8px; overflow: hidden; }}
+    h2 {{ margin: 0; padding: 10px 12px; font-size: 14px; border-bottom: 1px solid #d8e0e8; }}
+    img {{ display: block; width: 100%; background: #fbfcfe; }}
+    footer {{ padding: 0 20px 18px; color: #66717f; font-size: 13px; }}
+    @media (max-width: 900px) {{ main {{ grid-template-columns: 1fr; }} }}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>neodojo G1 MuJoCo render evidence</h1>
+    <div class="badge">registered model</div>
+  </header>
+  <main>
+    {cards}
+  </main>
+  <footer>
+    Renderer: {manifest["renderer"]["backend"]}. Neutral-pose simulator mesh evidence only; scoring source remains SMPL-X.
+  </footer>
+</body>
+</html>
+"""
+
+
+def _png_chunk(kind: bytes, data: bytes) -> bytes:
+    return (
+        struct.pack(">I", len(data))
+        + kind
+        + data
+        + struct.pack(">I", binascii.crc32(kind + data) & 0xFFFFFFFF)
+    )
+
+
+def _write_rgb_png(path: Path, pixels: Any) -> None:
+    rgb = pixels[..., :3]
+    height = int(rgb.shape[0])
+    width = int(rgb.shape[1])
+    raw = b"".join(b"\x00" + rgb[row].astype("uint8").tobytes() for row in range(height))
+    payload = b"".join(
+        [
+            b"\x89PNG\r\n\x1a\n",
+            _png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)),
+            _png_chunk(b"IDAT", zlib.compress(raw)),
+            _png_chunk(b"IEND", b""),
+        ]
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(payload)
+
+
+def _load_mujoco() -> Any:
+    try:
+        import mujoco
+    except ModuleNotFoundError as exc:
+        raise ValueError(
+            "MuJoCo rendering requires the optional mujoco package; install with "
+            "`python -m pip install '.[sim]'` or `python -m pip install mujoco`"
+        ) from exc
+    return mujoco
+
+
+def _camera_for_view(mujoco: Any, model: Any, view: str) -> Any:
+    camera = mujoco.MjvCamera()
+    mujoco.mjv_defaultFreeCamera(model, camera)
+    try:
+        camera.lookat[:] = model.stat.center
+    except AttributeError:
+        camera.lookat[:] = [0.0, 0.0, 0.6]
+    camera.distance = max(float(model.stat.extent) * 2.2, 1.5)
+    if view == "front":
+        camera.azimuth = 0
+        camera.elevation = -15
+    elif view == "side":
+        camera.azimuth = 90
+        camera.elevation = -15
+    elif view == "top":
+        camera.azimuth = 0
+        camera.elevation = -90
+    else:
+        raise ValueError(f"unsupported view: {view}")
+    return camera
+
+
 def write_g1_render(
     out_dir: Path,
     *,
@@ -244,4 +347,103 @@ def write_g1_render(
     }
     _write_json(manifest_path, manifest)
     html_path.write_text(_render_html(manifest, list(frame_paths)), encoding="utf-8")
+    return G1RenderWriteResult(html_path=html_path, manifest_path=manifest_path, frame_paths=frame_paths)
+
+
+def write_g1_mujoco_render(
+    out_dir: Path,
+    *,
+    model_descriptor_path: Path,
+    g1_track: Path,
+    allow_fixture_model: bool = False,
+    width: int = 640,
+    height: int = 480,
+) -> G1RenderWriteResult:
+    validate_output_dir(out_dir)
+    model_descriptor = _load_model_descriptor(model_descriptor_path, allow_fixture_model=allow_fixture_model)
+    if model_descriptor.get("fixture_only"):
+        raise ValueError("MuJoCo render evidence requires a registered URDF/MJCF model descriptor")
+    if model_descriptor.get("model_format") not in {"mjcf", "urdf"}:
+        raise ValueError("MuJoCo render evidence requires a URDF or MJCF model descriptor")
+
+    model_path = Path(model_descriptor.get("resolved_model_path") or model_descriptor.get("model_path", ""))
+    if not model_path.exists():
+        raise ValueError(f"registered model path does not exist: {model_path}")
+
+    g1_track_manifest_path = resolve_g1_track_manifest(g1_track)
+    g1_manifest, frames = load_g1_track_frames(g1_track_manifest_path)
+    mujoco = _load_mujoco()
+    try:
+        model = mujoco.MjModel.from_xml_path(str(model_path))
+    except Exception as exc:
+        raise ValueError(f"failed to load model with MuJoCo: {exc}") from exc
+    data = mujoco.MjData(model)
+    mujoco.mj_forward(model, data)
+
+    frame_dir = out_dir / "frames"
+    frame_paths = {
+        view: frame_dir / f"{view}.png"
+        for view in ("front", "side", "top")
+    }
+    renderer = mujoco.Renderer(model, height=height, width=width)
+    nonblank_checks: dict[str, bool] = {}
+    try:
+        for view, path in frame_paths.items():
+            camera = _camera_for_view(mujoco, model, view)
+            renderer.update_scene(data, camera=camera)
+            pixels = renderer.render()
+            nonblank_checks[view] = bool(pixels.max() > pixels.min())
+            _write_rgb_png(path, pixels)
+    finally:
+        renderer.close()
+    if not all(nonblank_checks.values()):
+        raise ValueError(f"MuJoCo rendered blank views: {nonblank_checks}")
+
+    manifest_path = out_dir / "manifest.json"
+    html_path = out_dir / "index.html"
+    manifest = {
+        "schema": G1_RENDER_SCHEMA,
+        "fixture_only": bool(g1_manifest.get("fixture_only")),
+        "renderer": {
+            "backend": G1_MUJOCO_RENDER_BACKEND,
+            "role": "MuJoCo offscreen neutral-pose mesh render evidence",
+            "mujoco_version": getattr(mujoco, "__version__", None),
+            "resolution": {"width": width, "height": height},
+        },
+        "robot": SUPPORTED_ROBOT,
+        "model_descriptor": _relative_path(model_descriptor_path, manifest_path.parent),
+        "model_fixture_only": False,
+        "model_format": model_descriptor.get("model_format"),
+        "model_root_name": model_descriptor.get("root_name"),
+        "model_joint_count": model_descriptor.get("joint_count"),
+        "g1_track": _relative_path(g1_track_manifest_path, manifest_path.parent),
+        "track_fixture_only": bool(g1_manifest.get("fixture_only")),
+        "pose_stream": "neutral_qpos_first_slice",
+        "pose_application": {
+            "source": "neutral_qpos",
+            "notes": "First MuJoCo slice proves mesh loading/rendering; applying imported GMR joint angles remains follow-on.",
+        },
+        "frame_count": len(frames),
+        "timing": g1_manifest.get("timing"),
+        "coordinates": g1_manifest.get("coordinates"),
+        "contact": g1_manifest.get("contact"),
+        "selected_frame": len(frames) // 2,
+        "camera_definitions": {
+            "front": {"azimuth": 0, "elevation": -15},
+            "side": {"azimuth": 90, "elevation": -15},
+            "top": {"azimuth": 0, "elevation": -90},
+        },
+        "frame_paths": {
+            view: _relative_path(path, manifest_path.parent)
+            for view, path in frame_paths.items()
+        },
+        "html": _relative_path(html_path, manifest_path.parent),
+        "scoring_source": "smplx",
+        "g1_scoring_allowed": False,
+        "mesh_loaded": True,
+        "nonblank_pixel_check": all(nonblank_checks.values()),
+        "nonblank_views": nonblank_checks,
+    }
+    _write_json(manifest_path, manifest)
+    html_path.write_text(_render_image_html(manifest, frame_paths), encoding="utf-8")
     return G1RenderWriteResult(html_path=html_path, manifest_path=manifest_path, frame_paths=frame_paths)

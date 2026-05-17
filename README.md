@@ -161,11 +161,13 @@ and next safe task. There is now a small checked-in Python package, local
 SMPL-X and G1 fixture artifact commands, a normalized imported-GMR G1 track
 boundary, native GMR pickle normalization, a dependency-light SMPL-X surface
 proxy, a teaching-playback HTML command, a static HTML demo generator, local
-SVG/HTML G1 render evidence from a model descriptor plus visual track, and
-minimal lint/build/quality-check commands. It can also write a dry-run or
+SVG/HTML G1 render evidence from a model descriptor plus visual track, optional
+MuJoCo offscreen mesh render evidence, and minimal lint/build/quality-check
+commands. It can also write a dry-run or
 ffmpeg-backed local source-video handoff for a later GPU GVHMR run. There is
 still no checked-in GVHMR/GMR execution pipeline, simulator runtime pipeline,
-licensed SMPL-X mesh generation, or MuJoCo/Genesis real mesh rendering.
+licensed SMPL-X mesh generation, or verified render from real Unitree G1 mesh
+assets.
 
 What can be run now:
 
@@ -186,6 +188,7 @@ PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-con
 PYTHONPATH=src python -m neodojo tracks normalize-gmr-pkl --source path/to/gmr-motion.pkl --motion-record outputs/motion-contract --out outputs/gmr-native
 PYTHONPATH=src python -m neodojo tracks import-gmr-json --source path/to/gmr-unitree-g1.json --motion-record outputs/motion-contract --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --allow-fixture-model --out outputs/g1-render
+PYTHONPATH=src python -m neodojo render mujoco-g1 --model-descriptor path/to/registered-g1-model/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/g1-mujoco-render
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --smplx-surface outputs/smplx-surface/surfaces/smplx/manifest.json --out outputs/teaching-demo
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
@@ -226,6 +229,11 @@ then writes SVG front/side/top frame evidence plus a local HTML page and render
 manifest. Fixture descriptors require `--allow-fixture-model`; registered
 URDF/MJCF descriptors are accepted without that flag. This is local render
 evidence, not MuJoCo/Genesis simulator mesh rendering.
+`neodojo render mujoco-g1` is the optional MuJoCo offscreen renderer for
+registered URDF/MJCF descriptors. It requires installing the `sim` extra or the
+`mujoco` package and still needs local, untracked robot assets for a real
+Unitree G1 proof; the built-in optional smoke verifies the path with a tiny
+synthetic MJCF model.
 
 `neodojo demo play` consumes the SMPL-X motion-record, optional SMPL-X surface
 proxy, and G1 visual-track manifests together, then writes
@@ -291,6 +299,8 @@ In progress:
       contract
 - [x] Local G1 SVG/HTML render evidence command with front/side/top frames and
       `g1_scoring_allowed: false`
+- [x] Optional MuJoCo offscreen mesh render command, smoke-tested with a tiny
+      MJCF model; final real G1 asset proof still needs local assets
 - [x] Local teaching playback command that consumes SMPL-X and G1 manifests
 - [x] Deterministic SMPL-X opening-form routine feedback review with multiple
       key-frame anchors and posture terms

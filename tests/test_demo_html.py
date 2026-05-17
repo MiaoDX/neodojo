@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,7 +10,7 @@ from neodojo.annotations import detect_opening_form_keyframe, write_detected_ann
 from neodojo.contracts import sha256_file
 from neodojo.demo_html import build_fixture, compute_feedback, render_demo_html, write_demo
 from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames, derive_g1_like_frame
-from neodojo.g1_render import write_g1_render
+from neodojo.g1_render import write_g1_mujoco_render, write_g1_render
 from neodojo.g1_visual import (
     build_g1_visual_track,
     import_gmr_json_track,
@@ -436,6 +437,68 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(manifest["fixture_only"])
         self.assertTrue(manifest["model_fixture_only"])
         self.assertTrue(front_exists)
+
+    def test_write_mujoco_render_rejects_fixture_model(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+
+            with self.assertRaisesRegex(ValueError, "registered URDF/MJCF"):
+                write_g1_mujoco_render(
+                    root / "mujoco-render",
+                    model_descriptor_path=model.descriptor_path,
+                    g1_track=g1.track_manifest_path,
+                    allow_fixture_model=True,
+                )
+
+    @unittest.skipUnless(importlib.util.find_spec("mujoco"), "mujoco optional dependency is not installed")
+    def test_write_mujoco_render_from_registered_mjcf(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            model_file = root / "g1_fixture.xml"
+            model_file.write_text(
+                """<mujoco model="unitree_g1_fixture">
+  <worldbody>
+    <light pos="0 -3 3"/>
+    <body name="pelvis" pos="0 0 0.8">
+      <geom name="body" type="capsule" size="0.08 0.28" fromto="0 0 0 0 0 0.56"/>
+      <joint name="waist_yaw_joint" type="hinge" axis="0 0 1"/>
+      <body name="torso" pos="0 0 0.56">
+        <geom name="head" type="sphere" size="0.1" pos="0 0 0.18"/>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>
+""",
+                encoding="utf-8",
+            )
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = register_g1_model(root / "model", model_file)
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+
+            result = write_g1_mujoco_render(
+                root / "mujoco-render",
+                model_descriptor_path=model.descriptor_path,
+                g1_track=g1.track_manifest_path,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            front_png = result.frame_paths["front"].read_bytes()
+
+        self.assertEqual(manifest["renderer"]["backend"], "mujoco_python_offscreen.v1")
+        self.assertTrue(manifest["mesh_loaded"])
+        self.assertTrue(manifest["nonblank_pixel_check"])
+        self.assertEqual(set(result.frame_paths), {"front", "side", "top"})
+        self.assertTrue(front_png.startswith(b"\x89PNG"))
 
     def test_write_teaching_playback_demo_from_track_manifests(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
