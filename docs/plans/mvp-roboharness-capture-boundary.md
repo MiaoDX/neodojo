@@ -1,6 +1,6 @@
 # MVP Roboharness Capture Boundary Plan
 
-Status: IMPLEMENTED GENERATED BUNDLE AND BROWSER PUBLIC-DEMO CAPTURE; ROBOHARNESS/SIMULATOR RECORDER REMAINS FOLLOW-ON
+Status: IMPLEMENTED GENERATED BUNDLE AND BROWSER PUBLIC-DEMO CAPTURE; CI VERIFIED; ROBOHARNESS/SIMULATOR RECORDER REMAINS FOLLOW-ON
 
 ## Goal
 
@@ -102,6 +102,9 @@ Viser browser capture, or production teaching UI.
 ## Acceptance Evidence
 
 - `make demo-public` writes `outputs/capture/manifest.json`.
+- `make demo-public-browser` writes `outputs/browser-capture/manifest.json`,
+  `outputs/browser-capture/public-demo-browser.png`, and refreshes
+  `outputs/capture/manifest.json` with browser evidence.
 - The capture manifest references public-demo, Viser preview, and G1 render
   evidence.
 - The manifest contains front, side, and top view entries.
@@ -113,7 +116,8 @@ Viser browser capture, or production teaching UI.
 - The manifest preserves `scoring_source: smplx` and
   `g1_scoring_allowed: false`.
 - CI uploads the capture bundle and browser-capture artifacts without
-  committing generated outputs.
+  committing generated outputs, verified by
+  `https://github.com/MiaoDX/neodojo/actions/runs/26000413142`.
 
 ## Non-Goals
 

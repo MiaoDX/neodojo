@@ -140,6 +140,12 @@ production UI server.
   passes `neodojo demo smoke`, produced a capture-bundle artifact whose
   manifest references resolve inside the downloaded bundle, and deployed the
   fixture-only Pages URL `https://miaodx.com/neodojo/`.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26000413142` verified the
+  browser-capture CI lane on `main`: Chromium installed, `make
+  demo-public-browser` passed, the `neodojo-browser-capture` artifact contained
+  a 1280x720 PNG and `neodojo.browser_capture.v1` manifest, the downloaded
+  capture bundle recorded `real_browser_capture: true`, and Pages deployed.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.

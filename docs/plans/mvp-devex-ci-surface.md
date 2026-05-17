@@ -1,6 +1,6 @@
 # MVP DevEx And CI Surface Plan
 
-Status: IMPLEMENTED WITH OPTIONAL BROWSER CAPTURE CI LANE
+Status: IMPLEMENTED WITH BROWSER CAPTURE CI VERIFIED
 
 ## Goal
 
@@ -77,6 +77,13 @@ and the downloaded `neodojo-capture-bundle` artifact contained all manifest
 references needed for the generated multi-camera evidence bundle. The live
 `https://miaodx.com/neodojo/` HTML, screenshot SVG, and manifest returned the
 expected fixture-only labels.
+
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26000413142` verified the
+browser-capture CI lane on `main`: Chromium installed through Playwright,
+`make demo-public-browser` passed, `neodojo-browser-capture` contained a
+1280x720 PNG plus `neodojo.browser_capture.v1` manifest, the capture bundle
+recorded `real_browser_capture: true`, and Pages deployed.
 
 ## Inputs
 
@@ -181,9 +188,8 @@ expected fixture-only labels.
   same commands.
 - CI uploads the generated `.rrd` fallback recording, static viewer page, SVG
   screenshot, public-demo manifest, browser-rendered PNG screenshot, and a
-  generated capture bundle artifact with referenced evidence. The pre-browser
-  lane was verified by run `25999641059`; the browser lane is verified by the
-  current workflow after this slice lands.
+  generated capture bundle artifact with referenced evidence, verified by runs
+  `25999641059` and `26000413142`.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages publishes only safe static demo assets once repository Pages is
