@@ -26,6 +26,7 @@ from .real_conversion import (
 )
 from .smplx_surface import write_smplx_surface_proxy
 from .teaching_playback import write_teaching_playback_demo
+from .viser_runtime import serve_viser_runtime, write_viser_runtime_contract
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -306,6 +307,39 @@ def build_parser() -> argparse.ArgumentParser:
         "--use-rerun-sdk",
         action="store_true",
         help="write a true Rerun SDK .rrd instead of the JSON fallback artifact",
+    )
+    demo_viser = demo_subparsers.add_parser(
+        "serve-viser",
+        help="start an optional local Viser teaching runtime from playback artifacts",
+    )
+    demo_viser.add_argument(
+        "--playback",
+        type=Path,
+        required=True,
+        help="teaching playback manifest path",
+    )
+    demo_viser.add_argument(
+        "--g1-render",
+        type=Path,
+        help="optional G1 render manifest path",
+    )
+    demo_viser.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/viser-runtime"),
+        help="output directory for the Viser runtime manifest and scene contract",
+    )
+    demo_viser.add_argument("--host", default="127.0.0.1", help="host for the local Viser server")
+    demo_viser.add_argument("--port", type=int, default=8080, help="port for the local Viser server")
+    demo_viser.add_argument(
+        "--write-contract-only",
+        action="store_true",
+        help="write the Viser runtime contract without importing or starting Viser",
+    )
+    demo_viser.add_argument(
+        "--smoke-start",
+        action="store_true",
+        help="start Viser, populate the scene, then stop immediately for local smoke tests",
     )
     demo_smoke = demo_subparsers.add_parser(
         "smoke",
@@ -610,6 +644,29 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"wrote {result.scene_path}")
             print(f"wrote {result.recording_path}")
             print(f"wrote {result.screenshot_path}")
+            return 0
+
+        if args.command == "demo" and args.demo_command == "serve-viser":
+            if args.write_contract_only:
+                result = write_viser_runtime_contract(
+                    args.out,
+                    playback_manifest_path=args.playback,
+                    g1_render_manifest_path=args.g1_render,
+                )
+                print(f"wrote {result.manifest_path}")
+                print(f"wrote {result.scene_path}")
+                return 0
+            result = serve_viser_runtime(
+                playback_manifest_path=args.playback,
+                g1_render_manifest_path=args.g1_render,
+                out_dir=args.out,
+                host=args.host,
+                port=args.port,
+                stop_after_start=args.smoke_start,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"wrote {result.scene_path}")
+            print(f"serving {result.url}")
             return 0
 
         if args.command == "demo" and args.demo_command == "smoke":

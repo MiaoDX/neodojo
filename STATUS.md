@@ -7,17 +7,17 @@ fixture-backed and external-JSON `motion-record` paths, `robot-model`,
 `tracks`, imported GMR JSON track, native GMR pickle normalization,
 `smplx-surface proxy`, `annotations detect`, `render g1`, optional
 `render mujoco-g1`,
-`demo play`, `demo export-rerun`, and `real-conversion prepare` commands, a
-`make demo-html` command that writes a self-contained synthetic web demo,
-minimal `make lint`, `make check`, and `make build` commands, and a
-`make demo-public` command plus `make verify` and GitHub Actions workflow for
-the fixture public-demo artifact. `real-conversion materialize-source` can also
-prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
-GVHMR run, and `real-conversion validate-source` can validate a GVHMR JSON
-export against that handoff before import. There is still no checked-in
-GVHMR/GMR execution pipeline, simulator runtime pipeline, licensed SMPL-X mesh
-generation, verified real Unitree G1 mesh render, real generated motion
-artifact, or UI server.
+`demo play`, `demo export-rerun`, optional `demo serve-viser`, and
+`real-conversion prepare` commands, a `make demo-html` command that writes a
+self-contained synthetic web demo, minimal `make lint`, `make check`, and
+`make build` commands, and a `make demo-public` command plus `make verify` and
+GitHub Actions workflow for the fixture public-demo artifact. `real-conversion
+materialize-source` can also prepare a dry-run or ffmpeg-backed local source
+clip handoff for a later GPU GVHMR run, and `real-conversion validate-source`
+can validate a GVHMR JSON export against that handoff before import. There is
+still no checked-in GVHMR/GMR execution pipeline, simulator runtime pipeline,
+licensed SMPL-X mesh generation, verified real Unitree G1 mesh render, real
+generated motion artifact, or production UI server.
 
 ## Current Truth
 
@@ -41,7 +41,8 @@ artifact, or UI server.
   teaching-track manifest -> fixture G1 visual-track manifest -> local teaching
   playback HTML/manifest -> routine feedback anchors.
 - Multi-camera offscreen rendering approach, likely reusing roboharness patterns.
-- Synchronized SMPL-X and Unitree G1 playback in Viser.
+- Production Viser teaching UX and multi-camera/offscreen capture beyond the
+  first optional local runtime.
 - Key-frame detection and geometry-constrained verbal feedback for terms such as
   "sink the shoulders" and "drop the elbows".
 - Fixture-only HTML teaching demo generated under `outputs/html-demo/`, proving
@@ -86,6 +87,10 @@ artifact, or UI server.
   `demo export-rerun --use-rerun-sdk` when the optional `rerun` extra is
   installed. Live GitHub Pages verification still depends on repository Pages
   settings.
+- Optional first Viser local runtime is available through `demo serve-viser`
+  when the optional `viser` extra is installed. It loads the shared
+  scene/timeline contract, shows synchronized SMPL-X and G1 3D tracks,
+  trajectory overlays, a frame slider, and explicit scoring-source labels.
 - `make demo-public` regenerates the fixture motion, routine feedback
   annotations, SMPL-X surface proxy, G1 visual/render, teaching-playback,
   public-demo, and smoke-check artifacts in one command.
@@ -154,6 +159,7 @@ PYTHONPATH=src python -m neodojo render mujoco-g1 --model-descriptor path/to/reg
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --smplx-surface outputs/smplx-surface/surfaces/smplx/manifest.json --out outputs/teaching-demo
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --use-rerun-sdk --out outputs/public-demo/neodojo-demo.rrd
+PYTHONPATH=src python -m neodojo demo serve-viser --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/viser-runtime
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
@@ -207,6 +213,16 @@ fixture motion only; they validate UI plumbing, trajectory drawing, timeline
 sync, the local SMPL-X/G1 scoring boundary, the visual-only SMPL-X surface
 proxy, and one SMPL-X-based geometry check, not qigong correctness.
 
+`neodojo demo serve-viser` writes `outputs/viser-runtime/viser-runtime.json`
+and `outputs/viser-runtime/scene.json`, then starts a local Viser server when
+the optional `viser` extra is installed. The first runtime consumes the same
+scene/timeline contract as the public-demo lane, converts the current y-up
+coordinates into Viser z-up coordinates, and displays synchronized SMPL-X/G1
+tracks, trajectory overlays, a frame slider, and scoring-source labels. Use
+`--write-contract-only` to write the Viser runtime contract without importing
+Viser, or `--smoke-start` to start, populate, and stop the server for local
+verification.
+
 `neodojo real-conversion prepare` writes ignored source/trim metadata for the
 later GPU run and does not download video or execute GVHMR. When a local video
 is supplied, it records checksum data and optional ffprobe duration,
@@ -227,8 +243,9 @@ when source id, trim, input path/checksum, and duration checks pass.
   exists and is smoke-tested with a tiny MJCF model.
 - Licensed SMPL-X mesh/body-model playback beyond the current capsule proxy:
   `docs/plans/mvp-smplx-body-surface-playback.md`.
-- Simulator/Viser runtime integration and multi-camera offscreen capture:
-  `docs/plans/mvp-viser-multicamera-runtime.md`.
+- Production Viser teaching UX and multi-camera/offscreen screenshot capture:
+  `docs/plans/mvp-viser-multicamera-runtime.md`. The first optional local
+  Viser runtime exists.
 - Verification of the live GitHub Pages URL:
   `docs/plans/mvp-rerun-pages-release.md`. True Rerun SDK `.rrd` export exists
   as an optional command.

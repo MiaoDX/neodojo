@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import importlib.util
+import socket
 import tempfile
 import unittest
 from pathlib import Path
@@ -34,6 +35,13 @@ from neodojo.real_conversion import (
 )
 from neodojo.smplx_surface import load_smplx_surface_proxy, write_smplx_surface_proxy
 from neodojo.teaching_playback import write_teaching_playback_demo
+from neodojo.viser_runtime import serve_viser_runtime, write_viser_runtime_contract
+
+
+def _free_local_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
 
 
 class DemoHtmlTests(unittest.TestCase):
@@ -802,6 +810,70 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIsNotNone(manifest["rerun"]["sdk_version"])
         self.assertGreater(len(recording_bytes), 128)
         self.assertFalse(recording_bytes.startswith(b"{"))
+
+    def test_viser_runtime_contract_reuses_scene_timeline(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+            )
+
+            result = write_viser_runtime_contract(
+                root / "viser-runtime",
+                playback_manifest_path=playback.manifest_path,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            scene = json.loads(result.scene_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(manifest["schema"], "neodojo.viser_runtime.v1")
+        self.assertEqual(manifest["runtime"]["target"], "viser")
+        self.assertEqual(manifest["scene"], "scene.json")
+        self.assertEqual(manifest["scoring_source"], "smplx")
+        self.assertFalse(manifest["g1_scoring_allowed"])
+        self.assertEqual(manifest["coordinate_transform"]["viser_world_up_axis"], "z")
+        self.assertIn("front", manifest["camera_presets"])
+        self.assertEqual(manifest["controls"][0]["kind"], "slider")
+        self.assertEqual(scene["schema"], "neodojo.scene_timeline.v1")
+        self.assertIn("SMPL-X teacher", manifest["overlays"]["public_labels"])
+
+    @unittest.skipUnless(importlib.util.find_spec("viser"), "viser optional dependency is not installed")
+    def test_viser_runtime_can_start_and_stop_with_optional_dependency(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=8)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+            )
+
+            result = serve_viser_runtime(
+                playback_manifest_path=playback.manifest_path,
+                out_dir=root / "viser-runtime",
+                host="127.0.0.1",
+                port=_free_local_port(),
+                stop_after_start=True,
+                verbose=False,
+            )
+
+        self.assertEqual(result.manifest_path.name, "viser-runtime.json")
+        self.assertEqual(result.scene_path.name, "scene.json")
+        self.assertTrue(result.url.startswith("http://127.0.0.1:"))
 
     def test_public_demo_smoke_rejects_missing_label(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

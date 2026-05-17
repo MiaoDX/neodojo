@@ -1,6 +1,6 @@
 # MVP Viser Multi-Camera Runtime Plan
 
-Status: PLANNED; BLOCKED ON RUNTIME DEPENDENCY AND INTERACTION DESIGN
+Status: IMPLEMENTED FIRST OPTIONAL LOCAL SERVER; MULTI-CAMERA OFFSCREEN CAPTURE REMAINS FOLLOW-ON
 
 ## Goal
 
@@ -19,6 +19,13 @@ Viser is the richer local teaching surface. It should not replace the Rerun
 public-demo artifact or require simulator rendering to ship the first runtime
 slice.
 
+The first optional runtime now exists as `neodojo demo serve-viser`. It consumes
+the same scene/timeline contract as the public-demo lane, starts a real local
+Viser server when the `viser` extra is installed, and exposes synchronized
+SMPL-X/G1 tracks with a frame slider, trajectory overlays, and explicit
+scoring-source labels. Browser screenshot capture and richer multi-camera
+interaction remain follow-on work.
+
 ## Dependencies
 
 - [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md)
@@ -32,7 +39,7 @@ slice.
 
 - Public-demo scene/timeline JSON or teaching playback manifest.
 - SMPL-X track, G1 track, and annotation manifests.
-- Local Viser dependency and browser access.
+- Optional Viser dependency through the `viser` extra and browser access.
 - Optional camera presets from simulator/render manifests.
 
 ## Outputs
@@ -45,16 +52,17 @@ slice.
 ## Execution Tasks
 
 1. Define runtime contract.
-   - [ ] Reuse the existing scene/timeline contract where possible.
-   - [ ] Identify extra fields needed for local interactivity.
+   - [x] Reuse the existing scene/timeline contract where possible.
+   - [x] Identify extra fields needed for local interactivity.
 
 2. Implement first Viser server.
-   - [ ] Load SMPL-X and G1 tracks.
-   - [ ] Add timeline synchronization.
-   - [ ] Add camera presets and scoring-source labels.
+   - [x] Load SMPL-X and G1 tracks.
+   - [x] Add timeline synchronization with a frame slider.
+   - [x] Add camera-preset metadata and scoring-source labels.
 
 3. Add smoke checks.
-   - [ ] Verify server startup and nonblank rendered scene.
+   - [x] Verify server startup and populated scene through an optional
+     `--smoke-start` path.
    - [ ] Capture screenshot evidence when browser tooling is available.
 
 ## Acceptance Evidence
@@ -63,6 +71,8 @@ slice.
 - SMPL-X and G1 playback stay synchronized.
 - The UI visibly preserves SMPL-X as the scoring source and G1 as visual-only.
 - Static public-demo generation still works independently.
+- Optional dependency tests can start and stop the server without making Viser a
+  default dependency.
 
 ## Non-Goals
 
@@ -73,6 +83,7 @@ slice.
 
 ## Stop Condition
 
-Stop when a local Viser session can load the fixture scene, scrub synchronized
-tracks, and produce a screenshot or when dependency/runtime blockers are
-classified clearly.
+Stopped for the first slice when a local Viser session could load the fixture
+scene, expose synchronized SMPL-X/G1 tracks, and pass optional server-start
+smoke. Continue when the next task needs browser screenshot capture,
+multi-camera offscreen evidence, or production teaching UX.

@@ -163,11 +163,12 @@ boundary, native GMR pickle normalization, a dependency-light SMPL-X surface
 proxy, a teaching-playback HTML command, a static HTML demo generator, local
 SVG/HTML G1 render evidence from a model descriptor plus visual track, optional
 MuJoCo offscreen mesh render evidence, optional true Rerun SDK `.rrd` export,
-and minimal lint/build/quality-check commands. It can also write a dry-run or
-ffmpeg-backed local source-video handoff for a later GPU GVHMR run. There is
-still no checked-in GVHMR/GMR execution pipeline, simulator runtime pipeline,
-licensed SMPL-X mesh generation, or verified render from real Unitree G1 mesh
-assets.
+an optional first Viser local runtime, and minimal lint/build/quality-check
+commands. It can also write a dry-run or ffmpeg-backed local source-video
+handoff for a later GPU GVHMR run. There is still no checked-in GVHMR/GMR
+execution pipeline, simulator runtime pipeline, licensed SMPL-X mesh
+generation, production teaching UI, or verified render from real Unitree G1
+mesh assets.
 
 What can be run now:
 
@@ -192,6 +193,7 @@ PYTHONPATH=src python -m neodojo render mujoco-g1 --model-descriptor path/to/reg
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --smplx-surface outputs/smplx-surface/surfaces/smplx/manifest.json --out outputs/teaching-demo
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --use-rerun-sdk --out outputs/public-demo/neodojo-demo.rrd
+PYTHONPATH=src python -m neodojo demo serve-viser --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/viser-runtime
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
@@ -252,6 +254,13 @@ an honest JSON fallback artifact, not a real Rerun SDK recording. With
 writes a true Rerun SDK recording and marks
 `rerun.actual_rrd: true` in the public-demo manifest.
 
+`neodojo demo serve-viser` writes `outputs/viser-runtime/scene.json` plus a
+Viser runtime manifest, then starts an optional local Viser server from the
+same scene/timeline contract. It requires installing the `viser` extra or the
+`viser` package. The first runtime shows SMPL-X and G1 as synchronized 3D
+tracks with a frame slider, trajectory overlays, camera-preset metadata, and
+explicit SMPL-X scoring/G1 visual labels; it is not the final teaching UI.
+
 `make verify` runs lint, MVP plan quality checks, tests, wheel build, and the
 public-demo smoke lane.
 `make demo-public` regenerates the fixture motion contract, detected
@@ -282,8 +291,8 @@ and emits a validated import JSON copy when provenance matches.
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local
 motion/track manifest contract. It does not prove source-video conversion,
-qigong motion accuracy, simulator rendering, Viser, or real Unitree G1
-retargeting.
+qigong motion accuracy, simulator rendering, production Viser UX, or real
+Unitree G1 retargeting.
 
 In progress:
 
@@ -311,6 +320,8 @@ In progress:
       `.rrd` fallback artifact, HTML, and SVG screenshot
 - [x] Optional true Rerun SDK `.rrd` export; live GitHub Pages URL verification
       remains repository-setting dependent
+- [x] Optional first Viser local runtime with synchronized SMPL-X/G1 tracks,
+      frame slider, trajectory overlays, and scoring-source labels
 - [x] One-command local `make demo-public` flow and GitHub Actions artifact/Page
       workflow for the fixture public demo
 - [x] Minimal `make lint` and `make build` command surface
@@ -324,7 +335,7 @@ In progress:
 - [ ] MuJoCo/Genesis real Unitree G1 mesh rendering from user-supplied URDF/MJCF
       and meshes
 - [ ] roboharness-style multi-camera offscreen capture integration
-- [ ] SMPL-X + Unitree G1 dual-track synchronized Viser UI
+- [ ] production Viser teaching UX beyond the first optional local runtime
 
 The detailed implementation queue lives in [`docs/plans/`](docs/plans/) and
 can later be mirrored into GitHub issues.

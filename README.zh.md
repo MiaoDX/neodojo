@@ -130,11 +130,11 @@ Viser (web 端三视角同步 + 关节轨迹 polyline + 时间轴)
 HTML 命令、规范化 imported-GMR G1 track 边界、静态 HTML demo 生成器，以及基于
 model descriptor 与 visual track 的本地 G1 SVG/HTML render evidence、GMR 原生
 pickle 规范化、dependency-light 的 SMPL-X surface proxy、可选 MuJoCo offscreen
-mesh render evidence、可选 true Rerun SDK `.rrd` export，以及最小
-lint/build/quality-check 命令。它也可以为后续 GPU GVHMR run 写出 dry-run 或
-ffmpeg-backed 的本地 source-video handoff。但还没有提交到仓库的 GVHMR/GMR 执行
-pipeline、仿真器运行时 pipeline、licensed SMPL-X mesh generation，或基于真实
-Unitree G1 mesh assets 的已验证渲染。
+mesh render evidence、可选 true Rerun SDK `.rrd` export、可选 first Viser local
+runtime，以及最小 lint/build/quality-check 命令。它也可以为后续 GPU GVHMR run 写出
+dry-run 或 ffmpeg-backed 的本地 source-video handoff。但还没有提交到仓库的
+GVHMR/GMR 执行 pipeline、仿真器运行时 pipeline、licensed SMPL-X mesh generation、
+production teaching UI，或基于真实 Unitree G1 mesh assets 的已验证渲染。
 
 现在可以运行：
 
@@ -159,6 +159,7 @@ PYTHONPATH=src python -m neodojo render mujoco-g1 --model-descriptor path/to/reg
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --smplx-surface outputs/smplx-surface/surfaces/smplx/manifest.json --out outputs/teaching-demo
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --use-rerun-sdk --out outputs/public-demo/neodojo-demo.rrd
+PYTHONPATH=src python -m neodojo demo serve-viser --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/viser-runtime
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
@@ -212,6 +213,12 @@ fallback artifact，不是真正的 Rerun SDK recording。安装 optional `rerun
 后，传入 `--use-rerun-sdk` 会写出真正的 Rerun SDK recording，并在 public-demo
 manifest 中标记 `rerun.actual_rrd: true`。
 
+`neodojo demo serve-viser` 会写出 `outputs/viser-runtime/scene.json` 和 Viser
+runtime manifest，然后从同一个 scene/timeline contract 启动可选的本地 Viser
+server。它需要安装 `viser` extra 或 `viser` package。第一版 runtime 会以同步 3D
+tracks 展示 SMPL-X 和 G1，包含 frame slider、trajectory overlays、camera-preset
+metadata，以及显式的 SMPL-X scoring/G1 visual labels；它还不是最终 teaching UI。
+
 `make verify` 会一次运行 lint、MVP plan quality checks、tests、wheel build 和
 public-demo smoke lane。
 `make demo-public` 会用一个本地命令重新生成 fixture motion contract、detected
@@ -238,8 +245,8 @@ import JSON copy。
 
 `make demo-html` 会写出 `outputs/html-demo/index.html`，这是一个由本地
 motion/track manifest contract 支撑的自包含合成 fixture demo，用来验证目标教学
-UI 的形态。它不证明源视频转换、气功动作精度、仿真器渲染、Viser 或真实 Unitree
-G1 retargeting 已经完成。
+UI 的形态。它不证明源视频转换、气功动作精度、仿真器渲染、production Viser UX
+或真实 Unitree G1 retargeting 已经完成。
 
 正在做的事情：
 
@@ -263,6 +270,8 @@ G1 retargeting 已经完成。
       `.rrd` fallback artifact、HTML 与 SVG screenshot
 - [x] 可选 true Rerun SDK `.rrd` export；live GitHub Pages URL verification
       仍依赖 repo settings
+- [x] 可选第一版 Viser local runtime，包含同步 SMPL-X/G1 tracks、frame slider、
+      trajectory overlays 和 scoring-source labels
 - [x] 本地一条命令 `make demo-public`，以及用于 fixture public demo 的 GitHub
       Actions artifact/Page workflow
 - [x] 最小 `make lint` 与 `make build` 命令面
@@ -274,7 +283,7 @@ G1 retargeting 已经完成。
 - [x] 本地 GVHMR source-validation report 与 validated JSON import handoff
 - [ ] 基于用户本地 URDF/MJCF 与 meshes 的 MuJoCo/Genesis 真实 Unitree G1 mesh 渲染
 - [ ] roboharness 风格的多视角离屏录制集成
-- [ ] SMPL-X 与 Unitree G1 双轨同屏 Viser UI
+- [ ] 超出第一版可选 local runtime 的 production Viser teaching UX
 
 详细 implementation queue 放在 [`docs/plans/`](docs/plans/)，之后可以再同步成
 GitHub issues。

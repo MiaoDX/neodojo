@@ -120,9 +120,10 @@ Pages and publishes from `main` when repository Pages settings allow it.
    - [x] Store generated images under ignored output or publish artifact
      staging.
 
-5. Keep Viser as a later local/server runtime.
-   - [x] Preserve scene contract fields Viser will need: synchronized viewports,
-     timeline state, selected joints, annotations, and optional reference video.
+5. Keep Viser as a separate local/server runtime.
+   - [x] Preserve scene contract fields the Viser runtime needs: synchronized
+     viewports, timeline state, selected joints, annotations, and optional
+     reference video.
    - [x] Do not require Viser to complete the first public demo.
 
 6. Treat simulator renders as evidence inputs.
@@ -166,5 +167,5 @@ Pages and publishes from `main` when repository Pages settings allow it.
 
 Stopped when a fixture-only but honest static public demo can be generated,
 visually smoke-tested, and staged for GitHub Pages through artifacts, with the
-scene/timeline contract ready for later Viser integration. Verified live Pages
-publication remains follow-on work.
+scene/timeline contract ready for the optional Viser runtime. Verified live
+Pages publication remains follow-on work.

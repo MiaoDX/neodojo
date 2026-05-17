@@ -6,9 +6,10 @@ simulated teaching playback that can be inspected from multiple views.
 The architecture is currently a target design, not an implemented runtime. The
 repo contains fixture-first motion contracts, G1 visual-track manifests,
 an imported-GMR G1 track boundary, local G1 SVG/HTML render evidence, teaching
-playback HTML, public-demo artifacts, real-conversion prep, and local
-source-media materialization handoff. It does not contain the
-GVHMR/GMR/simulator runtime pipeline or MuJoCo/Genesis real mesh rendering.
+playback HTML, public-demo artifacts, an optional first Viser local runtime,
+real-conversion prep, and local source-media materialization handoff. It does
+not contain the GVHMR/GMR/simulator runtime pipeline, production teaching UI,
+or MuJoCo/Genesis real mesh rendering.
 
 ## MVP Data Flow
 
@@ -46,7 +47,9 @@ Rendering owns MuJoCo/Genesis scene setup, synchronized cameras, offscreen frame
 capture, and trajectory overlays.
 
 Web playback owns the Viser UI: synchronized views, timeline control, overlays,
-and later user-practice comparison.
+and later user-practice comparison. The current optional Viser slice consumes
+the public-demo scene contract and proves synchronized SMPL-X/G1 tracks with a
+frame slider; richer teaching UX and offscreen capture remain follow-on work.
 
 ## Core Contracts
 
