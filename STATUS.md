@@ -165,13 +165,14 @@ or hosted/live-client Viser capture.
   a 1280x720 PNG and `neodojo.browser_capture.v1` manifest, the downloaded
   capture bundle recorded `real_browser_capture: true`, and Pages deployed.
 - GitHub Actions run
-  `https://github.com/MiaoDX/neodojo/actions/runs/26001523722` verified the
-  latest fixture public-demo lane on `main` after the SMPL-X mesh surface import:
-  lint, plan checks, tests, wheel build, browser capture, artifact upload, and
-  Pages deploy passed. The downloaded public-demo artifact passes
+  `https://github.com/MiaoDX/neodojo/actions/runs/26001914760` verified the
+  fixture public-demo lane on `main` after the real-conversion import-demo
+  wrapper: lint, plan checks, tests, wheel build, browser capture, artifact
+  upload, and Pages deploy passed. The downloaded public-demo artifact passes
   `neodojo demo smoke`, the browser-capture artifact contains a 1280x720 PNG,
-  and the capture-bundle artifact records `real_browser_capture: true` with 11
-  nonblank generated evidence artifacts.
+  and the capture-bundle artifact records `real_browser_capture: true`,
+  `public_demo_smoke_checked: true`, and 11 nonblank generated evidence
+  artifacts.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
@@ -192,6 +193,11 @@ or hosted/live-client Viser capture.
   for GVHMR teaching-joints JSON exports that declare matching materialization
   provenance. Passing validation writes a `.validated.json` import copy and
   preserves source-validation status in the motion-record provenance.
+- `make demo-real` has been smoke-tested with generated ignored source
+  materialization and GVHMR JSON fixtures; it wrote `outputs/real-demo-smoke/`
+  with a validated source report, imported motion-record manifest, public-demo
+  artifact, Viser preview, and capture bundle. This is still a local handoff
+  proof, not a real GVHMR execution proof.
 
 ## Blockers And Constraints
 
