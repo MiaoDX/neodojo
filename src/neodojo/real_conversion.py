@@ -134,7 +134,7 @@ def _command_paths(
 
 def _probe_docker_gpu_runtime(docker_path: str | None) -> dict[str, Any]:
     if docker_path is None:
-        return {"cli_found": False, "gpu_runtime_detected": False, "runtimes": None, "error": None}
+        return {"cli_found": False, "gpu_runtime_detected": False, "runtime_names": [], "error": None}
     try:
         completed = subprocess.run(
             [docker_path, "info", "--format", "{{json .Runtimes}}"],
@@ -152,13 +152,16 @@ def _probe_docker_gpu_runtime(docker_path: str | None) -> dict[str, Any]:
             runtimes = json.loads(output)
         except json.JSONDecodeError:
             runtimes = output
-    gpu_runtime_detected = False
+    runtime_names: list[str] = []
     if isinstance(runtimes, dict):
-        gpu_runtime_detected = "nvidia" in runtimes
+        runtime_names = sorted(str(name) for name in runtimes)
+    elif isinstance(runtimes, str):
+        runtime_names = [runtimes]
+    gpu_runtime_detected = "nvidia" in runtime_names
     return {
         "cli_found": True,
         "gpu_runtime_detected": gpu_runtime_detected,
-        "runtimes": runtimes,
+        "runtime_names": runtime_names,
         "error": completed.stderr.strip() or None if completed.returncode else None,
     }
 
