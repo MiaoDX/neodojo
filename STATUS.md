@@ -536,10 +536,11 @@ ignored Bilibili Baduanjin source candidate has been materialized under
 `outputs/real-handoff-local-bilibili/` and a copyable media-including GPU input
 bundle exists under `outputs/gvhmr-gpu-input-local-bilibili/`, with a
 `run_gvhmr_neodojo.sh` runner, rights marked unconfirmed, and media kept out of
-git. `make gpu-input-archive` can package that ignored bundle as a single
-transfer archive for the selected GPU machine. The next external step is to
-copy the bundle or archive to a GPU-capable machine, run GVHMR, and return the
-neodojo export.
+git. A local ignored transfer archive has also been generated at
+`outputs/gvhmr-gpu-input-archive-local-bilibili/neodojo-gvhmr-gpu-input.tar.gz`;
+its manifest reports `archive_with_media`, `media_included: true`, and
+`safe_for_git: false`. The next external step is to copy the bundle or archive
+to a GPU-capable machine, run GVHMR, and return the neodojo export.
 Once that artifact exists, the remaining task is to validate it with
 `real-conversion import-demo`, then inspect the generated `outputs/real-demo/`
 artifacts.

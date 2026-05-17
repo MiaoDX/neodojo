@@ -63,6 +63,12 @@ and must preserve the media-safety boundary when the bundle explicitly includes
   `make gpu-input-archive-smoke`, uploaded the metadata-only archive artifact,
   deployed Pages, and the downloaded archive artifact contained no `.mp4`,
   `.pt`, `.pkl`, or `.npz` files.
+- The current local Bilibili candidate was packaged into the ignored
+  media-including archive
+  `outputs/gvhmr-gpu-input-archive-local-bilibili/neodojo-gvhmr-gpu-input.tar.gz`;
+  its manifest reports `archive_with_media`, `media_included: true`, and
+  `safe_for_git: false`, so it is ready for manual transfer but must not be
+  committed or published.
 
 ## Non-Goals
 

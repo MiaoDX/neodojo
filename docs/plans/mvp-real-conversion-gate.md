@@ -354,8 +354,10 @@ CPU workspace:
 - input status: custom local source handoff candidate exists under ignored
   `outputs/real-handoff-local-bilibili/`, and a media-including transfer bundle
   exists under ignored `outputs/gvhmr-gpu-input-local-bilibili/` with
-  `run_gvhmr_neodojo.sh`; `make gpu-input-archive` can package that bundle as a
-  single ignored `.tar.gz`; official source `03-006` is still an available
+  `run_gvhmr_neodojo.sh`; a media-including ignored transfer archive exists at
+  `outputs/gvhmr-gpu-input-archive-local-bilibili/neodojo-gvhmr-gpu-input.tar.gz`
+  with manifest status `archive_with_media`, `media_included: true`, and
+  `safe_for_git: false`; official source `03-006` is still an available
   source-index path if rights/source selection change
 - missing runtime: a GPU-capable GVHMR environment such as Colab, RunPod,
   Modal, Hugging Face Jobs, or another CUDA machine
