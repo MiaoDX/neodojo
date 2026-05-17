@@ -158,9 +158,11 @@ embodied skills.
 
 See [`STATUS.md`](STATUS.md) for the current repo state, known constraints,
 and next safe task. There is now a small checked-in Python package, local
-SMPL-X and G1 fixture artifact commands, a teaching-playback HTML command, and
-a static HTML demo generator, but there is still no checked-in
-GVHMR/GMR/simulator runtime pipeline, real Unitree G1 rendering, or CI gate.
+SMPL-X and G1 fixture artifact commands, a teaching-playback HTML command, a
+static HTML demo generator, and local SVG/HTML G1 render evidence from a model
+descriptor plus visual track. There is still no checked-in
+GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real mesh rendering, or CI
+gate.
 
 What can be run now:
 
@@ -170,6 +172,7 @@ PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contr
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
+PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --allow-fixture-model --out outputs/g1-render
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 make demo-html
@@ -184,6 +187,12 @@ for a later GPU run.
 `neodojo robot-model register` and `neodojo tracks build` can write fixture G1
 model and visual-track manifests. These preserve the SMPL-X/G1 responsibility
 split but do not yet load a real Unitree G1 mesh or run GMR retargeting.
+
+`neodojo render g1` consumes a G1 model descriptor and G1 visual-track manifest,
+then writes SVG front/side/top frame evidence plus a local HTML page and render
+manifest. Fixture descriptors require `--allow-fixture-model`; registered
+URDF/MJCF descriptors are accepted without that flag. This is local render
+evidence, not MuJoCo/Genesis simulator mesh rendering.
 
 `neodojo demo play` consumes the SMPL-X motion-record and G1 visual-track
 manifests together and writes `outputs/teaching-demo/index.html` plus a
@@ -210,10 +219,12 @@ In progress:
 - [x] Local fixture SMPL-X motion-record and teaching-track manifests
 - [x] External GVHMR teaching-joints JSON import into the same motion contract
 - [x] Local fixture G1 model and visual-track manifests with scoring separation
+- [x] Local G1 SVG/HTML render evidence command with front/side/top frames and
+      `g1_scoring_allowed: false`
 - [x] Local teaching playback command that consumes SMPL-X and G1 manifests
 - [x] Local real-conversion prep manifest for source `03-006`
-- [ ] Real Unitree G1 model loading/rendering from user-supplied URDF/MJCF and
-      meshes
+- [ ] MuJoCo/Genesis real Unitree G1 mesh rendering from user-supplied URDF/MJCF
+      and meshes
 - [ ] roboharness-style multi-camera offscreen capture integration
 - [ ] SMPL-X + Unitree G1 dual-track synchronized Viser UI
 - [ ] Automatic key-frame detection + geometry-constrained verbal

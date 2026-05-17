@@ -6,6 +6,7 @@ from typing import Sequence
 
 from .demo_html import write_demo
 from .g1_visual import build_g1_visual_track, register_g1_model, write_fixture_g1_model_descriptor
+from .g1_render import write_g1_render
 from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
 from .real_conversion import DEFAULT_SOURCE_ID, DEFAULT_SOURCE_INDEX, write_real_conversion_prep
 from .teaching_playback import write_teaching_playback_demo
@@ -160,6 +161,39 @@ def build_parser() -> argparse.ArgumentParser:
         help="output directory for the teaching playback HTML and manifest",
     )
 
+    render = subparsers.add_parser(
+        "render",
+        help="write local render evidence artifacts",
+    )
+    render_subparsers = render.add_subparsers(dest="render_command", required=True)
+    render_g1 = render_subparsers.add_parser(
+        "g1",
+        help="write Unitree G1 render evidence from a model descriptor and visual track",
+    )
+    render_g1.add_argument(
+        "--model-descriptor",
+        type=Path,
+        required=True,
+        help="Unitree G1 robot-model descriptor manifest",
+    )
+    render_g1.add_argument(
+        "--g1-track",
+        type=Path,
+        required=True,
+        help="G1 visual-track root directory or manifest path",
+    )
+    render_g1.add_argument(
+        "--allow-fixture-model",
+        action="store_true",
+        help="allow fixture model descriptors for CI/demo smoke paths",
+    )
+    render_g1.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/g1-render"),
+        help="output directory for G1 render evidence",
+    )
+
     real_conversion = subparsers.add_parser(
         "real-conversion",
         help="prepare metadata for the later real GVHMR conversion gate",
@@ -267,6 +301,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(f"wrote {result.html_path}")
             print(f"wrote {result.manifest_path}")
+            return 0
+
+        if args.command == "render" and args.render_command == "g1":
+            result = write_g1_render(
+                args.out,
+                model_descriptor_path=args.model_descriptor,
+                g1_track=args.g1_track,
+                allow_fixture_model=args.allow_fixture_model,
+            )
+            print(f"wrote {result.html_path}")
+            print(f"wrote {result.manifest_path}")
+            for path in result.frame_paths.values():
+                print(f"wrote {path}")
             return 0
 
         if args.command == "real-conversion" and args.real_command == "prepare":

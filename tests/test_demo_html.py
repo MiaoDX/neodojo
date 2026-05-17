@@ -7,6 +7,7 @@ from pathlib import Path
 
 from neodojo.demo_html import build_fixture, compute_feedback, render_demo_html, write_demo
 from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames
+from neodojo.g1_render import write_g1_render
 from neodojo.g1_visual import build_g1_visual_track, register_g1_model, write_fixture_g1_model_descriptor
 from neodojo.motion_contract import (
     validate_output_dir,
@@ -241,6 +242,95 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(report["canonical_track"], "smplx")
         self.assertFalse(report["g1_scoring_allowed"])
         self.assertTrue(report["frame_count_match"])
+
+    def test_write_g1_render_from_registered_model(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            mesh_dir = root / "meshes"
+            mesh_dir.mkdir()
+            (mesh_dir / "body.stl").write_text("solid fixture\nendsolid fixture\n", encoding="utf-8")
+            model_file = root / "g1_fixture.urdf"
+            model_file.write_text(
+                """<robot name="unitree_g1_fixture">
+  <link name="pelvis">
+    <visual><geometry><mesh filename="meshes/body.stl"/></geometry></visual>
+  </link>
+  <link name="torso"/>
+  <joint name="waist_yaw_joint" type="revolute">
+    <parent link="pelvis"/>
+    <child link="torso"/>
+  </joint>
+</robot>
+""",
+                encoding="utf-8",
+            )
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = register_g1_model(root / "model", model_file)
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+
+            result = write_g1_render(
+                root / "render",
+                model_descriptor_path=model.descriptor_path,
+                g1_track=g1.track_manifest_path,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            html = result.html_path.read_text(encoding="utf-8")
+            front_svg = result.frame_paths["front"].read_text(encoding="utf-8")
+
+        self.assertTrue(manifest["fixture_only"])
+        self.assertFalse(manifest["model_fixture_only"])
+        self.assertTrue(manifest["track_fixture_only"])
+        self.assertEqual(manifest["renderer"]["backend"], "neodojo_svg_schematic.v1")
+        self.assertEqual(manifest["model_format"], "urdf")
+        self.assertFalse(manifest["g1_scoring_allowed"])
+        self.assertIn("neodojo G1 render evidence", html)
+        self.assertIn("registered model", front_svg)
+
+    def test_write_g1_render_rejects_fixture_model_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+
+            with self.assertRaisesRegex(ValueError, "allow-fixture-model"):
+                write_g1_render(
+                    root / "render",
+                    model_descriptor_path=model.descriptor_path,
+                    g1_track=g1.track_manifest_path,
+                )
+
+    def test_write_g1_render_allows_fixture_model_for_ci_smoke(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+
+            result = write_g1_render(
+                root / "render",
+                model_descriptor_path=model.descriptor_path,
+                g1_track=g1.track_manifest_path,
+                allow_fixture_model=True,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            front_exists = result.frame_paths["front"].exists()
+
+        self.assertTrue(manifest["fixture_only"])
+        self.assertTrue(manifest["model_fixture_only"])
+        self.assertTrue(front_exists)
 
     def test_write_teaching_playback_demo_from_track_manifests(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

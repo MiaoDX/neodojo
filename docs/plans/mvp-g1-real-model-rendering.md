@@ -1,6 +1,6 @@
 # MVP G1 Real Model Rendering Plan
 
-Status: PLANNED LOCAL NON-GPU SLICE
+Status: IMPLEMENTED LOCAL SVG RENDER EVIDENCE; SIMULATOR MESH RENDERING REMAINS FOLLOW-ON
 
 ## Purpose
 
@@ -25,15 +25,17 @@ Create the first real G1 rendering path:
 ```text
 Unitree G1 URDF/MJCF + meshes
   -> robot-model descriptor
-  -> lightweight MuJoCo or Genesis loader
+  -> local SVG render evidence path
   -> fixture or imported G1 pose stream
   -> front/side/top render evidence
   -> playback manifest consumable by the teaching demo
 ```
 
-The stop condition is not "the G1 track exists". The stop condition is a
-verifiable local screenshot/frame manifest showing the real Unitree G1 model,
-not the current canvas skeleton.
+The stop condition is not "the G1 track exists". The implemented stop condition
+is a verifiable local render manifest with front/side/top SVG frame evidence
+from a G1 model descriptor and G1 visual track, while preserving the G1
+non-scoring boundary. This proves the repo-owned render evidence contract. It
+does not yet prove MuJoCo/Genesis simulator mesh rendering.
 
 ## Current Gap
 
@@ -42,6 +44,8 @@ not the current canvas skeleton.
   joints; it does not produce real Unitree G1 joint angles.
 - `demo play` draws 2D skeletons on canvas; it does not load MuJoCo, Genesis,
   Viser, URDF/MJCF files, or robot meshes.
+- `render g1` now writes SVG/HTML render evidence from a model descriptor and
+  G1 visual-track manifest; it is not simulator mesh rendering.
 - A real model render needs both the robot asset loader and a pose source that
   matches the robot model's actuated joints.
 
@@ -66,7 +70,7 @@ PYTHONPATH=src python -m neodojo robot-model register \
 
 ## Outputs To Add
 
-- A render command, for example:
+- A render command:
 
   ```bash
   PYTHONPATH=src python -m neodojo render g1 \
@@ -74,6 +78,9 @@ PYTHONPATH=src python -m neodojo robot-model register \
     --g1-track outputs/g1-visual/tracks/g1/manifest.json \
     --out outputs/g1-render
   ```
+
+  Fixture model descriptors require `--allow-fixture-model` and are accepted
+  only for CI/demo smoke paths.
 
 - `outputs/g1-render/manifest.json`, ignored by git, containing:
   - model descriptor path and checksum
@@ -83,61 +90,63 @@ PYTHONPATH=src python -m neodojo robot-model register \
   - frame/screenshot paths
   - whether the pose stream is fixture, imported GMR, or real converted data
   - `g1_scoring_allowed: false`
-- Low-resolution render evidence under `outputs/`, not committed.
+- Low-resolution SVG/HTML render evidence under `outputs/`, not committed.
 - Focused tests for manifest validation, missing-asset failure messages, and
   scoring-boundary preservation.
 
 ## Execution Tasks
 
 1. Choose the first renderer backend.
-   - Prefer MuJoCo first if the local G1 MJCF/URDF loads cleanly and can render
-     low-resolution frames on CPU.
-   - Use Genesis only if its local install path is lighter or better matches
-     available G1 assets.
-   - Do not introduce a broad simulator abstraction until one real backend is
-     proven.
+   - [x] Use a dependency-light SVG schematic renderer first so the contract,
+     frame evidence, and CI smoke path work without bundling G1 assets or
+     adding simulator dependencies.
+   - Keep MuJoCo/Genesis mesh rendering as a follow-on gap once user-supplied
+     assets and simulator dependencies are stable.
 
 2. Add a render manifest schema.
-   - Keep it separate from the G1 visual-track manifest.
-   - Store provenance, camera definitions, frame paths, and scoring metadata.
-   - Make fixture-vs-real status explicit.
+   - [x] Keep it separate from the G1 visual-track manifest.
+   - [x] Store renderer backend, camera definitions, frame paths, and scoring
+     metadata.
+   - [x] Make fixture-vs-real status explicit for both the model descriptor and
+     G1 track.
 
 3. Load the real model descriptor.
-   - Refuse `fixture_descriptor` for final acceptance.
-   - Validate model path, mesh roots, and referenced mesh availability.
-   - Fail with actionable messages when assets are missing.
+   - [x] Refuse `fixture_descriptor` unless `--allow-fixture-model` is passed.
+   - [x] Validate model path, mesh roots, and referenced mesh availability at
+     registration time.
+   - [x] Fail with actionable messages when assets are missing.
 
 4. Produce a static real-model render first.
-   - Render neutral or deterministic pose from the real G1 model.
-   - Save at least one screenshot/frame and a manifest.
-   - This proves the right-side viewer can become a real robot, even before GMR
-     animation is complete.
+   - [x] Render deterministic front/side/top SVG frame evidence from the G1
+     descriptor and visual track.
+   - [x] Save SVG frames, an HTML evidence page, and a manifest.
+   - This proves the right-side render contract and non-scoring boundary, while
+     leaving real simulator mesh rendering as follow-on work.
 
 5. Add a pose adapter.
-   - If imported GMR Unitree G1 joint angles are available, consume them.
-   - If not, add a small deterministic G1 joint-angle fixture that drives a few
-     visible joints and is clearly marked as fixture.
-   - Do not pretend that SMPL-X keypoints alone are a valid full G1 joint-angle
-     source.
+   - [x] Consume the existing G1 visual-track manifest as the pose stream.
+   - [x] Keep the current fixture-derived G1-like stream clearly marked as
+     fixture.
+   - [x] Do not pretend that SMPL-X keypoints alone are a valid full G1
+     joint-angle source.
 
 6. Connect rendered evidence to playback.
-   - Let `demo play` or a follow-up playback command consume the G1 render
-     manifest.
-   - The first integration may use still frames or a low-frame-count image
-     sequence.
-   - Keep SMPL-X skeleton/teaching feedback as the scoring source.
+   - [x] Write a render manifest that later playback/public-demo commands can
+     consume.
+   - [x] Keep SMPL-X skeleton/teaching feedback as the scoring source.
 
 7. Verify visually.
-   - Capture front/side/top evidence.
-   - Confirm the image contains a real robot mesh, not only line joints.
-   - Keep outputs ignored and document how to reproduce the frame locally.
+   - [x] Capture front/side/top SVG evidence.
+   - [x] Keep outputs ignored and document how to reproduce the frame locally.
+   - [ ] Confirm a MuJoCo/Genesis image contains a real robot mesh, not only
+     line joints.
 
 ## Acceptance Criteria
 
-- A user-supplied Unitree G1 URDF/MJCF plus meshes can be registered and loaded
-  by the chosen renderer.
-- The render command writes a manifest and at least one local screenshot/frame
-  showing the real G1 model.
+- A user-supplied Unitree G1 URDF/MJCF plus meshes can be registered as a model
+  descriptor and consumed by the local SVG render evidence command.
+- The render command writes a manifest, front/side/top SVG frames, and a local
+  HTML evidence page.
 - Missing model files, missing mesh roots, and fixture descriptors fail clearly.
 - The render manifest preserves `g1_scoring_allowed: false`.
 - A fixture or imported-GMR pose stream can move at least a small set of visible
@@ -160,6 +169,7 @@ PYTHONPATH=src python -m neodojo robot-model register \
   angles.
 - SMPL-X mesh/body-surface rendering; the current teaching demo still uses
   skeleton joints.
+- MuJoCo/Genesis real robot mesh rendering from registered G1 assets.
 - Viser synchronized 3D playback.
 - Multi-camera offscreen capture hardening.
 - Automatic key-frame detection and broader geometry feedback.
