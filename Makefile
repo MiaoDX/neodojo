@@ -1,13 +1,16 @@
-.PHONY: all verify lint test build demo-html demo-public smoke-public
+.PHONY: all verify lint check test build demo-html demo-public smoke-public
 
 PYTHON ?= python3
 
 all: verify
 
-verify: lint test build demo-public
+verify: lint check test build demo-public
 
 lint:
 	PYTHONPATH=src $(PYTHON) -m compileall -q src tests
+
+check:
+	PYTHONPATH=src $(PYTHON) -m neodojo quality check --repo-root .
 
 test:
 	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests

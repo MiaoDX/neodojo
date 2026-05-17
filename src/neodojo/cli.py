@@ -15,6 +15,7 @@ from .g1_visual import (
 from .g1_render import write_g1_render
 from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
 from .public_demo import smoke_check_public_demo, write_public_demo
+from .quality import check_quality_surface
 from .real_conversion import (
     DEFAULT_SOURCE_ID,
     DEFAULT_SOURCE_INDEX,
@@ -292,6 +293,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="output directory for G1 render evidence",
     )
 
+    quality = subparsers.add_parser(
+        "quality",
+        help="run project-owned static quality checks",
+    )
+    quality_subparsers = quality.add_subparsers(dest="quality_command", required=True)
+    quality_check = quality_subparsers.add_parser(
+        "check",
+        help="validate MVP planning links and plan scaffolding",
+    )
+    quality_check.add_argument(
+        "--repo-root",
+        type=Path,
+        default=Path("."),
+        help="repository root containing docs/plans",
+    )
+
     real_conversion = subparsers.add_parser(
         "real-conversion",
         help="prepare metadata for the later real GVHMR conversion gate",
@@ -483,6 +500,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"wrote {result.manifest_path}")
             for path in result.frame_paths.values():
                 print(f"wrote {path}")
+            return 0
+
+        if args.command == "quality" and args.quality_command == "check":
+            result = check_quality_surface(args.repo_root)
+            print(f"checked {result.checked_plan_count} MVP plan files")
+            print(f"checked {len(result.checked_links)} MVP index links")
             return 0
 
         if args.command == "real-conversion" and args.real_command == "prepare":

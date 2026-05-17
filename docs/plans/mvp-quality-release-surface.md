@@ -1,6 +1,6 @@
 # MVP Quality And Release Surface Plan
 
-Status: PLANNED
+Status: IMPLEMENTED FIRST QUALITY GATE
 
 ## Goal
 
@@ -34,7 +34,8 @@ gate before the checks actually run.
 
 ## Outputs
 
-- Additional Make targets only after their tools are added.
+- `make check`, backed by `neodojo quality check`.
+- MVP plan-link and plan-scaffold verification.
 - CI steps matching local commands.
 - Coverage or type reports when useful.
 - Documentation that names exactly which quality gates exist.
@@ -42,16 +43,16 @@ gate before the checks actually run.
 ## Execution Tasks
 
 1. Select smallest useful check.
-   - [ ] Prefer checks that catch real bugs in the current package.
-   - [ ] Avoid heavyweight dependencies until the codebase needs them.
+   - [x] Prefer checks that catch real bugs in the current package.
+   - [x] Avoid heavyweight dependencies until the codebase needs them.
 
 2. Add local command.
-   - [ ] Add package metadata/dependency configuration.
-   - [ ] Add Make target and focused tests/fixtures if needed.
+   - [x] Add package metadata/dependency configuration.
+   - [x] Add Make target and focused tests/fixtures if needed.
 
 3. Wire CI and docs.
-   - [ ] Run the same command in GitHub Actions.
-   - [ ] Update README, README.zh.md, STATUS, and this plan.
+   - [x] Run the same command in GitHub Actions.
+   - [x] Update README, README.zh.md, STATUS, and this plan.
 
 ## Acceptance Evidence
 
@@ -59,6 +60,8 @@ gate before the checks actually run.
 - `make verify` remains the all-in-one local command.
 - Generated reports and caches stay ignored.
 - Docs do not overstate install, lint, build, release, or CI maturity.
+- `make check` runs `neodojo quality check`, verifying MVP plan links and
+  minimum plan scaffolding with no third-party dependency.
 
 ## Non-Goals
 
@@ -69,6 +72,6 @@ gate before the checks actually run.
 
 ## Stop Condition
 
-Stop when the next useful quality gate is added, documented, and included in
+Stopped when the next useful quality gate is added, documented, and included in
 `make verify`, or when the current minimal surface remains sufficient and the
 decision is recorded.

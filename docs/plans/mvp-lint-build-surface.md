@@ -37,8 +37,10 @@ analysis or release pipeline.
 
 - `make lint`, using `python -m compileall -q src tests`.
 - `make build`, using `python -m pip wheel . --wheel-dir outputs/dist`.
-- `make verify`, running lint, tests, wheel build, and public-demo generation.
-- CI steps that run lint, tests, wheel build, and public-demo generation.
+- `make verify`, running lint, plan quality checks, tests, wheel build, and
+  public-demo generation.
+- CI steps that run lint, plan quality checks, tests, wheel build, and
+  public-demo generation.
 - README/README.zh/STATUS/AGENTS updates that describe the limited scope.
 
 ## Execution Tasks
@@ -63,8 +65,8 @@ analysis or release pipeline.
 - `make build` produces a wheel under ignored `outputs/dist`.
 - `make verify` runs the complete local verification lane.
 - `make test` and `make demo-public` still pass.
-- CI workflow includes lint, unit test, wheel build, public-demo generation,
-  artifact upload, and Pages artifact staging.
+- CI workflow includes lint, plan quality check, unit test, wheel build,
+  public-demo generation, artifact upload, and Pages artifact staging.
 
 ## Non-Goals
 

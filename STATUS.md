@@ -7,12 +7,13 @@ fixture-backed and external-JSON `motion-record` paths, `robot-model`,
 `tracks`, imported GMR JSON track, `annotations detect`, `render g1`,
 `demo play`, `demo export-rerun`, and `real-conversion prepare` commands, a
 `make demo-html` command that writes a self-contained synthetic web demo,
-minimal `make lint` and `make build` commands, and a `make demo-public` command
-plus `make verify` and GitHub Actions workflow for the fixture public-demo
-artifact. `real-conversion materialize-source` can also prepare a dry-run or
-ffmpeg-backed local source clip handoff for a later GPU GVHMR run. There is
-still no checked-in GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real
-mesh rendering, real generated motion artifact, or UI server.
+minimal `make lint`, `make check`, and `make build` commands, and a
+`make demo-public` command plus `make verify` and GitHub Actions workflow for
+the fixture public-demo artifact. `real-conversion materialize-source` can also
+prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
+GVHMR run. There is still no checked-in GVHMR/GMR/simulator runtime pipeline,
+MuJoCo/Genesis real mesh rendering, real generated motion artifact, or UI
+server.
 
 ## Current Truth
 
@@ -67,6 +68,8 @@ mesh rendering, real generated motion artifact, or UI server.
 - `make demo-public` regenerates the fixture motion, routine feedback
   annotations, G1 visual/render, teaching-playback, public-demo, and
   smoke-check artifacts in one command.
+- `make check` validates MVP plan links and minimum plan scaffolding, and is
+  included in `make verify` and the GitHub Actions workflow.
 - `.github/workflows/public-demo.yml` runs tests, builds the fixture public demo,
   builds a wheel, uploads the artifact, and can publish the static output to
   GitHub Pages from `main` when Pages is enabled.
@@ -108,6 +111,7 @@ mesh rendering, real generated motion artifact, or UI server.
 ```bash
 make verify
 make lint
+make check
 make test
 make build
 make demo-public
@@ -126,10 +130,12 @@ PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outpu
 make demo-html
 ```
 
-`make verify` runs lint, tests, wheel build, and the public-demo smoke lane.
+`make verify` runs lint, MVP plan quality checks, tests, wheel build, and the
+public-demo smoke lane.
 `make lint` runs a minimal syntax/import bytecode compile check over `src/` and
-`tests/`. `make test` runs the focused Python unit tests for the fixture demo
-generator and local motion contract. `make build` builds a wheel under ignored
+`tests/`. `make check` validates MVP plan links and minimum plan scaffolding.
+`make test` runs the focused Python unit tests for the fixture demo generator
+and local motion contract. `make build` builds a wheel under ignored
 `outputs/dist/`. `neodojo motion-record create` writes fixture-backed SMPL-X
 motion-record and teaching-track manifests under the selected ignored output
 directory, or imports an external GVHMR teaching-joints JSON export with
@@ -187,9 +193,6 @@ artifacts for the later GPU GVHMR input handoff.
 - Validation that an imported real GVHMR artifact was produced from the exact
   materialized source clip and trim window:
   `docs/plans/mvp-gvhmr-source-validation.md`.
-- Broader static analysis, type checking, coverage, and release packaging
-  beyond the minimal syntax-lint and wheel-build commands:
-  `docs/plans/mvp-quality-release-surface.md`.
 
 ## Next Safe Task
 

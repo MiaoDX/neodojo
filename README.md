@@ -161,15 +161,17 @@ and next safe task. There is now a small checked-in Python package, local
 SMPL-X and G1 fixture artifact commands, a normalized imported-GMR G1 track
 boundary, a teaching-playback HTML command, a static HTML demo generator, local
 SVG/HTML G1 render evidence from a model descriptor plus visual track, and
-minimal lint/build commands. It can also write a dry-run or ffmpeg-backed local
-source-video handoff for a later GPU GVHMR run. There is still no checked-in
-GVHMR/GMR/simulator runtime pipeline or MuJoCo/Genesis real mesh rendering.
+minimal lint/build/quality-check commands. It can also write a dry-run or
+ffmpeg-backed local source-video handoff for a later GPU GVHMR run. There is
+still no checked-in GVHMR/GMR/simulator runtime pipeline or MuJoCo/Genesis real
+mesh rendering.
 
 What can be run now:
 
 ```bash
 make verify
 make lint
+make check
 make test
 make build
 make demo-public
@@ -225,7 +227,8 @@ recording artifact under `outputs/public-demo/`. Until `rerun-sdk` is added,
 the `.rrd` file is an honest JSON fallback artifact, not a real Rerun SDK
 recording.
 
-`make verify` runs lint, tests, wheel build, and the public-demo smoke lane.
+`make verify` runs lint, MVP plan quality checks, tests, wheel build, and the
+public-demo smoke lane.
 `make demo-public` regenerates the fixture motion contract, detected
 annotations, G1 visual track, G1 render evidence, teaching playback,
 public-demo artifact, and smoke check in one local command. `make smoke-public`
@@ -233,8 +236,9 @@ validates an existing
 `outputs/public-demo` artifact set. The GitHub Actions workflow at
 `.github/workflows/public-demo.yml` runs the same fixture lane, uploads the
 artifact, and can publish it to GitHub Pages when Pages is enabled for the repo.
-`make lint` is currently a syntax/import bytecode compile check; `make build`
-writes a wheel under ignored `outputs/dist/`.
+`make lint` is currently a syntax/import bytecode compile check; `make check`
+validates MVP plan links and minimum plan scaffolding; `make build` writes a
+wheel under ignored `outputs/dist/`.
 
 `neodojo real-conversion prepare` writes source metadata, trim metadata, and
 next-command hints for the later GPU gate. It does not download the source
@@ -274,8 +278,9 @@ In progress:
 - [x] One-command local `make demo-public` flow and GitHub Actions artifact/Page
       workflow for the fixture public demo
 - [x] Minimal `make lint` and `make build` command surface
-- [x] One-command local `make verify` flow for lint, tests, build, and public
-      demo generation
+- [x] Project-owned `make check` quality gate for MVP plan links/scaffolding
+- [x] One-command local `make verify` flow for lint, quality checks, tests,
+      build, and public demo generation
 - [x] Local real-conversion prep manifest for source `03-006`
 - [x] Local real-conversion source materialization handoff for a user-supplied
       video

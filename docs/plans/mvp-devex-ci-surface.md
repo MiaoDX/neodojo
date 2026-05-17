@@ -44,14 +44,15 @@ evidence, teaching playback HTML/manifest, public-demo scene, `.rrd` fallback
 artifact, SVG screenshot, and public-demo manifest. It then runs
 `neodojo demo smoke` against `outputs/public-demo`.
 
-`make verify` now wraps the full local lane: lint, tests, wheel build, and
-`make demo-public`.
+`make verify` now wraps the full local lane: lint, plan quality checks, tests,
+wheel build, and `make demo-public`.
 
-`.github/workflows/public-demo.yml` installs the package, runs `make test`,
-runs `make demo-public`, uploads `outputs/public-demo` as a workflow artifact,
-and uploads the same directory as the GitHub Pages artifact. The deploy job runs
-only on `main` outside pull requests. Pages still requires repository Pages
-configuration to expose a live URL.
+`.github/workflows/public-demo.yml` installs the package, runs lint, plan
+quality checks, tests, wheel build, and `make demo-public`, uploads
+`outputs/public-demo` as a workflow artifact, and uploads the same directory as
+the GitHub Pages artifact. The deploy job runs only on `main` outside pull
+requests. Pages still requires repository Pages configuration to expose a live
+URL.
 
 ## Inputs
 

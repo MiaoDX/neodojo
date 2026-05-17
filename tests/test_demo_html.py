@@ -23,6 +23,7 @@ from neodojo.motion_contract import (
     write_gvhmr_json_motion_contract,
 )
 from neodojo.public_demo import build_scene_timeline, smoke_check_public_demo, write_public_demo
+from neodojo.quality import check_quality_surface
 from neodojo.real_conversion import (
     _parse_ffprobe_payload,
     materialize_real_conversion_source,
@@ -669,6 +670,51 @@ class DemoHtmlTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "missing"):
                 smoke_check_public_demo(root / "public-demo")
+
+    def test_quality_check_validates_current_plan_surface(self) -> None:
+        result = check_quality_surface(Path.cwd())
+
+        self.assertGreaterEqual(result.checked_plan_count, 1)
+        self.assertIn("mvp-quality-release-surface.md", result.checked_links)
+
+    def test_quality_check_rejects_missing_plan_link(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            plans = root / "docs" / "plans"
+            plans.mkdir(parents=True)
+            plan_text = "\n".join(
+                [
+                    "# Present Plan",
+                    "",
+                    "Status: PLANNED",
+                    "",
+                    "## Goal",
+                    "Do a thing.",
+                    "",
+                    "## Execution Tasks",
+                    "- [ ] Task.",
+                    "",
+                    "## Acceptance Evidence",
+                    "- Evidence.",
+                    "",
+                    "## Non-Goals",
+                    "- Non-goal.",
+                    "",
+                    "## Stop Condition",
+                    "Stop.",
+                ]
+            )
+            (plans / "mvp-implementation-phases.md").write_text(
+                "# MVP Implementation Plan Index\n\n"
+                "Status: SPLIT INTO EXECUTABLE PLAN FILES\n\n"
+                "[mvp-present.md](mvp-present.md)\n",
+                encoding="utf-8",
+            )
+            (plans / "mvp-present.md").write_text(plan_text + "\n", encoding="utf-8")
+            (plans / "mvp-unlinked.md").write_text(plan_text + "\n", encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "missing plan links"):
+                check_quality_surface(root)
 
     def test_scene_timeline_preserves_scoring_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
