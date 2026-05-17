@@ -18,8 +18,9 @@ an optional first Viser local runtime, optional source-media probing, local
 source-media materialization handoff, a fixture-only static public-demo fallback
 artifact, a generated roboharness-style capture bundle boundary, optional
 MuJoCo simulator recorder-capture integration, and a GitHub Actions workflow
-with verified fixture-only Pages publication plus optional browser-rendered
-public-demo screenshot capture. It
+with verified fixture-only Pages publication, optional browser-rendered
+public-demo screenshot capture, and metadata-only real-handoff smoke artifact
+upload. It
 does not yet have a checked-in GVHMR/GMR execution pipeline, simulator runtime
 pipeline, built-in official SMPL-X body-model renderer, hosted/live-client
 Viser capture, or broad static-analysis/release gates beyond the minimal
@@ -59,7 +60,7 @@ local/user-supplied source video
 | 6 | [mvp-g1-real-model-rendering.md](mvp-g1-real-model-rendering.md) | implemented local SVG evidence; simulator mesh rendering remains follow-on | Load a user-supplied real Unitree G1 URDF/MJCF and render robot evidence instead of the current canvas skeleton. | A local render manifest and front/side/top SVG frame evidence prove the registered descriptor path remains non-scoring. |
 | 7 | [mvp-pipeline-contract-hardening.md](mvp-pipeline-contract-hardening.md) | implemented | Version and validate source, motion, teaching, G1, render, playback, annotation, and public-demo contracts before broader orchestration. | Existing fixture paths and future import paths pass through explicit versioned manifest boundaries with source-media provenance and local video-sync metadata. |
 | 8 | [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md) | implemented with static fallback | Define one internal scene/timeline contract and make a fixture-only public demo artifact. | A fixture-only `.rrd` fallback artifact, static viewer page, public-demo manifest, and SVG screenshot can be generated and visually smoke-tested. |
-| 9 | [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) | implemented with browser capture CI verified | Add one-command public-demo orchestration and CI artifact/Page publishing for the fixture lane. | A clean checkout can regenerate, validate, browser-smoke, upload, and publish the non-GPU fixture demo without tracking generated outputs. |
+| 9 | [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) | implemented with browser capture and real-handoff artifact CI verified | Add one-command public-demo orchestration and CI artifact/Page publishing for the fixture lane. | A clean checkout can regenerate, validate, browser-smoke, upload, and publish the non-GPU fixture demo, plus upload the metadata-only real-handoff smoke bundle, without tracking generated outputs. |
 | 10 | [mvp-lint-build-surface.md](mvp-lint-build-surface.md) | implemented | Add the minimal lint/build command surface and all-in-one local verification target. | `make verify` runs lint, plan quality checks, tests, wheel build, public-demo generation, and dry-run real-handoff smoke without tracking generated artifacts. |
 | 11 | [mvp-source-media-probing.md](mvp-source-media-probing.md) | implemented metadata probe | Record optional ffprobe metadata for local source videos without copying media. | Source prep records probe success/failure, duration, resolution, codec, and frame-rate metadata when available. |
 | 12 | [mvp-source-media-materialization.md](mvp-source-media-materialization.md) | implemented local handoff | Turn source prep plus a local video into a dry-run or ffmpeg-backed trimmed-clip/reference-frame handoff. | A source-materialization manifest records source validation, commands, generated outputs when available, and the GVHMR input handoff path without committing media. |
