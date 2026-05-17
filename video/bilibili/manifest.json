@@ -1,0 +1,112 @@
+{
+  "generated_at": "2026-05-17T17:26:27+0800",
+  "note": "Bilibili media URLs expire; use bvid/aid/cid to resolve fresh URLs when upgrading or re-downloading.",
+  "entries": [
+    {
+      "order": 1,
+      "bvid": "BV1gT4y1m7ec",
+      "page_url": "https://www.bilibili.com/video/BV1gT4y1m7ec/",
+      "title": "健身气功八段锦完整版-带呼吸法口令版",
+      "aid": 935481400,
+      "cid": 476071039,
+      "duration_seconds": 729,
+      "selected_resolution": "852x480",
+      "selected_video_quality_id": 32,
+      "selected_video_codec": "avc1.64001F",
+      "selected_audio_quality_id": 30232,
+      "selected_video_size_bytes": 71891245,
+      "selected_audio_size_bytes": 6609170,
+      "output_path": "video/bilibili/01_baduanjin-complete-routine-with-breathing-cues.mp4",
+      "output_size_bytes": 78737439,
+      "output_probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 852,
+            "height": 480,
+            "avg_frame_rate": "25/1"
+          }
+        ],
+        "format": {
+          "duration": "728.255667",
+          "size": "78737439",
+          "bit_rate": "864942"
+        }
+      },
+      "postprocess_note": "Downloaded 480p H.264 video + AAC audio and remuxed without re-encoding."
+    },
+    {
+      "order": 2,
+      "bvid": "BV1sF411F7Tg",
+      "page_url": "https://www.bilibili.com/video/BV1sF411F7Tg/",
+      "title": "健身气功易筋经国家体育总局标准版",
+      "aid": 299899611,
+      "cid": 745298312,
+      "duration_seconds": 766,
+      "selected_resolution": "852x480",
+      "selected_video_quality_id": 32,
+      "selected_video_codec": "avc1.64001F",
+      "selected_audio_quality_id": 30232,
+      "selected_video_size_bytes": 10736043,
+      "selected_audio_size_bytes": 7937889,
+      "output_path": "video/bilibili/02_yijinjing-standard-edition.mp4",
+      "output_size_bytes": 18923304,
+      "output_probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 852,
+            "height": 480,
+            "avg_frame_rate": "25/1"
+          }
+        ],
+        "format": {
+          "duration": "765.482333",
+          "size": "18923304",
+          "bit_rate": "197766"
+        }
+      },
+      "postprocess_note": "Rebuilt from a validated 480p H.264 stream after the first interrupted transfer produced decode errors."
+    },
+    {
+      "order": 3,
+      "bvid": "BV1J3411s7Ph",
+      "page_url": "https://www.bilibili.com/video/BV1J3411s7Ph/",
+      "title": "健身气功五禽戏完整版-带呼吸法口令版",
+      "aid": 424852473,
+      "cid": 551808399,
+      "duration_seconds": 823,
+      "selected_resolution": "852x480",
+      "selected_video_quality_id": 32,
+      "selected_video_codec": "avc1.64001F",
+      "selected_audio_quality_id": 30232,
+      "selected_video_size_bytes": 14011552,
+      "selected_audio_size_bytes": 13636804,
+      "output_path": "video/bilibili/03_wuqinxi-complete-routine-with-breathing-cues.mp4",
+      "output_size_bytes": 26013729,
+      "output_probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 852,
+            "height": 480,
+            "avg_frame_rate": "25/1"
+          }
+        ],
+        "format": {
+          "duration": "822.543447",
+          "size": "26013729",
+          "bit_rate": "253007"
+        }
+      },
+      "postprocess_note": "Downloaded 480p source, then re-encoded to 480p H.264 CFR to fix duplicate timestamp warnings."
+    }
+  ],
+  "total_output_size_bytes": 123674472
+}
