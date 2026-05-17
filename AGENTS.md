@@ -6,7 +6,7 @@
   `docs/technical-roadmap.md` and `docs/humanoid-platform-evaluation.md` for
   background research.
 - `README.zh.md` is the Chinese README. Keep the English and Chinese README files aligned when changing project positioning, status, or roadmap claims.
-- This repo is currently in bootstrap/docs-only state. Do not claim a working runtime pipeline, package layout, test command, or CI gate exists until it is added.
+- This repo is currently in bootstrap state with a fixture-only HTML demo. Do not claim a working GVHMR/GMR/simulator runtime pipeline, install workflow, lint command, build command, or CI gate exists until it is added.
 
 ## Project Shape
 
@@ -23,7 +23,9 @@
 
 ## Commands
 
-- No canonical install, test, lint, or build commands exist yet.
+- `make test` runs the focused unit tests for the fixture demo generator.
+- `make demo-html` writes the self-contained fixture demo to `outputs/html-demo/index.html`.
+- No canonical install, lint, build, or CI commands exist yet.
 - When adding code, add the command surface in the same change: package metadata, scripts or Make targets, focused tests, and README/docs updates.
 - Prefer small, reproducible Python entrypoints for pipeline work before adding broad framework structure.
 

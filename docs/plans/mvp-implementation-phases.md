@@ -1,12 +1,19 @@
 # MVP Implementation Phases
 
-Status: DRAFT
+Status: LOCAL FIXTURE HTML DEMO IMPLEMENTED
 
 ## Goal
 
 Turn the research in `docs/technical-roadmap.md` and
 `docs/humanoid-platform-evaluation.md` into standalone implementation phases
 that can be executed without claiming a runtime pipeline before it exists.
+
+This plan is now ready for the first local fixture implementation slice. The
+slice intentionally stops at a working self-contained web/HTML demo generated
+from synthetic motion data. That demo proves the UI shape, synchronized playback
+contract, trajectory overlays, and one SMPL-X-based geometry feedback check; it
+does not prove GVHMR conversion, GMR retargeting, simulator rendering, or
+qigong motion accuracy.
 
 The first milestone remains one local Baduanjin opening-form clip moving through
 the smallest useful path:
@@ -33,8 +40,9 @@ local source video
 - Official videos are licensing-sensitive. Runtime commands should work with
   local/user-supplied video paths and should not commit source or generated
   media.
-- The repo is currently docs-only. Each code phase must introduce its own
-  command surface, focused tests, and docs updates.
+- The repo currently has only a fixture HTML demo and no real runtime pipeline.
+  Each code phase must introduce its own command surface, focused tests, and
+  docs updates.
 
 ## Local macOS CPU Policy
 
@@ -193,6 +201,11 @@ synthetic or PBHC-sourced fixture manifest
   arrays and does not require simulator-heavy rendering.
 - Add one deterministic geometry check against fixture joints.
 - Document that this smoke path validates plumbing only, not qigong accuracy.
+- Add a self-contained HTML demo generator that writes an ignored
+  `outputs/html-demo/index.html` file and can be opened locally without a
+  server.
+- Keep the HTML demo fixture-only: synthetic SMPL-X and derived G1-like tracks
+  are acceptable, but the UI must clearly preserve the SMPL-X scoring boundary.
 
 ### Local Acceptance Evidence
 
@@ -201,8 +214,40 @@ synthetic or PBHC-sourced fixture manifest
   ignored output directory.
 - A local playback/inspection smoke command can load those manifests.
 - One geometry-feedback calculation runs from fixture data.
+- A generated HTML demo opens locally and shows synchronized SMPL-X and G1
+  fixture playback, front/side/top views, selected joint trajectories, timeline
+  controls, and the deterministic geometry check.
 - No raw videos, model checkpoints, generated `.pkl`/`.npz`, rendered videos, or
   large outputs are committed.
+
+### Local HTML Demo Stop Condition
+
+The first implementation run should stop when these commands work locally:
+
+```bash
+make test
+make demo-html
+```
+
+`make demo-html` writes a self-contained fixture demo to
+`outputs/html-demo/index.html`. Opening that file is enough for the first web
+proof. The generated page is fixture-only and must say so in its own artifact
+manifest; it must not imply that source-video conversion, simulator rendering,
+Viser, or real GMR output already exists.
+
+### Local HTML Demo Evidence
+
+As of 2026-05-17, the first fixture web proof exists:
+
+- `make test` passes the focused unit tests for fixture generation, feedback
+  calculation, self-contained HTML rendering, and demo manifest writing.
+- `make demo-html` writes `outputs/html-demo/index.html` and
+  `outputs/html-demo/manifest.json`.
+- The generated manifest marks the artifact as `fixture_only: true` and
+  `scoring_source: smplx`.
+- Headless Chrome opens the generated HTML file, renders six canvases
+  (SMPL-X/G1 front, side, and top views), toggles play/pause, moves the timeline
+  to the final frame, and reports the SMPL-X feedback check as passing.
 
 ### GPU Follow-Up Gate
 
@@ -394,6 +439,12 @@ feedback proof.
 
   ```bash
   neodojo demo play --tracks <tracks-dir> --annotations <annotations.json>
+  ```
+
+  The current local fixture precursor is:
+
+  ```bash
+  make demo-html
   ```
 
 - Front/side/top synchronized playback for SMPL-X and G1.

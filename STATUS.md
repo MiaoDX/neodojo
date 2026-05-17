@@ -1,10 +1,11 @@
 # Status
 
-neodojo is in bootstrap/docs-only state.
+neodojo is in bootstrap state with one fixture-only local demo.
 
-There is no checked-in runtime pipeline yet: no package layout, install command,
-test command, lint command, build command, CI gate, demo entrypoint, generated
-motion artifact, or UI server is currently part of the repo.
+There is now a minimal checked-in Python package, a `make test` command, and a
+`make demo-html` command that writes a self-contained synthetic web demo. There
+is still no checked-in GVHMR/GMR/simulator runtime pipeline, install workflow,
+lint command, build command, CI gate, generated motion artifact, or UI server.
 
 ## Current Truth
 
@@ -30,6 +31,9 @@ motion artifact, or UI server is currently part of the repo.
 - Synchronized SMPL-X and Unitree G1 playback in Viser.
 - Key-frame detection and geometry-constrained verbal feedback for terms such as
   "sink the shoulders" and "drop the elbows".
+- Fixture-only HTML teaching demo generated under `outputs/html-demo/`, proving
+  the intended web playback shape without claiming real reconstruction or
+  retargeting.
 
 ## Blockers And Constraints
 
@@ -50,18 +54,25 @@ motion artifact, or UI server is currently part of the repo.
 
 ## What Can Be Run Now
 
-Nothing project-specific yet. Future code changes should add the command surface
-they introduce: package metadata, scripts or Make targets, focused tests, and
-README/status updates.
+```bash
+make test
+make demo-html
+```
+
+`make test` runs the focused Python unit tests for the fixture demo generator.
+`make demo-html` writes `outputs/html-demo/index.html` and
+`outputs/html-demo/manifest.json`. The generated demo uses synthetic fixture
+motion only; it validates UI plumbing, trajectory drawing, timeline sync, and
+one SMPL-X-based geometry check, not qigong correctness.
 
 ## Next Safe Task
 
-Execute the immediate local-first smoke path from
-`docs/plans/mvp-implementation-phases.md`: add the smallest package/CLI/test
-surface, import a tiny synthetic or PBHC-sourced fixture, write a motion-record
-manifest, write a track manifest, run a local inspection command, and compute one
-deterministic geometry check. Defer real GVHMR conversion to the GPU follow-up
-gate after this local path works.
+Extend the immediate local-first smoke path from
+`docs/plans/mvp-implementation-phases.md`: split the current synthetic demo data
+into explicit motion-record and track manifests, then make the HTML demo consume
+those manifests through the same contracts that later GVHMR/GMR imports will
+use. Defer real GVHMR conversion to the GPU follow-up gate until this local
+contract works.
 
 ## Background Evidence
 

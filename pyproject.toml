@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neodojo"
+version = "0.1.0"
+description = "Fixture-first teaching playback prototype for neodojo."
+readme = "README.md"
+requires-python = ">=3.9"
+
+[project.scripts]
+neodojo = "neodojo.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+neodojo = ["templates/*.html"]

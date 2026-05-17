@@ -154,16 +154,32 @@ embodied skills.
 
 ## Status
 
-🚧 **Bootstrap phase.**
+🚧 **Bootstrap phase, with a fixture-only HTML demo.**
 
 See [`STATUS.md`](STATUS.md) for the current repo state, known constraints,
-and next safe task. There is no checked-in runtime pipeline, package layout,
-test command, or CI gate yet.
+and next safe task. There is now a small checked-in Python package and static
+HTML demo generator, but there is still no checked-in GVHMR/GMR/simulator
+runtime pipeline or CI gate.
+
+What can be run now:
+
+```bash
+make test
+make demo-html
+```
+
+`make demo-html` writes `outputs/html-demo/index.html`, a self-contained
+synthetic fixture demo for the intended teaching UI shape. It does not prove
+source-video conversion, qigong motion accuracy, simulator rendering, Viser, or
+real Unitree G1 retargeting.
 
 In progress:
 
 - [ ] First end-to-end demo: Baduanjin opening form *"Holding Up the
       Heavens to Regulate the Triple Burner"*
+- [x] Fixture-only web/HTML teaching demo for synchronized SMPL-X/G1-style
+      playback, trajectory overlays, timeline controls, and one SMPL-X-based
+      geometry check
 - [ ] roboharness-style multi-camera offscreen capture integration
 - [ ] SMPL-X + Unitree G1 dual-track synchronized Viser UI
 - [ ] Automatic key-frame detection + geometry-constrained verbal

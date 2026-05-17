@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>neodojo fixture teaching demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef2f6;
+      --panel: #ffffff;
+      --ink: #17212b;
+      --muted: #66717f;
+      --line: #d8e0e8;
+      --smplx: #147c72;
+      --g1: #b84e32;
+      --wrist: #d73f7c;
+      --elbow: #2c6fbb;
+      --knee: #a46b00;
+      --ok: #18794e;
+      --warn: #b54708;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.88);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 720;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .badge {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #f9fbfd;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      padding: 6px 10px;
+      white-space: nowrap;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    .tracks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .track {
+      min-width: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .track-title {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 2px;
+    }
+
+    .track-title h2 {
+      font-size: 16px;
+      font-weight: 720;
+    }
+
+    .track-title span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      text-align: right;
+    }
+
+    .views {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .view {
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .view canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #fbfcfe;
+    }
+
+    .view-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    aside {
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 14px;
+    }
+
+    .metric {
+      display: grid;
+      gap: 6px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .metric:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .metric strong {
+      font-size: 18px;
+    }
+
+    .status {
+      color: var(--ok);
+    }
+
+    .status.fail {
+      color: var(--warn);
+    }
+
+    .legend {
+      display: grid;
+      gap: 9px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .swatch {
+      width: 18px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--line);
+      flex: 0 0 auto;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: auto minmax(120px, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px 16px;
+      border-top: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    button {
+      min-width: 76px;
+      min-height: 38px;
+      border: 1px solid #b9c5d0;
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--ink);
+      font: inherit;
+      font-weight: 720;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: #8795a3;
+      background: #f7fafc;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--smplx);
+    }
+
+    .frame-readout {
+      min-width: 116px;
+      text-align: right;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 1100px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      header,
+      .controls {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      main {
+        padding: 10px;
+      }
+
+      .tracks,
+      .views,
+      aside {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .frame-readout {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>neodojo fixture teaching demo</h1>
+      <div class="badge-row">
+        <span class="badge">fixture only</span>
+        <span class="badge">SMPL-X scoring</span>
+        <span class="badge">G1 visual</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="tracks" aria-label="synchronized teaching tracks">
+        <div class="track" data-track-card="smplx">
+          <div class="track-title">
+            <h2>SMPL-X teacher</h2>
+            <span>accuracy source</span>
+          </div>
+          <div class="views">
+            <article class="view">
+              <canvas width="480" height="360" data-track="smplx" data-view="front"></canvas>
+              <div class="view-label"><span>Front</span><span>teacher</span></div>
+            </article>
+            <article class="view">
+              <canvas width="480" height="360" data-track="smplx" data-view="side"></canvas>
+              <div class="view-label"><span>Side</span><span>teacher</span></div>
+            </article>
+            <article class="view">
+              <canvas width="480" height="360" data-track="smplx" data-view="top"></canvas>
+              <div class="view-label"><span>Top</span><span>teacher</span></div>
+            </article>
+          </div>
+        </div>
+
+        <div class="track" data-track-card="g1">
+          <div class="track-title">
+            <h2>Unitree G1 visual</h2>
+            <span>derived companion</span>
+          </div>
+          <div class="views">
+            <article class="view">
+              <canvas width="480" height="360" data-track="g1" data-view="front"></canvas>
+              <div class="view-label"><span>Front</span><span>robot</span></div>
+            </article>
+            <article class="view">
+              <canvas width="480" height="360" data-track="g1" data-view="side"></canvas>
+              <div class="view-label"><span>Side</span><span>robot</span></div>
+            </article>
+            <article class="view">
+              <canvas width="480" height="360" data-track="g1" data-view="top"></canvas>
+              <div class="view-label"><span>Top</span><span>robot</span></div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <aside aria-label="demo telemetry">
+        <section class="panel">
+          <div class="metric">
+            <span>Frame</span>
+            <strong id="frameMetric">0 / 0</strong>
+          </div>
+          <div class="metric">
+            <span>Feedback source</span>
+            <strong>SMPL-X</strong>
+          </div>
+          <div class="metric">
+            <span>Key-frame check</span>
+            <strong id="feedbackStatus" class="status">pending</strong>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h3 style="font-size: 14px; margin-bottom: 10px;">Geometry</h3>
+          <div class="metric">
+            <span>Shoulder clearance</span>
+            <strong id="shoulderMetric">0.000 m</strong>
+          </div>
+          <div class="metric">
+            <span>Elbow drop</span>
+            <strong id="elbowMetric">0.000 m</strong>
+          </div>
+          <div class="metric">
+            <span>Wrist symmetry</span>
+            <strong id="wristMetric">0.000 m</strong>
+          </div>
+        </section>
+
+        <section class="panel legend">
+          <div class="legend-row"><span class="swatch" style="background: var(--smplx);"></span><span>SMPL-X skeleton</span></div>
+          <div class="legend-row"><span class="swatch" style="background: var(--g1);"></span><span>G1 skeleton</span></div>
+          <div class="legend-row"><span class="swatch" style="background: var(--wrist);"></span><span>Wrist trajectory</span></div>
+          <div class="legend-row"><span class="swatch" style="background: var(--elbow);"></span><span>Elbow trajectory</span></div>
+          <div class="legend-row"><span class="swatch" style="background: var(--knee);"></span><span>Knee trajectory</span></div>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="controls">
+      <button id="playButton" type="button">Pause</button>
+      <input id="timeline" type="range" min="0" max="0" value="0" aria-label="frame timeline">
+      <div class="frame-readout" id="frameReadout">Frame 0</div>
+    </footer>
+  </div>
+
+  <script>
+    const DEMO = __NEODOJO_DEMO_DATA__;
+    const canvases = Array.from(document.querySelectorAll("canvas[data-track]"));
+    const playButton = document.getElementById("playButton");
+    const timeline = document.getElementById("timeline");
+    const frameReadout = document.getElementById("frameReadout");
+    const frameMetric = document.getElementById("frameMetric");
+    const feedbackStatus = document.getElementById("feedbackStatus");
+    const shoulderMetric = document.getElementById("shoulderMetric");
+    const elbowMetric = document.getElementById("elbowMetric");
+    const wristMetric = document.getElementById("wristMetric");
+
+    const colors = {
+      smplx: "#147c72",
+      g1: "#b84e32",
+      left_wrist: "#d73f7c",
+      right_wrist: "#d73f7c",
+      left_elbow: "#2c6fbb",
+      right_elbow: "#2c6fbb",
+      left_knee: "#a46b00",
+      right_knee: "#a46b00"
+    };
+
+    let frame = 0;
+    let playing = true;
+    let lastTick = 0;
+    const frameCount = DEMO.frame_count;
+    timeline.max = String(frameCount - 1);
+
+    function project(point, view) {
+      if (view === "front") {
+        return [point[0], point[1]];
+      }
+      if (view === "side") {
+        return [point[2], point[1]];
+      }
+      return [point[0], point[2]];
+    }
+
+    function toCanvas(projected, view, width, height) {
+      const [x, y] = projected;
+      if (view === "top") {
+        return [width * 0.5 + x * 250, height * 0.54 - y * 680];
+      }
+      return [width * 0.5 + x * 210, height - 32 - y * 145];
+    }
+
+    function drawGrid(ctx, width, height, view) {
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#fbfcfe";
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = "#e5ebf1";
+      ctx.lineWidth = 1;
+      for (let x = 40; x < width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 40; y < height; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = "#c9d3dd";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if (view === "top") {
+        ctx.moveTo(28, height * 0.54);
+        ctx.lineTo(width - 28, height * 0.54);
+      } else {
+        ctx.moveTo(28, height - 32);
+        ctx.lineTo(width - 28, height - 32);
+      }
+      ctx.stroke();
+    }
+
+    function drawTrajectory(ctx, track, view, currentFrame, width, height) {
+      const frames = DEMO.tracks[track].frames;
+      for (const joint of DEMO.trajectory_joints) {
+        ctx.strokeStyle = colors[joint];
+        ctx.globalAlpha = 0.5;
+        ctx.lineWidth = joint.includes("wrist") ? 3 : 2;
+        ctx.beginPath();
+        for (let i = 0; i <= currentFrame; i += 1) {
+          const point = frames[i][joint];
+          const [x, y] = toCanvas(project(point, view), view, width, height);
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawSkeleton(ctx, pose, track, view, width, height) {
+      ctx.strokeStyle = colors[track];
+      ctx.lineWidth = track === "smplx" ? 5 : 6;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      for (const [a, b] of DEMO.bones) {
+        const [ax, ay] = toCanvas(project(pose[a], view), view, width, height);
+        const [bx, by] = toCanvas(project(pose[b], view), view, width, height);
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(bx, by);
+        ctx.stroke();
+      }
+
+      for (const joint of Object.keys(pose)) {
+        const [x, y] = toCanvas(project(pose[joint], view), view, width, height);
+        ctx.fillStyle = joint.includes("wrist") || joint.includes("elbow") || joint.includes("knee")
+          ? colors[joint] || colors[track]
+          : "#ffffff";
+        ctx.strokeStyle = colors[track];
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+
+    function drawCanvas(canvas) {
+      const track = canvas.dataset.track;
+      const view = canvas.dataset.view;
+      const ctx = canvas.getContext("2d");
+      drawGrid(ctx, canvas.width, canvas.height, view);
+      drawTrajectory(ctx, track, view, frame, canvas.width, canvas.height);
+      drawSkeleton(ctx, DEMO.tracks[track].frames[frame], track, view, canvas.width, canvas.height);
+    }
+
+    function updateMetrics() {
+      const feedback = DEMO.feedback;
+      frameReadout.textContent = `Frame ${frame}`;
+      frameMetric.textContent = `${frame + 1} / ${frameCount}`;
+      timeline.value = String(frame);
+      feedbackStatus.textContent = feedback.passed ? "pass" : "check";
+      feedbackStatus.classList.toggle("fail", !feedback.passed);
+      shoulderMetric.textContent = `${feedback.shoulder_clearance_m.toFixed(3)} m`;
+      elbowMetric.textContent = `${feedback.elbow_drop_m.toFixed(3)} m`;
+      wristMetric.textContent = `${feedback.wrist_symmetry_m.toFixed(3)} m`;
+    }
+
+    function render() {
+      for (const canvas of canvases) {
+        drawCanvas(canvas);
+      }
+      updateMetrics();
+    }
+
+    function step(timestamp) {
+      if (!lastTick) {
+        lastTick = timestamp;
+      }
+      if (playing && timestamp - lastTick > 1000 / DEMO.fps) {
+        frame = (frame + 1) % frameCount;
+        lastTick = timestamp;
+        render();
+      }
+      window.requestAnimationFrame(step);
+    }
+
+    playButton.addEventListener("click", () => {
+      playing = !playing;
+      playButton.textContent = playing ? "Pause" : "Play";
+    });
+
+    timeline.addEventListener("input", (event) => {
+      frame = Number(event.target.value);
+      playing = false;
+      playButton.textContent = "Play";
+      render();
+    });
+
+    render();
+    window.requestAnimationFrame(step);
+  </script>
+</body>
+</html>
