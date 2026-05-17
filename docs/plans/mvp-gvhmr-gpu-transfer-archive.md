@@ -47,6 +47,8 @@ and must preserve the media-safety boundary when the bundle explicitly includes
 - [x] Add focused tests for metadata-only and media-including archives.
 - [x] Upload a metadata-only archive artifact from CI without source media.
 - [x] Update README, README.zh, STATUS, and the plan index.
+- [x] Reject stale or incomplete bundles that omit required GPU-operator files,
+  including `run_gvhmr_neodojo.sh`.
 
 ## Acceptance Evidence
 
@@ -69,6 +71,9 @@ and must preserve the media-safety boundary when the bundle explicitly includes
   its manifest reports `archive_with_media`, `media_included: true`, and
   `safe_for_git: false`, so it is ready for manual transfer but must not be
   committed or published.
+- Extracting that local archive proves `run_gvhmr_neodojo.sh`, `RUN_ON_GPU.md`,
+  `export_neodojo_gvhmr.py`, the export template, source metadata, and the
+  trimmed clip are present; the runner passes `bash -n` and `--help` locally.
 
 ## Non-Goals
 

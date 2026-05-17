@@ -54,6 +54,8 @@ returned `neodojo.gvhmr_smplx_joints.v1` artifact.
   keeps checkpoint and SMPL-X asset setup outside this repo.
 - The runbook shows the packaged `run_gvhmr_neodojo.sh` invocation and the
   local `make demo-real` validation command.
+- The current ignored local archive has been extracted locally and checked for
+  the runner, runbook, exporter, template, source metadata, and media.
 - `make check` includes this plan through the MVP index and validates the plan
   scaffold.
 

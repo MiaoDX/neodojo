@@ -2051,6 +2051,39 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("run_gvhmr_neodojo.sh", archive_members)
         self.assertNotIn("source/trimmed-clip.mp4", archive_members)
 
+    def test_gpu_input_archive_rejects_missing_runner(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            trimmed = root / "trimmed-clip.mp4"
+            trimmed.write_bytes(b"fixture trimmed video bytes")
+            materialization = root / "source-materialization.json"
+            materialization.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.real_conversion_source_materialization.v1",
+                        "status": "materialized",
+                        "source_prep": {"source_id": "03-006"},
+                        "trim": {"start_seconds": 0.0, "end_seconds": 12.0, "duration_seconds": 12.0},
+                        "outputs": {
+                            "trimmed_video_path": str(trimmed),
+                            "trimmed_video": {"sha256": sha256_file(trimmed)},
+                        },
+                        "validation": {"gvhmr_input_ready": True},
+                        "gpu_handoff": {"trimmed_video_argument": str(trimmed)},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            handoff = package_gvhmr_gpu_handoff(root / "handoff", source_materialization=materialization)
+            bundle = package_gvhmr_gpu_input_bundle(root / "gpu-input", gpu_handoff=handoff.manifest_path)
+            bundle.runner_script_path.unlink()
+
+            with self.assertRaisesRegex(ValueError, "run_gvhmr_neodojo.sh"):
+                package_gvhmr_gpu_input_archive(
+                    root / "gpu-input-archive",
+                    gpu_input=bundle.manifest_path,
+                )
+
     def test_gpu_handoff_exporter_script_is_dependency_lazy_for_help(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

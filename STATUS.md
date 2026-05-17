@@ -544,7 +544,11 @@ bundle exists under `outputs/gvhmr-gpu-input-local-bilibili/`, with a
 git. A local ignored transfer archive has also been generated at
 `outputs/gvhmr-gpu-input-archive-local-bilibili/neodojo-gvhmr-gpu-input.tar.gz`;
 its manifest reports `archive_with_media`, `media_included: true`, and
-`safe_for_git: false`. The tracked operator checklist is
+`safe_for_git: false`, and the extracted archive has been checked to contain
+`run_gvhmr_neodojo.sh`, `RUN_ON_GPU.md`, `export_neodojo_gvhmr.py`,
+`gvhmr-smplx-joints.template.json`, source metadata, and the trimmed clip. The
+archive writer now rejects missing required GPU-operator files, including stale
+bundles that omit the runner script. The tracked operator checklist is
 `docs/runbooks/gvhmr-external-gpu.md`. The next external step is to copy the
 bundle or archive to a GPU-capable machine, run GVHMR, and return the neodojo
 export.

@@ -688,6 +688,26 @@ def _iter_bundle_files(bundle_dir: Path, *, archive_output_dir: Path) -> list[tu
     return files
 
 
+def _validate_gpu_input_archive_members(files: list[tuple[Path, str]], *, media_included: bool) -> None:
+    member_names = {arcname for _, arcname in files}
+    required = {
+        "RUN_ON_GPU.md",
+        "export_neodojo_gvhmr.py",
+        "gpu-handoff-manifest.json",
+        "gvhmr-smplx-joints.template.json",
+        "manifest.json",
+        "run_gvhmr_neodojo.sh",
+        "source-materialization.json",
+    }
+    if media_included:
+        required.add("source/trimmed-clip.mp4")
+    missing = sorted(required - member_names)
+    if missing:
+        raise ValueError(
+            "GPU input archive is missing required bundle files: " + ", ".join(missing)
+        )
+
+
 def _write_gpu_runner_script(path: Path) -> None:
     runner_script = resources.files("neodojo.templates").joinpath("run_gvhmr_neodojo.sh").read_text(
         encoding="utf-8"
@@ -1213,6 +1233,8 @@ def package_gvhmr_gpu_input_archive(
     archive_path = out_dir / archive_name
     manifest_path = out_dir / "manifest.json"
     files = _iter_bundle_files(bundle_dir, archive_output_dir=out_dir)
+    media_included = bool(gpu_input_manifest.get("media_included"))
+    _validate_gpu_input_archive_members(files, media_included=media_included)
 
     with tarfile.open(archive_path, "w:gz") as archive:
         for source_path, arcname in files:
@@ -1227,7 +1249,6 @@ def package_gvhmr_gpu_input_archive(
         }
         for source_path, arcname in files
     ]
-    media_included = bool(gpu_input_manifest.get("media_included"))
     status = "archive_with_media" if media_included else "metadata_only_archive"
     manifest = {
         "schema": GVHMR_GPU_INPUT_ARCHIVE_SCHEMA,
