@@ -32,6 +32,7 @@
 - `make build` builds a wheel under ignored `outputs/dist/`.
 - `PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract` writes fixture-backed SMPL-X motion-record and teaching-track manifests.
 - `PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract` imports an external GVHMR SMPL-X teaching-joints JSON export into the same motion-record contract without running GVHMR locally.
+- `PYTHONPATH=src python -m neodojo annotations detect --motion-record outputs/motion-contract --out outputs/annotations` writes a deterministic SMPL-X-only key-frame annotation manifest for the opening-form raised-hands feedback proof.
 - `PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual` writes a fixture G1 model descriptor.
 - `PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual` writes a fixture-derived G1 visual-track manifest and comparison report.
 - `PYTHONPATH=src python -m neodojo tracks import-gmr-json --source path/to/gmr-unitree-g1.json --motion-record outputs/motion-contract --out outputs/g1-visual` imports a normalized external GMR Unitree G1 JSON export into the non-scoring G1 visual-track contract without running GMR locally.
@@ -41,7 +42,7 @@
 - `PYTHONPATH=src python -m neodojo demo smoke --public-demo outputs/public-demo` validates the generated fixture public-demo manifest, HTML, scene, `.rrd` fallback artifact, and SVG screenshot for nonblank expected labels and scoring-source metadata.
 - `PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate` writes ignored source/trim metadata for the later GPU gate without downloading video or running GVHMR.
 - `make demo-html` writes the self-contained fixture demo to `outputs/html-demo/index.html` plus the local motion/track manifests it consumes.
-- `make demo-public` regenerates the fixture motion contract, G1 visual/render artifacts, teaching playback, public-demo artifact, and smoke check in one local command.
+- `make demo-public` regenerates the fixture motion contract, detected annotations, G1 visual/render artifacts, teaching playback, public-demo artifact, and smoke check in one local command.
 - `make smoke-public` validates an existing `outputs/public-demo` artifact set.
 - `.github/workflows/public-demo.yml` runs the fixture public-demo lane in CI and can publish the static artifact to GitHub Pages from `main` when Pages is enabled.
 - No broad static-analysis, type-checking, coverage, or release packaging gates exist yet.

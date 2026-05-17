@@ -174,6 +174,7 @@ make demo-public
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
+PYTHONPATH=src python -m neodojo annotations detect --motion-record outputs/motion-contract --out outputs/annotations
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks import-gmr-json --source path/to/gmr-unitree-g1.json --motion-record outputs/motion-contract --out outputs/g1-visual
@@ -189,6 +190,11 @@ teaching-track manifests, or imports an external GVHMR SMPL-X teaching-joints
 JSON export with `--from-gvhmr-json`. The repo still does not run GVHMR locally
 or parse raw GVHMR `.pt` files; the JSON path is the CPU-side import boundary
 for a later GPU run.
+
+`neodojo annotations detect` writes an explicit SMPL-X-only annotation manifest
+for the opening-form raised-hands key frame. `make demo-public` feeds that
+manifest into the teaching playback instead of relying on an implicit final
+frame.
 
 `neodojo robot-model register` and `neodojo tracks build` can write fixture G1
 model and visual-track manifests. These preserve the SMPL-X/G1 responsibility
@@ -216,9 +222,10 @@ recording artifact under `outputs/public-demo/`. Until `rerun-sdk` is added,
 the `.rrd` file is an honest JSON fallback artifact, not a real Rerun SDK
 recording.
 
-`make demo-public` regenerates the fixture motion contract, G1 visual track,
-G1 render evidence, teaching playback, public-demo artifact, and smoke check in
-one local command. `make smoke-public` validates an existing
+`make demo-public` regenerates the fixture motion contract, detected
+annotations, G1 visual track, G1 render evidence, teaching playback,
+public-demo artifact, and smoke check in one local command. `make smoke-public`
+validates an existing
 `outputs/public-demo` artifact set. The GitHub Actions workflow at
 `.github/workflows/public-demo.yml` runs the same fixture lane, uploads the
 artifact, and can publish it to GitHub Pages when Pages is enabled for the repo.
@@ -250,6 +257,8 @@ In progress:
 - [x] Local G1 SVG/HTML render evidence command with front/side/top frames and
       `g1_scoring_allowed: false`
 - [x] Local teaching playback command that consumes SMPL-X and G1 manifests
+- [x] Deterministic SMPL-X opening-form key-frame annotation detector for the
+      first geometry feedback proof
 - [x] Fixture-only static public-demo export with scene/timeline contract,
       `.rrd` fallback artifact, HTML, and SVG screenshot
 - [x] One-command local `make demo-public` flow and GitHub Actions artifact/Page
@@ -260,9 +269,8 @@ In progress:
       and meshes
 - [ ] roboharness-style multi-camera offscreen capture integration
 - [ ] SMPL-X + Unitree G1 dual-track synchronized Viser UI
-- [ ] Automatic key-frame detection + geometry-constrained verbal
-      feedback (translating phrases like *"sink the shoulders, drop the
-      elbows"* into computable geometric constraints)
+- [ ] Broader automatic key-frame detection + geometry-constrained verbal
+      feedback beyond the first opening-form detector
 
 The full roadmap is being unfolded as GitHub issues.
 

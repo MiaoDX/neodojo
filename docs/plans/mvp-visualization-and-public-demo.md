@@ -55,7 +55,7 @@ Pages settings allow it.
 
 - Versioned SMPL-X motion-record and teaching-track manifests.
 - Versioned G1 visual-track and optional render manifests.
-- Annotation manifest with the first manual key-frame feedback proof.
+- Annotation manifest with the first key-frame feedback proof.
 - Playback manifest or internal scene metadata from the existing local demo.
 - Optional generated still frames from MuJoCo/Genesis when real rendering
   exists.

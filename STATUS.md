@@ -4,8 +4,8 @@ neodojo is in bootstrap state with one fixture-only local demo.
 
 There is now a minimal checked-in Python package, a `make test` command,
 fixture-backed and external-JSON `motion-record` paths, `robot-model`,
-`tracks`, imported GMR JSON track, `render g1`, `demo play`,
-`demo export-rerun`, and `real-conversion prepare` commands, a
+`tracks`, imported GMR JSON track, `annotations detect`, `render g1`,
+`demo play`, `demo export-rerun`, and `real-conversion prepare` commands, a
 `make demo-html` command that writes a self-contained synthetic web demo,
 minimal `make lint` and `make build` commands, and a `make demo-public` command
 plus GitHub Actions workflow for the fixture public-demo artifact. There is
@@ -49,6 +49,8 @@ mesh rendering, real generated motion artifact, or UI server.
   comparison report with `g1_scoring_allowed: false`.
 - Normalized external GMR Unitree G1 JSON import into the same G1 visual-track
   contract, preserving imported joint angles while keeping G1 non-scoring.
+- Deterministic SMPL-X opening-form key-frame annotation detection, producing
+  `neodojo.annotation.v1` manifests for the first geometry feedback proof.
 - Local G1 SVG/HTML render evidence generated under `outputs/g1-render/`,
   proving the render manifest, front/side/top frame evidence, and G1
   non-scoring boundary. Fixture descriptors require explicit
@@ -102,6 +104,7 @@ make demo-public
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
+PYTHONPATH=src python -m neodojo annotations detect --motion-record outputs/motion-contract --out outputs/annotations
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks import-gmr-json --source path/to/gmr-unitree-g1.json --motion-record outputs/motion-contract --out outputs/g1-visual
@@ -118,9 +121,12 @@ generator and local motion contract. `make build` builds a wheel under ignored
 `outputs/dist/`. `neodojo motion-record create` writes fixture-backed SMPL-X
 motion-record and teaching-track manifests under the selected ignored output
 directory, or imports an external GVHMR teaching-joints JSON export with
-`--from-gvhmr-json`. `neodojo robot-model register` and `neodojo tracks build`
-write fixture G1 model/visual-track manifests and a comparison report that
-keeps G1 non-scoring. `neodojo tracks import-gmr-json` imports an external
+`--from-gvhmr-json`. `neodojo annotations detect` writes an explicit
+SMPL-X-only annotation manifest for the opening-form raised-hands key frame and
+feeds the public-demo feedback anchor. `neodojo robot-model register` and
+`neodojo tracks build` write fixture G1 model/visual-track manifests and a
+comparison report that keeps G1 non-scoring. `neodojo tracks import-gmr-json`
+imports an external
 normalized `neodojo.gmr_unitree_g1_track.v1` export with Unitree G1 joint-angle
 frames into the same non-scoring G1 track contract; it does not run GMR
 locally or parse every native upstream GMR output format. `neodojo render g1`
@@ -133,9 +139,9 @@ G1 manifests. `neodojo demo export-rerun` writes
 `outputs/public-demo/index.html`, `outputs/public-demo/scene.json`,
 `outputs/public-demo/screenshot.svg`, and `outputs/public-demo/neodojo-demo.rrd`;
 the `.rrd` is currently a JSON fallback artifact, not a real Rerun SDK
-recording. `make demo-public` regenerates the full fixture public-demo lane and
-runs the smoke check. `make smoke-public` validates an existing
-`outputs/public-demo` artifact set. `make demo-html`
+recording. `make demo-public` regenerates the full fixture public-demo lane,
+including detected annotations, and runs the smoke check. `make smoke-public`
+validates an existing `outputs/public-demo` artifact set. `make demo-html`
 writes `outputs/html-demo/index.html`, `outputs/html-demo/manifest.json`, and
 the local motion/track manifests it consumes. These artifacts use synthetic
 fixture motion only; they validate UI plumbing, trajectory drawing, timeline
@@ -154,8 +160,8 @@ later GPU run and does not download video or execute GVHMR.
 - SMPL-X mesh/body-surface playback; current demos draw joints and bones.
 - Simulator/Viser runtime integration and multi-camera offscreen capture.
 - True Rerun SDK `.rrd` export and verification of the live GitHub Pages URL.
-- Feedback beyond the first fixture geometry check: automatic key-frame
-  detection, more posture terms, and routine-level review.
+- Feedback beyond the first deterministic opening-form detector: more posture
+  terms, multi-keyframe detection, and routine-level review.
 - Rich source media probing beyond local file checksum/extension validation and
   source-index duration/resolution metadata.
 - Broader static analysis, type checking, coverage, and release packaging

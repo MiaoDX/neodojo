@@ -11,7 +11,7 @@ SMPL-X track + G1 visual track + annotations
   -> synchronized multi-view playback
   -> selected joint trajectories
   -> timeline/key-frame navigation
-  -> one SMPL-X-based manual feedback proof
+  -> one SMPL-X-based key-frame feedback proof
 ```
 
 This plan turns validated track artifacts into an inspectable teaching demo. It
@@ -22,9 +22,9 @@ real GMR-derived.
 
 - [mvp-g1-visual-track.md](mvp-g1-visual-track.md) completed or stable enough
   to provide SMPL-X and G1 track manifests.
-- A tiny fixture annotation file for local smoke tests.
-- A small manual annotation for one Baduanjin opening-form segment when real
-  motion is available.
+- A tiny fixture or generated annotation file for local smoke tests.
+- A small manual or detected annotation for one Baduanjin opening-form segment
+  when real motion is available.
 - Local simulator/rendering dependencies chosen for the first proof.
 
 ## Inputs
@@ -47,7 +47,7 @@ real GMR-derived.
 - Front/side/top synchronized playback for SMPL-X and G1.
 - Wrist, elbow, and knee trajectory overlays.
 - Timeline controls and frame/key-frame navigation.
-- One manual key-frame feedback proof based only on SMPL-X geometry.
+- One key-frame feedback proof based only on SMPL-X geometry.
 - Screenshot or frame evidence for rendering/UI verification.
 - Tests for annotation parsing and geometry-constraint calculation.
 - Docs updates only after the playback command exists.
@@ -64,7 +64,8 @@ writes:
 - `outputs/teaching-demo/manifest.json`
 
 The manifest records the source manifests, rendered track ids, trajectory
-joints, key frame, and SMPL-X-based feedback result.
+joints, annotation manifest when supplied, key frame, and SMPL-X-based feedback
+result.
 
 Local UI verification captured
 `outputs/teaching-demo/screenshot.png` with headless Chrome at 1440x1000. The
@@ -108,15 +109,14 @@ rendering on the local macOS CPU machine.
 - The fixture inspection path runs locally without GPU dependencies.
 - At least one screenshot or frame shows synchronized SMPL-X and G1 playback.
 - The trajectory overlay is visible and frame-aligned.
-- One manually annotated key frame computes a deterministic SMPL-X-based
-  feedback result.
+- One annotated key frame computes a deterministic SMPL-X-based feedback result.
 - The demo does not imply webcam comparison, full automation, full-corpus
   support, source-video conversion, or real GMR output unless those artifacts
   are actually present.
 
 ## Non-Goals
 
-- Automatic key-frame detection.
+- Broad automatic key-frame detection beyond the first narrow detector.
 - Real-time student webcam comparison.
 - LLM-generated motion.
 - Video-diffusion multi-view generation.

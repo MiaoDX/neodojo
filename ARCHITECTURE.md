@@ -33,7 +33,8 @@ SMPL-X motion record. This record is the canonical motion source for teaching
 feedback.
 
 Teaching track playback owns SMPL-X kinematic playback, joint trajectories,
-key-frame anchors, and geometric feedback checks. This is the accuracy path.
+key-frame anchors, deterministic annotation detection, and geometric feedback
+checks. This is the accuracy path.
 
 Humanoid visual track owns retargeting from SMPL-X to Unitree G1 through GMR and
 rendering the robot as a visual companion. The current repo can import a

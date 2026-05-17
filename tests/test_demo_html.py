@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from neodojo.annotations import detect_opening_form_keyframe, write_detected_annotations
 from neodojo.demo_html import build_fixture, compute_feedback, render_demo_html, write_demo
 from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames, derive_g1_like_frame
 from neodojo.g1_render import write_g1_render
@@ -507,6 +508,37 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["reference_video_sync"]["media"]["suffix"], ".mp4")
         self.assertEqual(manifest["reference_video_sync"]["trim_start_seconds"], 1.25)
         self.assertEqual(len(manifest["reference_video_sync"]["media"]["sha256"]), 64)
+
+    def test_detected_annotations_drive_teaching_playback_key_frame(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            _, smplx_frames = load_motion_record_frames(motion.motion_record_manifest_path)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+
+            annotation_result = write_detected_annotations(root / "annotations", motion.out_dir)
+            annotations = json.loads(annotation_result.manifest_path.read_text(encoding="utf-8"))
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+                annotations_path=annotation_result.manifest_path,
+            )
+            manifest = json.loads(playback.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(detect_opening_form_keyframe(smplx_frames), 9)
+        self.assertEqual(annotations["schema"], "neodojo.annotation.v1")
+        self.assertEqual(annotations["detector"]["version"], "neodojo.detector.opening_form_apex.v1")
+        self.assertEqual(annotations["keyframes"][0]["name"], "raise hands apex")
+        self.assertEqual(annotations["keyframes"][0]["frame"], 9)
+        self.assertEqual(manifest["key_frame"], 9)
+        self.assertEqual(manifest["annotation_name"], "raise hands apex")
+        self.assertTrue(manifest["feedback"]["passed"])
 
     def test_public_demo_export_writes_scene_recording_html_and_screenshot(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

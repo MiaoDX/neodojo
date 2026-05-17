@@ -144,8 +144,8 @@ for compatibility.
      teaching terms, selected joints, and SMPL-X-only geometry checks.
    - [x] Keep annotations independent of G1 so robot visual changes do not
      affect scoring.
-   - [x] Leave room for future automated key-frame detection without requiring
-     it now.
+   - [x] Leave room for automated key-frame detection without requiring broad
+     routine-level detection in this slice.
 
 8. Update commands and tests only where contracts change.
    - [x] Keep existing fixture commands working.
@@ -165,8 +165,8 @@ for compatibility.
   consistent timing and coordinate semantics.
 - Contact/floor/facing diagnostics are present in manifests or validation
   reports where the data exists.
-- Manual key-frame annotations can drive the existing SMPL-X-only feedback
-  proof.
+- Manual or generated key-frame annotations can drive the existing SMPL-X-only
+  feedback proof.
 - Tests prove that G1 and rendered/public-demo artifacts remain non-scoring.
 
 ## Non-Goals
@@ -174,7 +174,7 @@ for compatibility.
 - Running GVHMR, GMR, HAMER, or any GPU inference.
 - Implementing the public Rerun/GitHub Pages demo.
 - Implementing Viser, MuJoCo, Genesis, or MeshCat runtime UI work.
-- Automatic key-frame detection.
+- Broad automatic key-frame detection beyond the first narrow detector.
 - Redistributing official instructional videos or generated motion artifacts.
 - Creating broad install, lint, build, or CI claims before those surfaces exist.
 

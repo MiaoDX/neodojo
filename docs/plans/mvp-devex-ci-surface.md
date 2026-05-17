@@ -38,11 +38,11 @@ lint/build commands.
 
 ## Implemented Local Path
 
-`make demo-public` now regenerates the fixture motion contract, fixture G1
-model descriptor, G1 visual track, G1 SVG/HTML render evidence, teaching
-playback HTML/manifest, public-demo scene, `.rrd` fallback artifact, SVG
-screenshot, and public-demo manifest. It then runs `neodojo demo smoke` against
-`outputs/public-demo`.
+`make demo-public` now regenerates the fixture motion contract, detected
+annotations, fixture G1 model descriptor, G1 visual track, G1 SVG/HTML render
+evidence, teaching playback HTML/manifest, public-demo scene, `.rrd` fallback
+artifact, SVG screenshot, and public-demo manifest. It then runs
+`neodojo demo smoke` against `outputs/public-demo`.
 
 `.github/workflows/public-demo.yml` installs the package, runs `make test`,
 runs `make demo-public`, uploads `outputs/public-demo` as a workflow artifact,
@@ -103,6 +103,7 @@ configuration to expose a live URL.
 
 3. Build the local demo-public flow.
    - [x] Generate motion-record and teaching-track fixtures.
+   - [x] Generate deterministic opening-form annotations.
    - [x] Generate G1 visual-track fixtures.
    - [x] Generate G1 render evidence and teaching playback HTML/manifest.
    - [x] Export `.rrd` fallback artifact and static viewer page.

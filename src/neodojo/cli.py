@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 from typing import Sequence
 
+from .annotations import write_detected_annotations
 from .demo_html import write_demo
 from .g1_visual import (
     build_g1_visual_track,
@@ -40,6 +41,28 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=96,
         help="number of synthetic fixture frames to generate",
+    )
+
+    annotations = subparsers.add_parser(
+        "annotations",
+        help="create annotation manifests from motion artifacts",
+    )
+    annotation_subparsers = annotations.add_subparsers(dest="annotation_command", required=True)
+    annotation_detect = annotation_subparsers.add_parser(
+        "detect",
+        help="write deterministic SMPL-X key-frame annotations from a motion record",
+    )
+    annotation_detect.add_argument(
+        "--motion-record",
+        type=Path,
+        required=True,
+        help="motion-record root directory or manifest path",
+    )
+    annotation_detect.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/annotations"),
+        help="output directory for the annotation manifest",
     )
 
     motion_record = subparsers.add_parser(
@@ -332,6 +355,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 result = write_fixture_motion_contract(args.out, frame_count=args.frames)
             print(f"wrote {result.motion_record_manifest_path}")
             print(f"wrote {result.smplx_track_manifest_path}")
+            return 0
+
+        if args.command == "annotations" and args.annotation_command == "detect":
+            result = write_detected_annotations(args.out, args.motion_record)
+            print(f"wrote {result.manifest_path}")
             return 0
 
         if args.command == "robot-model" and args.robot_command == "register":

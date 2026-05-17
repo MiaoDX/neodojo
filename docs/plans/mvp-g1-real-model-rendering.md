@@ -172,5 +172,6 @@ PYTHONPATH=src python -m neodojo robot-model register \
 - MuJoCo/Genesis real robot mesh rendering from registered G1 assets.
 - Viser synchronized 3D playback.
 - Multi-camera offscreen capture hardening.
-- Automatic key-frame detection and broader geometry feedback.
+- Broader key-frame detection and geometry feedback beyond the first narrow
+  detector.
 - GPU-side GVHMR artifact generation from a real Baduanjin clip.

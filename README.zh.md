@@ -142,6 +142,7 @@ make demo-public
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
+PYTHONPATH=src python -m neodojo annotations detect --motion-record outputs/motion-contract --out outputs/annotations
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks import-gmr-json --source path/to/gmr-unitree-g1.json --motion-record outputs/motion-contract --out outputs/g1-visual
@@ -157,6 +158,10 @@ teaching-track manifests，也可以通过 `--from-gvhmr-json` 导入外部 GVHM
 SMPL-X teaching-joints JSON export。当前 repo 仍不会在本地运行 GVHMR，也不会直接
 解析 raw GVHMR `.pt` 文件；JSON 路径只是给后续 GPU run 准备的 CPU-side import
 边界。
+
+`neodojo annotations detect` 会为 opening-form raised-hands key frame 写出显式的
+SMPL-X-only annotation manifest。`make demo-public` 会把这个 manifest 喂给 teaching
+playback，而不是依赖隐式 final frame。
 
 `neodojo robot-model register` 和 `neodojo tracks build` 可以写出 fixture G1
 model 和 visual-track manifests。它们保留 SMPL-X/G1 职责边界，但还没有加载真实
@@ -181,9 +186,10 @@ descriptor 不需要这个开关。这是本地 render evidence，不是 MuJoCo/
 `.rrd` 命名 recording artifact。在加入 `rerun-sdk` 之前，这个 `.rrd` 文件是如实
 标注的 JSON fallback artifact，不是真正的 Rerun SDK recording。
 
-`make demo-public` 会用一个本地命令重新生成 fixture motion contract、G1 visual
-track、G1 render evidence、teaching playback、public-demo artifact，并运行 smoke
-check。`make smoke-public` 会验证现有的 `outputs/public-demo` artifact set。
+`make demo-public` 会用一个本地命令重新生成 fixture motion contract、detected
+annotations、G1 visual track、G1 render evidence、teaching playback、public-demo
+artifact，并运行 smoke check。`make smoke-public` 会验证现有的
+`outputs/public-demo` artifact set。
 `.github/workflows/public-demo.yml` 里的 GitHub Actions workflow 会运行同一条 fixture
 lane，上传 artifact，并在 repo 启用 Pages 后发布到 GitHub Pages。
 `make lint` 目前是 syntax/import bytecode compile check；`make build` 会把 wheel
@@ -209,6 +215,7 @@ G1 retargeting 已经完成。
 - [x] 本地 G1 SVG/HTML render evidence 命令，输出正/侧/俯三视角 frame，并保持
       `g1_scoring_allowed: false`
 - [x] 本地 teaching playback 命令，可同时消费 SMPL-X 与 G1 manifests
+- [x] 确定性的 SMPL-X opening-form key-frame annotation detector，用于第一个几何反馈 proof
 - [x] fixture-only 静态 public-demo export，包含 scene/timeline contract、
       `.rrd` fallback artifact、HTML 与 SVG screenshot
 - [x] 本地一条命令 `make demo-public`，以及用于 fixture public demo 的 GitHub
@@ -218,8 +225,7 @@ G1 retargeting 已经完成。
 - [ ] 基于用户本地 URDF/MJCF 与 meshes 的 MuJoCo/Genesis 真实 Unitree G1 mesh 渲染
 - [ ] roboharness 风格的多视角离屏录制集成
 - [ ] SMPL-X 与 Unitree G1 双轨同屏 Viser UI
-- [ ] 关键定式自动检测 + 几何约束式术语反馈
-  （把"沉肩坠肘"翻译成可计算的几何约束）
+- [ ] 更广的关键定式自动检测 + 几何约束式术语反馈（超过第一个 opening-form detector）
 
 完整 roadmap 会以 issue 形式持续展开。
 
