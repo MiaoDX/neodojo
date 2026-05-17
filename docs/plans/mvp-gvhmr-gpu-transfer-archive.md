@@ -58,6 +58,11 @@ and must preserve the media-safety boundary when the bundle explicitly includes
 - The smoke archive does not contain source media.
 - Unit tests cover both metadata-only and media-including archive manifests.
 - CI uploads only the metadata-only archive.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26004620869` verified
+  `make gpu-input-archive-smoke`, uploaded the metadata-only archive artifact,
+  deployed Pages, and the downloaded archive artifact contained no `.mp4`,
+  `.pt`, `.pkl`, or `.npz` files.
 
 ## Non-Goals
 

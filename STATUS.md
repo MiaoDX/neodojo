@@ -236,6 +236,17 @@ motion artifact, or hosted/live-client Viser capture.
   manifest, `RUN_ON_GPU.md`, handoff metadata, source-materialization copy,
   GVHMR export template, GPU-side exporter helper, and
   `run_gvhmr_neodojo.sh`, and contains no video files.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26004620869` verified the
+  GPU input archive surface on `main`: lint, plan checks, tests, wheel build,
+  `make real-handoff-smoke`, `make gpu-input-bundle-smoke`, `make
+  gpu-input-archive-smoke`, artifact upload, browser capture, capture-bundle
+  upload, Pages artifact upload, and Pages deploy passed. The downloaded
+  `neodojo-gpu-input-archive-smoke` artifact contains
+  `neodojo-gvhmr-gpu-input.tar.gz` plus a
+  `neodojo.gvhmr_gpu_input_archive.v1` manifest with `media_included: false`
+  and `safe_for_git: true`; archive members are metadata/scripts only and no
+  `.mp4`, `.pt`, `.pkl`, or `.npz` files are present.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
