@@ -189,6 +189,7 @@ make build
 make demo-public
 make demo-public-browser
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
+make real-handoff-smoke
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
@@ -348,6 +349,8 @@ trimmed-video and reference-frame artifacts for the later GPU GVHMR input.
 `make real-handoff LOCAL_VIDEO=...` runs source prep, dry-run source
 materialization by default, and GPU handoff packaging in one command. Set
 `REAL_DRY_RUN=0` to actually trim/extract media when ffmpeg is installed.
+`make real-handoff-smoke` runs the same handoff path with an ignored placeholder
+`.mp4` and is included in `make verify`; it does not run GVHMR or process media.
 `neodojo real-conversion package-gpu-handoff` and `make gpu-handoff
 SOURCE_MATERIALIZATION=...` consume a source-materialization manifest and write
 `outputs/gvhmr-gpu-handoff/manifest.json`, a README, and a
@@ -433,7 +436,7 @@ In progress:
 - [x] Minimal `make lint` and `make build` command surface
 - [x] Project-owned `make check` quality gate for MVP plan links/scaffolding
 - [x] One-command local `make verify` flow for lint, quality checks, tests,
-      build, and public demo generation
+      build, public demo generation, and real-handoff smoke
 - [x] Local real-conversion prep manifest for source `03-006`
 - [x] Local real-conversion source materialization handoff for a user-supplied
       video

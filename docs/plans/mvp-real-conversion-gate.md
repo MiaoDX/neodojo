@@ -138,7 +138,9 @@ Without `--dry-run`, the same command requires ffmpeg and writes an ignored
 trimmed clip plus reference frames under `outputs/real-conversion-source/`.
 `make real-handoff` wraps source prep, dry-run materialization by default, and
 GPU handoff packaging; set `REAL_DRY_RUN=0` to actually trim/extract media when
-ffmpeg is installed.
+ffmpeg is installed. `make real-handoff-smoke` exercises the same default
+dry-run handoff path with an ignored placeholder `.mp4` and runs inside
+`make verify`.
 Package the materialized source metadata for the external GPU operator:
 
 ```bash
@@ -220,6 +222,8 @@ variables, when an external GMR/G1 visual artifact is available.
 - [x] Add `make real-handoff LOCAL_VIDEO=...` to run local prep,
   materialization, and GPU handoff packaging as one command without running
   GVHMR locally.
+- [x] Include a dependency-light `make real-handoff-smoke` target in
+  `make verify` so CI exercises the handoff command surface without real media.
 - [x] Add a GPU-side exporter helper to the handoff bundle for turning
   `hmr4d_results.pt` plus licensed SMPL-X assets into
   `neodojo.gvhmr_smplx_joints.v1`.

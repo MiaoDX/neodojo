@@ -156,6 +156,7 @@ make build
 make demo-public
 make demo-public-browser
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
+make real-handoff-smoke
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
@@ -302,6 +303,8 @@ manifest 与本地视频，写出 source-materialization manifest。传入 `--dr
 artifacts 写给后续 GPU GVHMR input。`make real-handoff LOCAL_VIDEO=...` 会用一个
 命令运行 source prep、默认 dry-run source materialization 和 GPU handoff packaging；
 安装了 ffmpeg 并希望实际 trim/extract media 时，可设置 `REAL_DRY_RUN=0`。
+`make real-handoff-smoke` 会用 ignored placeholder `.mp4` 跑同一条 handoff path，并已
+接入 `make verify`；它不会运行 GVHMR，也不会处理媒体。
 `neodojo real-conversion package-gpu-handoff`
 和 `make gpu-handoff SOURCE_MATERIALIZATION=...` 会读取 source-materialization
 manifest，写出 `outputs/gvhmr-gpu-handoff/manifest.json`、README、
@@ -372,8 +375,8 @@ capture 或真实 Unitree G1 retargeting 已经完成。
       Actions artifact/Page workflow
 - [x] 最小 `make lint` 与 `make build` 命令面
 - [x] project-owned `make check` quality gate，用于 MVP plan links/scaffolding
-- [x] 本地一条命令 `make verify` 跑完 lint、quality checks、tests、build 和
-      public demo generation
+- [x] 本地一条命令 `make verify` 跑完 lint、quality checks、tests、build、
+      public demo generation 和 real-handoff smoke
 - [x] 本地 real-conversion prep manifest，默认 source 为 `03-006`
 - [x] 面向用户本地视频的 real-conversion source materialization handoff
 - [x] 从用户本地视频一命令生成 GPU handoff 的 `make real-handoff`

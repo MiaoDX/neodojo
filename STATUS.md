@@ -269,6 +269,7 @@ make build
 make demo-public
 make demo-public-browser
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
+make real-handoff-smoke
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
@@ -303,8 +304,9 @@ PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materializ
 make demo-html
 ```
 
-`make verify` runs lint, MVP plan quality checks, tests, wheel build, and the
-public-demo plus capture-bundle smoke lane.
+`make verify` runs lint, MVP plan quality checks, tests, wheel build, the
+public-demo plus capture-bundle smoke lane, and the dry-run real-handoff smoke
+lane.
 `make lint` runs a minimal syntax/import bytecode compile check over `src/` and
 `tests/`. `make check` validates MVP plan links and minimum plan scaffolding.
 `make test` runs the focused Python unit tests for the fixture demo generator
@@ -416,7 +418,9 @@ and reference-frame extraction commands without processing media. Without
 artifacts for the later GPU GVHMR input handoff. `make real-handoff
 LOCAL_VIDEO=...` runs prep, dry-run source materialization by default, and GPU
 handoff packaging in one command; set `REAL_DRY_RUN=0` to actually trim/extract
-media when ffmpeg is installed. `neodojo real-conversion
+media when ffmpeg is installed. `make real-handoff-smoke` runs that same local
+handoff path with an ignored placeholder `.mp4` and is included in
+`make verify`. `neodojo real-conversion
 package-gpu-handoff` packages that manifest into a GPU handoff directory with a
 machine-readable status, export template, provenance fields, upstream command
 template, copyable source-materialization metadata, GPU-side neodojo export
