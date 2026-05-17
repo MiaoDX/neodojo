@@ -326,24 +326,28 @@ when source id, trim, input path/checksum, and duration checks pass.
 
 - Full licensed SMPL-X mesh/body-model playback beyond the current capsule
   proxy, local-only asset descriptor, and imported parameter boundary:
-  `docs/plans/mvp-smplx-body-surface-playback.md`.
+  `docs/plans/mvp-smplx-licensed-mesh-rendering.md`. The first capsule proxy,
+  local-only asset descriptor, mesh-ready parameter preservation, and mesh
+  input gate already exist.
 - Production Viser teaching polish beyond generated multi-camera preview
   evidence and first camera/annotation controls:
-  `docs/plans/mvp-viser-multicamera-runtime.md`. The first optional local
+  `docs/plans/mvp-viser-production-teaching-ui.md`. The first optional local
   Viser runtime, camera/annotation controls, and front/side/top preview
   screenshots exist.
 - Real roboharness or simulator offscreen recording beyond the generated bundle
   and browser-rendered public-demo screenshot:
-  `docs/plans/mvp-roboharness-capture-boundary.md`. The first generated
+  `docs/plans/mvp-roboharness-simulator-recorder.md`. The first generated
   evidence bundle exists, and the optional browser capture lane is wired into
   `make demo-public-browser` and CI.
 
 ## Next Safe Task
 
-The next MVP capability is `docs/plans/mvp-real-conversion-gate.md` for the
-later GPU artifact import path. Do not run GVHMR full-video inference on this
-macOS CPU workspace; use a GPU-capable machine to export a GVHMR SMPL-X
-teaching-joints JSON artifact, then import it through
+The next default MVP capability remains
+`docs/plans/mvp-real-conversion-gate.md` for the later GPU artifact import
+path. The remaining non-GPU follow-on plans above are blocked on licensed
+assets, product-scope choices, or recorder target choices. Do not run GVHMR
+full-video inference on this macOS CPU workspace; use a GPU-capable machine to
+export a GVHMR SMPL-X teaching-joints JSON artifact, then import it through
 `neodojo motion-record create --from-gvhmr-json`.
 
 ## Background Evidence

@@ -76,8 +76,11 @@ of truth for the next waves.
 | [mvp-simulator-mesh-rendering.md](mvp-simulator-mesh-rendering.md) | implemented optional MuJoCo command, real G1 asset smoke, and GMR qpos application | MuJoCo render command, real Unitree G1 mesh proof, and imported GMR joint-angle qpos application. |
 | [mvp-native-gmr-runner.md](mvp-native-gmr-runner.md) | implemented first pickle adapter; local GMR execution remains external | Native GMR robot-motion pickle parsing beyond normalized JSON import. |
 | [mvp-smplx-body-surface-playback.md](mvp-smplx-body-surface-playback.md) | implemented surface proxy, licensed-asset boundary, and parameter import; full mesh rendering remains follow-on | Dependency-light SMPL-X surface proxy, local-only licensed asset descriptor, imported SMPL-X parameter boundary, and future mesh/body-model playback. |
+| [mvp-smplx-licensed-mesh-rendering.md](mvp-smplx-licensed-mesh-rendering.md) | blocked on local licensed assets and renderer choice | Full licensed SMPL-X mesh/body-model playback beyond the capsule proxy, local asset descriptor, and imported parameter boundary. |
 | [mvp-viser-multicamera-runtime.md](mvp-viser-multicamera-runtime.md) | implemented first optional server, camera/anchor controls, and generated multi-camera preview evidence | Local Viser runtime, camera/annotation controls, and dependency-light front/side/top visual smoke workflow. |
+| [mvp-viser-production-teaching-ui.md](mvp-viser-production-teaching-ui.md) | follow-on; needs product interaction scope and optional Viser dependency | Production local Viser teaching UX beyond the first optional runtime controls and generated previews. |
 | [mvp-rerun-pages-release.md](mvp-rerun-pages-release.md) | implemented optional SDK export and verified live Pages publication | True Rerun SDK `.rrd` export and verified live GitHub Pages URL. |
+| [mvp-roboharness-simulator-recorder.md](mvp-roboharness-simulator-recorder.md) | follow-on; needs recorder target decision and local runtime assets | Direct roboharness, simulator, or live-runtime recorder evidence beyond generated capture bundles and public-demo browser screenshots. |
 | [mvp-feedback-routine-review.md](mvp-feedback-routine-review.md) | implemented | Broader key-frame/posture feedback and routine-level review. |
 | [mvp-gvhmr-source-validation.md](mvp-gvhmr-source-validation.md) | implemented validator; blocked on a real GVHMR export for final proof | Validation that imported GVHMR artifacts match the materialized source clip and trim. |
 | [mvp-quality-release-surface.md](mvp-quality-release-surface.md) | implemented first quality gate | Project-owned static quality check for MVP plan links and scaffolding beyond the minimal lint/build commands. |
@@ -230,9 +233,15 @@ docs:
     type: SPEC
   - path: docs/plans/mvp-smplx-body-surface-playback.md
     type: SPEC
+  - path: docs/plans/mvp-smplx-licensed-mesh-rendering.md
+    type: SPEC
   - path: docs/plans/mvp-viser-multicamera-runtime.md
     type: SPEC
+  - path: docs/plans/mvp-viser-production-teaching-ui.md
+    type: SPEC
   - path: docs/plans/mvp-roboharness-capture-boundary.md
+    type: SPEC
+  - path: docs/plans/mvp-roboharness-simulator-recorder.md
     type: SPEC
   - path: docs/plans/mvp-rerun-pages-release.md
     type: SPEC
