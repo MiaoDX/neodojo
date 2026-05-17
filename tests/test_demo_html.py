@@ -37,6 +37,7 @@ from neodojo.real_conversion import (
     inspect_gvhmr_result,
     materialize_real_conversion_source,
     package_gvhmr_gpu_handoff,
+    package_gvhmr_gpu_input_bundle,
     validate_gvhmr_source,
     write_real_conversion_prep,
 )
@@ -1886,6 +1887,93 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn(trimmed, result.checked_paths)
         self.assertIn(result.exporter_script_path, result.checked_paths)
         self.assertIn(result.source_materialization_copy_path, result.checked_paths)
+
+    def test_real_conversion_gpu_input_bundle_can_include_media(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            trimmed = root / "trimmed-clip.mp4"
+            trimmed.write_bytes(b"fixture trimmed video bytes")
+            materialization = root / "source-materialization.json"
+            materialization.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.real_conversion_source_materialization.v1",
+                        "status": "materialized",
+                        "source_prep": {
+                            "source_id": "local-baduanjin",
+                            "source_kind": "local_user_supplied",
+                            "title_english": "Local Baduanjin proof clip",
+                            "source_schema": "neodojo.real_conversion_prep.v1",
+                        },
+                        "trim": {"start_seconds": 0.0, "end_seconds": 12.0, "duration_seconds": 12.0},
+                        "outputs": {
+                            "trimmed_video_path": str(trimmed),
+                            "trimmed_video": {"sha256": sha256_file(trimmed)},
+                        },
+                        "validation": {"gvhmr_input_ready": True},
+                        "gpu_handoff": {
+                            "trimmed_video_argument": str(trimmed),
+                            "expected_export_json": "outputs/real-conversion-gate/gvhmr-smplx-joints.json",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            handoff = package_gvhmr_gpu_handoff(root / "handoff", source_materialization=materialization)
+            bundle = package_gvhmr_gpu_input_bundle(
+                root / "gpu-input",
+                gpu_handoff=handoff.manifest_path,
+                include_media=True,
+            )
+            manifest = json.loads(bundle.manifest_path.read_text(encoding="utf-8"))
+            runbook = bundle.runbook_path.read_text(encoding="utf-8")
+            bundled_video = root / "gpu-input" / "source" / "trimmed-clip.mp4"
+            bundled_video_exists = bundled_video.exists()
+            bundled_video_sha = sha256_file(bundled_video)
+            trimmed_sha = sha256_file(trimmed)
+
+        self.assertEqual(bundle.status, "ready_for_gpu_with_media")
+        self.assertEqual(manifest["schema"], "neodojo.gvhmr_gpu_input_bundle.v1")
+        self.assertTrue(manifest["media_included"])
+        self.assertFalse(manifest["media_committed_to_repo"])
+        self.assertEqual(manifest["source"]["source_kind"], "local_user_supplied")
+        self.assertTrue(bundled_video_exists)
+        self.assertEqual(bundled_video_sha, trimmed_sha)
+        self.assertIn("source/trimmed-clip.mp4", runbook)
+        self.assertIn("export_neodojo_gvhmr.py", runbook)
+        self.assertIn(bundled_video, bundle.checked_paths)
+
+    def test_real_conversion_gpu_input_bundle_metadata_only_omits_media(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            trimmed = root / "trimmed-clip.mp4"
+            trimmed.write_bytes(b"fixture trimmed video bytes")
+            materialization = root / "source-materialization.json"
+            materialization.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.real_conversion_source_materialization.v1",
+                        "status": "materialized",
+                        "source_prep": {"source_id": "03-006"},
+                        "trim": {"start_seconds": 0.0, "end_seconds": 12.0, "duration_seconds": 12.0},
+                        "outputs": {
+                            "trimmed_video_path": str(trimmed),
+                            "trimmed_video": {"sha256": sha256_file(trimmed)},
+                        },
+                        "validation": {"gvhmr_input_ready": True},
+                        "gpu_handoff": {"trimmed_video_argument": str(trimmed)},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            handoff = package_gvhmr_gpu_handoff(root / "handoff", source_materialization=materialization)
+            bundle = package_gvhmr_gpu_input_bundle(root / "gpu-input", gpu_handoff=handoff.manifest_path)
+            manifest = json.loads(bundle.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(bundle.status, "metadata_only")
+        self.assertFalse(manifest["media_included"])
+        self.assertIsNone(manifest["files"]["trimmed_video"])
+        self.assertFalse((root / "gpu-input" / "source" / "trimmed-clip.mp4").exists())
 
     def test_gpu_handoff_exporter_script_is_dependency_lazy_for_help(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -22,6 +22,7 @@ REAL_CONVERSION_PREP_SCHEMA = "neodojo.real_conversion_prep.v1"
 SOURCE_MATERIALIZATION_SCHEMA = "neodojo.real_conversion_source_materialization.v1"
 GVHMR_SOURCE_VALIDATION_SCHEMA = "neodojo.gvhmr_source_validation.v1"
 GVHMR_GPU_HANDOFF_SCHEMA = "neodojo.gvhmr_gpu_handoff.v1"
+GVHMR_GPU_INPUT_BUNDLE_SCHEMA = "neodojo.gvhmr_gpu_input_bundle.v1"
 GVHMR_RESULT_INSPECTION_SCHEMA = "neodojo.gvhmr_result_inspection.v1"
 DEFAULT_SOURCE_INDEX = Path("video/original_videos.csv")
 DEFAULT_SOURCE_ID = "03-006"
@@ -53,6 +54,14 @@ class GvhmrGpuHandoffWriteResult:
     export_template_path: Path
     exporter_script_path: Path
     source_materialization_copy_path: Path
+    checked_paths: list[Path]
+    status: str
+
+
+@dataclass(frozen=True)
+class GvhmrGpuInputBundleWriteResult:
+    manifest_path: Path
+    runbook_path: Path
     checked_paths: list[Path]
     status: str
 
@@ -615,6 +624,95 @@ def _markdown_command(command: str) -> str:
     return f"```bash\n{command}\n```"
 
 
+def _load_handoff_manifest(gpu_handoff: Path) -> tuple[Path, dict[str, Any]]:
+    manifest_path = gpu_handoff / "manifest.json" if gpu_handoff.is_dir() else gpu_handoff
+    manifest = _load_json_object(manifest_path, "GVHMR GPU handoff manifest")
+    require_schema(manifest, GVHMR_GPU_HANDOFF_SCHEMA, "GVHMR GPU handoff manifest")
+    return manifest_path, manifest
+
+
+def _copy_handoff_file(
+    *,
+    handoff_dir: Path,
+    source_name: str,
+    output_dir: Path,
+    output_name: str,
+    required: bool = True,
+) -> Path | None:
+    source_path = handoff_dir / source_name
+    if not source_path.exists():
+        if required:
+            raise ValueError(f"GPU handoff file is missing: {source_path}")
+        return None
+    destination = output_dir / output_name
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source_path, destination)
+    return destination
+
+
+def _write_gpu_input_runbook(
+    path: Path,
+    *,
+    manifest_path: Path,
+    status: str,
+    media_included: bool,
+    bundle_video: Path | None,
+    returned_export_filename: str,
+    local_import_command: str,
+) -> None:
+    video_argument = _as_posix(bundle_video) if media_included and bundle_video is not None else "<copy trimmed clip>"
+    upstream_command = f"python tools/demo/demo.py --video {video_argument} --output_root gvhmr-output"
+    exporter_command = (
+        "python export_neodojo_gvhmr.py "
+        "--hmr4d-results gvhmr-output/hmr4d_results.pt "
+        "--smplx-model-dir <path-to-licensed-smplx-model-dir> "
+        "--template gvhmr-smplx-joints.template.json "
+        "--source-materialization source-materialization.json "
+        f"--out {returned_export_filename} "
+        "--parameter-block smpl_params_global "
+        "--fps 30 "
+        "--routine Baduanjin "
+        "--form \"Two Hands Hold Up the Heavens\" "
+        "--runtime \"<GPU runtime and hardware>\" "
+        "--upstream-version \"<GVHMR commit or package version>\" "
+        "--gpu-command \"<actual GVHMR command>\""
+    )
+    body = "\n".join(
+        [
+            "# neodojo GVHMR GPU Input Bundle",
+            "",
+            f"Status: `{status}`",
+            "",
+            "This ignored local directory is meant to be copied to a GPU-capable GVHMR machine.",
+            "It may contain a trimmed source clip when explicitly packaged with media; do not commit or publish that media.",
+            "",
+            "## Files",
+            "",
+            f"- `{manifest_path.name}`: machine-readable bundle manifest.",
+            "- `gpu-handoff-manifest.json`: source handoff metadata.",
+            "- `source-materialization.json`: source/trim metadata.",
+            "- `gvhmr-smplx-joints.template.json`: returned export template.",
+            "- `export_neodojo_gvhmr.py`: GPU-side neodojo exporter helper.",
+            "- `source/trimmed-clip.mp4`: local media for GVHMR, present only when `media_included` is true.",
+            "",
+            "## Run GVHMR On The GPU Machine",
+            "",
+            _markdown_command(upstream_command),
+            "",
+            "## Export neodojo JSON On The GPU Machine",
+            "",
+            _markdown_command(exporter_command),
+            "",
+            "Return the generated JSON with the bundle. The local validation command is:",
+            "",
+            _markdown_command(local_import_command),
+            "",
+        ]
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(body, encoding="utf-8")
+
+
 def _write_gpu_handoff_readme(
     path: Path,
     *,
@@ -861,6 +959,141 @@ def package_gvhmr_gpu_handoff(
         export_template_path=export_template_path,
         exporter_script_path=exporter_script_path,
         source_materialization_copy_path=source_materialization_copy_path,
+        checked_paths=checked_paths,
+        status=status,
+    )
+
+
+def package_gvhmr_gpu_input_bundle(
+    out_dir: Path,
+    *,
+    gpu_handoff: Path,
+    include_media: bool = False,
+) -> GvhmrGpuInputBundleWriteResult:
+    validate_output_dir(out_dir)
+    handoff_manifest_path, handoff = _load_handoff_manifest(gpu_handoff)
+    handoff_dir = handoff_manifest_path.parent
+    bundle_files = handoff.get("gpu_bundle", {}).get("files")
+    if not isinstance(bundle_files, dict):
+        raise ValueError("GVHMR GPU handoff manifest is missing gpu_bundle.files")
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = out_dir / "manifest.json"
+    runbook_path = out_dir / "RUN_ON_GPU.md"
+    expected_export = handoff.get("expected_export") if isinstance(handoff.get("expected_export"), dict) else {}
+    returned_export_filename = str(
+        expected_export.get("gpu_bundle_output")
+        or bundle_files.get("returned_export")
+        or "gvhmr-smplx-joints.json"
+    )
+
+    copied_paths: list[Path] = []
+    handoff_copy = _copy_handoff_file(
+        handoff_dir=handoff_dir,
+        source_name=str(bundle_files.get("manifest", "manifest.json")),
+        output_dir=out_dir,
+        output_name="gpu-handoff-manifest.json",
+    )
+    if handoff_copy is not None:
+        copied_paths.append(handoff_copy)
+    for file_key, default_name in [
+        ("source_materialization", "source-materialization.json"),
+        ("export_template", "gvhmr-smplx-joints.template.json"),
+        ("exporter_script", "export_neodojo_gvhmr.py"),
+    ]:
+        copied = _copy_handoff_file(
+            handoff_dir=handoff_dir,
+            source_name=str(bundle_files.get(file_key, default_name)),
+            output_dir=out_dir,
+            output_name=default_name,
+        )
+        if copied is not None:
+            copied_paths.append(copied)
+
+    gpu_input = handoff.get("gpu_input") if isinstance(handoff.get("gpu_input"), dict) else {}
+    input_reference = gpu_input.get("local_path_checked") or gpu_input.get("trimmed_video_argument")
+    input_path = _resolve_handoff_media_path(input_reference if isinstance(input_reference, str) else None, handoff_dir)
+    expected_sha = gpu_input.get("sha256_expected") if isinstance(gpu_input.get("sha256_expected"), str) else None
+    media_path: Path | None = None
+    media_sha: str | None = None
+    media_included = False
+
+    if include_media:
+        if input_path is None or not input_path.exists():
+            raise ValueError("cannot include media because the handoff input video does not exist")
+        media_sha = sha256_file(input_path)
+        if expected_sha is not None and media_sha != expected_sha:
+            raise ValueError("cannot include media because the handoff input video checksum does not match")
+        media_path = out_dir / "source" / "trimmed-clip.mp4"
+        media_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(input_path, media_path)
+        copied_paths.append(media_path)
+        media_included = True
+
+    commands = handoff.get("commands") if isinstance(handoff.get("commands"), dict) else {}
+    local_import_command = commands.get("local_import_demo")
+    if not isinstance(local_import_command, str) or not local_import_command:
+        local_import_command = (
+            "PYTHONPATH=src python -m neodojo real-conversion import-demo "
+            "--source-materialization source-materialization.json "
+            f"--gvhmr-json {returned_export_filename} --out outputs/real-demo"
+        )
+    status = "ready_for_gpu_with_media" if media_included else "metadata_only"
+    checksum_matches = (expected_sha is None or media_sha == expected_sha) if media_included else None
+    _write_gpu_input_runbook(
+        runbook_path,
+        manifest_path=manifest_path,
+        status=status,
+        media_included=media_included,
+        bundle_video=Path("source/trimmed-clip.mp4") if media_included else None,
+        returned_export_filename=returned_export_filename,
+        local_import_command=local_import_command,
+    )
+    copied_paths.append(runbook_path)
+
+    manifest = {
+        "schema": GVHMR_GPU_INPUT_BUNDLE_SCHEMA,
+        "status": status,
+        "fixture_only": False,
+        "media_committed_to_repo": False,
+        "media_included": media_included,
+        "source": handoff.get("source"),
+        "trim": handoff.get("trim"),
+        "source_handoff": {
+            "manifest": _as_posix(handoff_manifest_path),
+            "schema": handoff.get("schema"),
+            "status": handoff.get("status"),
+            "sha256": sha256_file(handoff_manifest_path),
+        },
+        "gpu_input": {
+            "source_path": _as_posix(input_path) if input_path is not None else None,
+            "bundle_path": _as_posix(media_path) if media_path is not None else None,
+            "sha256_expected": expected_sha,
+            "sha256_actual": media_sha,
+            "checksum_matches": checksum_matches,
+        },
+        "files": {
+            "runbook": _as_posix(runbook_path),
+            "gpu_handoff_manifest": "gpu-handoff-manifest.json",
+            "source_materialization": "source-materialization.json",
+            "export_template": "gvhmr-smplx-joints.template.json",
+            "exporter_script": "export_neodojo_gvhmr.py",
+            "trimmed_video": _as_posix(media_path) if media_path is not None else None,
+            "returned_export": returned_export_filename,
+        },
+        "policy": {
+            "safe_for_git": False if media_included else True,
+            "notes": (
+                "Generated under ignored outputs. Do not commit media bundles; "
+                "copy them only to the GPU machine selected for the GVHMR run."
+            ),
+        },
+    }
+    _write_json(manifest_path, manifest)
+    checked_paths = [manifest_path, *copied_paths]
+    return GvhmrGpuInputBundleWriteResult(
+        manifest_path=manifest_path,
+        runbook_path=runbook_path,
         checked_paths=checked_paths,
         status=status,
     )

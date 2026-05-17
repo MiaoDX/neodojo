@@ -159,6 +159,7 @@ make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin REAL_LOCAL_TITLE="Local Baduanjin proof clip"
 make real-handoff-smoke
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
+make gpu-input-bundle GPU_HANDOFF=outputs/gvhmr-gpu-handoff GPU_INPUT_INCLUDE_MEDIA=1
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
@@ -187,6 +188,7 @@ PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 -
 PYTHONPATH=src python -m neodojo real-conversion prepare --local-source-id local-baduanjin --local-video path/to/local-source.mp4 --local-title "Local Baduanjin proof clip" --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff --source-materialization outputs/real-conversion-source/source-materialization.json --out outputs/gvhmr-gpu-handoff
+PYTHONPATH=src python -m neodojo real-conversion package-gpu-input --gpu-handoff outputs/gvhmr-gpu-handoff --include-media --out outputs/gvhmr-gpu-input
 PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result --source outputs/real-conversion-gate/hmr4d_results.pt --out outputs/gvhmr-result-inspection
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
 PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
@@ -319,7 +321,13 @@ manifest，写出 `outputs/gvhmr-gpu-handoff/manifest.json`、README、
 `export_neodojo_gvhmr.py`，用于保留 source hash、trim、input video checksum、预期
 export schema、GPU-side export command 和返回本地 import command。这个 exporter
 helper 使用 bundle-local filenames，设计为在 GPU 环境跑完 GVHMR 后使用，并需要
-`torch`、`smplx` 和本地 licensed SMPL-X assets；这个 package 不复制媒体，也不会在本地运行 GVHMR。`neodojo real-conversion inspect-gvhmr-result` 和
+`torch`、`smplx` 和本地 licensed SMPL-X assets；这个 package 不复制媒体，也不会在本地运行 GVHMR。
+`neodojo real-conversion package-gpu-input` 和 `make gpu-input-bundle
+GPU_HANDOFF=... GPU_INPUT_INCLUDE_MEDIA=1` 会生成 ignored copyable GPU input
+bundle，包含 `RUN_ON_GPU.md`、handoff metadata、exporter helper、template，以及
+materialized `source/trimmed-clip.mp4`。这个 bundle 只用于复制到选定的 GPU
+machine，不能提交或发布。
+`neodojo real-conversion inspect-gvhmr-result` 和
 `make gvhmr-inspect GVHMR_RESULT=...` 会在 GVHMR/GPU 环境安装了 optional `torch`
 时检查返回的 `hmr4d_results.pt`，或者在默认本地环境检查 JSON summary。inspection
 manifest 会记录 top-level keys、候选的 `smpl_params_global` / `smpl_params_incam`
@@ -390,6 +398,7 @@ capture 或真实 Unitree G1 retargeting 已经完成。
 - [x] 面向用户本地视频的 real-conversion source materialization handoff
 - [x] 从用户本地视频一命令生成 GPU handoff 的 `make real-handoff`
 - [x] 本地 GVHMR GPU handoff package，包含 export template 与返回命令
+- [x] ignored copyable GPU input bundle，可显式包含 trimmed media
 - [x] 随 handoff 打包的 GPU-side GVHMR-to-neodojo export helper
 - [x] 本地 GVHMR result inspection manifest，用于返回的 `.pt` 或 JSON export
 - [x] 本地 GVHMR source-validation report 与 validated JSON import handoff

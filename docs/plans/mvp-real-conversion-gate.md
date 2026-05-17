@@ -182,6 +182,23 @@ This writes `outputs/gvhmr-gpu-handoff/manifest.json`, a README,
 source-materialization manifest points to an existing materialized trimmed clip
 with matching checksum; dry-run handoffs correctly report
 `needs_materialization`.
+Package a copyable GPU input directory when the materialized clip should travel
+with the handoff:
+
+```bash
+PYTHONPATH=src python -m neodojo real-conversion package-gpu-input \
+  --gpu-handoff outputs/gvhmr-gpu-handoff \
+  --include-media \
+  --out outputs/gvhmr-gpu-input
+
+make gpu-input-bundle \
+  GPU_HANDOFF=outputs/gvhmr-gpu-handoff \
+  GPU_INPUT_INCLUDE_MEDIA=1
+```
+
+This writes `RUN_ON_GPU.md`, handoff metadata, the export template,
+`export_neodojo_gvhmr.py`, and `source/trimmed-clip.mp4` under ignored output.
+It is a transfer bundle only; do not commit or publish it.
 After GVHMR writes `hmr4d_results.pt` on the GPU machine, the packaged exporter
 can be run there with a licensed local SMPL-X model directory to write the
 expected `neodojo.gvhmr_smplx_joints.v1` JSON. The exporter remains a GPU-side
@@ -246,6 +263,8 @@ variables, when an external GMR/G1 visual artifact is available.
 - [x] Package a source-materialization manifest into a GPU handoff bundle with
   export template, provenance fields, readiness status, and local return
   command.
+- [x] Package an ignored copyable GPU input bundle with explicit media inclusion
+  for transfer to the selected GPU machine.
 - [x] Add `make real-handoff LOCAL_VIDEO=...` to run local prep,
   materialization, and GPU handoff packaging as one command without running
   GVHMR locally.
@@ -295,8 +314,10 @@ returned. The remaining blocker is external to this macOS CPU workspace:
 
 - blocker type: GPU artifact missing
 - input status: custom local source handoff candidate exists under ignored
-  `outputs/real-handoff-local-bilibili/`; official source `03-006` is still an
-  available source-index path if rights/source selection change
+  `outputs/real-handoff-local-bilibili/`, and a media-including transfer bundle
+  exists under ignored `outputs/gvhmr-gpu-input-local-bilibili/`; official
+  source `03-006` is still an available source-index path if rights/source
+  selection change
 - missing runtime: a GPU-capable GVHMR environment such as Colab, RunPod,
   Modal, Hugging Face Jobs, or another CUDA machine
 - missing artifact: a `neodojo.gvhmr_smplx_joints.v1` JSON export with

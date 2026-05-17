@@ -14,6 +14,7 @@ real-conversion-prep manifest
   -> optional reference-frame extraction
   -> source-materialization manifest
   -> GVHMR input handoff command
+  -> optional copyable GPU input bundle with media
 ```
 
 This closes the gap between metadata-only source prep and a concrete trimmed
@@ -49,6 +50,9 @@ not download media, commit media, or imply that GVHMR has run.
 - Duration validation for the trimmed clip when ffprobe can inspect it.
 - A `neodojo.gvhmr_input_handoff.v1` block that names the trimmed clip argument
   for the later GPU run.
+- Optional ignored `outputs/gvhmr-gpu-input/` bundle with `RUN_ON_GPU.md`,
+  handoff metadata, exporter helper, template, and the materialized trimmed
+  clip when explicit media inclusion is requested.
 
 ## Execution Tasks
 
@@ -71,12 +75,16 @@ not download media, commit media, or imply that GVHMR has run.
    - [x] Preserve rights notes and source-prep provenance.
    - [x] Preserve custom local-source id/title provenance through
      source-materialization and GPU handoff manifests.
+   - [x] Add a separate `package-gpu-input` / `make gpu-input-bundle` step so
+     media inclusion is explicit and remains under ignored outputs.
 
 4. Verify.
    - [x] Unit-test dry-run manifest generation.
    - [x] Materialize a local ignored Bilibili Baduanjin candidate with ffmpeg
      under `outputs/real-handoff-local-bilibili/` and package a `ready_for_gpu`
      handoff while keeping rights unconfirmed.
+   - [x] Package `outputs/gvhmr-gpu-input-local-bilibili/` with
+     `GPU_INPUT_INCLUDE_MEDIA=1`; manifest reports `ready_for_gpu_with_media`.
    - [x] Keep `make verify` independent from real videos and ffmpeg.
 
 ## Acceptance Evidence
@@ -89,6 +97,8 @@ not download media, commit media, or imply that GVHMR has run.
 - `make real-handoff ... REAL_LOCAL_SOURCE_ID=... REAL_DRY_RUN=0` can produce a
   materialized, checksum-validated, `ready_for_gpu` handoff from an ignored
   local source candidate.
+- `make gpu-input-bundle GPU_HANDOFF=... GPU_INPUT_INCLUDE_MEDIA=1` can package
+  that handoff plus the trimmed clip into an ignored transfer directory.
 - Generated media stays under ignored output directories.
 
 ## Non-Goals

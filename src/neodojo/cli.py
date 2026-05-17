@@ -26,6 +26,7 @@ from .real_conversion import (
     inspect_gvhmr_result,
     materialize_real_conversion_source,
     package_gvhmr_gpu_handoff,
+    package_gvhmr_gpu_input_bundle,
     validate_gvhmr_source,
     write_real_conversion_prep,
 )
@@ -720,6 +721,27 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/gvhmr-gpu-handoff"),
         help="output directory for the GPU handoff manifest and README",
     )
+    real_gpu_input = real_subparsers.add_parser(
+        "package-gpu-input",
+        help="write a copyable GPU input bundle from a GPU handoff, optionally including media",
+    )
+    real_gpu_input.add_argument(
+        "--gpu-handoff",
+        type=Path,
+        required=True,
+        help="GVHMR GPU handoff manifest path or directory",
+    )
+    real_gpu_input.add_argument(
+        "--include-media",
+        action="store_true",
+        help="copy the materialized trimmed clip into the ignored bundle for transfer",
+    )
+    real_gpu_input.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/gvhmr-gpu-input"),
+        help="output directory for the copyable GPU input bundle",
+    )
     real_inspect_gvhmr = real_subparsers.add_parser(
         "inspect-gvhmr-result",
         help="inspect a returned GVHMR hmr4d_results.pt or JSON summary for export readiness",
@@ -1063,6 +1085,19 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(f"wrote {result.validated_export_path}")
             if result.status != "validated":
                 raise ValueError(f"GVHMR source validation status is {result.status}; see {result.report_path}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "package-gpu-input":
+            result = package_gvhmr_gpu_input_bundle(
+                args.out,
+                gpu_handoff=args.gpu_handoff,
+                include_media=args.include_media,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"wrote {result.runbook_path}")
+            print(f"status {result.status}")
+            for path in result.checked_paths:
+                print(f"checked {path}")
             return 0
 
         if args.command == "real-conversion" and args.real_command == "package-gpu-handoff":
