@@ -1,6 +1,6 @@
 # MVP Source Media Materialization Plan
 
-Status: IMPLEMENTED LOCAL HANDOFF, GPU INPUT BUNDLE, AND GPU RUNNER
+Status: IMPLEMENTED LOCAL HANDOFF, GPU INPUT BUNDLE, GPU RUNNER, AND TRANSFER ARCHIVE
 
 ## Goal
 
@@ -53,6 +53,8 @@ not download media, commit media, or imply that GVHMR has run.
 - Optional ignored `outputs/gvhmr-gpu-input/` bundle with `RUN_ON_GPU.md`,
   handoff metadata, executable GPU runner, exporter helper, template, and the
   materialized trimmed clip when explicit media inclusion is requested.
+- Optional ignored transfer archive from that bundle, with a manifest that
+  records archive hash, member hashes, and whether media is included.
 
 ## Execution Tasks
 
@@ -77,6 +79,8 @@ not download media, commit media, or imply that GVHMR has run.
      source-materialization and GPU handoff manifests.
    - [x] Add a separate `package-gpu-input` / `make gpu-input-bundle` step so
      media inclusion is explicit and remains under ignored outputs.
+   - [x] Add `archive-gpu-input` / `make gpu-input-archive` so the bundle can be
+     uploaded to a GPU provider as one ignored `.tar.gz`.
 
 4. Verify.
    - [x] Unit-test dry-run manifest generation.
@@ -100,6 +104,8 @@ not download media, commit media, or imply that GVHMR has run.
 - `make gpu-input-bundle GPU_HANDOFF=... GPU_INPUT_INCLUDE_MEDIA=1` can package
   that handoff plus the trimmed clip into an ignored transfer directory with
   `run_gvhmr_neodojo.sh`.
+- `make gpu-input-archive GPU_INPUT=...` can package the generated transfer
+  directory into one ignored archive and manifest.
 - Generated media stays under ignored output directories.
 
 ## Non-Goals

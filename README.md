@@ -169,11 +169,11 @@ contract, a generated roboharness-style capture bundle manifest, optional
 browser-rendered public-demo screenshot capture, optional MuJoCo simulator
 recorder-capture integration, and minimal lint/build/quality-check
 commands. It can also write a dry-run or ffmpeg-backed local source-video
-handoff plus a metadata package, copyable input bundle, and executable
-GPU-side runner for a later GPU GVHMR run. There is still no checked-in local
-GVHMR/GMR execution environment, completed simulator runtime pipeline, built-in
-official SMPL-X body-model renderer, live-client Viser capture, or end-to-end
-real generated motion artifact.
+handoff plus a metadata package, copyable input bundle, executable GPU-side
+runner, and ignored transfer archive for a later GPU GVHMR run. There is still
+no checked-in local GVHMR/GMR execution environment, completed simulator
+runtime pipeline, built-in official SMPL-X body-model renderer, live-client
+Viser capture, or end-to-end real generated motion artifact.
 
 Fixture-only public demo: [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
 
@@ -195,6 +195,8 @@ make real-handoff-smoke
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
 make gpu-input-bundle GPU_HANDOFF=outputs/gvhmr-gpu-handoff GPU_INPUT_INCLUDE_MEDIA=1
 make gpu-input-bundle-smoke
+make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
+make gpu-input-archive-smoke
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
@@ -224,6 +226,7 @@ PYTHONPATH=src python -m neodojo real-conversion prepare --local-source-id local
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff --source-materialization outputs/real-conversion-source/source-materialization.json --out outputs/gvhmr-gpu-handoff
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-input --gpu-handoff outputs/gvhmr-gpu-handoff --include-media --out outputs/gvhmr-gpu-input
+PYTHONPATH=src python -m neodojo real-conversion archive-gpu-input --gpu-input outputs/gvhmr-gpu-input --out outputs/gvhmr-gpu-input-archive
 PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result --source outputs/real-conversion-gate/hmr4d_results.pt --out outputs/gvhmr-result-inspection
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
 PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
@@ -323,8 +326,8 @@ direct MuJoCo simulator-recorder evidence from `neodojo capture recorder`.
 Direct roboharness and live-runtime recording remain follow-on work.
 
 `make verify` runs lint, MVP plan quality checks, tests, wheel build, the
-public-demo plus capture-bundle smoke lane, and the dry-run real-handoff smoke
-lane.
+public-demo plus capture-bundle smoke lane, the dry-run real-handoff smoke
+lane, and metadata-only GPU input bundle/archive smoke lanes.
 `make demo-public` regenerates the fixture motion contract, detected
 annotations, SMPL-X surface proxy, G1 visual track, G1 render evidence,
 teaching playback, Viser runtime preview, public-demo artifact, generated
@@ -382,7 +385,12 @@ bundle with `RUN_ON_GPU.md`, handoff metadata, the runner script, exporter
 helper, template, and the materialized `source/trimmed-clip.mp4`. This bundle
 is for transfer to the selected GPU machine and must not be committed or
 published. `make gpu-input-bundle-smoke` verifies the metadata-only bundle and
-runner script without copying media or running GVHMR.
+runner script without copying media or running GVHMR. `neodojo real-conversion
+archive-gpu-input` and `make gpu-input-archive GPU_INPUT=...` package that
+directory as `neodojo-gvhmr-gpu-input.tar.gz` plus a
+`neodojo.gvhmr_gpu_input_archive.v1` manifest. Metadata-only archives are
+CI-safe; media-containing archives stay ignored and must not be committed or
+published.
 `neodojo real-conversion inspect-gvhmr-result` and `make gvhmr-inspect
 GVHMR_RESULT=...` inspect a returned `hmr4d_results.pt` when the optional
 `torch` dependency is available in the GVHMR/GPU environment, or a JSON summary
@@ -468,6 +476,7 @@ In progress:
       user-supplied video
 - [x] Local GVHMR GPU handoff package with export template and return command
 - [x] Ignored copyable GPU input bundle with optional trimmed media inclusion
+- [x] Ignored GPU input transfer archive for upload to the selected GPU machine
 - [x] GPU-side GVHMR-to-neodojo export helper packaged with the handoff
 - [x] Local GVHMR result inspection manifest for returned `.pt` or JSON export
 - [x] Local GVHMR source-validation report and validated JSON import handoff

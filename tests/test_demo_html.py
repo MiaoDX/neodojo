@@ -5,6 +5,7 @@ import importlib.util
 import py_compile
 import socket
 import subprocess
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -37,6 +38,7 @@ from neodojo.real_conversion import (
     inspect_gvhmr_result,
     materialize_real_conversion_source,
     package_gvhmr_gpu_handoff,
+    package_gvhmr_gpu_input_archive,
     package_gvhmr_gpu_input_bundle,
     validate_gvhmr_source,
     write_real_conversion_prep,
@@ -1963,6 +1965,13 @@ class DemoHtmlTests(unittest.TestCase):
                 encoding="utf-8",
                 check=False,
             )
+            archive = package_gvhmr_gpu_input_archive(
+                root / "gpu-input-archive",
+                gpu_input=bundle.manifest_path,
+            )
+            archive_manifest = json.loads(archive.manifest_path.read_text(encoding="utf-8"))
+            with tarfile.open(archive.archive_path, "r:gz") as tar:
+                archive_members = sorted(tar.getnames())
 
         self.assertEqual(bundle.status, "ready_for_gpu_with_media")
         self.assertEqual(manifest["schema"], "neodojo.gvhmr_gpu_input_bundle.v1")
@@ -1981,6 +1990,12 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("Run GVHMR and export", runner_help.stdout)
         self.assertIn(bundled_video, bundle.checked_paths)
         self.assertIn(bundle.runner_script_path, bundle.checked_paths)
+        self.assertEqual(archive.status, "archive_with_media")
+        self.assertEqual(archive_manifest["schema"], "neodojo.gvhmr_gpu_input_archive.v1")
+        self.assertTrue(archive_manifest["media_included"])
+        self.assertFalse(archive_manifest["policy"]["safe_for_git"])
+        self.assertIn("source/trimmed-clip.mp4", archive_members)
+        self.assertIn("run_gvhmr_neodojo.sh", archive_members)
 
     def test_real_conversion_gpu_input_bundle_metadata_only_omits_media(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2014,6 +2029,13 @@ class DemoHtmlTests(unittest.TestCase):
                 encoding="utf-8",
                 check=False,
             )
+            archive = package_gvhmr_gpu_input_archive(
+                root / "gpu-input-archive",
+                gpu_input=bundle.manifest_path,
+            )
+            archive_manifest = json.loads(archive.manifest_path.read_text(encoding="utf-8"))
+            with tarfile.open(archive.archive_path, "r:gz") as tar:
+                archive_members = sorted(tar.getnames())
 
         self.assertEqual(bundle.status, "metadata_only")
         self.assertFalse(manifest["media_included"])
@@ -2021,6 +2043,13 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["files"]["runner_script"], "run_gvhmr_neodojo.sh")
         self.assertEqual(runner_syntax.returncode, 0, runner_syntax.stderr)
         self.assertFalse((root / "gpu-input" / "source" / "trimmed-clip.mp4").exists())
+        self.assertEqual(archive.status, "metadata_only_archive")
+        self.assertEqual(archive_manifest["schema"], "neodojo.gvhmr_gpu_input_archive.v1")
+        self.assertFalse(archive_manifest["media_included"])
+        self.assertTrue(archive_manifest["policy"]["safe_for_git"])
+        self.assertIn("RUN_ON_GPU.md", archive_members)
+        self.assertIn("run_gvhmr_neodojo.sh", archive_members)
+        self.assertNotIn("source/trimmed-clip.mp4", archive_members)
 
     def test_gpu_handoff_exporter_script_is_dependency_lazy_for_help(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -137,7 +137,7 @@ capture bundle manifest、可选 browser-rendered public-demo screenshot capture
 可选 MuJoCo simulator recorder-capture integration，以及最小 lint/build/quality-check
 命令。它也可以为后续 GPU GVHMR run 写出 dry-run 或
 ffmpeg-backed 的本地 source-video handoff，并写出 GPU handoff metadata package、
-copyable input bundle 和 executable GPU-side runner。
+copyable input bundle、executable GPU-side runner 和 ignored transfer archive。
 但还没有提交到仓库的本地 GVHMR/GMR execution environment、完整 simulator runtime
 pipeline、内置 official SMPL-X body-model renderer、production live-client Viser
 capture，或 end-to-end 的真实 generated motion artifact。
@@ -162,6 +162,8 @@ make real-handoff-smoke
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
 make gpu-input-bundle GPU_HANDOFF=outputs/gvhmr-gpu-handoff GPU_INPUT_INCLUDE_MEDIA=1
 make gpu-input-bundle-smoke
+make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
+make gpu-input-archive-smoke
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
@@ -191,6 +193,7 @@ PYTHONPATH=src python -m neodojo real-conversion prepare --local-source-id local
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff --source-materialization outputs/real-conversion-source/source-materialization.json --out outputs/gvhmr-gpu-handoff
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-input --gpu-handoff outputs/gvhmr-gpu-handoff --include-media --out outputs/gvhmr-gpu-input
+PYTHONPATH=src python -m neodojo real-conversion archive-gpu-input --gpu-input outputs/gvhmr-gpu-input --out outputs/gvhmr-gpu-input-archive
 PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result --source outputs/real-conversion-gate/hmr4d_results.pt --out outputs/gvhmr-result-inspection
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
 PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
@@ -280,7 +283,8 @@ headless Chromium public-demo screenshot manifest。传入 `--recorder-capture`
 evidence；直接 roboharness 与 live-runtime recording 仍是 follow-on work。
 
 `make verify` 会一次运行 lint、MVP plan quality checks、tests、wheel build、
-public-demo + capture-bundle smoke lane，以及 dry-run real-handoff smoke lane。
+public-demo + capture-bundle smoke lane、dry-run real-handoff smoke lane，以及
+metadata-only GPU input bundle/archive smoke lanes。
 `make demo-public` 会用一个本地命令重新生成 fixture motion contract、detected
 annotations、SMPL-X surface proxy、G1 visual track、G1 render evidence、teaching
 playback、Viser runtime preview、public-demo artifact、generated capture bundle，
@@ -331,7 +335,11 @@ GPU_HANDOFF=... GPU_INPUT_INCLUDE_MEDIA=1` 会生成 ignored copyable GPU input
 bundle，包含 `RUN_ON_GPU.md`、handoff metadata、runner script、exporter helper、
 template，以及 materialized `source/trimmed-clip.mp4`。这个 bundle 只用于复制到选定的
 GPU machine，不能提交或发布。`make gpu-input-bundle-smoke` 会验证 metadata-only
-bundle 和 runner script，不复制媒体，也不运行 GVHMR。
+bundle 和 runner script，不复制媒体，也不运行 GVHMR。`neodojo real-conversion
+archive-gpu-input` 和 `make gpu-input-archive GPU_INPUT=...` 会把这个目录打成
+`neodojo-gvhmr-gpu-input.tar.gz`，并写出
+`neodojo.gvhmr_gpu_input_archive.v1` manifest。metadata-only archive 可用于 CI；
+包含媒体的 archive 仍必须留在 ignored outputs，不能提交或发布。
 `neodojo real-conversion inspect-gvhmr-result` 和
 `make gvhmr-inspect GVHMR_RESULT=...` 会在 GVHMR/GPU 环境安装了 optional `torch`
 时检查返回的 `hmr4d_results.pt`，或者在默认本地环境检查 JSON summary。inspection
@@ -404,6 +412,7 @@ capture 或真实 Unitree G1 retargeting 已经完成。
 - [x] 从用户本地视频一命令生成 GPU handoff 的 `make real-handoff`
 - [x] 本地 GVHMR GPU handoff package，包含 export template 与返回命令
 - [x] ignored copyable GPU input bundle，可显式包含 trimmed media
+- [x] ignored GPU input transfer archive，用于上传到选定的 GPU machine
 - [x] 随 handoff 打包的 GPU-side GVHMR-to-neodojo export helper
 - [x] 本地 GVHMR result inspection manifest，用于返回的 `.pt` 或 JSON export
 - [x] 本地 GVHMR source-validation report 与 validated JSON import handoff

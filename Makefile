@@ -1,4 +1,4 @@
-.PHONY: all verify lint check test build demo-html demo-public demo-public-browser real-handoff real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gvhmr-inspect demo-real smoke-public
+.PHONY: all verify lint check test build demo-html demo-public demo-public-browser real-handoff real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gvhmr-inspect demo-real smoke-public
 
 PYTHON ?= python3
 REAL_SOURCE_ID ?= 03-006
@@ -10,6 +10,8 @@ REAL_DRY_RUN ?= 1
 GPU_HANDOFF_OUT ?= outputs/gvhmr-gpu-handoff
 GPU_INPUT_OUT ?= outputs/gvhmr-gpu-input
 GPU_INPUT_INCLUDE_MEDIA ?= 0
+GPU_INPUT_ARCHIVE_OUT ?= outputs/gvhmr-gpu-input-archive
+GPU_INPUT_ARCHIVE_NAME ?= neodojo-gvhmr-gpu-input.tar.gz
 GVHMR_INSPECT_OUT ?= outputs/gvhmr-result-inspection
 REAL_DEMO_OUT ?= outputs/real-demo
 REAL_DEMO_ARGS = --source-materialization "$(SOURCE_MATERIALIZATION)" --gvhmr-json "$(GVHMR_JSON)" --out "$(REAL_DEMO_OUT)"
@@ -57,7 +59,7 @@ endif
 
 all: verify
 
-verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke
+verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke gpu-input-archive-smoke
 
 lint:
 	PYTHONPATH=src $(PYTHON) -m compileall -q src tests
@@ -125,6 +127,17 @@ gpu-input-bundle-smoke: real-handoff-smoke
 	test -f outputs/gvhmr-gpu-input-smoke/RUN_ON_GPU.md
 	test -f outputs/gvhmr-gpu-input-smoke/run_gvhmr_neodojo.sh
 	bash -n outputs/gvhmr-gpu-input-smoke/run_gvhmr_neodojo.sh
+
+gpu-input-archive:
+	@test -n "$(GPU_INPUT)" || (echo "GPU_INPUT=path/to/gpu-input-bundle is required" && exit 2)
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion archive-gpu-input --gpu-input "$(GPU_INPUT)" --archive-name "$(GPU_INPUT_ARCHIVE_NAME)" --out "$(GPU_INPUT_ARCHIVE_OUT)"
+
+gpu-input-archive-smoke: gpu-input-bundle-smoke
+	rm -rf outputs/gvhmr-gpu-input-archive-smoke
+	$(MAKE) gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input-smoke GPU_INPUT_ARCHIVE_OUT=outputs/gvhmr-gpu-input-archive-smoke
+	test -f outputs/gvhmr-gpu-input-archive-smoke/manifest.json
+	test -f outputs/gvhmr-gpu-input-archive-smoke/neodojo-gvhmr-gpu-input.tar.gz
+	$(PYTHON) -m tarfile -l outputs/gvhmr-gpu-input-archive-smoke/neodojo-gvhmr-gpu-input.tar.gz
 
 gvhmr-inspect:
 	@test -n "$(GVHMR_RESULT)" || (echo "GVHMR_RESULT=path/to/hmr4d_results.pt is required" && exit 2)

@@ -26,6 +26,7 @@ from .real_conversion import (
     inspect_gvhmr_result,
     materialize_real_conversion_source,
     package_gvhmr_gpu_handoff,
+    package_gvhmr_gpu_input_archive,
     package_gvhmr_gpu_input_bundle,
     validate_gvhmr_source,
     write_real_conversion_prep,
@@ -742,6 +743,27 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/gvhmr-gpu-input"),
         help="output directory for the copyable GPU input bundle",
     )
+    real_gpu_archive = real_subparsers.add_parser(
+        "archive-gpu-input",
+        help="write a tar.gz archive from a GPU input bundle for transfer",
+    )
+    real_gpu_archive.add_argument(
+        "--gpu-input",
+        type=Path,
+        required=True,
+        help="GVHMR GPU input bundle manifest path or directory",
+    )
+    real_gpu_archive.add_argument(
+        "--archive-name",
+        default="neodojo-gvhmr-gpu-input.tar.gz",
+        help="archive filename ending in .tar.gz or .tgz",
+    )
+    real_gpu_archive.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/gvhmr-gpu-input-archive"),
+        help="output directory for the transfer archive and archive manifest",
+    )
     real_inspect_gvhmr = real_subparsers.add_parser(
         "inspect-gvhmr-result",
         help="inspect a returned GVHMR hmr4d_results.pt or JSON summary for export readiness",
@@ -1095,6 +1117,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(f"wrote {result.manifest_path}")
             print(f"wrote {result.runbook_path}")
+            print(f"status {result.status}")
+            for path in result.checked_paths:
+                print(f"checked {path}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "archive-gpu-input":
+            result = package_gvhmr_gpu_input_archive(
+                args.out,
+                gpu_input=args.gpu_input,
+                archive_name=args.archive_name,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"wrote {result.archive_path}")
             print(f"status {result.status}")
             for path in result.checked_paths:
                 print(f"checked {path}")

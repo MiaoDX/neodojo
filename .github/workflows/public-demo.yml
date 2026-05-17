@@ -68,6 +68,16 @@ jobs:
             outputs/gvhmr-gpu-input-smoke/export_neodojo_gvhmr.py
             outputs/gvhmr-gpu-input-smoke/run_gvhmr_neodojo.sh
           if-no-files-found: error
+      - name: GPU input archive smoke
+        run: make gpu-input-archive-smoke
+      - name: Upload GPU input archive smoke artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neodojo-gpu-input-archive-smoke
+          path: |
+            outputs/gvhmr-gpu-input-archive-smoke/manifest.json
+            outputs/gvhmr-gpu-input-archive-smoke/neodojo-gvhmr-gpu-input.tar.gz
+          if-no-files-found: error
       - name: Install browser runtime
         run: python -m playwright install --with-deps chromium
       - name: Build public demo with browser capture

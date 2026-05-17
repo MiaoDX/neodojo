@@ -4,6 +4,7 @@ import csv
 import json
 import shutil
 import subprocess
+import tarfile
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
@@ -23,6 +24,7 @@ SOURCE_MATERIALIZATION_SCHEMA = "neodojo.real_conversion_source_materialization.
 GVHMR_SOURCE_VALIDATION_SCHEMA = "neodojo.gvhmr_source_validation.v1"
 GVHMR_GPU_HANDOFF_SCHEMA = "neodojo.gvhmr_gpu_handoff.v1"
 GVHMR_GPU_INPUT_BUNDLE_SCHEMA = "neodojo.gvhmr_gpu_input_bundle.v1"
+GVHMR_GPU_INPUT_ARCHIVE_SCHEMA = "neodojo.gvhmr_gpu_input_archive.v1"
 GVHMR_RESULT_INSPECTION_SCHEMA = "neodojo.gvhmr_result_inspection.v1"
 DEFAULT_SOURCE_INDEX = Path("video/original_videos.csv")
 DEFAULT_SOURCE_ID = "03-006"
@@ -64,6 +66,14 @@ class GvhmrGpuInputBundleWriteResult:
     manifest_path: Path
     runbook_path: Path
     runner_script_path: Path
+    checked_paths: list[Path]
+    status: str
+
+
+@dataclass(frozen=True)
+class GvhmrGpuInputArchiveWriteResult:
+    manifest_path: Path
+    archive_path: Path
     checked_paths: list[Path]
     status: str
 
@@ -633,6 +643,13 @@ def _load_handoff_manifest(gpu_handoff: Path) -> tuple[Path, dict[str, Any]]:
     return manifest_path, manifest
 
 
+def _load_gpu_input_manifest(gpu_input: Path) -> tuple[Path, dict[str, Any]]:
+    manifest_path = gpu_input / "manifest.json" if gpu_input.is_dir() else gpu_input
+    manifest = _load_json_object(manifest_path, "GVHMR GPU input manifest")
+    require_schema(manifest, GVHMR_GPU_INPUT_BUNDLE_SCHEMA, "GVHMR GPU input manifest")
+    return manifest_path, manifest
+
+
 def _copy_handoff_file(
     *,
     handoff_dir: Path,
@@ -650,6 +667,25 @@ def _copy_handoff_file(
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source_path, destination)
     return destination
+
+
+def _iter_bundle_files(bundle_dir: Path, *, archive_output_dir: Path) -> list[tuple[Path, str]]:
+    bundle_root = bundle_dir.resolve()
+    archive_root = archive_output_dir.resolve()
+    files: list[tuple[Path, str]] = []
+    for path in sorted(bundle_dir.rglob("*")):
+        if not path.is_file():
+            continue
+        resolved = path.resolve()
+        if archive_root != bundle_root and archive_root in resolved.parents:
+            continue
+        if path.suffix in {".tar", ".gz", ".tgz"}:
+            continue
+        arcname = _as_posix(resolved.relative_to(bundle_root))
+        files.append((path, arcname))
+    if not files:
+        raise ValueError(f"GPU input bundle has no files to archive: {bundle_dir}")
+    return files
 
 
 def _write_gpu_runner_script(path: Path) -> None:
@@ -1157,6 +1193,76 @@ def package_gvhmr_gpu_input_bundle(
         manifest_path=manifest_path,
         runbook_path=runbook_path,
         runner_script_path=runner_script_path,
+        checked_paths=checked_paths,
+        status=status,
+    )
+
+
+def package_gvhmr_gpu_input_archive(
+    out_dir: Path,
+    *,
+    gpu_input: Path,
+    archive_name: str = "neodojo-gvhmr-gpu-input.tar.gz",
+) -> GvhmrGpuInputArchiveWriteResult:
+    if not archive_name.endswith((".tar.gz", ".tgz")):
+        raise ValueError("GPU input archive name must end with .tar.gz or .tgz")
+    validate_output_dir(out_dir)
+    gpu_input_manifest_path, gpu_input_manifest = _load_gpu_input_manifest(gpu_input)
+    bundle_dir = gpu_input_manifest_path.parent
+    out_dir.mkdir(parents=True, exist_ok=True)
+    archive_path = out_dir / archive_name
+    manifest_path = out_dir / "manifest.json"
+    files = _iter_bundle_files(bundle_dir, archive_output_dir=out_dir)
+
+    with tarfile.open(archive_path, "w:gz") as archive:
+        for source_path, arcname in files:
+            archive.add(source_path, arcname=arcname, recursive=False)
+
+    archive_members = [
+        {
+            "path": arcname,
+            "source": _as_posix(source_path),
+            "sha256": sha256_file(source_path),
+            "size_bytes": source_path.stat().st_size,
+        }
+        for source_path, arcname in files
+    ]
+    media_included = bool(gpu_input_manifest.get("media_included"))
+    status = "archive_with_media" if media_included else "metadata_only_archive"
+    manifest = {
+        "schema": GVHMR_GPU_INPUT_ARCHIVE_SCHEMA,
+        "status": status,
+        "fixture_only": False,
+        "media_included": media_included,
+        "source": gpu_input_manifest.get("source"),
+        "trim": gpu_input_manifest.get("trim"),
+        "source_gpu_input": {
+            "manifest": _as_posix(gpu_input_manifest_path),
+            "schema": gpu_input_manifest.get("schema"),
+            "status": gpu_input_manifest.get("status"),
+            "sha256": sha256_file(gpu_input_manifest_path),
+        },
+        "archive": {
+            "path": _as_posix(archive_path),
+            "filename": archive_path.name,
+            "sha256": sha256_file(archive_path),
+            "size_bytes": archive_path.stat().st_size,
+            "member_count": len(archive_members),
+        },
+        "members": archive_members,
+        "policy": {
+            "safe_for_git": not media_included,
+            "notes": (
+                "Generated under ignored outputs. Metadata-only archives are CI-safe; "
+                "archives with media must not be committed or published."
+            ),
+        },
+    }
+    _write_json(manifest_path, manifest)
+    checked_paths = [manifest_path, archive_path, *(source_path for source_path, _ in files)]
+    return GvhmrGpuInputArchiveWriteResult(
+        manifest_path=manifest_path,
+        archive_path=archive_path,
         checked_paths=checked_paths,
         status=status,
     )
