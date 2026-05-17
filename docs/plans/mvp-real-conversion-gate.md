@@ -421,7 +421,7 @@ CI smoke evidence: `make real-artifact-intake-smoke` writes fixture source
 materialization and GVHMR JSON inputs, runs `make real-artifact-intake`, and
 produces source-validation, real-demo, public-demo, and capture manifests
 without media. GitHub Actions run
-`https://github.com/MiaoDX/neodojo/actions/runs/26006038003` uploaded the
+`https://github.com/MiaoDX/neodojo/actions/runs/26006210299` uploaded the
 `neodojo-real-artifact-intake-smoke` artifact and verified 36 frames at 24 fps
 with matching provenance. The generated real-demo manifest separates
 `gvhmr_artifact_imported` from `real_gvhmr_artifact_imported`, so fixture smoke

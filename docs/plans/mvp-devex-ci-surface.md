@@ -129,13 +129,14 @@ and the artifact classified the CI runner as `external_gpu_artifact_missing`
 with no local CUDA, Docker GPU runtime, or configured GPU provider candidate.
 
 GitHub Actions run
-`https://github.com/MiaoDX/neodojo/actions/runs/26006038003` verified the
+`https://github.com/MiaoDX/neodojo/actions/runs/26006210299` verified the
 fixture-only real-artifact intake smoke artifact on `main`: `make
 real-artifact-intake-smoke` passed, the
 `neodojo-real-artifact-intake-smoke` artifact uploaded source materialization,
 GVHMR JSON, source-validation, real-demo, public-demo, and capture manifests,
-the source-validation report passed with 36 frames at 24 fps, and the artifact
-contains no source media or checkpoint/model files.
+the source-validation report passed with 36 frames at 24 fps, the real-demo
+manifest records `real_gvhmr_artifact_imported: false` for fixture smoke, and
+the artifact contains no source media or checkpoint/model files.
 
 ## Inputs
 
@@ -261,7 +262,7 @@ contains no source media or checkpoint/model files.
   readiness evidence and no secret values, verified by run `26005618093`.
 - CI uploads the fixture-only real-artifact intake smoke artifact with
   source-validation, public-demo, and capture manifests but no media, verified
-  by run `26006038003`.
+  by run `26006210299`.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages publishes only safe static demo assets once repository Pages is
