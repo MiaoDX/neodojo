@@ -20,7 +20,9 @@ one local command
 
 The goal is a reproducible command and CI lane for fixture/non-GPU artifacts.
 Do not claim install, lint, build, or CI support before the actual command
-surface and workflow exist.
+surface and workflow exist. The later
+[mvp-lint-build-surface.md](mvp-lint-build-surface.md) slice owns the minimal
+lint/build commands.
 
 ## Dependencies
 
@@ -95,7 +97,7 @@ configuration to expose a live URL.
 
 2. Add minimal dev setup only when necessary.
    - [x] Reuse existing `pyproject.toml` and editable install in CI.
-   - [x] Do not add lint/build claims.
+   - [x] Defer lint/build claims to a dedicated command-surface slice.
    - [x] Keep optional heavyweight visualization dependencies out of the
      default path.
 
@@ -155,8 +157,8 @@ configuration to expose a live URL.
 ## Non-Goals
 
 - Running GVHMR, GMR, HAMER, or any GPU inference in CI.
-- Adding broad lint or build systems unless the implementation actually needs
-  and verifies them.
+- Adding broad lint or build systems beyond the dedicated minimal
+  lint/build-surface slice.
 - Publishing official source videos or generated motion artifacts.
 - Making CI the proof of qigong correctness.
 - Replacing later real-artifact or Viser work.

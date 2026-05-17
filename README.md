@@ -159,16 +159,17 @@ embodied skills.
 See [`STATUS.md`](STATUS.md) for the current repo state, known constraints,
 and next safe task. There is now a small checked-in Python package, local
 SMPL-X and G1 fixture artifact commands, a normalized imported-GMR G1 track
-boundary, a teaching-playback HTML command, a static HTML demo generator, and
-local SVG/HTML G1 render evidence from a model descriptor plus visual track.
-There is still no checked-in
-GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real mesh rendering, or
-broader lint/build gate.
+boundary, a teaching-playback HTML command, a static HTML demo generator, local
+SVG/HTML G1 render evidence from a model descriptor plus visual track, and
+minimal lint/build commands. There is still no checked-in
+GVHMR/GMR/simulator runtime pipeline or MuJoCo/Genesis real mesh rendering.
 
 What can be run now:
 
 ```bash
+make lint
 make test
+make build
 make demo-public
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
@@ -221,6 +222,8 @@ one local command. `make smoke-public` validates an existing
 `outputs/public-demo` artifact set. The GitHub Actions workflow at
 `.github/workflows/public-demo.yml` runs the same fixture lane, uploads the
 artifact, and can publish it to GitHub Pages when Pages is enabled for the repo.
+`make lint` is currently a syntax/import bytecode compile check; `make build`
+writes a wheel under ignored `outputs/dist/`.
 
 `neodojo real-conversion prepare` writes source metadata, trim metadata, and
 next-command hints for the later GPU gate. It does not download the source
@@ -251,6 +254,7 @@ In progress:
       `.rrd` fallback artifact, HTML, and SVG screenshot
 - [x] One-command local `make demo-public` flow and GitHub Actions artifact/Page
       workflow for the fixture public demo
+- [x] Minimal `make lint` and `make build` command surface
 - [x] Local real-conversion prep manifest for source `03-006`
 - [ ] MuJoCo/Genesis real Unitree G1 mesh rendering from user-supplied URDF/MJCF
       and meshes

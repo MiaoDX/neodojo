@@ -6,12 +6,11 @@ There is now a minimal checked-in Python package, a `make test` command,
 fixture-backed and external-JSON `motion-record` paths, `robot-model`,
 `tracks`, imported GMR JSON track, `render g1`, `demo play`,
 `demo export-rerun`, and `real-conversion prepare` commands, a
-`make demo-html` command that writes a
-self-contained synthetic web demo, and a `make demo-public` command plus GitHub
-Actions workflow for the fixture public-demo artifact. There is still no
-checked-in GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real mesh
-rendering, lint command, build command, real generated motion artifact, or UI
-server.
+`make demo-html` command that writes a self-contained synthetic web demo,
+minimal `make lint` and `make build` commands, and a `make demo-public` command
+plus GitHub Actions workflow for the fixture public-demo artifact. There is
+still no checked-in GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real
+mesh rendering, real generated motion artifact, or UI server.
 
 ## Current Truth
 
@@ -63,8 +62,8 @@ server.
 - `make demo-public` regenerates the fixture motion, G1 visual/render,
   teaching-playback, public-demo, and smoke-check artifacts in one command.
 - `.github/workflows/public-demo.yml` runs tests, builds the fixture public demo,
-  uploads the artifact, and can publish the static output to GitHub Pages from
-  `main` when Pages is enabled.
+  builds a wheel, uploads the artifact, and can publish the static output to
+  GitHub Pages from `main` when Pages is enabled.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
@@ -96,7 +95,9 @@ server.
 ## What Can Be Run Now
 
 ```bash
+make lint
 make test
+make build
 make demo-public
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
@@ -111,10 +112,12 @@ PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 -
 make demo-html
 ```
 
-`make test` runs the focused Python unit tests for the fixture demo generator
-and local motion contract. `neodojo motion-record create` writes fixture-backed
-SMPL-X motion-record and teaching-track manifests under the selected ignored
-output directory, or imports an external GVHMR teaching-joints JSON export with
+`make lint` runs a minimal syntax/import bytecode compile check over `src/` and
+`tests/`. `make test` runs the focused Python unit tests for the fixture demo
+generator and local motion contract. `make build` builds a wheel under ignored
+`outputs/dist/`. `neodojo motion-record create` writes fixture-backed SMPL-X
+motion-record and teaching-track manifests under the selected ignored output
+directory, or imports an external GVHMR teaching-joints JSON export with
 `--from-gvhmr-json`. `neodojo robot-model register` and `neodojo tracks build`
 write fixture G1 model/visual-track manifests and a comparison report that
 keeps G1 non-scoring. `neodojo tracks import-gmr-json` imports an external
@@ -155,7 +158,8 @@ later GPU run and does not download video or execute GVHMR.
   detection, more posture terms, and routine-level review.
 - Rich source media probing beyond local file checksum/extension validation and
   source-index duration/resolution metadata.
-- Lint and build command surfaces.
+- Broader static analysis, type checking, coverage, and release packaging
+  beyond the minimal syntax-lint and wheel-build commands.
 
 ## Next Safe Task
 

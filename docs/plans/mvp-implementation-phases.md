@@ -16,7 +16,8 @@ render evidence, a fixture-only static public-demo fallback artifact, and a
 GitHub Actions workflow for the fixture public-demo lane. It does not yet have
 a checked-in GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis real mesh
 rendering, Viser UI, true Rerun SDK `.rrd` recording, verified live GitHub
-Pages URL, lint command, or build command.
+Pages URL, or broad static-analysis/release gates beyond the minimal
+`make lint` and `make build` surface.
 
 ## Shared Goal
 
@@ -49,7 +50,8 @@ local/user-supplied source video
 | 6 | [mvp-pipeline-contract-hardening.md](mvp-pipeline-contract-hardening.md) | implemented | Version and validate source, motion, teaching, G1, render, playback, annotation, and public-demo contracts before broader orchestration. | Existing fixture paths and future import paths pass through explicit versioned manifest boundaries with source-media provenance and local video-sync metadata. |
 | 7 | [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md) | implemented with static fallback | Define one internal scene/timeline contract and make a fixture-only public demo artifact. | A fixture-only `.rrd` fallback artifact, static viewer page, public-demo manifest, and SVG screenshot can be generated and visually smoke-tested. |
 | 8 | [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) | implemented | Add one-command public-demo orchestration and CI artifact/Page publishing for the fixture lane. | A clean checkout can regenerate, validate, visually smoke-test, upload, and publish the non-GPU fixture demo without tracking generated outputs. |
-| 9 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata; final stop condition still requires a real GVHMR artifact imported through the hardened contracts. |
+| 9 | [mvp-lint-build-surface.md](mvp-lint-build-surface.md) | implemented | Add the minimal lint/build command surface and CI steps. | `make lint`, `make build`, tests, and public-demo generation run without tracking generated artifacts. |
+| 10 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata; final stop condition still requires a real GVHMR artifact imported through the hardened contracts. |
 
 The numbered plans are semantically independent execution slices, not
 necessarily separate GSD phases. The grouping boundary is:
@@ -62,7 +64,8 @@ necessarily separate GSD phases. The grouping boundary is:
 6. pipeline contract hardening
 7. visualization and public demo publishing
 8. developer experience and CI surface
-9. later real conversion gate
+9. lint/build command surface
+10. later real conversion gate
 
 The current local-first order intentionally puts real G1 model rendering before
 the GPU conversion gate, so the right-side robot view can become real while the
@@ -96,6 +99,7 @@ Allowed locally:
 - imported GVHMR output validation
 - imported GMR Unitree G1 track validation
 - SMPL-X motion-record normalization
+- minimal lint/build command checks
 - small-fixture forward kinematics and geometry checks
 - CPU retargeting with fallback to externally produced GMR output
 - lightweight MuJoCo/Genesis/Viser proof work when dependencies are stable
@@ -170,6 +174,8 @@ docs:
   - path: docs/plans/mvp-visualization-and-public-demo.md
     type: SPEC
   - path: docs/plans/mvp-devex-ci-surface.md
+    type: SPEC
+  - path: docs/plans/mvp-lint-build-surface.md
     type: SPEC
   - path: docs/plans/mvp-real-conversion-gate.md
     type: SPEC

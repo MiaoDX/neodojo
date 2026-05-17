@@ -1,9 +1,15 @@
-.PHONY: test demo-html demo-public smoke-public
+.PHONY: lint test build demo-html demo-public smoke-public
 
 PYTHON ?= python3
 
+lint:
+	PYTHONPATH=src $(PYTHON) -m compileall -q src tests
+
 test:
 	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests
+
+build:
+	$(PYTHON) -m pip wheel . --wheel-dir outputs/dist
 
 demo-html:
 	PYTHONPATH=src $(PYTHON) -m neodojo demo-html --out outputs/html-demo

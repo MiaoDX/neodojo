@@ -9,8 +9,8 @@
 - This repo is currently in bootstrap state with fixture-only demos and a
   fixture-only public-demo CI lane. Do not claim a working
   GVHMR/GMR/simulator runtime pipeline, MuJoCo/Genesis mesh renderer, Viser UI,
-  lint command, build command, or true Rerun/Pages publication exists until it
-  is added and verified.
+  true Rerun SDK artifact, verified live Pages URL, or broad static-analysis
+  release gate exists until it is added and verified.
 
 ## Project Shape
 
@@ -28,6 +28,8 @@
 ## Commands
 
 - `make test` runs the focused unit tests for the fixture demo generator, local motion contract, G1 visual-track manifest boundary, local G1 render evidence, and teaching playback manifest path.
+- `make lint` runs the minimal syntax/import bytecode compile check over `src/` and `tests/`.
+- `make build` builds a wheel under ignored `outputs/dist/`.
 - `PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract` writes fixture-backed SMPL-X motion-record and teaching-track manifests.
 - `PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract` imports an external GVHMR SMPL-X teaching-joints JSON export into the same motion-record contract without running GVHMR locally.
 - `PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual` writes a fixture G1 model descriptor.
@@ -42,7 +44,7 @@
 - `make demo-public` regenerates the fixture motion contract, G1 visual/render artifacts, teaching playback, public-demo artifact, and smoke check in one local command.
 - `make smoke-public` validates an existing `outputs/public-demo` artifact set.
 - `.github/workflows/public-demo.yml` runs the fixture public-demo lane in CI and can publish the static artifact to GitHub Pages from `main` when Pages is enabled.
-- No canonical lint or build commands exist yet.
+- No broad static-analysis, type-checking, coverage, or release packaging gates exist yet.
 - When adding code, add the command surface in the same change: package metadata, scripts or Make targets, focused tests, and README/docs updates.
 - Prefer small, reproducible Python entrypoints for pipeline work before adding broad framework structure.
 
