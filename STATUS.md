@@ -217,6 +217,16 @@ motion artifact, or hosted/live-client Viser capture.
   prep manifest, source-materialization manifest, GPU handoff manifest, README,
   source-materialization copy, GVHMR export template, and GPU-side exporter
   helper, and contains no video files.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26004331422` verified the
+  executable GPU-runner packaging on `main`: lint, plan checks, tests, wheel
+  build, `make real-handoff-smoke`, `make gpu-input-bundle-smoke`, handoff
+  artifact upload, metadata-only GPU input bundle artifact upload, browser
+  capture, capture-bundle upload, Pages artifact upload, and Pages deploy
+  passed. The `neodojo-gpu-input-bundle-smoke` artifact contains the GPU input
+  manifest, `RUN_ON_GPU.md`, handoff metadata, source-materialization copy,
+  GVHMR export template, GPU-side exporter helper, and
+  `run_gvhmr_neodojo.sh`, and contains no video files.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
@@ -246,8 +256,9 @@ motion artifact, or hosted/live-client Viser capture.
   in local smoke, writing `neodojo.gvhmr_gpu_handoff.v1` manifest metadata,
   README instructions, a copyable `source-materialization.json`,
   `neodojo.gvhmr_smplx_joints.v1` export template, and the standalone
-  `export_neodojo_gvhmr.py` GPU-side exporter helper. The smoke used dry-run
-  source materialization, so the handoff correctly reports
+  `export_neodojo_gvhmr.py` GPU-side exporter helper plus
+  `run_gvhmr_neodojo.sh`. The smoke used dry-run source materialization, so the
+  handoff correctly reports
   `needs_materialization` until a real trimmed clip exists.
 - GVHMR result inspection smoke generated
   `outputs/gvhmr-result-inspection-smoke/manifest.json` from the existing local

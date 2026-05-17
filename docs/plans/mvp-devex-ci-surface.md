@@ -99,6 +99,14 @@ prep manifest, source-materialization manifest, GPU handoff manifest, README,
 source-materialization copy, GVHMR export template, and GPU-side exporter
 helper, and contained no video files.
 
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26004331422` verified the
+GPU input bundle smoke artifact on `main`: `make gpu-input-bundle-smoke`
+passed, the `neodojo-gpu-input-bundle-smoke` artifact uploaded
+`RUN_ON_GPU.md`, handoff metadata, the export template, exporter helper, and
+`run_gvhmr_neodojo.sh`, and Pages deployed. The artifact does not include
+source media.
+
 ## Inputs
 
 - Existing fixture generation commands.
@@ -208,9 +216,9 @@ helper, and contained no video files.
   screenshot, public-demo manifest, browser-rendered PNG screenshot, generated
   capture bundle artifact with referenced evidence, and metadata-only
   real-handoff smoke artifact without source media, verified by runs
-  `25999641059`, `26000413142`, and `26003369563`. The same workflow now also
-  uploads the metadata-only GPU input bundle smoke artifact with the executable
-  runner script.
+  `25999641059`, `26000413142`, and `26003369563`.
+- CI uploads the metadata-only GPU input bundle smoke artifact with the
+  executable runner script and no source media, verified by run `26004331422`.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages publishes only safe static demo assets once repository Pages is
