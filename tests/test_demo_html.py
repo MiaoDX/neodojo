@@ -12,7 +12,7 @@ from neodojo.capture_bundle import write_capture_bundle
 from neodojo.contracts import sha256_file
 from neodojo.demo_html import build_fixture, compute_feedback, render_demo_html, write_demo
 from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames, derive_g1_like_frame
-from neodojo.g1_render import write_g1_mujoco_render, write_g1_render
+from neodojo.g1_render import G1_MUJOCO_RENDER_BACKEND, G1_RENDER_SCHEMA, write_g1_mujoco_render, write_g1_render
 from neodojo.g1_visual import (
     build_g1_visual_track,
     import_gmr_json_track,
@@ -28,6 +28,7 @@ from neodojo.motion_contract import (
 )
 from neodojo.public_demo import build_scene_timeline, smoke_check_public_demo, write_public_demo
 from neodojo.quality import check_quality_surface
+from neodojo.recorder_capture import write_simulator_recorder_capture
 from neodojo.real_conversion import (
     _parse_ffprobe_payload,
     materialize_real_conversion_source,
@@ -1197,6 +1198,132 @@ class DemoHtmlTests(unittest.TestCase):
             "../browser-capture/public-demo-browser.png",
         )
         self.assertTrue(manifest["verification"]["browser_capture_smoke_checked"])
+
+    def test_simulator_recorder_capture_wraps_mujoco_render(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            render_dir = root / "mujoco-render"
+            frame_dir = render_dir / "frames"
+            frame_dir.mkdir(parents=True)
+            for view in ("front", "side", "top"):
+                (frame_dir / f"{view}.png").write_bytes(f"{view} png bytes".encode("utf-8"))
+            (render_dir / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "schema": G1_RENDER_SCHEMA,
+                        "fixture_only": False,
+                        "renderer": {
+                            "backend": G1_MUJOCO_RENDER_BACKEND,
+                            "resolution": {"width": 640, "height": 480},
+                        },
+                        "frame_count": 10,
+                        "selected_frame": 5,
+                        "timing": {"fps": 30},
+                        "camera_definitions": {
+                            "front": {"azimuth": 0},
+                            "side": {"azimuth": 90},
+                            "top": {"elevation": -90},
+                        },
+                        "frame_paths": {
+                            "front": "frames/front.png",
+                            "side": "frames/side.png",
+                            "top": "frames/top.png",
+                        },
+                        "scoring_source": "smplx",
+                        "g1_scoring_allowed": False,
+                        "nonblank_pixel_check": True,
+                        "nonblank_views": {"front": True, "side": True, "top": True},
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = write_simulator_recorder_capture(root / "recorder-capture", simulator_render=render_dir)
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(manifest["schema"], "neodojo.recorder_capture.v1")
+        self.assertEqual(manifest["backend"]["kind"], "mujoco_offscreen_frame_recorder.v1")
+        self.assertTrue(manifest["real_offscreen_recorder"])
+        self.assertTrue(manifest["real_simulator_recorder"])
+        self.assertFalse(manifest["real_roboharness_integration"])
+        self.assertEqual(set(manifest["camera_captures"]), {"front", "side", "top"})
+        self.assertEqual(len(result.checked_paths), 3)
+
+    def test_capture_bundle_can_include_simulator_recorder_capture(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            render = write_g1_render(
+                root / "render",
+                model_descriptor_path=model.descriptor_path,
+                g1_track=g1.track_manifest_path,
+                allow_fixture_model=True,
+            )
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+            )
+            public = write_public_demo(
+                playback_manifest_path=playback.manifest_path,
+                g1_render_manifest_path=render.manifest_path,
+                recording_path=root / "public-demo" / "neodojo-demo.rrd",
+            )
+            viser = write_viser_runtime_contract(
+                root / "viser-runtime",
+                playback_manifest_path=playback.manifest_path,
+                g1_render_manifest_path=render.manifest_path,
+            )
+            recorder_dir = root / "recorder-capture"
+            recorder_frames = root / "mujoco-render" / "frames"
+            recorder_frames.mkdir(parents=True)
+            for view in ("front", "side", "top"):
+                (recorder_frames / f"{view}.png").write_bytes(f"{view} recorder png".encode("utf-8"))
+            (recorder_dir).mkdir()
+            (recorder_dir / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.recorder_capture.v1",
+                        "capture_kind": "simulator_offscreen_camera_capture",
+                        "backend": {"kind": "mujoco_offscreen_frame_recorder.v1"},
+                        "camera_captures": {
+                            view: {
+                                "camera_role": f"{view}_simulator_offscreen_recorder",
+                                "artifact": f"../mujoco-render/frames/{view}.png",
+                                "nonblank": True,
+                            }
+                            for view in ("front", "side", "top")
+                        },
+                        "real_offscreen_recorder": True,
+                        "real_simulator_recorder": True,
+                        "real_roboharness_integration": False,
+                        "scoring_source": "smplx",
+                        "g1_scoring_allowed": False,
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = write_capture_bundle(
+                root / "capture",
+                public_demo=public.manifest_path,
+                viser_runtime=viser.manifest_path,
+                g1_render=render.manifest_path,
+                recorder_capture=recorder_dir,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertTrue(manifest["source"]["real_offscreen_recorder"])
+        self.assertTrue(manifest["source"]["real_simulator_recorder"])
+        self.assertIn("recorder_capture", manifest["artifact_groups"])
+        self.assertIn("recorder_capture", manifest["views"]["front"]["artifacts"])
+        self.assertTrue(manifest["verification"]["recorder_capture_smoke_checked"])
 
     def test_capture_bundle_rejects_missing_viser_preview(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -1,6 +1,6 @@
 # MVP Roboharness Capture Boundary Plan
 
-Status: IMPLEMENTED GENERATED BUNDLE AND BROWSER PUBLIC-DEMO CAPTURE; CI VERIFIED; ROBOHARNESS/SIMULATOR RECORDER REMAINS FOLLOW-ON
+Status: IMPLEMENTED GENERATED BUNDLE AND BROWSER PUBLIC-DEMO CAPTURE; CI VERIFIED
 
 ## Goal
 
@@ -19,9 +19,10 @@ public-demo artifact
 This slice gives the pipeline one explicit place to collect and validate
 multi-camera evidence. It stays honest that the first implementation validates
 generated SVG/HTML/recording artifacts and, when the optional browser lane is
-installed, a real headless Chromium rendering of the public-demo HTML. It is
-still not a direct roboharness integration, simulator video recorder, live
-Viser browser capture, or production teaching UI.
+installed, a real headless Chromium rendering of the public-demo HTML. The
+follow-on recorder plan now adds optional MuJoCo simulator-recorder evidence.
+This boundary is still not a direct roboharness integration, live Viser browser
+capture, or production-hosted teaching UI.
 
 ## Dependencies
 
@@ -61,7 +62,8 @@ Viser browser capture, or production teaching UI.
 - CI artifact upload that includes `outputs/capture` and optional
   `outputs/browser-capture` alongside the public demo.
 - README, README.zh, STATUS, and plan-index updates that describe the boundary
-  as generated evidence, not a real recorder.
+  as generated evidence plus optional recorder evidence, not a direct
+  roboharness integration.
 
 ## Execution Tasks
 
@@ -97,7 +99,8 @@ Viser browser capture, or production teaching UI.
 5. Update docs.
    - [x] Keep README.md and README.zh aligned.
    - [x] Update STATUS.md and this plan index.
-   - [x] Preserve fixture-only limitations and follow-on recorder gaps.
+   - [x] Preserve fixture-only limitations and direct-roboharness follow-on
+     gaps.
 
 ## Acceptance Evidence
 
@@ -113,6 +116,9 @@ Viser browser capture, or production teaching UI.
 - When browser capture is supplied, the bundle references the Chromium PNG
   screenshot and marks `real_browser_capture: true` without claiming direct
   roboharness integration.
+- When recorder capture is supplied, the bundle references MuJoCo offscreen
+  recorder frames and marks `real_simulator_recorder: true` without claiming
+  direct roboharness integration.
 - The manifest preserves `scoring_source: smplx` and
   `g1_scoring_allowed: false`.
 - CI uploads the capture bundle and browser-capture artifacts without
@@ -122,7 +128,8 @@ Viser browser capture, or production teaching UI.
 ## Non-Goals
 
 - Importing or depending on roboharness in the default repo path.
-- Recording simulator video.
+- Recording simulator video; the first recorder follow-on covers still-frame
+  MuJoCo offscreen evidence.
 - Browser-driven screenshot capture of the live Viser client.
 - Making Playwright a default dependency for `make demo-public`.
 - Replacing the Rerun/GitHub Pages public-demo artifact.
@@ -130,9 +137,6 @@ Viser browser capture, or production teaching UI.
 
 ## Follow-On Gaps After This Plan
 
-- Replace generated SVG evidence and public-demo browser screenshots with a
-  real offscreen simulator or roboharness recorder once the runtime target is
-  selected.
 - Add live-client Viser browser capture when browser automation targets the
   local runtime client, not only the static public demo.
 - Decide whether a future roboharness dependency should be optional, vendored,

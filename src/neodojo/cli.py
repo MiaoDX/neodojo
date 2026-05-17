@@ -19,6 +19,7 @@ from .g1_render import write_g1_mujoco_render, write_g1_render
 from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
 from .public_demo import smoke_check_public_demo, write_public_demo
 from .quality import check_quality_surface
+from .recorder_capture import write_simulator_recorder_capture
 from .real_conversion import (
     DEFAULT_SOURCE_ID,
     DEFAULT_SOURCE_INDEX,
@@ -462,10 +463,31 @@ def build_parser() -> argparse.ArgumentParser:
         help="optional browser-capture directory or manifest from `neodojo demo browser-smoke`",
     )
     capture_bundle.add_argument(
+        "--recorder-capture",
+        type=Path,
+        help="optional recorder-capture directory or manifest from `neodojo capture recorder`",
+    )
+    capture_bundle.add_argument(
         "--out",
         type=Path,
         default=Path("outputs/capture"),
         help="output directory for the capture bundle manifest",
+    )
+    capture_recorder = capture_subparsers.add_parser(
+        "recorder",
+        help="write a direct simulator recorder manifest from MuJoCo offscreen render evidence",
+    )
+    capture_recorder.add_argument(
+        "--simulator-render",
+        type=Path,
+        default=Path("outputs/g1-mujoco-render"),
+        help="MuJoCo render evidence directory or manifest path",
+    )
+    capture_recorder.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/recorder-capture"),
+        help="output directory for the recorder-capture manifest",
     )
 
     render = subparsers.add_parser(
@@ -835,6 +857,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 viser_runtime=args.viser_runtime,
                 g1_render=args.g1_render,
                 browser_capture=args.browser_capture,
+                recorder_capture=args.recorder_capture,
+            )
+            print(f"wrote {result.manifest_path}")
+            for path in result.checked_paths:
+                print(f"validated {path}")
+            return 0
+
+        if args.command == "capture" and args.capture_command == "recorder":
+            result = write_simulator_recorder_capture(
+                args.out,
+                simulator_render=args.simulator_render,
             )
             print(f"wrote {result.manifest_path}")
             for path in result.checked_paths:

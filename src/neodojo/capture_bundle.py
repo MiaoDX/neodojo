@@ -10,6 +10,7 @@ from .contracts import PUBLIC_DEMO_SCHEMA, require_schema
 from .g1_render import G1_RENDER_SCHEMA
 from .motion_contract import _relative_path, _write_json, validate_output_dir
 from .public_demo import smoke_check_public_demo
+from .recorder_capture import RECORDER_CAPTURE_SCHEMA
 from .viser_runtime import VISER_RUNTIME_SCHEMA
 
 CAPTURE_BUNDLE_SCHEMA = "neodojo.capture_bundle.v1"
@@ -170,6 +171,38 @@ def _load_browser_capture(browser_capture: Path) -> tuple[Path, dict[str, Any], 
     return manifest_path, manifest, screenshot_path
 
 
+def _load_recorder_capture(recorder_capture: Path) -> tuple[Path, dict[str, Any], dict[str, Path]]:
+    manifest_path = _resolve_manifest_path(recorder_capture, "manifest.json")
+    manifest = _load_json(manifest_path)
+    require_schema(manifest, RECORDER_CAPTURE_SCHEMA, "recorder-capture manifest")
+    if not manifest.get("real_offscreen_recorder"):
+        raise ValueError("recorder-capture manifest must set real_offscreen_recorder")
+    if manifest.get("scoring_source") != "smplx":
+        raise ValueError("recorder-capture input must keep SMPL-X as scoring_source")
+    if manifest.get("g1_scoring_allowed"):
+        raise ValueError("recorder-capture input cannot allow G1 scoring")
+
+    camera_captures = manifest.get("camera_captures")
+    if not isinstance(camera_captures, dict):
+        raise ValueError("recorder-capture manifest must include camera_captures")
+    missing_views = [view for view in REQUIRED_CAPTURE_VIEWS if view not in camera_captures]
+    if missing_views:
+        raise ValueError(f"recorder-capture manifest is missing views: {', '.join(missing_views)}")
+
+    paths = {}
+    for view in REQUIRED_CAPTURE_VIEWS:
+        capture = camera_captures[view]
+        if not isinstance(capture, dict):
+            raise ValueError(f"recorder-capture view {view} must be an object")
+        artifact_ref = capture.get("artifact")
+        if not isinstance(artifact_ref, str) or not artifact_ref:
+            raise ValueError(f"recorder-capture view {view} must include artifact")
+        path = _resolve_artifact(manifest_path, artifact_ref)
+        _require_nonblank(path, f"recorder-capture {view} artifact")
+        paths[view] = path
+    return manifest_path, manifest, paths
+
+
 def write_capture_bundle(
     out_dir: Path,
     *,
@@ -177,6 +210,7 @@ def write_capture_bundle(
     viser_runtime: Path,
     g1_render: Path,
     browser_capture: Path | None = None,
+    recorder_capture: Path | None = None,
 ) -> CaptureBundleWriteResult:
     validate_output_dir(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -190,6 +224,11 @@ def write_capture_bundle(
     browser_screenshot_path = None
     if browser_capture is not None:
         browser_manifest_path, browser_manifest, browser_screenshot_path = _load_browser_capture(browser_capture)
+    recorder_manifest_path = None
+    recorder_manifest = None
+    recorder_paths: dict[str, Path] = {}
+    if recorder_capture is not None:
+        recorder_manifest_path, recorder_manifest, recorder_paths = _load_recorder_capture(recorder_capture)
 
     checked_candidates = [
         *public_checked,
@@ -198,6 +237,7 @@ def write_capture_bundle(
     ]
     if browser_screenshot_path is not None:
         checked_candidates.append(browser_screenshot_path)
+    checked_candidates.extend(recorder_paths.values())
     checked_paths = _unique_paths(checked_candidates)
 
     def rel(path: Path) -> str:
@@ -213,17 +253,28 @@ def write_capture_bundle(
         ),
         "source": {
             "kind": "generated_evidence_plus_browser_capture"
-            if browser_manifest
+            if browser_manifest and not recorder_manifest
+            else "generated_evidence_plus_recorder_capture"
+            if recorder_manifest and not browser_manifest
+            else "generated_evidence_plus_browser_and_recorder_capture"
+            if browser_manifest and recorder_manifest
             else "generated_evidence_only",
             "real_browser_capture": bool(browser_manifest),
-            "real_offscreen_recorder": False,
-            "real_simulator_recorder": False,
-            "real_roboharness_integration": False,
+            "real_offscreen_recorder": bool(
+                recorder_manifest and recorder_manifest.get("real_offscreen_recorder")
+            ),
+            "real_simulator_recorder": bool(
+                recorder_manifest and recorder_manifest.get("real_simulator_recorder")
+            ),
+            "real_roboharness_integration": bool(
+                recorder_manifest and recorder_manifest.get("real_roboharness_integration")
+            ),
             "notes": (
                 "This bundle validates existing generated artifacts in a "
                 "roboharness-style multi-camera evidence shape. Browser capture "
-                "is included only when an optional browser-capture manifest is "
-                "provided; simulator/video recorder integration remains follow-on."
+                "is included when an optional browser-capture manifest is provided; "
+                "direct simulator recorder evidence is included when an optional "
+                "recorder-capture manifest is provided."
             ),
         },
         "inputs": {
@@ -231,6 +282,7 @@ def write_capture_bundle(
             "viser_runtime": rel(viser_manifest_path),
             "g1_render": rel(g1_render_manifest_path),
             "browser_capture": rel(browser_manifest_path) if browser_manifest_path else None,
+            "recorder_capture": rel(recorder_manifest_path) if recorder_manifest_path else None,
         },
         "artifact_groups": {
             "public_demo": {
@@ -267,6 +319,22 @@ def write_capture_bundle(
                 if browser_manifest is not None and browser_screenshot_path is not None
                 else {}
             ),
+            **(
+                {
+                    "recorder_capture": {
+                        "kind": recorder_manifest.get("capture_kind"),
+                        "backend": recorder_manifest.get("backend"),
+                        "real_offscreen_recorder": bool(recorder_manifest.get("real_offscreen_recorder")),
+                        "real_simulator_recorder": bool(recorder_manifest.get("real_simulator_recorder")),
+                        "views": {
+                            view: rel(path)
+                            for view, path in recorder_paths.items()
+                        },
+                    }
+                }
+                if recorder_manifest is not None
+                else {}
+            ),
         },
         "views": {
             view: {
@@ -274,6 +342,11 @@ def write_capture_bundle(
                 "artifacts": {
                     "viser_preview": rel(viser_paths[view]),
                     "g1_render_frame": rel(g1_render_paths[view]),
+                    **(
+                        {"recorder_capture": rel(recorder_paths[view])}
+                        if view in recorder_paths
+                        else {}
+                    ),
                 },
                 "nonblank_artifacts": True,
             }
@@ -296,11 +369,12 @@ def write_capture_bundle(
             "viser_preview_smoke_checked": True,
             "g1_render_frame_smoke_checked": True,
             "browser_capture_smoke_checked": bool(browser_manifest),
+            "recorder_capture_smoke_checked": bool(recorder_manifest),
         },
         "scoring_source": "smplx",
         "g1_scoring_allowed": False,
         "follow_on": {
-            "real_roboharness_integration": "replace generated SVG/HTML evidence with a direct roboharness or simulator camera recorder when selected",
+            "real_roboharness_integration": "replace generated SVG/HTML evidence with a direct roboharness camera recorder when selected",
             "production_viser_capture": "capture live-client Viser screenshots after browser automation targets the runtime client, not only the static public demo",
         },
     }

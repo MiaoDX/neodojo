@@ -1,6 +1,6 @@
 # MVP Roboharness Or Simulator Recorder Plan
 
-Status: FOLLOW-ON; NEED RECORDER TARGET DECISION AND LOCAL RUNTIME ASSETS
+Status: IMPLEMENTED FIRST MUJOCO SIMULATOR RECORDER CONTRACT
 
 ## Goal
 
@@ -15,9 +15,11 @@ scene/render/runtime target
   -> CI/local artifact upload
 ```
 
-The current implemented lane already provides generated multi-camera evidence
-and a real headless Chromium screenshot of the public demo. This follow-on
-covers direct recorder integration for simulator or runtime camera evidence.
+The implemented lane now provides generated multi-camera evidence, a real
+headless Chromium screenshot of the public demo, and an optional direct
+simulator-recorder manifest that wraps MuJoCo offscreen render evidence. Direct
+roboharness integration and live Viser browser capture remain future backend
+choices, not prerequisites for this first recorder contract.
 
 ## Dependencies
 
@@ -28,8 +30,8 @@ covers direct recorder integration for simulator or runtime camera evidence.
 - [mvp-viser-production-teaching-ui.md](mvp-viser-production-teaching-ui.md) may
   provide a live local UI target if the recorder captures Viser instead of
   simulator output.
-- A recorder target is selected: direct roboharness integration, simulator
-  offscreen frames/video, or live Viser browser capture.
+- The first recorder target is selected: MuJoCo simulator offscreen frames from
+  `neodojo render mujoco-g1`.
 
 ## Inputs
 
@@ -40,7 +42,7 @@ covers direct recorder integration for simulator or runtime camera evidence.
 
 ## Outputs
 
-- Recorder manifest, for example `neodojo.recorder_capture.v1`.
+- Recorder manifest: `neodojo.recorder_capture.v1`.
 - Synchronized front/side/top or otherwise named camera captures.
 - Capture bundle integration that records the selected recorder backend,
   camera roles, artifact references, frame count, and nonblank checks.
@@ -50,30 +52,34 @@ covers direct recorder integration for simulator or runtime camera evidence.
 ## Execution Tasks
 
 1. Select recorder target.
-   - [ ] Choose direct roboharness, simulator offscreen capture, or live Viser
+   - [x] Choose direct roboharness, simulator offscreen capture, or live Viser
      browser capture for the first real recorder lane.
-   - [ ] Record why the selected target is the narrowest useful proof.
-   - [ ] Decide whether the dependency is optional local-only or part of CI.
+   - [x] Record why the selected target is the narrowest useful proof.
+   - [x] Decide whether the dependency is optional local-only or part of CI.
 
 2. Define recorder contract.
-   - [ ] Add versioned recorder manifest with backend, cameras, frame count,
+   - [x] Add versioned recorder manifest with backend, cameras, frame count,
      source manifests, scoring-source boundary, and generated artifact refs.
-   - [ ] Validate output paths stay under ignored `outputs/`.
-   - [ ] Keep generated images/videos/logs out of tracked source.
+   - [x] Validate output paths stay under ignored `outputs/`.
+   - [x] Keep generated images/videos/logs out of tracked source.
 
 3. Implement capture.
-   - [ ] Add a CLI command or Make target for the selected recorder.
-   - [ ] Write nonblank camera artifacts and manifest evidence.
-   - [ ] Integrate the recorder manifest into `neodojo capture bundle`.
+   - [x] Add a CLI command or Make target for the selected recorder.
+   - [x] Write nonblank camera artifacts and manifest evidence.
+   - [x] Integrate the recorder manifest into `neodojo capture bundle`.
 
 4. Verify.
-   - [ ] Add focused tests for manifest validation and missing-artifact errors.
-   - [ ] Add optional local smoke for the real recorder backend.
-   - [ ] Add CI only if the dependency/runtime is stable and licensing-safe.
+   - [x] Add focused tests for manifest validation and missing-artifact errors.
+   - [x] Preserve optional local MuJoCo smoke through the existing
+     `render mujoco-g1` tests when `mujoco` is installed.
+   - [x] Keep default CI dependency-light; the recorder contract is tested with
+     fixture-safe MuJoCo-shaped manifests and real MuJoCo capture remains
+     optional local work.
 
 ## Acceptance Evidence
 
-- A selected recorder backend produces nonblank synchronized camera artifacts.
+- A selected recorder backend produces nonblank synchronized camera artifacts
+  through `neodojo render mujoco-g1`.
 - The capture bundle references recorder artifacts and clearly identifies the
   backend.
 - Default fixture/demo commands remain usable without heavyweight recorder
@@ -90,7 +96,8 @@ covers direct recorder integration for simulator or runtime camera evidence.
 
 ## Stop Condition
 
-Stop when one selected recorder backend writes versioned nonblank capture
-evidence and the capture bundle can validate it, or when the remaining blocker
-is a recorder target decision, missing local runtime asset, unstable dependency,
-or CI licensing/runtime limitation.
+Stop condition reached for the first recorder backend: `neodojo capture
+recorder` validates MuJoCo offscreen render evidence, writes
+`neodojo.recorder_capture.v1`, and `neodojo capture bundle` can include that
+manifest while preserving the SMPL-X scoring boundary. Direct roboharness
+integration and live Viser browser capture remain future backend choices.

@@ -16,9 +16,10 @@ pickle normalization, an SMPL-X surface proxy, G1 SVG/HTML render evidence,
 optional MuJoCo render evidence, optional true Rerun SDK `.rrd` export,
 an optional first Viser local runtime, optional source-media probing, local
 source-media materialization handoff, a fixture-only static public-demo fallback
-artifact, a generated roboharness-style capture bundle boundary, and a GitHub
-Actions workflow with verified fixture-only Pages publication plus optional
-browser-rendered public-demo screenshot capture. It
+artifact, a generated roboharness-style capture bundle boundary, optional
+MuJoCo simulator recorder-capture integration, and a GitHub Actions workflow
+with verified fixture-only Pages publication plus optional browser-rendered
+public-demo screenshot capture. It
 does not yet have a checked-in GVHMR/GMR execution pipeline, simulator runtime
 pipeline, full licensed SMPL-X mesh generation, hosted/live-client Viser
 capture, or broad static-analysis/release gates beyond the minimal `make lint` and
@@ -62,7 +63,7 @@ local/user-supplied source video
 | 10 | [mvp-lint-build-surface.md](mvp-lint-build-surface.md) | implemented | Add the minimal lint/build command surface and all-in-one local verification target. | `make verify` runs lint, plan quality checks, tests, wheel build, and public-demo generation without tracking generated artifacts. |
 | 11 | [mvp-source-media-probing.md](mvp-source-media-probing.md) | implemented metadata probe | Record optional ffprobe metadata for local source videos without copying media. | Source prep records probe success/failure, duration, resolution, codec, and frame-rate metadata when available. |
 | 12 | [mvp-source-media-materialization.md](mvp-source-media-materialization.md) | implemented local handoff | Turn source prep plus a local video into a dry-run or ffmpeg-backed trimmed-clip/reference-frame handoff. | A source-materialization manifest records source validation, commands, generated outputs when available, and the GVHMR input handoff path without committing media. |
-| 13 | [mvp-roboharness-capture-boundary.md](mvp-roboharness-capture-boundary.md) | implemented generated bundle and browser public-demo capture; CI verified; roboharness/simulator recorder remains follow-on | Collect public-demo, browser capture, Viser preview, and G1 render artifacts into one roboharness-style multi-camera evidence manifest. | `make demo-public` writes a validated generated capture bundle, and `make demo-public-browser` adds optional real browser screenshot evidence without claiming direct roboharness/simulator recording. |
+| 13 | [mvp-roboharness-capture-boundary.md](mvp-roboharness-capture-boundary.md) | implemented generated bundle and browser public-demo capture; CI verified | Collect public-demo, browser capture, Viser preview, G1 render, and optional recorder artifacts into one roboharness-style multi-camera evidence manifest. | `make demo-public` writes a validated generated capture bundle, and `make demo-public-browser` adds optional real browser screenshot evidence without claiming direct roboharness integration. |
 | 14 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep/materialization ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata and source materialization can prepare the trimmed input; final stop condition still requires a real GVHMR artifact imported through the hardened contracts. |
 
 ## Future Gap Plans
@@ -80,7 +81,7 @@ of truth for the next waves.
 | [mvp-viser-multicamera-runtime.md](mvp-viser-multicamera-runtime.md) | implemented first optional server, camera/anchor controls, and generated multi-camera preview evidence | Local Viser runtime, camera/annotation controls, and dependency-light front/side/top visual smoke workflow. |
 | [mvp-viser-production-teaching-ui.md](mvp-viser-production-teaching-ui.md) | implemented first production review-loop contract and controls | Production local Viser teaching UX beyond the first optional runtime controls and generated previews. |
 | [mvp-rerun-pages-release.md](mvp-rerun-pages-release.md) | implemented optional SDK export and verified live Pages publication | True Rerun SDK `.rrd` export and verified live GitHub Pages URL. |
-| [mvp-roboharness-simulator-recorder.md](mvp-roboharness-simulator-recorder.md) | follow-on; needs recorder target decision and local runtime assets | Direct roboharness, simulator, or live-runtime recorder evidence beyond generated capture bundles and public-demo browser screenshots. |
+| [mvp-roboharness-simulator-recorder.md](mvp-roboharness-simulator-recorder.md) | implemented first MuJoCo simulator recorder contract | Direct roboharness, simulator, or live-runtime recorder evidence beyond generated capture bundles and public-demo browser screenshots. |
 | [mvp-feedback-routine-review.md](mvp-feedback-routine-review.md) | implemented | Broader key-frame/posture feedback and routine-level review. |
 | [mvp-gvhmr-source-validation.md](mvp-gvhmr-source-validation.md) | implemented validator; blocked on a real GVHMR export for final proof | Validation that imported GVHMR artifacts match the materialized source clip and trim. |
 | [mvp-quality-release-surface.md](mvp-quality-release-surface.md) | implemented first quality gate | Project-owned static quality check for MVP plan links and scaffolding beyond the minimal lint/build commands. |

@@ -1,6 +1,6 @@
 # MVP Viser Multi-Camera Runtime Plan
 
-Status: IMPLEMENTED FIRST OPTIONAL LOCAL SERVER, CAMERA CONTROLS, AND MULTI-CAMERA PREVIEW EVIDENCE; PRODUCTION POLISH REMAINS FOLLOW-ON
+Status: IMPLEMENTED FIRST OPTIONAL LOCAL SERVER, CAMERA CONTROLS, AND MULTI-CAMERA PREVIEW EVIDENCE
 
 ## Goal
 
@@ -25,8 +25,9 @@ Viser server when the `viser` extra is installed, and exposes synchronized
 SMPL-X/G1 tracks with a frame slider, camera preset buttons, annotation-anchor
 navigation, trajectory overlays, and explicit scoring-source labels. The
 contract writer also emits dependency-light front/side/top SVG preview
-screenshots from the same scene contract for visual smoke evidence. Richer
-production teaching polish remains follow-on work.
+screenshots from the same scene contract for visual smoke evidence. The
+production review-loop polish is covered by
+[mvp-viser-production-teaching-ui.md](mvp-viser-production-teaching-ui.md).
 
 ## Dependencies
 

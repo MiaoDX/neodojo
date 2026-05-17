@@ -8,7 +8,8 @@ fixture-backed and external-JSON `motion-record` paths, `robot-model`,
 `smplx-surface proxy`, `annotations detect`, `render g1`, optional
 `render mujoco-g1`,
 `demo play`, `demo export-rerun`, optional `demo serve-viser`, and
-`demo browser-smoke`, `capture bundle` commands, a `make demo-html` command that writes a
+`demo browser-smoke`, `capture recorder`, and `capture bundle` commands, a
+`make demo-html` command that writes a
 self-contained synthetic web demo, minimal `make lint`, `make check`, and
 `make build` commands, and `make demo-public` / optional
 `make demo-public-browser` commands plus `make verify` and GitHub Actions
@@ -45,8 +46,8 @@ hosted/live-client Viser capture.
   playback HTML/manifest -> routine feedback anchors.
 - Generated roboharness-style multi-camera capture evidence bundle from the
   current public-demo, Viser preview, G1 render artifacts, and optional
-  browser-rendered public-demo screenshot; real roboharness/simulator recording
-  remains follow-on.
+  browser-rendered public-demo screenshot, and optional MuJoCo simulator
+  recorder capture; direct roboharness/live-runtime capture remains follow-on.
 - Production Viser teaching UI contract and review-loop controls beyond the
   first optional local runtime; live-client browser capture remains follow-on.
 - Key-frame detection and geometry-constrained verbal feedback for terms such as
@@ -119,12 +120,17 @@ hosted/live-client Viser capture.
   Playwright browser extra, writes `outputs/browser-capture/manifest.json` and
   `outputs/browser-capture/public-demo-browser.png`, and refreshes the capture
   bundle with that browser evidence.
+- `capture recorder` writes `outputs/recorder-capture/manifest.json`, a
+  `neodojo.recorder_capture.v1` manifest that validates optional MuJoCo
+  offscreen front/side/top render frames from `render mujoco-g1` as direct
+  simulator-recorder evidence.
 - `capture bundle` writes `outputs/capture/manifest.json`, a generated
   roboharness-style multi-camera evidence manifest that validates public-demo
   artifacts, Viser front/side/top preview screenshots, and G1 front/side/top
   render frames. With `--browser-capture`, it also validates the optional
-  browser-rendered public-demo screenshot. This is not a real roboharness
-  integration, simulator recorder, or video artifact.
+  browser-rendered public-demo screenshot. With `--recorder-capture`, it also
+  validates optional direct MuJoCo simulator-recorder evidence. This is not a
+  direct roboharness integration or video artifact.
 - `make check` validates MVP plan links and minimum plan scaffolding, and is
   included in `make verify` and the GitHub Actions workflow.
 - `.github/workflows/public-demo.yml` runs tests, builds a wheel, installs the
@@ -212,8 +218,10 @@ PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-d
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --use-rerun-sdk --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo demo serve-viser --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/viser-runtime
 PYTHONPATH=src python -m neodojo demo browser-smoke --public-demo outputs/public-demo --out outputs/browser-capture
+PYTHONPATH=src python -m neodojo capture recorder --simulator-render outputs/g1-mujoco-render --out outputs/recorder-capture
 PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --out outputs/capture
 PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --browser-capture outputs/browser-capture --out outputs/capture
+PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --recorder-capture outputs/recorder-capture --out outputs/capture
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
@@ -288,6 +296,13 @@ browser-rendered body, verifies the stage image loaded, and writes
 runs the full fixture lane, then adds this browser evidence to
 `outputs/capture/manifest.json`.
 
+`neodojo capture recorder` consumes an existing optional MuJoCo offscreen render
+directory from `neodojo render mujoco-g1`, validates its front/side/top PNG
+frames and nonblank checks, and writes a `neodojo.recorder_capture.v1`
+manifest under `outputs/recorder-capture/`. This is direct simulator recorder
+evidence, not a roboharness integration, and it remains optional because MuJoCo
+and registered robot assets are local dependencies.
+
 `neodojo demo serve-viser` writes `outputs/viser-runtime/viser-runtime.json`,
 `outputs/viser-runtime/scene.json`, and generated front/side/top SVG previews
 under `outputs/viser-runtime/screenshots/`, then starts a local Viser server
@@ -308,9 +323,10 @@ runtime directory, and G1 render directory, then writes
 that public-demo smoke validation passes, Viser front/side/top preview
 screenshots are present with expected labels, and G1 front/side/top render
 frames are nonblank. When `--browser-capture` is supplied, it also validates
-the headless Chromium public-demo screenshot manifest. It preserves SMPL-X as
-the scoring source and records that direct roboharness/simulator recording
-remains follow-on.
+the headless Chromium public-demo screenshot manifest. When
+`--recorder-capture` is supplied, it also validates direct MuJoCo simulator
+recorder evidence. It preserves SMPL-X as the scoring source and records that
+direct roboharness/live-runtime recording remains follow-on.
 
 `neodojo real-conversion prepare` writes ignored source/trim metadata for the
 later GPU run and does not download video or execute GVHMR. When a local video
@@ -332,18 +348,13 @@ when source id, trim, input path/checksum, and duration checks pass.
   `docs/plans/mvp-smplx-licensed-mesh-rendering.md`. The first capsule proxy,
   local-only asset descriptor, mesh-ready parameter preservation, and mesh
   input gate already exist.
-- Real roboharness or simulator offscreen recording beyond the generated bundle
-  and browser-rendered public-demo screenshot:
-  `docs/plans/mvp-roboharness-simulator-recorder.md`. The first generated
-  evidence bundle exists, and the optional browser capture lane is wired into
-  `make demo-public-browser` and CI.
 
 ## Next Safe Task
 
 The next default MVP capability remains
 `docs/plans/mvp-real-conversion-gate.md` for the later GPU artifact import
-path. The remaining non-GPU follow-on plans above are blocked on licensed
-assets or recorder target choices. Do not run GVHMR
+path. The remaining non-GPU follow-on plan above is blocked on licensed
+SMPL-X assets and a renderer choice. Do not run GVHMR
 full-video inference on this macOS CPU workspace; use a GPU-capable machine to
 export a GVHMR SMPL-X teaching-joints JSON artifact, then import it through
 `neodojo motion-record create --from-gvhmr-json`.
