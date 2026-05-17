@@ -174,6 +174,20 @@ A local Bilibili Baduanjin candidate was also materialized with
 `REAL_LOCAL_SOURCE_ID=bilibili-baduanjin-480p` and `REAL_DRY_RUN=0` under
 `outputs/real-handoff-local-bilibili/`; that handoff reports `ready_for_gpu`
 and keeps rights marked unconfirmed.
+
+For the external GPU operator archive, use the one-command local packaging
+target:
+
+```bash
+make real-gpu-archive \
+  LOCAL_VIDEO=path/to/local-source.mp4 \
+  REAL_LOCAL_SOURCE_ID=local-baduanjin
+```
+
+This target forces non-dry-run source materialization, creates the
+media-including GPU input bundle, and writes the transfer archive without
+running GVHMR locally.
+
 Package the materialized source metadata for the external GPU operator:
 
 ```bash

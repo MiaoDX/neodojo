@@ -189,6 +189,7 @@ make test
 make build
 make demo-public
 make demo-public-browser
+make real-gpu-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin REAL_LOCAL_TITLE="Local Baduanjin proof clip"
 make real-handoff-smoke
@@ -367,6 +368,11 @@ custom local-source provenance; set `REAL_DRY_RUN=0` to actually trim/extract
 media when ffmpeg is installed.
 `make real-handoff-smoke` runs the same handoff path with an ignored placeholder
 `.mp4` and is included in `make verify`; it does not run GVHMR or process media.
+`make real-gpu-archive LOCAL_VIDEO=...` is the one-command local packaging path
+for the external GPU operator: it runs non-dry-run source materialization,
+packages the media-including GPU input bundle, and writes the ignored transfer
+archive. It requires ffmpeg and must only be used with local/user-supplied media
+that is allowed to be transferred to the selected GPU machine.
 `neodojo real-conversion package-gpu-handoff` and `make gpu-handoff
 SOURCE_MATERIALIZATION=...` consume a source-materialization manifest and write
 `outputs/gvhmr-gpu-handoff/manifest.json`, a README, and a
@@ -477,6 +483,8 @@ In progress:
       video
 - [x] One-command `make real-handoff` local GPU handoff preparation from a
       user-supplied video
+- [x] One-command `make real-gpu-archive` media-containing transfer archive
+      preparation for the external GPU operator
 - [x] Local GVHMR GPU handoff package with export template and return command
 - [x] Ignored copyable GPU input bundle with optional trimmed media inclusion
 - [x] Ignored GPU input transfer archive for upload to the selected GPU machine

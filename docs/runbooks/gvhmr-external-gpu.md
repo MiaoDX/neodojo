@@ -44,6 +44,12 @@ python -m json.tool outputs/gvhmr-gpu-input-archive-local-bilibili/manifest.json
 For another local source, regenerate the handoff:
 
 ```bash
+make real-gpu-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
+```
+
+The expanded form is:
+
+```bash
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin REAL_DRY_RUN=0
 make gpu-input-bundle GPU_HANDOFF=outputs/gvhmr-gpu-handoff GPU_INPUT_INCLUDE_MEDIA=1
 make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input

@@ -16,12 +16,13 @@ self-contained synthetic web demo, minimal `make lint`, `make check`, and
 workflow for the fixture public-demo artifact, browser capture, generated
 capture bundle, and metadata-only real-handoff smoke artifact,
 `make real-handoff`, `make gpu-handoff`, `make gpu-input-bundle`,
-`make gpu-input-bundle-smoke`, `make gpu-input-archive`, and
-`make gpu-input-archive-smoke` for external GVHMR run metadata, transfer
-bundles/archives, CI-safe GPU runner packaging, and a tracked external-GPU
-operator runbook, `make gvhmr-inspect` for returned GVHMR result inspection,
-and `make demo-real` for a validated external GVHMR JSON once a GPU artifact
-exists, with a verified live fixture-only GitHub Pages demo at
+`make gpu-input-bundle-smoke`, `make gpu-input-archive`, `make
+real-gpu-archive`, and `make gpu-input-archive-smoke` for external GVHMR run
+metadata, transfer bundles/archives, CI-safe GPU runner packaging, and a
+tracked external-GPU operator runbook, `make gvhmr-inspect` for returned GVHMR
+result inspection, and `make demo-real` for a validated external GVHMR JSON
+once a GPU artifact exists, with a verified live fixture-only GitHub Pages demo
+at
 `https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, `real-conversion package-gpu-handoff` can package the handoff
@@ -326,6 +327,7 @@ make test
 make build
 make demo-public
 make demo-public-browser
+make real-gpu-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
 make real-handoff-smoke
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
@@ -494,6 +496,10 @@ machine-readable status, export template, provenance fields, upstream command
 template, copyable source-materialization metadata, GPU-side neodojo export
 helper, executable GPU runner, and local return command; it does not copy media
 or run GVHMR locally.
+`make real-gpu-archive LOCAL_VIDEO=...` chains non-dry-run source
+materialization, GPU handoff packaging, media-including GPU input bundle
+creation, and transfer archive creation in one local command for the external
+GPU operator. It requires ffmpeg and does not run GVHMR locally.
 `neodojo real-conversion package-gpu-input` and `make gpu-input-bundle
 GPU_HANDOFF=... GPU_INPUT_INCLUDE_MEDIA=1` create an ignored copyable GPU input
 bundle with `RUN_ON_GPU.md`, handoff metadata, `run_gvhmr_neodojo.sh`, exporter

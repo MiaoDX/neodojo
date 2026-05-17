@@ -106,6 +106,9 @@ not download media, commit media, or imply that GVHMR has run.
   `run_gvhmr_neodojo.sh`.
 - `make gpu-input-archive GPU_INPUT=...` can package the generated transfer
   directory into one ignored archive and manifest.
+- `make real-gpu-archive LOCAL_VIDEO=...` chains non-dry-run source
+  materialization, GPU handoff packaging, media-including GPU input bundle
+  creation, and archive creation in one local command.
 - The current local Bilibili candidate has a media-including ignored archive at
   `outputs/gvhmr-gpu-input-archive-local-bilibili/neodojo-gvhmr-gpu-input.tar.gz`;
   its manifest records `archive_with_media`, `media_included: true`, and

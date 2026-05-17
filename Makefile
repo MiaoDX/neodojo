@@ -1,4 +1,4 @@
-.PHONY: all verify lint check test build demo-html demo-public demo-public-browser real-handoff real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gvhmr-inspect demo-real smoke-public
+.PHONY: all verify lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gvhmr-inspect demo-real smoke-public
 
 PYTHON ?= python3
 REAL_SOURCE_ID ?= 03-006
@@ -100,6 +100,12 @@ real-handoff:
 	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion prepare $(REAL_PREP_SOURCE_ARGS) --start "$(REAL_START)" --end "$(REAL_END)" --local-video "$(LOCAL_VIDEO)" --out "$(REAL_PREP_OUT)"
 	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion materialize-source --prep "$(REAL_PREP_OUT)/real-conversion-prep.json" --local-video "$(LOCAL_VIDEO)" $(REAL_MATERIALIZE_FLAGS) --out "$(REAL_SOURCE_OUT)"
 	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion package-gpu-handoff --source-materialization "$(REAL_SOURCE_OUT)/source-materialization.json" --out "$(GPU_HANDOFF_OUT)"
+
+real-gpu-archive:
+	@test -n "$(LOCAL_VIDEO)" || (echo "LOCAL_VIDEO=path/to/local-source.mp4 is required" && exit 2)
+	$(MAKE) real-handoff LOCAL_VIDEO="$(LOCAL_VIDEO)" REAL_DRY_RUN=0 REAL_PREP_OUT="$(REAL_PREP_OUT)" REAL_SOURCE_OUT="$(REAL_SOURCE_OUT)" GPU_HANDOFF_OUT="$(GPU_HANDOFF_OUT)"
+	$(MAKE) gpu-input-bundle GPU_HANDOFF="$(GPU_HANDOFF_OUT)" GPU_INPUT_OUT="$(GPU_INPUT_OUT)" GPU_INPUT_INCLUDE_MEDIA=1
+	$(MAKE) gpu-input-archive GPU_INPUT="$(GPU_INPUT_OUT)" GPU_INPUT_ARCHIVE_OUT="$(GPU_INPUT_ARCHIVE_OUT)" GPU_INPUT_ARCHIVE_NAME="$(GPU_INPUT_ARCHIVE_NAME)"
 
 real-handoff-smoke:
 	rm -rf outputs/real-handoff-smoke
