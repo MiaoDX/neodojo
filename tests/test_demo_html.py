@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from neodojo.demo_html import build_fixture, compute_feedback, render_demo_html, write_demo
+from neodojo.g1_visual import build_g1_visual_track, register_g1_model, write_fixture_g1_model_descriptor
 from neodojo.motion_contract import validate_output_dir, validate_scoring_source, write_fixture_motion_contract
 
 
@@ -92,6 +93,96 @@ class DemoHtmlTests(unittest.TestCase):
     def test_rejects_repo_output_outside_outputs_dir(self) -> None:
         with self.assertRaisesRegex(ValueError, "under outputs"):
             validate_output_dir(Path("src/generated-motion-contract"))
+
+    def test_fixture_g1_model_descriptor(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = write_fixture_g1_model_descriptor(Path(temp_dir))
+            descriptor = json.loads(result.descriptor_path.read_text(encoding="utf-8"))
+
+        self.assertTrue(descriptor["fixture_only"])
+        self.assertEqual(descriptor["robot"], "unitree_g1")
+        self.assertEqual(descriptor["model_format"], "fixture_descriptor")
+        self.assertTrue(descriptor["validation"]["loadable"])
+
+    def test_register_g1_model_from_tiny_urdf(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            mesh_dir = root / "meshes"
+            mesh_dir.mkdir()
+            mesh = mesh_dir / "body.stl"
+            mesh.write_text("solid fixture\nendsolid fixture\n", encoding="utf-8")
+            model = root / "g1_fixture.urdf"
+            model.write_text(
+                """<robot name="unitree_g1_fixture">
+  <link name="pelvis">
+    <visual><geometry><mesh filename="meshes/body.stl"/></geometry></visual>
+  </link>
+  <link name="torso"/>
+  <joint name="waist_yaw_joint" type="revolute">
+    <parent link="pelvis"/>
+    <child link="torso"/>
+  </joint>
+</robot>
+""",
+                encoding="utf-8",
+            )
+
+            result = register_g1_model(
+                root / "out",
+                model,
+                source_url="https://example.invalid/unitree-g1",
+                source_revision="fixture",
+                license_name="fixture",
+                variant="test fixture",
+            )
+            descriptor = json.loads(result.descriptor_path.read_text(encoding="utf-8"))
+
+        self.assertFalse(descriptor["fixture_only"])
+        self.assertEqual(descriptor["model_format"], "urdf")
+        self.assertEqual(descriptor["joint_count"], 1)
+        self.assertEqual(descriptor["root_name"], "pelvis")
+        self.assertEqual(descriptor["validation"]["missing_assets"], [])
+
+    def test_register_g1_model_rejects_missing_mesh(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            model = root / "g1_fixture.urdf"
+            model.write_text(
+                """<robot name="unitree_g1_fixture">
+  <link name="pelvis">
+    <visual><geometry><mesh filename="missing/body.stl"/></geometry></visual>
+  </link>
+</robot>
+""",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "missing mesh assets"):
+                register_g1_model(root / "out", model)
+
+    def test_build_g1_visual_track_from_motion_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            result = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+            track = json.loads(result.track_manifest_path.read_text(encoding="utf-8"))
+            report = json.loads(result.comparison_report_path.read_text(encoding="utf-8"))
+            data = json.loads(result.track_data_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(track["track_id"], "g1")
+        self.assertEqual(track["robot"], "unitree_g1")
+        self.assertFalse(track["scoring_allowed"])
+        self.assertEqual(track["derived_from"], "smplx")
+        self.assertEqual(track["frame_count"], 10)
+        self.assertEqual(len(data["frames"]), 10)
+        self.assertEqual(report["canonical_track"], "smplx")
+        self.assertFalse(report["g1_scoring_allowed"])
+        self.assertTrue(report["frame_count_match"])
 
 
 if __name__ == "__main__":

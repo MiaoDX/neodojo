@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .demo_html import write_demo
+from .g1_visual import build_g1_visual_track, register_g1_model, write_fixture_g1_model_descriptor
 from .motion_contract import write_fixture_motion_contract
 
 
@@ -60,6 +61,68 @@ def build_parser() -> argparse.ArgumentParser:
         help="number of synthetic fixture frames to generate",
     )
 
+    robot_model = subparsers.add_parser(
+        "robot-model",
+        help="register local robot model assets for visual tracks",
+    )
+    robot_subparsers = robot_model.add_subparsers(dest="robot_command", required=True)
+    robot_register = robot_subparsers.add_parser(
+        "register",
+        help="write a Unitree G1 model descriptor",
+    )
+    robot_register.add_argument("--robot", choices=["unitree_g1"], default="unitree_g1")
+    robot_register.add_argument("--model", type=Path, help="local URDF or MJCF/XML model path")
+    robot_register.add_argument(
+        "--mesh-root",
+        type=Path,
+        action="append",
+        default=[],
+        help="local directory for mesh references; may be repeated",
+    )
+    robot_register.add_argument(
+        "--fixture",
+        action="store_true",
+        help="write a G1-like fixture descriptor instead of registering real assets",
+    )
+    robot_register.add_argument("--source-url", help="upstream model source URL")
+    robot_register.add_argument("--source-revision", help="upstream commit, tag, or version")
+    robot_register.add_argument("--license", dest="license_name", help="upstream asset license")
+    robot_register.add_argument("--variant", help="model variant notes")
+    robot_register.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/g1-visual"),
+        help="output directory for the G1 model descriptor",
+    )
+
+    tracks = subparsers.add_parser(
+        "tracks",
+        help="build derived visual track manifests",
+    )
+    tracks_subparsers = tracks.add_subparsers(dest="tracks_command", required=True)
+    tracks_build = tracks_subparsers.add_parser(
+        "build",
+        help="build a fixture-derived Unitree G1 visual track from a motion record",
+    )
+    tracks_build.add_argument(
+        "--motion-record",
+        type=Path,
+        required=True,
+        help="motion-record root directory or manifest path",
+    )
+    tracks_build.add_argument("--robot", choices=["unitree_g1"], default="unitree_g1")
+    tracks_build.add_argument(
+        "--model-descriptor",
+        type=Path,
+        help="optional Unitree G1 model descriptor manifest",
+    )
+    tracks_build.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/g1-visual"),
+        help="output directory for the G1 visual-track manifest and report",
+    )
+
     return parser
 
 
@@ -80,6 +143,34 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = write_fixture_motion_contract(args.out, frame_count=args.frames)
             print(f"wrote {result.motion_record_manifest_path}")
             print(f"wrote {result.smplx_track_manifest_path}")
+            return 0
+
+        if args.command == "robot-model" and args.robot_command == "register":
+            if args.fixture:
+                result = write_fixture_g1_model_descriptor(args.out)
+            else:
+                if args.model is None:
+                    parser.error("--model is required unless --fixture is used")
+                result = register_g1_model(
+                    args.out,
+                    args.model,
+                    mesh_roots=args.mesh_root,
+                    source_url=args.source_url,
+                    source_revision=args.source_revision,
+                    license_name=args.license_name,
+                    variant=args.variant,
+                )
+            print(f"wrote {result.descriptor_path}")
+            return 0
+
+        if args.command == "tracks" and args.tracks_command == "build":
+            result = build_g1_visual_track(
+                args.motion_record,
+                args.out,
+                model_descriptor_path=args.model_descriptor,
+            )
+            print(f"wrote {result.track_manifest_path}")
+            print(f"wrote {result.comparison_report_path}")
             return 0
     except ValueError as exc:
         parser.error(str(exc))

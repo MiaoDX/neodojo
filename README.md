@@ -166,12 +166,18 @@ What can be run now:
 ```bash
 make test
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
+PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
+PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 make demo-html
 ```
 
 `neodojo motion-record create` writes fixture-backed SMPL-X motion-record and
 teaching-track manifests. These are plumbing artifacts only, not real GVHMR
 outputs or qigong teaching evidence.
+
+`neodojo robot-model register` and `neodojo tracks build` can write fixture G1
+model and visual-track manifests. These preserve the SMPL-X/G1 responsibility
+split but do not yet load a real Unitree G1 mesh or run GMR retargeting.
 
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local
@@ -187,6 +193,7 @@ In progress:
       playback, trajectory overlays, timeline controls, and one SMPL-X-based
       geometry check
 - [x] Local fixture SMPL-X motion-record and teaching-track manifests
+- [x] Local fixture G1 model and visual-track manifests with scoring separation
 - [ ] roboharness-style multi-camera offscreen capture integration
 - [ ] SMPL-X + Unitree G1 dual-track synchronized Viser UI
 - [ ] Automatic key-frame detection + geometry-constrained verbal

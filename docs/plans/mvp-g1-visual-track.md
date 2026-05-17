@@ -1,6 +1,6 @@
 # MVP G1 Visual Track Plan
 
-Status: QUEUED AFTER LOCAL MOTION CONTRACT
+Status: IMPLEMENTED
 
 ## Goal
 

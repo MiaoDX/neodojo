@@ -2,11 +2,12 @@
 
 neodojo is in bootstrap state with one fixture-only local demo.
 
-There is now a minimal checked-in Python package, a `make test` command, a
-fixture-backed `neodojo motion-record create` command, and a `make demo-html`
-command that writes a self-contained synthetic web demo. There is still no
-checked-in GVHMR/GMR/simulator runtime pipeline, install workflow, lint command,
-build command, CI gate, real generated motion artifact, or UI server.
+There is now a minimal checked-in Python package, a `make test` command,
+fixture-backed `motion-record`, `robot-model`, and `tracks` commands, and a
+`make demo-html` command that writes a self-contained synthetic web demo. There
+is still no checked-in GVHMR/GMR/simulator runtime pipeline, install workflow,
+lint command, build command, CI gate, real generated motion artifact, or UI
+server.
 
 ## Current Truth
 
@@ -27,7 +28,8 @@ build command, CI gate, real generated motion artifact, or UI server.
 - Pre-GSD implementation phase split in
   `docs/plans/mvp-implementation-phases.md`.
 - Immediate local-first smoke path: fixture motion -> motion record -> SMPL-X
-  teaching-track manifest -> local inspection -> one geometry check.
+  teaching-track manifest -> fixture G1 visual-track manifest -> local
+  inspection -> one geometry check.
 - Multi-camera offscreen rendering approach, likely reusing roboharness patterns.
 - Synchronized SMPL-X and Unitree G1 playback in Viser.
 - Key-frame detection and geometry-constrained verbal feedback for terms such as
@@ -37,6 +39,8 @@ build command, CI gate, real generated motion artifact, or UI server.
   retargeting.
 - Fixture-backed SMPL-X motion-record and teaching-track manifests, proving the
   local contract shape that later GVHMR/GMR imports should consume.
+- Fixture-backed Unitree G1 model descriptor, derived visual-track manifest, and
+  comparison report with `g1_scoring_allowed: false`.
 
 ## Blockers And Constraints
 
@@ -60,25 +64,29 @@ build command, CI gate, real generated motion artifact, or UI server.
 ```bash
 make test
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
+PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
+PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 make demo-html
 ```
 
 `make test` runs the focused Python unit tests for the fixture demo generator
 and local motion contract. `neodojo motion-record create` writes fixture-backed
 SMPL-X motion-record and teaching-track manifests under the selected ignored
-output directory. `make demo-html` writes `outputs/html-demo/index.html`,
+output directory. `neodojo robot-model register` and `neodojo tracks build`
+write fixture G1 model/visual-track manifests and a comparison report that keeps
+G1 non-scoring. `make demo-html` writes `outputs/html-demo/index.html`,
 `outputs/html-demo/manifest.json`, and the local motion/track manifests it
 consumes. These artifacts use synthetic fixture motion only; they validate UI
-plumbing, trajectory drawing, timeline sync, the local SMPL-X scoring boundary,
-and one SMPL-X-based geometry check, not qigong correctness.
+plumbing, trajectory drawing, timeline sync, the local SMPL-X/G1 scoring
+boundary, and one SMPL-X-based geometry check, not qigong correctness.
 
 ## Next Safe Task
 
 Continue the local-first plan from `docs/plans/mvp-implementation-phases.md`:
-implement `docs/plans/mvp-g1-visual-track.md` next by adding the Unitree G1
-visual-track boundary, model/asset provenance manifest, and validation that G1
-cannot become the scoring source. Defer real GVHMR conversion to the later GPU
-gate.
+implement `docs/plans/mvp-teaching-playback-demo.md` next by making playback
+consume the SMPL-X and G1 manifests together and producing screenshot/frame
+evidence for synchronized multi-view playback. Defer real GVHMR conversion to
+the later GPU gate.
 
 ## Background Evidence
 

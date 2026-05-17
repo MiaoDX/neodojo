@@ -134,12 +134,18 @@ demo 生成器，但还没有提交到仓库的 GVHMR/GMR/仿真器运行时 pip
 ```bash
 make test
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
+PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
+PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 make demo-html
 ```
 
 `neodojo motion-record create` 会写出 fixture-backed SMPL-X motion-record 和
 teaching-track manifests。这些只是 plumbing artifact，不是真实 GVHMR 输出，也不
 是气功教学证据。
+
+`neodojo robot-model register` 和 `neodojo tracks build` 可以写出 fixture G1
+model 和 visual-track manifests。它们保留 SMPL-X/G1 职责边界，但还没有加载真实
+Unitree G1 mesh，也没有运行 GMR retargeting。
 
 `make demo-html` 会写出 `outputs/html-demo/index.html`，这是一个由本地
 motion/track manifest contract 支撑的自包含合成 fixture demo，用来验证目标教学
@@ -152,6 +158,7 @@ G1 retargeting 已经完成。
 - [x] fixture-only web/HTML 教学 demo：同步 SMPL-X/G1 风格播放、轨迹叠加、
       时间轴控制，以及一个基于 SMPL-X 的几何检查
 - [x] 本地 fixture SMPL-X motion-record 和 teaching-track manifests
+- [x] 本地 fixture G1 model 和 visual-track manifests，并保持 scoring separation
 - [ ] roboharness 风格的多视角离屏录制集成
 - [ ] SMPL-X 与 Unitree G1 双轨同屏 Viser UI
 - [ ] 关键定式自动检测 + 几何约束式术语反馈
