@@ -105,7 +105,7 @@ UI server.
   GitHub Pages from `main` when Pages is enabled and the repository variable
   `NEODOJO_DEPLOY_PAGES=true` is set.
 - GitHub Actions run
-  `https://github.com/MiaoDX/neodojo/actions/runs/25998459964` verified the
+  `https://github.com/MiaoDX/neodojo/actions/runs/25998662280` verified the
   default CI lane on `main`, uploaded the `neodojo-public-demo` artifact, and
   produced a CI-generated `index.html` that passes `neodojo demo smoke`.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
