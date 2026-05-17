@@ -140,7 +140,8 @@ trimmed clip plus reference frames under `outputs/real-conversion-source/`.
 GPU handoff packaging; set `REAL_DRY_RUN=0` to actually trim/extract media when
 ffmpeg is installed. `make real-handoff-smoke` exercises the same default
 dry-run handoff path with an ignored placeholder `.mp4` and runs inside
-`make verify`.
+`make verify`. CI uploads the resulting metadata-only handoff bundle as
+`neodojo-real-handoff-smoke` without uploading the placeholder source media.
 Package the materialized source metadata for the external GPU operator:
 
 ```bash
@@ -225,6 +226,8 @@ variables, when an external GMR/G1 visual artifact is available.
 - [x] Include a dependency-light `make real-handoff-smoke` target in
   `make verify` and the GitHub Actions workflow so CI exercises the handoff
   command surface without real media.
+- [x] Upload the CI real-handoff smoke metadata bundle without including the
+  placeholder source media.
 - [x] Add a GPU-side exporter helper to the handoff bundle for turning
   `hmr4d_results.pt` plus licensed SMPL-X assets into
   `neodojo.gvhmr_smplx_joints.v1`.

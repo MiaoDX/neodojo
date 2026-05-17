@@ -331,10 +331,10 @@ bundle with that browser evidence.
 validates an existing
 `outputs/public-demo` artifact set. The GitHub Actions workflow at
 `.github/workflows/public-demo.yml` runs the fixture lane with browser capture,
-also runs `make real-handoff-smoke`, uploads the standalone public-demo,
-browser-capture, and capture-bundle artifacts, and publishes the fixture-only
-public demo to GitHub Pages when `NEODOJO_DEPLOY_PAGES=true` is set as a
-repository variable.
+also runs `make real-handoff-smoke`, uploads the metadata-only real-handoff
+smoke artifact plus the standalone public-demo, browser-capture, and
+capture-bundle artifacts, and publishes the fixture-only public demo to GitHub
+Pages when `NEODOJO_DEPLOY_PAGES=true` is set as a repository variable.
 `make lint` is currently a syntax/import bytecode compile check; `make check`
 validates MVP plan links and minimum plan scaffolding; `make build` writes a
 wheel under ignored `outputs/dist/`.
@@ -435,6 +435,7 @@ In progress:
       in the capture bundle when local simulator assets are available
 - [x] One-command local `make demo-public` flow and GitHub Actions artifact/Page
       workflow for the fixture public demo
+- [x] Metadata-only CI artifact for the dry-run real-handoff smoke bundle
 - [x] Minimal `make lint` and `make build` command surface
 - [x] Project-owned `make check` quality gate for MVP plan links/scaffolding
 - [x] One-command local `make verify` flow for lint, quality checks, tests,

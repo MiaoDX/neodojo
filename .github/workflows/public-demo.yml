@@ -39,6 +39,19 @@ jobs:
         run: make build
       - name: Real conversion handoff smoke
         run: make real-handoff-smoke
+      - name: Upload real handoff smoke artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neodojo-real-handoff-smoke
+          path: |
+            outputs/real-handoff-smoke/prep/real-conversion-prep.json
+            outputs/real-handoff-smoke/source-materialized/source-materialization.json
+            outputs/real-handoff-smoke/gpu-handoff/manifest.json
+            outputs/real-handoff-smoke/gpu-handoff/README.md
+            outputs/real-handoff-smoke/gpu-handoff/source-materialization.json
+            outputs/real-handoff-smoke/gpu-handoff/gvhmr-smplx-joints.template.json
+            outputs/real-handoff-smoke/gpu-handoff/export_neodojo_gvhmr.py
+          if-no-files-found: error
       - name: Install browser runtime
         run: python -m playwright install --with-deps chromium
       - name: Build public demo with browser capture

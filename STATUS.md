@@ -13,11 +13,12 @@ optional `render mujoco-g1`,
 self-contained synthetic web demo, minimal `make lint`, `make check`, and
 `make build` commands, `make demo-public` / optional
 `make demo-public-browser` commands plus `make verify` and GitHub Actions
-workflow for the fixture public-demo artifact, browser capture, and generated
-capture bundle, `make real-handoff` and `make gpu-handoff` for external GVHMR
-run metadata, `make gvhmr-inspect` for returned GVHMR result inspection, and
-`make demo-real` for a validated external GVHMR JSON once a GPU artifact
-exists, with a verified live fixture-only GitHub Pages demo at
+workflow for the fixture public-demo artifact, browser capture, generated
+capture bundle, and metadata-only real-handoff smoke artifact,
+`make real-handoff` and `make gpu-handoff` for external GVHMR run metadata,
+`make gvhmr-inspect` for returned GVHMR result inspection, and `make demo-real`
+for a validated external GVHMR JSON once a GPU artifact exists, with a verified
+live fixture-only GitHub Pages demo at
 `https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, `real-conversion package-gpu-handoff` can package the handoff
@@ -171,10 +172,10 @@ or hosted/live-client Viser capture.
 - `.github/workflows/public-demo.yml` runs tests, builds a wheel, runs the
   dry-run real-conversion handoff smoke, installs the optional Playwright
   browser runtime, builds the fixture public demo with browser capture, uploads
-  the standalone public-demo artifact, browser-capture artifact, and
-  capture-bundle artifact containing the capture manifest and referenced
-  generated evidence, and publishes the static public-demo output to GitHub
-  Pages from `main` when the repository variable
+  the metadata-only real-handoff smoke artifact, standalone public-demo artifact,
+  browser-capture artifact, and capture-bundle artifact containing the capture
+  manifest and referenced generated evidence, and publishes the static
+  public-demo output to GitHub Pages from `main` when the repository variable
   `NEODOJO_DEPLOY_PAGES=true` is set.
 - GitHub Actions run
   `https://github.com/MiaoDX/neodojo/actions/runs/25999641059` verified the
@@ -220,7 +221,9 @@ or hosted/live-client Viser capture.
   and `outputs/real-handoff-smoke/gpu-handoff/manifest.json` from an ignored
   local `.mp4` placeholder. The smoke used default dry-run materialization, so
   the GPU handoff correctly reports `needs_materialization` while still writing
-  the copyable exporter bundle metadata.
+  the copyable exporter bundle metadata. CI uploads the metadata-only handoff
+  smoke files as `neodojo-real-handoff-smoke` without including the placeholder
+  `.mp4`.
 - GVHMR GPU handoff package generated under `outputs/gvhmr-gpu-handoff-smoke/`
   in local smoke, writing `neodojo.gvhmr_gpu_handoff.v1` manifest metadata,
   README instructions, a copyable `source-materialization.json`,

@@ -286,9 +286,10 @@ capture bundle。
 `make smoke-public` 会验证现有的
 `outputs/public-demo` artifact set。
 `.github/workflows/public-demo.yml` 里的 GitHub Actions workflow 会运行同一条 fixture
-lane、browser capture 和 `make real-handoff-smoke`，上传 public-demo、
-browser-capture 与 capture-bundle artifacts，并在 repository variable
-`NEODOJO_DEPLOY_PAGES=true` 时把 fixture-only public demo 发布到 GitHub Pages。
+lane、browser capture 和 `make real-handoff-smoke`，上传 metadata-only
+real-handoff smoke artifact，以及 public-demo、browser-capture 与
+capture-bundle artifacts，并在 repository variable `NEODOJO_DEPLOY_PAGES=true`
+时把 fixture-only public demo 发布到 GitHub Pages。
 `make lint` 目前是 syntax/import bytecode compile check；`make check` 会验证
 MVP plan links 和最低限度的 plan scaffolding；`make build` 会把 wheel 写到被忽略的
 `outputs/dist/`。
@@ -373,6 +374,7 @@ capture 或真实 Unitree G1 retargeting 已经完成。
       可用时可以接入 capture bundle
 - [x] 本地一条命令 `make demo-public`，以及用于 fixture public demo 的 GitHub
       Actions artifact/Page workflow
+- [x] dry-run real-handoff smoke bundle 的 metadata-only CI artifact
 - [x] 最小 `make lint` 与 `make build` 命令面
 - [x] project-owned `make check` quality gate，用于 MVP plan links/scaffolding
 - [x] 本地一条命令 `make verify` 跑完 lint、quality checks、tests、build、
