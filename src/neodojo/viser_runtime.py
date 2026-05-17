@@ -180,6 +180,122 @@ def _write_viser_preview_screenshots(out_dir: Path, scene: dict[str, Any]) -> di
     return paths
 
 
+def _feedback_drilldown(scene: dict[str, Any]) -> list[dict[str, Any]]:
+    annotations = scene.get("annotations") or {}
+    keyframes = annotations.get("keyframes") if isinstance(annotations, dict) else []
+    if not isinstance(keyframes, list):
+        return []
+    items: list[dict[str, Any]] = []
+    for index, keyframe in enumerate(keyframes):
+        if not isinstance(keyframe, dict):
+            continue
+        name = keyframe.get("name")
+        if not isinstance(name, str):
+            continue
+        terms = keyframe.get("terms") if isinstance(keyframe.get("terms"), list) else []
+        term_results = keyframe.get("term_results") if isinstance(keyframe.get("term_results"), list) else []
+        constraints = keyframe.get("constraints") if isinstance(keyframe.get("constraints"), list) else []
+        items.append(
+            {
+                "id": f"feedback_{index}",
+                "label": name,
+                "frame": int(keyframe.get("frame", 0)),
+                "primary": bool(keyframe.get("primary")),
+                "passed": bool(keyframe.get("passed")),
+                "selected_joints": [
+                    str(joint)
+                    for joint in keyframe.get("selected_joints", [])
+                    if isinstance(joint, str)
+                ],
+                "terms": [str(term) for term in terms if isinstance(term, str)],
+                "term_results": [result for result in term_results if isinstance(result, dict)],
+                "constraints": [result for result in constraints if isinstance(result, dict)],
+            }
+        )
+    return items
+
+
+def _production_teaching_ui(scene: dict[str, Any], frame_count: int) -> dict[str, Any]:
+    feedback_items = _feedback_drilldown(scene)
+    has_surface_proxy = bool(scene.get("surface_proxy"))
+    return {
+        "profile": "neodojo.viser_teaching_ui.v1",
+        "status": "production_review_loop_contract",
+        "review_loop": [
+            {
+                "id": "inspect_motion",
+                "label": "Inspect synchronized SMPL-X and Unitree G1 motion",
+                "required_controls": ["frame", "step_previous", "step_next", "camera_presets"],
+            },
+            {
+                "id": "jump_to_feedback",
+                "label": "Jump to a feedback anchor and inspect SMPL-X evidence",
+                "required_controls": ["feedback_anchor_buttons", "feedback_drilldown"],
+            },
+            {
+                "id": "compare_layers",
+                "label": "Compare teacher, robot visual track, trajectories, and surface layers",
+                "required_controls": ["layer_visibility"],
+            },
+        ],
+        "control_groups": [
+            {
+                "id": "timeline",
+                "label": "Timeline",
+                "controls": ["frame", "step_previous", "step_next", "playback_speed", "reset_key_frame"],
+            },
+            {
+                "id": "camera",
+                "label": "Camera",
+                "controls": [f"camera_{name}" for name in _camera_presets()],
+            },
+            {
+                "id": "layers",
+                "label": "Layers",
+                "controls": [
+                    "show_smplx_teacher",
+                    "show_unitree_g1_visual",
+                    "show_trajectories",
+                    *(["show_smplx_surface_proxy"] if has_surface_proxy else []),
+                ],
+            },
+            {
+                "id": "feedback",
+                "label": "Feedback",
+                "controls": [item["id"] for item in feedback_items],
+            },
+        ],
+        "timeline": {
+            "frame_count": frame_count,
+            "step": 1,
+            "speed_options": [0.25, 0.5, 1.0, 1.5, 2.0],
+            "initial_frame": int(scene.get("key_frame", 0)),
+        },
+        "layer_visibility": {
+            "show_smplx_teacher": True,
+            "show_unitree_g1_visual": True,
+            "show_trajectories": True,
+            "show_smplx_surface_proxy": has_surface_proxy,
+        },
+        "feedback_drilldown": feedback_items,
+        "scoring_policy": {
+            "scoring_source": "smplx",
+            "g1_scoring_allowed": False,
+            "surface_proxy_scoring_allowed": False,
+        },
+        "live_client_smoke": {
+            "optional": True,
+            "default_ci_required": False,
+            "required_labels": [
+                "SMPL-X teacher",
+                "Unitree G1 visual",
+                "Scoring source: SMPL-X",
+                "Routine feedback",
+            ],
+        },
+    }
+
+
 def build_viser_runtime_manifest(
     scene: dict[str, Any],
     *,
@@ -214,6 +330,31 @@ def build_viser_runtime_manifest(
                 {"id": f"camera_{name}", "kind": "camera_preset_button", "preset": name}
                 for name in _camera_presets()
             ],
+            {"id": "step_previous", "kind": "button", "step": -1},
+            {"id": "step_next", "kind": "button", "step": 1},
+            {
+                "id": "playback_speed",
+                "kind": "speed_slider",
+                "min": 0.25,
+                "max": 2.0,
+                "step": 0.25,
+                "default": 1.0,
+            },
+            {"id": "show_smplx_teacher", "kind": "visibility_toggle", "target": "smplx", "default": True},
+            {"id": "show_unitree_g1_visual", "kind": "visibility_toggle", "target": "g1", "default": True},
+            {"id": "show_trajectories", "kind": "visibility_toggle", "target": "trajectories", "default": True},
+            *(
+                [
+                    {
+                        "id": "show_smplx_surface_proxy",
+                        "kind": "visibility_toggle",
+                        "target": "smplx_surface_proxy",
+                        "default": True,
+                    }
+                ]
+                if scene.get("surface_proxy")
+                else []
+            ),
             *[
                 {
                     "id": f"anchor_{index}",
@@ -234,6 +375,7 @@ def build_viser_runtime_manifest(
             "feedback_anchor_labels": scene.get("feedback_anchor_labels", []),
             "public_labels": scene.get("public_labels", []),
         },
+        "teaching_ui": _production_teaching_ui(scene, frame_count),
         "visual_smoke": {
             "kind": "generated_svg_multi_camera_preview",
             "views": ["front", "side", "top"],
@@ -387,12 +529,23 @@ def _apply_camera_preset_to_clients(server: Any, preset: dict[str, Any], event: 
         _apply_camera_preset(client, preset)
 
 
-def _render_viser_frame(server: Any, np: Any, scene: dict[str, Any], frame_index: int, handles: dict[str, Any]) -> None:
+def _render_viser_frame(
+    server: Any,
+    np: Any,
+    scene: dict[str, Any],
+    frame_index: int,
+    handles: dict[str, Any],
+    *,
+    visible_tracks: dict[str, bool] | None = None,
+) -> None:
+    visible_tracks = visible_tracks or {"smplx": True, "g1": True}
     _clear_handles(handles)
     for track_id, x_offset, color, label in [
         ("smplx", -0.55, (20, 124, 114), "SMPL-X teacher"),
         ("g1", 0.55, (184, 78, 50), "Unitree G1 visual"),
     ]:
+        if not visible_tracks.get(track_id, True):
+            continue
         frame = scene["tracks"][track_id]["frames"][frame_index]
         handles[f"{track_id}_joints"] = server.scene.add_point_cloud(
             f"/live/{track_id}/joints",
@@ -444,10 +597,18 @@ def serve_viser_runtime(
 
     frame_count = int((scene.get("timing") or {}).get("frame_count") or len(scene["tracks"]["smplx"]["frames"]))
     initial_frame = min(max(0, int(scene.get("key_frame", 0))), max(0, frame_count - 1))
-    _render_viser_frame(server, np, scene, initial_frame, handles)
+    visible_tracks = {"smplx": True, "g1": True}
+    _render_viser_frame(server, np, scene, initial_frame, handles, visible_tracks=visible_tracks)
 
     server.gui.add_markdown(
         "**neodojo fixture runtime**\n\nSMPL-X is the scoring source. Unitree G1 is visual-only."
+    )
+    teaching_ui = _production_teaching_ui(scene, frame_count)
+    server.gui.add_markdown(
+        "### Review loop\n"
+        "1. Inspect the synchronized SMPL-X teacher and Unitree G1 visual tracks.\n"
+        "2. Jump to feedback anchors and inspect the SMPL-X evidence.\n"
+        "3. Toggle layers while preserving SMPL-X as the scoring source."
     )
     frame_slider = server.gui.add_slider(
         "Frame",
@@ -456,7 +617,12 @@ def serve_viser_runtime(
         step=1,
         initial_value=initial_frame,
     )
+    previous_button = server.gui.add_button("Step previous")
+    next_button = server.gui.add_button("Step next")
+    server.gui.add_slider("Playback speed", min=0.25, max=2.0, step=0.25, initial_value=1.0)
     reset_button = server.gui.add_button("Reset to key frame")
+    show_smplx = server.gui.add_checkbox("Show SMPL-X teacher", initial_value=True)
+    show_g1 = server.gui.add_checkbox("Show Unitree G1 visual", initial_value=True)
     camera_buttons = {
         name: server.gui.add_button(f"Camera: {name.title()}")
         for name in _camera_presets()
@@ -471,15 +637,55 @@ def serve_viser_runtime(
                 min(max(0, int(keyframe.get("frame", 0))), max(0, frame_count - 1)),
             )
         )
+    feedback_lines = []
+    for item in teaching_ui["feedback_drilldown"]:
+        state = "pass" if item["passed"] else "review"
+        terms = ", ".join(item["terms"])
+        feedback_lines.append(f"- {item['label']} - frame {item['frame'] + 1} - {state}: {terms}")
+    if feedback_lines:
+        server.gui.add_markdown("### Routine feedback\n" + "\n".join(feedback_lines))
+
+    def _update_visible_tracks() -> None:
+        visible_tracks["smplx"] = bool(show_smplx.value)
+        visible_tracks["g1"] = bool(show_g1.value)
+
+    def _render_current_frame() -> None:
+        _update_visible_tracks()
+        _render_viser_frame(
+            server,
+            np,
+            scene,
+            int(frame_slider.value),
+            handles,
+            visible_tracks=visible_tracks,
+        )
 
     @frame_slider.on_update
     def _(_: Any) -> None:
-        _render_viser_frame(server, np, scene, int(frame_slider.value), handles)
+        _render_current_frame()
+
+    @show_smplx.on_update
+    def _(_: Any) -> None:
+        _render_current_frame()
+
+    @show_g1.on_update
+    def _(_: Any) -> None:
+        _render_current_frame()
+
+    @previous_button.on_click
+    def _(_: Any) -> None:
+        frame_slider.value = max(0, int(frame_slider.value) - 1)
+        _render_current_frame()
+
+    @next_button.on_click
+    def _(_: Any) -> None:
+        frame_slider.value = min(max(0, frame_count - 1), int(frame_slider.value) + 1)
+        _render_current_frame()
 
     @reset_button.on_click
     def _(_: Any) -> None:
         frame_slider.value = initial_frame
-        _render_viser_frame(server, np, scene, initial_frame, handles)
+        _render_current_frame()
 
     for name, button in camera_buttons.items():
         preset = _camera_presets()[name]
@@ -493,7 +699,7 @@ def serve_viser_runtime(
         @button.on_click
         def _(_: Any, target_frame: int = target_frame) -> None:
             frame_slider.value = target_frame
-            _render_viser_frame(server, np, scene, target_frame, handles)
+            _render_current_frame()
 
     url = f"http://{host}:{port}"
     if stop_after_start:

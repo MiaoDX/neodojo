@@ -1055,6 +1055,20 @@ class DemoHtmlTests(unittest.TestCase):
         control_kinds = {control["kind"] for control in manifest["controls"]}
         self.assertIn("camera_preset_button", control_kinds)
         self.assertIn("annotation_keyframe_button", control_kinds)
+        self.assertIn("visibility_toggle", control_kinds)
+        self.assertIn("button", control_kinds)
+        self.assertEqual(manifest["teaching_ui"]["profile"], "neodojo.viser_teaching_ui.v1")
+        self.assertEqual(manifest["teaching_ui"]["scoring_policy"]["scoring_source"], "smplx")
+        self.assertFalse(manifest["teaching_ui"]["scoring_policy"]["g1_scoring_allowed"])
+        self.assertEqual(
+            {group["id"] for group in manifest["teaching_ui"]["control_groups"]},
+            {"timeline", "camera", "layers", "feedback"},
+        )
+        self.assertIn("playback_speed", manifest["teaching_ui"]["control_groups"][0]["controls"])
+        self.assertIn(1.0, manifest["teaching_ui"]["timeline"]["speed_options"])
+        self.assertEqual(len(manifest["teaching_ui"]["feedback_drilldown"]), 3)
+        self.assertTrue(manifest["teaching_ui"]["live_client_smoke"]["optional"])
+        self.assertFalse(manifest["teaching_ui"]["live_client_smoke"]["default_ci_required"])
         self.assertIn("Viser front preview", front_screenshot)
         self.assertIn("G1 scoring allowed: false", front_screenshot)
 

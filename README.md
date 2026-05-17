@@ -163,13 +163,13 @@ boundary, native GMR pickle normalization, a dependency-light SMPL-X surface
 proxy, a teaching-playback HTML command, a static HTML demo generator, local
 SVG/HTML G1 render evidence from a model descriptor plus visual track, optional
 MuJoCo offscreen mesh render evidence, optional true Rerun SDK `.rrd` export,
-an optional first Viser local runtime, a generated roboharness-style capture
-bundle manifest, optional browser-rendered public-demo screenshot capture, and
-minimal lint/build/quality-check
+an optional Viser local runtime with a production teaching review-loop
+contract, a generated roboharness-style capture bundle manifest, optional
+browser-rendered public-demo screenshot capture, and minimal lint/build/quality-check
 commands. It can also write a dry-run or ffmpeg-backed local source-video
 handoff for a later GPU GVHMR run. There is still no checked-in GVHMR/GMR
 execution pipeline, simulator runtime pipeline, licensed SMPL-X mesh
-generation, production teaching UI, or end-to-end real generated motion
+generation, live-client Viser capture, or end-to-end real generated motion
 artifact.
 
 Fixture-only public demo: [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
@@ -283,10 +283,13 @@ writes a true Rerun SDK recording and marks
 Viser runtime manifest and generated front/side/top preview screenshots, then
 starts an optional local Viser server from the same scene/timeline contract. It
 requires installing the `viser` extra or the `viser` package unless
-`--write-contract-only` is used. The first runtime shows SMPL-X and G1 as
-synchronized 3D tracks with a frame slider, trajectory overlays, camera-preset
-metadata and buttons, annotation-anchor navigation, and explicit SMPL-X
-scoring/G1 visual labels; it is not the final teaching UI.
+`--write-contract-only` is used. The runtime shows SMPL-X and G1 as
+synchronized 3D tracks with a frame slider, frame-step controls,
+playback-speed metadata, trajectory overlays, camera-preset metadata and
+buttons, annotation-anchor navigation, layer visibility toggles, feedback
+drilldown, and explicit SMPL-X scoring/G1 visual labels. The manifest includes
+`neodojo.viser_teaching_ui.v1` review-loop metadata while live-client Viser
+browser capture remains follow-on work.
 
 `neodojo capture bundle` writes `outputs/capture/manifest.json`, a generated
 roboharness-style multi-camera evidence manifest. It validates the public-demo
@@ -334,7 +337,7 @@ and emits a validated import JSON copy when provenance matches.
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local
 motion/track manifest contract. It does not prove source-video conversion,
-qigong motion accuracy, simulator rendering, production Viser UX, or real
+qigong motion accuracy, simulator rendering, live-client Viser capture, or real
 Unitree G1 retargeting.
 
 In progress:
@@ -371,6 +374,8 @@ In progress:
 - [x] Optional first Viser local runtime with synchronized SMPL-X/G1 tracks,
       frame slider, camera/annotation controls, trajectory overlays, and
       scoring-source labels
+- [x] Production Viser teaching review-loop contract with frame stepping,
+      playback-speed metadata, layer visibility toggles, and feedback drilldown
 - [x] Generated Viser front/side/top preview screenshots in the one-command
       public-demo lane
 - [x] Generated roboharness-style multi-camera capture evidence bundle that
@@ -389,8 +394,6 @@ In progress:
 - [x] Local GVHMR source-validation report and validated JSON import handoff
 - [ ] real roboharness or simulator offscreen recording beyond the generated
       bundle and browser-rendered public-demo screenshot
-- [ ] production Viser teaching polish beyond the first optional local runtime,
-      camera/annotation controls, and generated preview screenshots
 
 The detailed implementation queue lives in [`docs/plans/`](docs/plans/) and
 can later be mirrored into GitHub issues.

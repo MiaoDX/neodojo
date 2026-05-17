@@ -1,6 +1,6 @@
 # MVP Viser Production Teaching UI Plan
 
-Status: FOLLOW-ON; NEED PRODUCT INTERACTION SCOPE AND OPTIONAL VISER DEPENDENCY
+Status: IMPLEMENTED FIRST PRODUCTION REVIEW-LOOP CONTRACT AND CONTROLS
 
 ## Goal
 
@@ -12,7 +12,7 @@ scene/timeline contract
   -> Viser local runtime
   -> teaching-focused camera/timeline controls
   -> feedback drilldown
-  -> browser/live-client smoke evidence
+  -> dependency-light preview evidence
 ```
 
 This plan should keep the public GitHub Pages demo as the lightweight
@@ -27,7 +27,8 @@ fixture/public artifact while making Viser the richer local teaching surface.
   routine feedback terms and key-frame anchors.
 - [mvp-roboharness-capture-boundary.md](mvp-roboharness-capture-boundary.md)
   provides browser/public-demo capture evidence; live Viser browser capture is
-  a follow-on extension.
+  a follow-on extension covered by
+  [mvp-roboharness-simulator-recorder.md](mvp-roboharness-simulator-recorder.md).
 
 ## Inputs
 
@@ -44,44 +45,49 @@ fixture/public artifact while making Viser the richer local teaching surface.
   runtime manifest.
 - Clear controls for frame stepping, key-frame navigation, camera presets,
   trajectory visibility, surface/mesh visibility, and feedback detail.
-- Live-client smoke evidence when optional browser automation is available.
+- Dependency-light contract/preview smoke evidence, with live-client browser
+  capture deferred to the recorder plan.
 - README/STATUS updates that distinguish local Viser teaching UI from the
   static public demo.
 
 ## Execution Tasks
 
 1. Scope the teaching workflow.
-   - [ ] Define the first production review loop: inspect, jump to feedback
+   - [x] Define the first production review loop: inspect, jump to feedback
      anchor, compare SMPL-X/G1 views, and read scoring-source evidence.
-   - [ ] Decide which controls are required for the first repeated-use local
+   - [x] Decide which controls are required for the first repeated-use local
      session and which belong in later UX polish.
-   - [ ] Preserve fixture-only and real-artifact labels in the UI.
+   - [x] Preserve fixture-only and real-artifact labels in the UI.
 
 2. Improve runtime contract.
-   - [ ] Add production UI metadata for control grouping, feedback drilldown,
+   - [x] Add production UI metadata for control grouping, feedback drilldown,
      visibility toggles, and camera presets.
-   - [ ] Keep the current scene/timeline contract backward compatible.
-   - [ ] Preserve `scoring_source: smplx` and `g1_scoring_allowed: false`.
+   - [x] Keep the current scene/timeline contract backward compatible.
+   - [x] Preserve `scoring_source: smplx` and `g1_scoring_allowed: false`.
 
 3. Implement Viser UI polish.
-   - [ ] Add ergonomic controls for frame stepping, speed, key-frame jump, and
+   - [x] Add ergonomic controls for frame stepping, speed, key-frame jump, and
      layer toggles.
-   - [ ] Surface routine feedback terms and pass/fail evidence without turning
+   - [x] Surface routine feedback terms and pass/fail evidence without turning
      G1 into a scoring source.
-   - [ ] Keep `--write-contract-only` useful for dependency-light CI evidence.
+   - [x] Keep `--write-contract-only` useful for dependency-light CI evidence.
 
 4. Add verification.
-   - [ ] Extend optional Viser smoke startup tests.
-   - [ ] Add live-client browser capture only when optional Viser and browser
-     dependencies are installed.
-   - [ ] Keep default CI green without requiring Viser.
+   - [x] Extend dependency-light Viser runtime contract tests.
+   - [x] Preserve the optional Viser smoke startup test for environments where
+     `viser` is installed.
+   - [x] Keep default CI green without requiring Viser.
+   - [x] Defer live-client browser capture to
+     [mvp-roboharness-simulator-recorder.md](mvp-roboharness-simulator-recorder.md).
 
 ## Acceptance Evidence
 
-- A local Viser session supports the scoped teaching review loop without
-  relying on the static public demo.
+- A local Viser session can expose the scoped teaching review loop without
+  relying on the static public demo when the optional `viser` dependency is
+  installed.
 - Controls expose camera, timeline, layer visibility, and feedback navigation in
-  a way that is visible in the runtime contract and optional live smoke.
+  a way that is visible in the runtime contract and dependency-light preview
+  smoke.
 - SMPL-X remains the only scoring source throughout the UI.
 - Default `make demo-public` and `make verify` remain dependency-light.
 - Docs clearly separate production local Viser UI from fixture-only public
@@ -97,7 +103,8 @@ fixture/public artifact while making Viser the richer local teaching surface.
 
 ## Stop Condition
 
-Stop when one local Viser teaching session can complete the scoped review loop
-with visible controls and optional live-client evidence, or when missing
-product scope, Viser dependency behavior, or browser automation limitations are
-the remaining blockers.
+Stop condition reached for the first production review-loop slice: the runtime
+manifest records `neodojo.viser_teaching_ui.v1` metadata, the optional Viser
+server exposes frame stepping, camera, layer, and feedback controls, and the
+default verification path stays dependency-light. Live-client Viser browser
+capture remains part of the recorder follow-on plan.

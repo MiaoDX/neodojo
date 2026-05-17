@@ -20,7 +20,7 @@ GVHMR run, and `real-conversion validate-source` can validate a GVHMR JSON
 export against that handoff before import. There is
 still no checked-in GVHMR/GMR execution pipeline, simulator runtime pipeline,
 full licensed SMPL-X mesh generation, real generated motion artifact, or
-production UI server.
+hosted/live-client Viser capture.
 
 ## Current Truth
 
@@ -47,8 +47,8 @@ production UI server.
   current public-demo, Viser preview, G1 render artifacts, and optional
   browser-rendered public-demo screenshot; real roboharness/simulator recording
   remains follow-on.
-- Production Viser teaching UX and multi-camera/offscreen capture beyond the
-  first optional local runtime.
+- Production Viser teaching UI contract and review-loop controls beyond the
+  first optional local runtime; live-client browser capture remains follow-on.
 - Key-frame detection and geometry-constrained verbal feedback for terms such as
   "sink the shoulders" and "drop the elbows".
 - Fixture-only HTML teaching demo generated under `outputs/html-demo/`, proving
@@ -106,9 +106,10 @@ production UI server.
   when the optional `viser` extra is installed. It loads the shared
   scene/timeline contract, shows synchronized SMPL-X and G1 3D tracks,
   trajectory overlays, camera preset controls, annotation-anchor navigation, a
-  frame slider, and explicit scoring-source labels. The contract path also
-  writes generated front/side/top SVG preview screenshots for visual smoke
-  evidence without requiring the optional Viser package.
+  frame slider, frame-step controls, layer visibility toggles, feedback
+  drilldown, playback-speed metadata, and explicit scoring-source labels. The
+  contract path also writes generated front/side/top SVG preview screenshots
+  for visual smoke evidence without requiring the optional Viser package.
 - `make demo-public` regenerates the fixture motion, routine feedback
   annotations, SMPL-X surface proxy, G1 visual/render, teaching-playback,
   public-demo, Viser runtime preview, generated capture bundle, and smoke-check
@@ -293,9 +294,11 @@ under `outputs/viser-runtime/screenshots/`, then starts a local Viser server
 when the optional `viser` extra is installed. The first runtime consumes the
 same scene/timeline contract as the public-demo lane, converts the current y-up
 coordinates into Viser z-up coordinates, and displays synchronized SMPL-X/G1
-tracks, trajectory overlays, camera preset buttons, annotation-anchor buttons, a
-frame slider, and scoring-source labels. Use `--write-contract-only` to write
-the Viser runtime contract and preview
+tracks, trajectory overlays, camera preset buttons, annotation-anchor buttons,
+frame stepping, playback-speed metadata, layer visibility toggles, feedback
+drilldown, and scoring-source labels. The runtime manifest includes
+`neodojo.viser_teaching_ui.v1` review-loop metadata. Use
+`--write-contract-only` to write the Viser runtime contract and preview
 screenshots without importing Viser, or `--smoke-start` to start, populate, and
 stop the server for local verification.
 
@@ -329,11 +332,6 @@ when source id, trim, input path/checksum, and duration checks pass.
   `docs/plans/mvp-smplx-licensed-mesh-rendering.md`. The first capsule proxy,
   local-only asset descriptor, mesh-ready parameter preservation, and mesh
   input gate already exist.
-- Production Viser teaching polish beyond generated multi-camera preview
-  evidence and first camera/annotation controls:
-  `docs/plans/mvp-viser-production-teaching-ui.md`. The first optional local
-  Viser runtime, camera/annotation controls, and front/side/top preview
-  screenshots exist.
 - Real roboharness or simulator offscreen recording beyond the generated bundle
   and browser-rendered public-demo screenshot:
   `docs/plans/mvp-roboharness-simulator-recorder.md`. The first generated
@@ -345,7 +343,7 @@ when source id, trim, input path/checksum, and duration checks pass.
 The next default MVP capability remains
 `docs/plans/mvp-real-conversion-gate.md` for the later GPU artifact import
 path. The remaining non-GPU follow-on plans above are blocked on licensed
-assets, product-scope choices, or recorder target choices. Do not run GVHMR
+assets or recorder target choices. Do not run GVHMR
 full-video inference on this macOS CPU workspace; use a GPU-capable machine to
 export a GVHMR SMPL-X teaching-joints JSON artifact, then import it through
 `neodojo motion-record create --from-gvhmr-json`.
