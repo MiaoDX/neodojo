@@ -11,14 +11,16 @@ optional `render mujoco-g1`,
 `demo browser-smoke`, `capture recorder`, and `capture bundle` commands, a
 `make demo-html` command that writes a
 self-contained synthetic web demo, minimal `make lint`, `make check`, and
-`make build` commands, and `make demo-public` / optional
+`make build` commands, `make demo-public` / optional
 `make demo-public-browser` commands plus `make verify` and GitHub Actions
 workflow for the fixture public-demo artifact, browser capture, and generated
-capture bundle, with a verified live fixture-only GitHub Pages demo at
+capture bundle, and `make demo-real` for a validated external GVHMR JSON once a
+GPU artifact exists, with a verified live fixture-only GitHub Pages demo at
 `https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
-GVHMR run, and `real-conversion validate-source` can validate a GVHMR JSON
-export against that handoff before import. There is
+GVHMR run, `real-conversion validate-source` can validate a GVHMR JSON
+export against that handoff before import, and `real-conversion import-demo` can
+regenerate the local demo lane from that validated export. There is
 still no checked-in GVHMR/GMR execution pipeline, simulator runtime pipeline,
 built-in official SMPL-X body-model renderer, real generated motion artifact,
 or hosted/live-client Viser capture.
@@ -121,6 +123,14 @@ or hosted/live-client Viser capture.
   Playwright browser extra, writes `outputs/browser-capture/manifest.json` and
   `outputs/browser-capture/public-demo-browser.png`, and refreshes the capture
   bundle with that browser evidence.
+- `make demo-real SOURCE_MATERIALIZATION=... GVHMR_JSON=...` validates an
+  externally produced GVHMR SMPL-X teaching-joints JSON against the
+  source-materialization manifest, imports it into the motion-record contract,
+  and regenerates annotations, the SMPL-X surface proxy, G1 visual/render,
+  teaching playback, public-demo, Viser preview, and capture-bundle artifacts
+  under `outputs/real-demo/`. It derives a fixture G1 visual companion unless
+  an external G1 track and model descriptor are supplied with `G1_TRACK=...`
+  and `MODEL_DESCRIPTOR=...`. It does not run GVHMR locally.
 - `capture recorder` writes `outputs/recorder-capture/manifest.json`, a
   `neodojo.recorder_capture.v1` manifest that validates optional MuJoCo
   offscreen front/side/top render frames from `render mujoco-g1` as direct
@@ -210,6 +220,7 @@ make test
 make build
 make demo-public
 make demo-public-browser
+make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
@@ -235,6 +246,7 @@ PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-dem
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
+PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
 make demo-html
 ```
 
@@ -351,7 +363,12 @@ and reference-frame extraction commands without processing media. Without
 artifacts for the later GPU GVHMR input handoff. `neodojo real-conversion
 validate-source` compares the source-materialization manifest with GVHMR export
 provenance, writes a validation report, and emits a validated JSON import copy
-when source id, trim, input path/checksum, and duration checks pass.
+when source id, trim, input path/checksum, and duration checks pass. `neodojo
+real-conversion import-demo` wraps validation, motion import, annotations,
+surface proxy, G1 visual/render, teaching playback, public-demo, Viser preview,
+and capture-bundle generation for that external artifact under
+`outputs/real-demo/`. By default, the G1 visual companion remains fixture-derived
+until an external G1 track is supplied.
 
 ## Remaining Non-GPU Gaps
 
@@ -374,8 +391,8 @@ The current blocker is external to the local non-GPU pipeline: no local
 licensed/user-supplied source clip plus GPU-produced
 `neodojo.gvhmr_smplx_joints.v1` export is present in this workspace. Once that
 artifact exists, the remaining task is to validate it with
-`real-conversion validate-source`, import it into the motion-record contract,
-and regenerate the same public-demo lane with real-artifact inputs.
+`real-conversion import-demo`, then inspect the generated `outputs/real-demo/`
+artifacts.
 
 ## Background Evidence
 

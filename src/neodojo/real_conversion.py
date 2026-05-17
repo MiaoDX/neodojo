@@ -803,6 +803,12 @@ def write_real_conversion_prep(
                 "--from-gvhmr-json outputs/real-conversion-validation/gvhmr-smplx-joints.validated.json "
                 "--out outputs/real-motion-contract"
             ),
+            "import_demo": (
+                "PYTHONPATH=src python -m neodojo real-conversion import-demo "
+                "--source-materialization outputs/real-conversion-source/source-materialization.json "
+                f"--gvhmr-json {_as_posix(export_json_path)} "
+                "--out outputs/real-demo"
+            ),
             "validate_gvhmr_source": (
                 "PYTHONPATH=src python -m neodojo real-conversion validate-source "
                 "--source-materialization outputs/real-conversion-source/source-materialization.json "

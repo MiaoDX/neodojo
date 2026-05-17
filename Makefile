@@ -1,6 +1,17 @@
-.PHONY: all verify lint check test build demo-html demo-public demo-public-browser smoke-public
+.PHONY: all verify lint check test build demo-html demo-public demo-public-browser demo-real smoke-public
 
 PYTHON ?= python3
+REAL_DEMO_OUT ?= outputs/real-demo
+REAL_DEMO_ARGS = --source-materialization "$(SOURCE_MATERIALIZATION)" --gvhmr-json "$(GVHMR_JSON)" --out "$(REAL_DEMO_OUT)"
+ifdef G1_TRACK
+REAL_DEMO_ARGS += --g1-track "$(G1_TRACK)"
+endif
+ifdef MODEL_DESCRIPTOR
+REAL_DEMO_ARGS += --model-descriptor "$(MODEL_DESCRIPTOR)"
+endif
+ifdef USE_RERUN_SDK
+REAL_DEMO_ARGS += --use-rerun-sdk
+endif
 
 all: verify
 
@@ -39,6 +50,11 @@ demo-public-browser: demo-public
 	rm -rf outputs/browser-capture
 	PYTHONPATH=src $(PYTHON) -m neodojo demo browser-smoke --public-demo outputs/public-demo --out outputs/browser-capture
 	PYTHONPATH=src $(PYTHON) -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --browser-capture outputs/browser-capture --out outputs/capture
+
+demo-real:
+	@test -n "$(SOURCE_MATERIALIZATION)" || (echo "SOURCE_MATERIALIZATION=path/to/source-materialization.json is required" && exit 2)
+	@test -n "$(GVHMR_JSON)" || (echo "GVHMR_JSON=path/to/gvhmr-smplx-joints.json is required" && exit 2)
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion import-demo $(REAL_DEMO_ARGS)
 
 smoke-public:
 	PYTHONPATH=src $(PYTHON) -m neodojo demo smoke --public-demo outputs/public-demo

@@ -188,6 +188,7 @@ make test
 make build
 make demo-public
 make demo-public-browser
+make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
@@ -213,6 +214,7 @@ PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-dem
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
+PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
 make demo-html
 ```
 
@@ -340,7 +342,15 @@ processing media. Without `--dry-run`, it requires ffmpeg and writes ignored
 trimmed-video and reference-frame artifacts for the later GPU GVHMR input.
 `neodojo real-conversion validate-source` compares a GVHMR teaching-joints JSON
 export against the source-materialization manifest, writes a validation report,
-and emits a validated import JSON copy when provenance matches.
+and emits a validated import JSON copy when provenance matches. `neodojo
+real-conversion import-demo` and `make demo-real SOURCE_MATERIALIZATION=...
+GVHMR_JSON=...` validate that external GVHMR export, import it into the
+motion-record contract, and regenerate the same annotations, SMPL-X surface,
+G1 visual/render, teaching playback, public-demo, Viser preview, and capture
+bundle lane under `outputs/real-demo/`. By default they derive a fixture G1
+visual companion unless `--g1-track` and `--model-descriptor` are supplied to
+the CLI, or `G1_TRACK=... MODEL_DESCRIPTOR=...` are supplied to `make
+demo-real`. They still do not run GVHMR locally.
 
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local
@@ -403,6 +413,8 @@ In progress:
 - [x] Local real-conversion source materialization handoff for a user-supplied
       video
 - [x] Local GVHMR source-validation report and validated JSON import handoff
+- [x] One-command local real-artifact import demo after an external GPU GVHMR
+      export is available
 The detailed implementation queue lives in [`docs/plans/`](docs/plans/) and
 can later be mirrored into GitHub issues.
 

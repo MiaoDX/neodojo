@@ -1,6 +1,6 @@
 # MVP Real Conversion Gate Plan
 
-Status: LOCAL PREP AND SOURCE MATERIALIZATION READY; LATER GPU GATE
+Status: LOCAL PREP, SOURCE MATERIALIZATION, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
 
 ## Goal
 
@@ -84,6 +84,9 @@ path is acceptable and preferred.
   source, trim command, optional generated clip/frames, and GVHMR input handoff.
 - A motion-record import run using
   `neodojo motion-record create --from-gvhmr-json`.
+- A one-command local import/demo run using
+  `neodojo real-conversion import-demo` or `make demo-real` after a GPU export is
+  available.
 - Optional `neodojo.smplx_parameters.v1` data under the motion record when the
   GVHMR export includes mesh-ready SMPL-X pose/shape parameters.
 - A short report stating whether downstream local contracts needed changes.
@@ -125,8 +128,24 @@ matching provenance, validate it locally:
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
 ```
 
+Or validate, import, and regenerate the local demo artifacts in one command:
+
+```bash
+PYTHONPATH=src python -m neodojo real-conversion import-demo \
+  --source-materialization outputs/real-conversion-source/source-materialization.json \
+  --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json \
+  --out outputs/real-demo
+
+make demo-real \
+  SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json \
+  GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
+```
+
 These commands avoid downloading video, running GVHMR locally, or proving
-qigong correctness.
+qigong correctness. By default, `import-demo` derives a fixture G1 visual
+companion from the imported SMPL-X motion record; pass `--g1-track` and
+`--model-descriptor`, or the matching `G1_TRACK=... MODEL_DESCRIPTOR=...` make
+variables, when an external GMR/G1 visual artifact is available.
 
 ## Execution Tasks
 
@@ -140,6 +159,9 @@ qigong correctness.
   reference-frame handoff for the GPU run.
 - [x] Validate a returned GVHMR export against the source-materialization
   manifest before importing the validated JSON copy.
+- [x] Add a local `real-conversion import-demo` / `make demo-real` wrapper that
+  validates the external export, imports it, and regenerates the demo/capture
+  lane after the GPU artifact exists.
 - [ ] Run GVHMR on a GPU-capable environment.
 - [ ] Export the SMPL-X result directory with enough metadata for reproducibility.
 - [ ] Convert or export the GVHMR result into
@@ -147,6 +169,8 @@ qigong correctness.
   local playback contract.
 - [ ] Import the exported JSON artifact using
   `neodojo motion-record create --from-gvhmr-json`.
+- [ ] Run `neodojo real-conversion import-demo` or `make demo-real` on the real
+  exported artifact and inspect `outputs/real-demo/`.
 - [ ] If import fails, classify the failure:
   - contract too narrow
   - missing GVHMR metadata
@@ -162,6 +186,8 @@ qigong correctness.
 - The provenance manifest records source, command/runtime, and artifact path.
 - The exported JSON artifact imports through the same motion-record contract as
   fixtures.
+- The one-command import-demo wrapper writes `outputs/real-demo/manifest.json`,
+  public-demo artifacts, Viser preview evidence, and a capture bundle.
 - The imported record reports frame count, fps or timing, joint coverage, and
   SMPL-X provenance.
 - The artifact includes enough coordinate, floor/facing, source-media, and
@@ -183,6 +209,7 @@ qigong correctness.
 
 ## Stop Condition
 
-Stop when one real GVHMR artifact imports successfully, or when a blocker is
+Stop when one real GVHMR artifact imports successfully and the import-demo lane
+regenerates the local public-demo/capture artifacts, or when a blocker is
 classified with enough detail to decide whether to fix the contract, change the
 source clip, or change the GPU environment.

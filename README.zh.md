@@ -155,6 +155,7 @@ make test
 make build
 make demo-public
 make demo-public-browser
+make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
@@ -180,6 +181,7 @@ PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-dem
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
+PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
 make demo-html
 ```
 
@@ -295,7 +297,14 @@ manifest 与本地视频，写出 source-materialization manifest。传入 `--dr
 artifacts 写给后续 GPU GVHMR input。`neodojo real-conversion validate-source`
 会把 GVHMR teaching-joints JSON export 与 source-materialization manifest 做
 provenance 对照，写出 validation report，并在 provenance 匹配时生成 validated
-import JSON copy。
+import JSON copy。`neodojo real-conversion import-demo` 和
+`make demo-real SOURCE_MATERIALIZATION=... GVHMR_JSON=...` 会验证外部 GVHMR
+export，把它导入 motion-record contract，并在 `outputs/real-demo/` 下重新生成同一条
+annotations、SMPL-X surface、G1 visual/render、teaching playback、public-demo、
+Viser preview 与 capture bundle lane。默认情况下，如果没有传入 `--g1-track` 和
+`--model-descriptor`，或者没有给 `make demo-real` 传入 `G1_TRACK=...`
+`MODEL_DESCRIPTOR=...`，它会派生 fixture G1 visual companion。它们仍不会在本地运行
+GVHMR。
 
 `make demo-html` 会写出 `outputs/html-demo/index.html`，这是一个由本地
 motion/track manifest contract 支撑的自包含合成 fixture demo，用来验证目标教学
@@ -348,6 +357,7 @@ capture 或真实 Unitree G1 retargeting 已经完成。
 - [x] 本地 real-conversion prep manifest，默认 source 为 `03-006`
 - [x] 面向用户本地视频的 real-conversion source materialization handoff
 - [x] 本地 GVHMR source-validation report 与 validated JSON import handoff
+- [x] 外部 GPU GVHMR export 可用后的一命令本地 real-artifact import demo
 详细 implementation queue 放在 [`docs/plans/`](docs/plans/)，之后可以再同步成
 GitHub issues。
 

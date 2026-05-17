@@ -27,6 +27,7 @@ from .real_conversion import (
     validate_gvhmr_source,
     write_real_conversion_prep,
 )
+from .real_demo import write_real_conversion_demo
 from .smplx_surface import (
     register_smplx_asset_descriptor,
     write_smplx_mesh_surface,
@@ -670,6 +671,43 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/real-conversion-validation"),
         help="output directory for source validation report and validated export copy",
     )
+    real_import_demo = real_subparsers.add_parser(
+        "import-demo",
+        help="validate an external GVHMR export and regenerate the local demo lane",
+    )
+    real_import_demo.add_argument(
+        "--source-materialization",
+        type=Path,
+        required=True,
+        help="source-materialization.json from real-conversion materialize-source",
+    )
+    real_import_demo.add_argument(
+        "--gvhmr-json",
+        type=Path,
+        required=True,
+        help="external neodojo.gvhmr_smplx_joints.v1 JSON export",
+    )
+    real_import_demo.add_argument(
+        "--g1-track",
+        type=Path,
+        help="optional existing G1 visual-track manifest; otherwise a derived fixture G1 visual track is generated",
+    )
+    real_import_demo.add_argument(
+        "--model-descriptor",
+        type=Path,
+        help="optional existing Unitree G1 model descriptor for G1 visual rendering",
+    )
+    real_import_demo.add_argument(
+        "--use-rerun-sdk",
+        action="store_true",
+        help="write a true Rerun SDK .rrd instead of the JSON fallback artifact",
+    )
+    real_import_demo.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/real-demo"),
+        help="output directory for the validated real-artifact demo lane",
+    )
 
     return parser
 
@@ -954,6 +992,20 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(f"wrote {result.validated_export_path}")
             if result.status != "validated":
                 raise ValueError(f"GVHMR source validation status is {result.status}; see {result.report_path}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "import-demo":
+            result = write_real_conversion_demo(
+                args.out,
+                source_materialization=args.source_materialization,
+                gvhmr_json=args.gvhmr_json,
+                g1_track=args.g1_track,
+                model_descriptor=args.model_descriptor,
+                use_rerun_sdk=args.use_rerun_sdk,
+            )
+            print(f"wrote {result.manifest_path}")
+            for path in result.checked_paths:
+                print(f"validated {path}")
             return 0
     except ValueError as exc:
         parser.error(str(exc))
