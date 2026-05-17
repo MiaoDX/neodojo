@@ -160,7 +160,7 @@ See [`STATUS.md`](STATUS.md) for the current repo state, known constraints,
 and next safe task. There is now a small checked-in Python package, local
 SMPL-X and G1 fixture artifact commands, a teaching-playback HTML command, and
 a static HTML demo generator, but there is still no checked-in
-GVHMR/GMR/simulator runtime pipeline or CI gate.
+GVHMR/GMR/simulator runtime pipeline, real Unitree G1 rendering, or CI gate.
 
 What can be run now:
 
@@ -212,6 +212,8 @@ In progress:
 - [x] Local fixture G1 model and visual-track manifests with scoring separation
 - [x] Local teaching playback command that consumes SMPL-X and G1 manifests
 - [x] Local real-conversion prep manifest for source `03-006`
+- [ ] Real Unitree G1 model loading/rendering from user-supplied URDF/MJCF and
+      meshes
 - [ ] roboharness-style multi-camera offscreen capture integration
 - [ ] SMPL-X + Unitree G1 dual-track synchronized Viser UI
 - [ ] Automatic key-frame detection + geometry-constrained verbal

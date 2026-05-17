@@ -128,7 +128,7 @@ Viser (web 端三视角同步 + 关节轨迹 polyline + 时间轴)
 当前 repo 状态、已知约束与下一步安全任务见 [`STATUS.md`](STATUS.md)。现在已经有
 一个很小的 Python package、本地 SMPL-X 与 G1 fixture artifact 命令、教学 playback
 HTML 命令和静态 HTML demo 生成器，但还没有提交到仓库的 GVHMR/GMR/仿真器运行时
-pipeline 或 CI gate。
+pipeline、真实 Unitree G1 渲染或 CI gate。
 
 现在可以运行：
 
@@ -176,6 +176,7 @@ G1 retargeting 已经完成。
 - [x] 本地 fixture G1 model 和 visual-track manifests，并保持 scoring separation
 - [x] 本地 teaching playback 命令，可同时消费 SMPL-X 与 G1 manifests
 - [x] 本地 real-conversion prep manifest，默认 source 为 `03-006`
+- [ ] 基于用户本地 URDF/MJCF 与 meshes 的真实 Unitree G1 model 加载/渲染
 - [ ] roboharness 风格的多视角离屏录制集成
 - [ ] SMPL-X 与 Unitree G1 双轨同屏 Viser UI
 - [ ] 关键定式自动检测 + 几何约束式术语反馈

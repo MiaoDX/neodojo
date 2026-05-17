@@ -4,8 +4,9 @@ neodojo is intended to turn a single official instructional movement video into
 simulated teaching playback that can be inspected from multiple views.
 
 The architecture is currently a target design, not an implemented runtime. The
-repo currently contains only a fixture-first HTML demo generator, not the
-GVHMR/GMR/simulator runtime pipeline.
+repo contains fixture-first motion contracts, G1 visual-track manifests,
+teaching playback HTML, and real-conversion prep, but not the
+GVHMR/GMR/simulator runtime pipeline or real Unitree G1 model rendering.
 
 ## MVP Data Flow
 

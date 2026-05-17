@@ -9,9 +9,9 @@ and prove that it imports through the same motion-record contract used by
 fixtures.
 
 This gate prevents the project from becoming only a synthetic demo. It is
-deliberately scheduled after the local motion, G1 visual-track, and first
-playback contracts. It should not block local interface work, but it is required
-before calling the MVP an end-to-end neodojo proof.
+deliberately scheduled after the local motion, G1 visual-track, first playback,
+and real G1 model-rendering proof. It should not block local interface work,
+but it is required before calling the MVP an end-to-end neodojo proof.
 
 ## Dependencies
 
@@ -21,6 +21,9 @@ before calling the MVP an end-to-end neodojo proof.
   visual-track contract, so real data can flow into the same downstream shape.
 - [mvp-teaching-playback-demo.md](mvp-teaching-playback-demo.md) has a local
   fixture playback path that does not depend on GPU output.
+- [mvp-g1-real-model-rendering.md](mvp-g1-real-model-rendering.md) is the
+  preferred next local slice before this GPU gate, so the right-side G1 view can
+  become a real model render independently from source-video conversion.
 - A GPU-capable environment is available through Colab, RunPod, Modal, Hugging
   Face Jobs, or another machine.
 - A local/user-supplied source clip is selected with licensing boundaries

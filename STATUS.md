@@ -6,9 +6,9 @@ There is now a minimal checked-in Python package, a `make test` command,
 fixture-backed and external-JSON `motion-record` paths, `robot-model`,
 `tracks`, `demo play`, and `real-conversion prepare` commands, and a
 `make demo-html` command that writes a self-contained synthetic web demo. There
-is still no checked-in
-GVHMR/GMR/simulator runtime pipeline, install workflow, lint command, build
-command, CI gate, real generated motion artifact, or UI server.
+is still no checked-in GVHMR/GMR/simulator runtime pipeline, real Unitree G1
+model rendering, install workflow, lint command, build command, CI gate, real
+generated motion artifact, or UI server.
 
 ## Current Truth
 
@@ -48,6 +48,9 @@ command, CI gate, real generated motion artifact, or UI server.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
+- Planned local non-GPU real G1 rendering slice in
+  `docs/plans/mvp-g1-real-model-rendering.md`; current G1 playback remains a
+  fixture/canvas skeleton until that slice lands.
 - Real-conversion source prep manifest generated under
   `outputs/real-conversion-gate/`, selecting source `03-006` metadata and a
   short trim window for a later GPU run.
@@ -100,12 +103,30 @@ not qigong correctness.
 `neodojo real-conversion prepare` writes ignored source/trim metadata for the
 later GPU run and does not download video or execute GVHMR.
 
+## Remaining Non-GPU Gaps
+
+- Real Unitree G1 model loading/rendering from local URDF/MJCF plus meshes.
+- A pose source compatible with real G1 joints: imported GMR joint angles or a
+  clearly marked deterministic G1 joint-angle fixture. The current G1 track is
+  still a derived visual skeleton.
+- SMPL-X mesh/body-surface playback; current demos draw joints and bones.
+- Simulator/Viser runtime integration and multi-camera offscreen capture.
+- Feedback beyond the first fixture geometry check: automatic key-frame
+  detection, more posture terms, and routine-level review.
+- Rights-preserving source media handling beyond metadata and trim prep.
+- Install, lint, build, and CI command surfaces.
+
 ## Next Safe Task
 
-The next MVP capability is `docs/plans/mvp-real-conversion-gate.md`, but it is
-a deliberate GPU/local-dev gate. Do not run GVHMR full-video inference on this
-macOS CPU workspace; use a GPU-capable machine to export a GVHMR SMPL-X
-teaching-joints JSON artifact, then import it through
+The next MVP capability is
+`docs/plans/mvp-g1-real-model-rendering.md`. Keep the GPU conversion gate after
+this local slice. The target is a real Unitree G1 URDF/MJCF plus mesh render
+manifest and screenshot/frame evidence, while preserving
+`g1_scoring_allowed: false`.
+
+After that, return to `docs/plans/mvp-real-conversion-gate.md`: do not run GVHMR
+full-video inference on this macOS CPU workspace; use a GPU-capable machine to
+export a GVHMR SMPL-X teaching-joints JSON artifact, then import it through
 `neodojo motion-record create --from-gvhmr-json`.
 
 ## Background Evidence
@@ -113,5 +134,5 @@ teaching-joints JSON artifact, then import it through
 - `docs/technical-roadmap.md` is the long technical research report.
 - `docs/humanoid-platform-evaluation.md` records the G1 + SMPL-X dual-track
   platform decision.
-- `docs/plans/mvp-implementation-phases.md` indexes the four current executable
+- `docs/plans/mvp-implementation-phases.md` indexes the five current executable
   MVP plan slices.
