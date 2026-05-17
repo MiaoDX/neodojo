@@ -129,9 +129,11 @@ Viser (web 端三视角同步 + 关节轨迹 polyline + 时间轴)
 一个很小的 Python package、本地 SMPL-X 与 G1 fixture artifact 命令、教学 playback
 HTML 命令、规范化 imported-GMR G1 track 边界、静态 HTML demo 生成器，以及基于
 model descriptor 与 visual track 的本地 G1 SVG/HTML render evidence、GMR 原生
-pickle 规范化，以及最小 lint/build/quality-check 命令。它也可以为后续 GPU GVHMR
-run 写出 dry-run 或 ffmpeg-backed 的本地 source-video handoff。但还没有提交到仓库的
-GVHMR/GMR 执行 pipeline、仿真器运行时 pipeline 或 MuJoCo/Genesis 真实 mesh 渲染。
+pickle 规范化、dependency-light 的 SMPL-X surface proxy，以及最小
+lint/build/quality-check 命令。它也可以为后续 GPU GVHMR run 写出 dry-run 或
+ffmpeg-backed 的本地 source-video handoff。但还没有提交到仓库的 GVHMR/GMR 执行
+pipeline、仿真器运行时 pipeline、licensed SMPL-X mesh generation 或 MuJoCo/Genesis
+真实 mesh 渲染。
 
 现在可以运行：
 
@@ -145,13 +147,14 @@ make demo-public
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
+PYTHONPATH=src python -m neodojo smplx-surface proxy --motion-record outputs/motion-contract --out outputs/smplx-surface
 PYTHONPATH=src python -m neodojo annotations detect --motion-record outputs/motion-contract --out outputs/annotations
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks normalize-gmr-pkl --source path/to/gmr-motion.pkl --motion-record outputs/motion-contract --out outputs/gmr-native
 PYTHONPATH=src python -m neodojo tracks import-gmr-json --source path/to/gmr-unitree-g1.json --motion-record outputs/motion-contract --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --allow-fixture-model --out outputs/g1-render
-PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
+PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --smplx-surface outputs/smplx-surface/surfaces/smplx/manifest.json --out outputs/teaching-demo
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
@@ -170,6 +173,10 @@ apex anchors 写出显式的 SMPL-X-only annotation manifest 和 routine feedbac
 report。`make demo-public` 会把这些 anchors 喂给 teaching playback，而不是依赖隐式
 final frame。
 
+`neodojo smplx-surface proxy` 会从 SMPL-X teaching joints 生成一个 dependency-light
+capsule surface proxy，用于 teaching/public demo 的视觉检查。它不会生成 licensed
+SMPL-X body-model mesh，所有反馈仍然只读取 SMPL-X joints。
+
 `neodojo robot-model register` 和 `neodojo tracks build` 可以写出 fixture G1
 model 和 visual-track manifests。它们保留 SMPL-X/G1 职责边界，但还没有加载真实
 Unitree G1 mesh，也没有运行 GMR retargeting。`neodojo tracks normalize-gmr-pkl`
@@ -185,10 +192,11 @@ fixture descriptor 必须显式传入 `--allow-fixture-model`；注册过的 URD
 descriptor 不需要这个开关。这是本地 render evidence，不是 MuJoCo/Genesis
 仿真器 mesh 渲染。
 
-`neodojo demo play` 会把 SMPL-X motion-record 和 G1 visual-track manifests
-一起读入，并写出 `outputs/teaching-demo/index.html` 与 playback manifest。这是
-一个 simulator-light HTML inspection path：SMPL-X 仍是 scoring source，G1 仍然
-不可用于评分。它也可以通过 `--reference-video` 保留可选的本地-only 原视频同步元数据。
+`neodojo demo play` 会把 SMPL-X motion-record、可选 SMPL-X surface proxy 和 G1
+visual-track manifests 一起读入，并写出 `outputs/teaching-demo/index.html` 与
+playback manifest。这是一个 simulator-light HTML inspection path：SMPL-X joints
+仍是 scoring source，surface proxy 只用于视觉检查，G1 仍然不可用于评分。它也可以通过
+`--reference-video` 保留可选的本地-only 原视频同步元数据。
 
 `neodojo demo export-rerun` 会写出内部 scene/timeline contract、fixture-only
 静态 public-demo HTML 页面、SVG screenshot，以及 `outputs/public-demo/` 下的
@@ -198,8 +206,8 @@ descriptor 不需要这个开关。这是本地 render evidence，不是 MuJoCo/
 `make verify` 会一次运行 lint、MVP plan quality checks、tests、wheel build 和
 public-demo smoke lane。
 `make demo-public` 会用一个本地命令重新生成 fixture motion contract、detected
-annotations、G1 visual track、G1 render evidence、teaching playback、public-demo
-artifact，并运行 smoke check。`make smoke-public` 会验证现有的
+annotations、SMPL-X surface proxy、G1 visual track、G1 render evidence、teaching
+playback、public-demo artifact，并运行 smoke check。`make smoke-public` 会验证现有的
 `outputs/public-demo` artifact set。
 `.github/workflows/public-demo.yml` 里的 GitHub Actions workflow 会运行同一条 fixture
 lane，上传 artifact，并在 repo 启用 Pages 后发布到 GitHub Pages。
@@ -231,6 +239,7 @@ G1 retargeting 已经完成。
       时间轴控制，以及一个基于 SMPL-X 的几何检查
 - [x] 本地 fixture SMPL-X motion-record 和 teaching-track manifests
 - [x] 外部 GVHMR teaching-joints JSON 可导入同一 motion contract
+- [x] dependency-light SMPL-X surface proxy layer，接入 teaching/public demos
 - [x] 本地 fixture G1 model 和 visual-track manifests，并保持 scoring separation
 - [x] 规范化外部 GMR Unitree G1 JSON import 到不可评分的 G1 visual-track contract
 - [x] GMR 原生 robot-motion pickle 规范化到同一个 G1 JSON import contract

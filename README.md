@@ -159,12 +159,13 @@ embodied skills.
 See [`STATUS.md`](STATUS.md) for the current repo state, known constraints,
 and next safe task. There is now a small checked-in Python package, local
 SMPL-X and G1 fixture artifact commands, a normalized imported-GMR G1 track
-boundary, native GMR pickle normalization, a teaching-playback HTML command, a
-static HTML demo generator, local SVG/HTML G1 render evidence from a model
-descriptor plus visual track, and minimal lint/build/quality-check commands. It
-can also write a dry-run or ffmpeg-backed local source-video handoff for a later
-GPU GVHMR run. There is still no checked-in GVHMR/GMR execution pipeline,
-simulator runtime pipeline, or MuJoCo/Genesis real mesh rendering.
+boundary, native GMR pickle normalization, a dependency-light SMPL-X surface
+proxy, a teaching-playback HTML command, a static HTML demo generator, local
+SVG/HTML G1 render evidence from a model descriptor plus visual track, and
+minimal lint/build/quality-check commands. It can also write a dry-run or
+ffmpeg-backed local source-video handoff for a later GPU GVHMR run. There is
+still no checked-in GVHMR/GMR execution pipeline, simulator runtime pipeline,
+licensed SMPL-X mesh generation, or MuJoCo/Genesis real mesh rendering.
 
 What can be run now:
 
@@ -178,13 +179,14 @@ make demo-public
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
+PYTHONPATH=src python -m neodojo smplx-surface proxy --motion-record outputs/motion-contract --out outputs/smplx-surface
 PYTHONPATH=src python -m neodojo annotations detect --motion-record outputs/motion-contract --out outputs/annotations
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks normalize-gmr-pkl --source path/to/gmr-motion.pkl --motion-record outputs/motion-contract --out outputs/gmr-native
 PYTHONPATH=src python -m neodojo tracks import-gmr-json --source path/to/gmr-unitree-g1.json --motion-record outputs/motion-contract --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --allow-fixture-model --out outputs/g1-render
-PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
+PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --smplx-surface outputs/smplx-surface/surfaces/smplx/manifest.json --out outputs/teaching-demo
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
@@ -203,6 +205,11 @@ and routine feedback report for opening stance, settled support, and
 raised-hands apex anchors. `make demo-public` feeds those anchors into the
 teaching playback instead of relying on an implicit final frame.
 
+`neodojo smplx-surface proxy` writes a dependency-light capsule surface proxy
+derived from SMPL-X teaching joints. It improves visual inspection in the
+teaching/public demo while staying honest that no licensed SMPL-X body-model
+mesh is generated and all feedback still reads SMPL-X joints.
+
 `neodojo robot-model register` and `neodojo tracks build` can write fixture G1
 model and visual-track manifests. These preserve the SMPL-X/G1 responsibility
 split but do not yet load a real Unitree G1 mesh or run GMR retargeting.
@@ -220,11 +227,13 @@ manifest. Fixture descriptors require `--allow-fixture-model`; registered
 URDF/MJCF descriptors are accepted without that flag. This is local render
 evidence, not MuJoCo/Genesis simulator mesh rendering.
 
-`neodojo demo play` consumes the SMPL-X motion-record and G1 visual-track
-manifests together and writes `outputs/teaching-demo/index.html` plus a
-playback manifest. This is a simulator-light HTML inspection path: SMPL-X stays
-the scoring source and G1 stays non-scoring. It can also preserve optional
-local-only original-video sync metadata with `--reference-video`.
+`neodojo demo play` consumes the SMPL-X motion-record, optional SMPL-X surface
+proxy, and G1 visual-track manifests together, then writes
+`outputs/teaching-demo/index.html` plus a playback manifest. This is a
+simulator-light HTML inspection path: SMPL-X joints stay the scoring source,
+the surface proxy is visual-only, and G1 stays non-scoring. It can also
+preserve optional local-only original-video sync metadata with
+`--reference-video`.
 
 `neodojo demo export-rerun` writes the internal scene/timeline contract, a
 fixture-only static public-demo HTML page, an SVG screenshot, and a `.rrd`-named
@@ -235,8 +244,9 @@ recording.
 `make verify` runs lint, MVP plan quality checks, tests, wheel build, and the
 public-demo smoke lane.
 `make demo-public` regenerates the fixture motion contract, detected
-annotations, G1 visual track, G1 render evidence, teaching playback,
-public-demo artifact, and smoke check in one local command. `make smoke-public`
+annotations, SMPL-X surface proxy, G1 visual track, G1 render evidence,
+teaching playback, public-demo artifact, and smoke check in one local command.
+`make smoke-public`
 validates an existing
 `outputs/public-demo` artifact set. The GitHub Actions workflow at
 `.github/workflows/public-demo.yml` runs the same fixture lane, uploads the
@@ -273,6 +283,7 @@ In progress:
       geometry check
 - [x] Local fixture SMPL-X motion-record and teaching-track manifests
 - [x] External GVHMR teaching-joints JSON import into the same motion contract
+- [x] Dependency-light SMPL-X surface proxy layer in teaching/public demos
 - [x] Local fixture G1 model and visual-track manifests with scoring separation
 - [x] Normalized external GMR Unitree G1 JSON import into the non-scoring G1
       visual-track contract

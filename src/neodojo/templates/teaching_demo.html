@@ -13,6 +13,7 @@
       --muted: #66717f;
       --line: #d8e0e8;
       --smplx: #147c72;
+      --surface: rgba(20, 124, 114, 0.18);
       --g1: #b84e32;
       --wrist: #d73f7c;
       --elbow: #2c6fbb;
@@ -361,6 +362,10 @@
             <strong>SMPL-X</strong>
           </div>
           <div class="metric">
+            <span>Surface layer</span>
+            <strong id="surfaceMetric">off</strong>
+          </div>
+          <div class="metric">
             <span>Key-frame check</span>
             <strong id="feedbackStatus" class="status">pending</strong>
           </div>
@@ -399,6 +404,7 @@
         </section>
 
         <section class="panel legend">
+          <div class="legend-row"><span class="swatch" style="background: var(--surface); height: 10px;"></span><span>SMPL-X surface proxy</span></div>
           <div class="legend-row"><span class="swatch" style="background: var(--smplx);"></span><span>SMPL-X skeleton</span></div>
           <div class="legend-row"><span class="swatch" style="background: var(--g1);"></span><span>G1 skeleton</span></div>
           <div class="legend-row"><span class="swatch" style="background: var(--wrist);"></span><span>Wrist trajectory</span></div>
@@ -422,6 +428,7 @@
     const timeline = document.getElementById("timeline");
     const frameReadout = document.getElementById("frameReadout");
     const frameMetric = document.getElementById("frameMetric");
+    const surfaceMetric = document.getElementById("surfaceMetric");
     const feedbackStatus = document.getElementById("feedbackStatus");
     const shoulderMetric = document.getElementById("shoulderMetric");
     const elbowMetric = document.getElementById("elbowMetric");
@@ -517,6 +524,26 @@
       ctx.globalAlpha = 1;
     }
 
+    function drawSurfaceProxy(ctx, view, currentFrame, width, height) {
+      const surface = DEMO.surface_proxy;
+      if (!surface || !surface.frames || !surface.frames[currentFrame]) {
+        return;
+      }
+      const capsules = surface.frames[currentFrame].capsules || [];
+      ctx.strokeStyle = "rgba(20, 124, 114, 0.18)";
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      for (const capsule of capsules) {
+        const [ax, ay] = toCanvas(project(capsule.start, view), view, width, height);
+        const [bx, by] = toCanvas(project(capsule.end, view), view, width, height);
+        ctx.lineWidth = Math.max(8, capsule.radius_m * 360);
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(bx, by);
+        ctx.stroke();
+      }
+    }
+
     function drawSkeleton(ctx, pose, track, view, width, height) {
       ctx.strokeStyle = colors[track];
       ctx.lineWidth = track === "smplx" ? 5 : 6;
@@ -551,6 +578,9 @@
       const view = canvas.dataset.view;
       const ctx = canvas.getContext("2d");
       drawGrid(ctx, canvas.width, canvas.height, view);
+      if (track === "smplx") {
+        drawSurfaceProxy(ctx, view, frame, canvas.width, canvas.height);
+      }
       drawTrajectory(ctx, track, view, frame, canvas.width, canvas.height);
       drawSkeleton(ctx, DEMO.tracks[track].frames[frame], track, view, canvas.width, canvas.height);
     }
@@ -559,6 +589,7 @@
       const feedback = DEMO.feedback;
       frameReadout.textContent = `Frame ${frame}`;
       frameMetric.textContent = `${frame + 1} / ${frameCount}`;
+      surfaceMetric.textContent = DEMO.surface_proxy ? "proxy" : "off";
       timeline.value = String(frame);
       feedbackStatus.textContent = feedback.passed ? "pass" : "check";
       feedbackStatus.classList.toggle("fail", !feedback.passed);

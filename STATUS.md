@@ -5,7 +5,7 @@ neodojo is in bootstrap state with one fixture-only local demo.
 There is now a minimal checked-in Python package, a `make test` command,
 fixture-backed and external-JSON `motion-record` paths, `robot-model`,
 `tracks`, imported GMR JSON track, native GMR pickle normalization,
-`annotations detect`, `render g1`,
+`smplx-surface proxy`, `annotations detect`, `render g1`,
 `demo play`, `demo export-rerun`, and `real-conversion prepare` commands, a
 `make demo-html` command that writes a self-contained synthetic web demo,
 minimal `make lint`, `make check`, and `make build` commands, and a
@@ -14,8 +14,9 @@ the fixture public-demo artifact. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, and `real-conversion validate-source` can validate a GVHMR JSON
 export against that handoff before import. There is still no checked-in
-GVHMR/GMR execution pipeline, simulator runtime pipeline, MuJoCo/Genesis real
-mesh rendering, real generated motion artifact, or UI server.
+GVHMR/GMR execution pipeline, simulator runtime pipeline, licensed SMPL-X mesh
+generation, MuJoCo/Genesis real mesh rendering, real generated motion artifact,
+or UI server.
 
 ## Current Truth
 
@@ -59,6 +60,10 @@ mesh rendering, real generated motion artifact, or UI server.
   `--save_path` artifact shape, preserves Unitree G1 joint angles, derives the
   current viewer joints from the source SMPL-X motion record, and does not run
   GMR locally.
+- Dependency-light SMPL-X capsule surface proxy generated from teaching joints
+  under `outputs/smplx-surface/`. It is a visual-only inspection layer in
+  teaching/public demos, not a licensed SMPL-X body mesh and not a scoring
+  source.
 - Deterministic SMPL-X opening-form routine review, producing
   `neodojo.annotation.v1` manifests plus `neodojo.routine_feedback_report.v1`
   reports with opening stance, settled support, and raised-hands apex anchors.
@@ -73,8 +78,8 @@ mesh rendering, real generated motion artifact, or UI server.
   containing a scene/timeline contract, static HTML viewer, SVG screenshot, and
   `.rrd`-named JSON fallback artifact for the future Rerun lane.
 - `make demo-public` regenerates the fixture motion, routine feedback
-  annotations, G1 visual/render, teaching-playback, public-demo, and
-  smoke-check artifacts in one command.
+  annotations, SMPL-X surface proxy, G1 visual/render, teaching-playback,
+  public-demo, and smoke-check artifacts in one command.
 - `make check` validates MVP plan links and minimum plan scaffolding, and is
   included in `make verify` and the GitHub Actions workflow.
 - `.github/workflows/public-demo.yml` runs tests, builds the fixture public demo,
@@ -129,13 +134,14 @@ make demo-public
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
 PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
+PYTHONPATH=src python -m neodojo smplx-surface proxy --motion-record outputs/motion-contract --out outputs/smplx-surface
 PYTHONPATH=src python -m neodojo annotations detect --motion-record outputs/motion-contract --out outputs/annotations
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks normalize-gmr-pkl --source path/to/gmr-motion.pkl --motion-record outputs/motion-contract --out outputs/gmr-native
 PYTHONPATH=src python -m neodojo tracks import-gmr-json --source path/to/gmr-unitree-g1.json --motion-record outputs/motion-contract --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --allow-fixture-model --out outputs/g1-render
-PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
+PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --smplx-surface outputs/smplx-surface/surfaces/smplx/manifest.json --out outputs/teaching-demo
 PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
@@ -155,7 +161,9 @@ directory, or imports an external GVHMR teaching-joints JSON export with
 `--from-gvhmr-json`. `neodojo annotations detect` writes an explicit
 SMPL-X-only annotation manifest plus routine feedback report for opening
 stance, settled support, and raised-hands apex anchors, then feeds those anchors
-into the public-demo lane. `neodojo robot-model register` and
+into the public-demo lane. `neodojo smplx-surface proxy` writes a visual-only
+SMPL-X capsule surface proxy derived from teaching joints; it does not require
+or bundle licensed SMPL-X model assets. `neodojo robot-model register` and
 `neodojo tracks build` write fixture G1 model/visual-track manifests and a
 comparison report that keeps G1 non-scoring. `neodojo tracks normalize-gmr-pkl`
 parses the native YanjieZe/GMR robot-motion pickle shape written by
@@ -169,19 +177,20 @@ writes local SVG/HTML front/side/top render evidence and a render manifest from
 a G1 model descriptor plus G1 track; fixture model descriptors require explicit
 `--allow-fixture-model`, and this is not MuJoCo/Genesis simulator mesh
 rendering. `neodojo demo play` writes
-`outputs/teaching-demo/index.html` and a playback manifest from the SMPL-X and
-G1 manifests. `neodojo demo export-rerun` writes
+`outputs/teaching-demo/index.html` and a playback manifest from the SMPL-X,
+optional SMPL-X surface proxy, and G1 manifests. `neodojo demo export-rerun` writes
 `outputs/public-demo/index.html`, `outputs/public-demo/scene.json`,
 `outputs/public-demo/screenshot.svg`, and `outputs/public-demo/neodojo-demo.rrd`;
 the `.rrd` is currently a JSON fallback artifact, not a real Rerun SDK
 recording. `make demo-public` regenerates the full fixture public-demo lane,
-including detected annotations, and runs the smoke check. `make smoke-public`
+including detected annotations and the SMPL-X surface proxy, and runs the smoke
+check. `make smoke-public`
 validates an existing `outputs/public-demo` artifact set. `make demo-html`
 writes `outputs/html-demo/index.html`, `outputs/html-demo/manifest.json`, and
 the local motion/track manifests it consumes. These artifacts use synthetic
 fixture motion only; they validate UI plumbing, trajectory drawing, timeline
-sync, the local SMPL-X/G1 scoring boundary, and one SMPL-X-based geometry check,
-not qigong correctness.
+sync, the local SMPL-X/G1 scoring boundary, the visual-only SMPL-X surface
+proxy, and one SMPL-X-based geometry check, not qigong correctness.
 
 `neodojo real-conversion prepare` writes ignored source/trim metadata for the
 later GPU run and does not download video or execute GVHMR. When a local video
@@ -200,7 +209,7 @@ when source id, trim, input path/checksum, and duration checks pass.
 
 - MuJoCo/Genesis real Unitree G1 mesh rendering from local URDF/MJCF plus
   meshes: `docs/plans/mvp-simulator-mesh-rendering.md`.
-- SMPL-X mesh/body-surface playback; current demos draw joints and bones:
+- Licensed SMPL-X mesh/body-model playback beyond the current capsule proxy:
   `docs/plans/mvp-smplx-body-surface-playback.md`.
 - Simulator/Viser runtime integration and multi-camera offscreen capture:
   `docs/plans/mvp-viser-multicamera-runtime.md`.

@@ -24,6 +24,7 @@ from .real_conversion import (
     validate_gvhmr_source,
     write_real_conversion_prep,
 )
+from .smplx_surface import write_smplx_surface_proxy
 from .teaching_playback import write_teaching_playback_demo
 
 
@@ -105,6 +106,28 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=96,
         help="number of synthetic fixture frames to generate",
+    )
+
+    smplx_surface = subparsers.add_parser(
+        "smplx-surface",
+        help="create optional SMPL-X visual surface layers",
+    )
+    surface_subparsers = smplx_surface.add_subparsers(dest="surface_command", required=True)
+    surface_proxy = surface_subparsers.add_parser(
+        "proxy",
+        help="write a dependency-light SMPL-X capsule surface proxy from teaching joints",
+    )
+    surface_proxy.add_argument(
+        "--motion-record",
+        type=Path,
+        required=True,
+        help="motion-record root directory or manifest path",
+    )
+    surface_proxy.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/smplx-surface"),
+        help="output directory for the SMPL-X surface proxy manifest",
     )
 
     robot_model = subparsers.add_parser(
@@ -244,6 +267,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="G1 visual-track root directory or manifest path",
     )
     demo_play.add_argument("--annotations", type=Path, help="optional manual key-frame annotation JSON")
+    demo_play.add_argument("--smplx-surface", type=Path, help="optional SMPL-X surface proxy manifest")
     demo_play.add_argument("--reference-video", type=Path, help="optional local-only original video reference")
     demo_play.add_argument(
         "--reference-trim-start",
@@ -468,6 +492,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"wrote {result.feedback_report_path}")
             return 0
 
+        if args.command == "smplx-surface" and args.surface_command == "proxy":
+            result = write_smplx_surface_proxy(args.out, args.motion_record)
+            print(f"wrote {result.manifest_path}")
+            print(f"wrote {result.data_path}")
+            return 0
+
         if args.command == "robot-model" and args.robot_command == "register":
             if args.fixture:
                 result = write_fixture_g1_model_descriptor(args.out)
@@ -528,6 +558,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 motion_record=args.motion_record,
                 g1_track=args.g1_track,
                 annotations_path=args.annotations,
+                smplx_surface=args.smplx_surface,
                 reference_video=args.reference_video,
                 reference_trim_start_seconds=args.reference_trim_start,
             )

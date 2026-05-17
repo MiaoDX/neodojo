@@ -10,6 +10,7 @@ from .fixtures import BONES, TRAJECTORY_JOINTS
 from .g1_render import G1_RENDER_SCHEMA
 from .g1_visual import load_g1_track_frames
 from .motion_contract import _relative_path, _write_json, load_motion_record_frames, validate_output_dir
+from .smplx_surface import load_smplx_surface_proxy
 
 SCENE_TIMELINE_SCHEMA = "neodojo.scene_timeline.v1"
 RERUN_RECORDING_EXPORT_SCHEMA = "neodojo.rerun_recording_export.v1"
@@ -64,6 +65,24 @@ def build_scene_timeline(
     if len(smplx_frames) != len(g1_frames):
         raise ValueError("SMPL-X and G1 tracks must have matching frame counts")
 
+    surface_proxy = None
+    surface_layers = playback.get("surface_layers", {})
+    if isinstance(surface_layers, dict):
+        smplx_proxy = surface_layers.get("smplx_proxy")
+        if isinstance(smplx_proxy, dict) and smplx_proxy.get("manifest"):
+            surface_manifest_path = _resolve_relative(playback_manifest_path, smplx_proxy["manifest"])
+            surface_manifest, surface_frames = load_smplx_surface_proxy(surface_manifest_path)
+            if len(surface_frames) != len(smplx_frames):
+                raise ValueError("SMPL-X surface proxy must match playback frame count")
+            surface_proxy = {
+                "label": "SMPL-X surface proxy",
+                "surface_kind": surface_manifest.get("surface_kind"),
+                "licensed_smplx_mesh": False,
+                "scoring_allowed": False,
+                "frames": surface_frames,
+                "manifest": smplx_proxy["manifest"],
+            }
+
     render_manifest = _load_optional_render_manifest(g1_render_manifest_path)
     fixture_only = bool(playback.get("fixture_only") or g1_manifest.get("fixture_only"))
     key_frame = int(playback.get("key_frame", len(smplx_frames) - 1))
@@ -116,6 +135,7 @@ def build_scene_timeline(
         "annotations": annotations,
         "routine_review": routine_review,
         "feedback_anchor_labels": feedback_anchor_labels,
+        "surface_proxy": surface_proxy,
         "reference_video_sync": playback.get("reference_video_sync"),
         "feedback": playback.get("feedback"),
         "render_evidence": render_manifest,
@@ -125,6 +145,7 @@ def build_scene_timeline(
             "Unitree G1 visual",
             "G1 non-scoring",
             "Routine feedback",
+            *(["SMPL-X surface proxy"] if surface_proxy else []),
             *feedback_anchor_labels,
         ],
         "scoring_source": "smplx",
@@ -179,8 +200,32 @@ def _track_svg(track: dict[str, Any], view: str, frame_index: int, stroke: str) 
     return "\n".join(lines + joints)
 
 
+def _surface_svg(surface_proxy: dict[str, Any] | None, smplx_track: dict[str, Any], view: str, frame_index: int) -> str:
+    if not surface_proxy:
+        return ""
+    frame = smplx_track["frames"][frame_index]
+    points = [_project(point, view) for point in frame.values()]
+    bounds = _bounds(points)
+    surface_frame = surface_proxy["frames"][frame_index]
+    lines = []
+    for capsule in surface_frame.get("capsules", []):
+        start = capsule.get("start")
+        end = capsule.get("end")
+        if not isinstance(start, list) or not isinstance(end, list):
+            continue
+        x1, y1 = _scale(_project(start, view), bounds)
+        x2, y2 = _scale(_project(end, view), bounds)
+        width = max(8, float(capsule.get("radius_m", 0.04)) * 180)
+        lines.append(
+            f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
+            f'stroke="#147c72" stroke-opacity="0.16" stroke-width="{width:.1f}" stroke-linecap="round"/>'
+        )
+    return "\n".join(lines)
+
+
 def _render_screenshot_svg(scene: dict[str, Any]) -> str:
     key_frame = int(scene["key_frame"])
+    surface = _surface_svg(scene.get("surface_proxy"), scene["tracks"]["smplx"], "front", key_frame)
     smplx = _track_svg(scene["tracks"]["smplx"], "front", key_frame, "#147c72")
     g1 = _track_svg(scene["tracks"]["g1"], "front", key_frame, "#b84e32")
     fixture_label = "FIXTURE-ONLY" if scene["fixture_only"] else "REAL ARTIFACT"
@@ -200,10 +245,10 @@ def _render_screenshot_svg(scene: dict[str, Any]) -> str:
             '<rect x="672" y="144" width="560" height="500" rx="8" fill="#ffffff" stroke="#d8e0e8"/>',
             '<text x="72" y="184" class="title">SMPL-X teacher</text>',
             '<text x="696" y="184" class="title">Unitree G1 visual</text>',
-            f'<g transform="translate(80 210)">{smplx}</g>',
+            f'<g transform="translate(80 210)">{surface}{smplx}</g>',
             f'<g transform="translate(704 210)">{g1}</g>',
             f'<text x="56" y="684" class="muted">Scoring source: SMPL-X. G1 scoring allowed: false. Feedback passed: {feedback.get("passed")}</text>',
-            f'<text x="696" y="684" class="muted">Routine feedback anchors: {anchor_text}</text>',
+            f'<text x="696" y="684" class="muted">Routine feedback anchors: {anchor_text}. SMPL-X surface proxy: {bool(scene.get("surface_proxy"))}</text>',
             "</svg>",
         ]
     )
@@ -218,6 +263,8 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
     routine_summary = routine_review.get("summary") if isinstance(routine_review, dict) else {}
     if not isinstance(routine_summary, dict):
         routine_summary = {}
+    surface_proxy = scene.get("surface_proxy")
+    surface_label = "SMPL-X surface proxy" if surface_proxy else "off"
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -255,6 +302,7 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
       <section>
         <h2>Tracks</h2>
         <div class="metric"><span>Teaching source</span><strong>SMPL-X teacher</strong></div>
+        <div class="metric"><span>Surface layer</span><strong>{surface_label}</strong></div>
         <div class="metric"><span>Visual companion</span><strong>Unitree G1 visual</strong></div>
         <div class="metric"><span>G1 scoring</span><strong>false</strong></div>
       </section>
@@ -326,6 +374,16 @@ def write_public_demo(
             "anchor_count": len(scene.get("feedback_anchor_labels", [])),
             "scoring_source": "smplx",
         },
+        "surface_layers": {
+            "smplx_proxy": {
+                "available": bool(scene.get("surface_proxy")),
+                "surface_kind": scene.get("surface_proxy", {}).get("surface_kind")
+                if scene.get("surface_proxy")
+                else None,
+                "licensed_smplx_mesh": False,
+                "scoring_allowed": False,
+            }
+        },
         "rerun": {
             "target": "Rerun Web Viewer",
             "actual_rrd": False,
@@ -333,7 +391,13 @@ def write_public_demo(
             "fallback_reason": "rerun-sdk not installed",
         },
         "visual_smoke_expectations": {
-            "required_labels": ["SMPL-X teacher", "Unitree G1 visual", "fixture-only", "Routine feedback"],
+            "required_labels": [
+                "SMPL-X teacher",
+                "Unitree G1 visual",
+                "fixture-only",
+                "Routine feedback",
+                *(["SMPL-X surface proxy"] if scene.get("surface_proxy") else []),
+            ],
             "nonblank_artifacts": ["index.html", "screenshot.svg"],
         },
     }

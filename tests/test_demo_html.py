@@ -31,6 +31,7 @@ from neodojo.real_conversion import (
     validate_gvhmr_source,
     write_real_conversion_prep,
 )
+from neodojo.smplx_surface import load_smplx_surface_proxy, write_smplx_surface_proxy
 from neodojo.teaching_playback import write_teaching_playback_demo
 
 
@@ -515,6 +516,69 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["reference_video_sync"]["media"]["suffix"], ".mp4")
         self.assertEqual(manifest["reference_video_sync"]["trim_start_seconds"], 1.25)
         self.assertEqual(len(manifest["reference_video_sync"]["media"]["sha256"]), 64)
+
+    def test_smplx_surface_proxy_integrates_with_playback_and_public_demo(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            surface = write_smplx_surface_proxy(root / "surface", motion.out_dir)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+
+            surface_manifest, surface_frames = load_smplx_surface_proxy(surface.manifest_path)
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+                smplx_surface=surface.manifest_path,
+            )
+            public = write_public_demo(
+                playback_manifest_path=playback.manifest_path,
+                recording_path=root / "public-demo" / "neodojo-demo.rrd",
+            )
+            smoke = smoke_check_public_demo(root / "public-demo")
+            playback_manifest = json.loads(playback.manifest_path.read_text(encoding="utf-8"))
+            playback_html = playback.html_path.read_text(encoding="utf-8")
+            public_manifest = json.loads(public.manifest_path.read_text(encoding="utf-8"))
+            scene = json.loads(public.scene_path.read_text(encoding="utf-8"))
+            screenshot = public.screenshot_path.read_text(encoding="utf-8")
+
+        self.assertEqual(surface_manifest["schema"], "neodojo.smplx_surface_proxy.v1")
+        self.assertFalse(surface_manifest["licensed_smplx_mesh"])
+        self.assertFalse(surface_manifest["scoring_allowed"])
+        self.assertEqual(len(surface_frames), 10)
+        self.assertEqual(playback_manifest["surface_layers"]["smplx_proxy"]["surface_kind"], "joint_capsule_proxy")
+        self.assertEqual(playback_manifest["evidence"]["rendered_surface_layers"], ["smplx_proxy"])
+        self.assertIn("SMPL-X surface proxy", playback_html)
+        self.assertEqual(scene["surface_proxy"]["surface_kind"], "joint_capsule_proxy")
+        self.assertFalse(public_manifest["surface_layers"]["smplx_proxy"]["licensed_smplx_mesh"])
+        self.assertIn("SMPL-X surface proxy", screenshot)
+        self.assertEqual(len(smoke.checked_paths), 4)
+
+    def test_teaching_playback_rejects_surface_frame_count_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            shorter_motion = write_fixture_motion_contract(root / "shorter-motion", frame_count=9)
+            surface = write_smplx_surface_proxy(root / "surface", shorter_motion.out_dir)
+            model = write_fixture_g1_model_descriptor(root / "model")
+            g1 = build_g1_visual_track(
+                motion.out_dir,
+                root / "g1",
+                model_descriptor_path=model.descriptor_path,
+            )
+
+            with self.assertRaisesRegex(ValueError, "surface proxy frame count"):
+                write_teaching_playback_demo(
+                    root / "teaching-demo",
+                    motion.out_dir,
+                    g1.track_manifest_path,
+                    smplx_surface=surface.manifest_path,
+                )
 
     def test_detected_annotations_drive_teaching_playback_key_frame(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

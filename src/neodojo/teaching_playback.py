@@ -16,6 +16,7 @@ from .motion_contract import (
     resolve_motion_record_manifest,
     validate_output_dir,
 )
+from .smplx_surface import load_smplx_surface_proxy, resolve_smplx_surface_manifest
 
 
 @dataclass(frozen=True)
@@ -108,6 +109,7 @@ def write_teaching_playback_demo(
     motion_record: Path,
     g1_track: Path,
     annotations_path: Path | None = None,
+    smplx_surface: Path | None = None,
     reference_video: Path | None = None,
     reference_trim_start_seconds: float = 0.0,
 ) -> TeachingPlaybackWriteResult:
@@ -119,6 +121,15 @@ def write_teaching_playback_demo(
     g1_manifest, g1_frames = load_g1_track_frames(g1_track_manifest_path)
     if len(smplx_frames) != len(g1_frames):
         raise ValueError("SMPL-X and G1 tracks must have matching frame counts")
+
+    smplx_surface_manifest_path: Path | None = None
+    surface_manifest: dict[str, Any] | None = None
+    surface_frames: list[dict[str, Any]] | None = None
+    if smplx_surface is not None:
+        smplx_surface_manifest_path = resolve_smplx_surface_manifest(smplx_surface)
+        surface_manifest, surface_frames = load_smplx_surface_proxy(smplx_surface_manifest_path)
+        if len(surface_frames) != len(smplx_frames):
+            raise ValueError("SMPL-X surface proxy frame count must match the source motion record")
 
     key_frame, annotation_name, annotation_manifest, routine_review = _normalize_annotation_manifest(
         annotations_path,
@@ -133,11 +144,30 @@ def write_teaching_playback_demo(
     )
     if routine_review is not None:
         fixture["routine_review"] = routine_review
+    if surface_manifest is not None and surface_frames is not None:
+        fixture["surface_proxy"] = {
+            "track_id": "smplx",
+            "label": "SMPL-X surface proxy",
+            "surface_kind": surface_manifest.get("surface_kind"),
+            "licensed_smplx_mesh": False,
+            "scoring_allowed": False,
+            "frames": surface_frames,
+        }
 
     out_dir.mkdir(parents=True, exist_ok=True)
     html_path = out_dir / "index.html"
     manifest_path = out_dir / "manifest.json"
     html_path.write_text(render_demo_html(fixture), encoding="utf-8")
+
+    surface_layers: dict[str, Any] = {}
+    if surface_manifest is not None and smplx_surface_manifest_path is not None:
+        surface_layers["smplx_proxy"] = {
+            "role": surface_manifest.get("role"),
+            "manifest": _relative_path(smplx_surface_manifest_path, manifest_path.parent),
+            "surface_kind": surface_manifest.get("surface_kind"),
+            "licensed_smplx_mesh": False,
+            "scoring_allowed": False,
+        }
 
     manifest = {
         "schema": PLAYBACK_SCHEMA,
@@ -155,6 +185,7 @@ def write_teaching_playback_demo(
                 "scoring_allowed": False,
             },
         },
+        "surface_layers": surface_layers,
         "annotations": _relative_path(annotations_path, manifest_path.parent) if annotations_path else None,
         "annotation_name": annotation_name,
         "frame_count": len(smplx_frames),
@@ -171,6 +202,7 @@ def write_teaching_playback_demo(
         "evidence": {
             "kind": "html_frame_payload",
             "rendered_tracks": ["smplx", "g1"],
+            "rendered_surface_layers": ["smplx_proxy"] if surface_manifest else [],
             "trajectory_joints": fixture["trajectory_joints"],
         },
     }
