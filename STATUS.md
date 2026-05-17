@@ -358,7 +358,9 @@ motion artifact, or hosted/live-client Viser capture.
   materialization and GVHMR JSON inputs, then runs the same
   `make real-artifact-intake` wrapper. It is included in `make verify` and is
   intended to keep the returned-artifact intake surface covered without
-  claiming a real GVHMR artifact exists.
+  claiming a real GVHMR artifact exists. Its real-demo manifest records
+  `gvhmr_artifact_imported: true` and `real_gvhmr_artifact_imported: false`
+  for fixture smoke, plus explicit source/export fixture flags.
 
 ## Blockers And Constraints
 

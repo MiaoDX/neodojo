@@ -79,6 +79,11 @@ def write_real_conversion_demo(
             "GVHMR source validation did not pass; inspect "
             f"{validation.report_path} before importing the real artifact"
         )
+    materialization_payload = _load_json_object(source_materialization, "source materialization manifest")
+    validated_export_payload = _load_json_object(validation.validated_export_path, "validated GVHMR export")
+    source_materialization_fixture_only = bool(materialization_payload.get("fixture_only"))
+    gvhmr_export_fixture_only = bool(validated_export_payload.get("fixture_only"))
+    real_gvhmr_artifact_imported = not source_materialization_fixture_only and not gvhmr_export_fixture_only
 
     motion = write_gvhmr_json_motion_contract(
         out_dir / "motion-contract",
@@ -148,12 +153,31 @@ def write_real_conversion_demo(
         fixture_components.append("g1_model_descriptor")
     if generated_g1_track is not None:
         fixture_components.append("derived_g1_visual_track")
+    notes = (
+        "This command consumes an externally generated GVHMR JSON export. It "
+        "does not run GVHMR locally or commit source video, motion outputs, "
+        "rendered media, or model assets."
+        if real_gvhmr_artifact_imported
+        else (
+            "This command consumed a fixture-only GVHMR-shaped JSON export for "
+            "local contract smoke testing. It does not prove a real GVHMR run, "
+            "and it does not commit source video, motion outputs, rendered media, "
+            "or model assets."
+        )
+    )
     manifest = {
         "schema": REAL_CONVERSION_DEMO_SCHEMA,
         "status": "generated",
-        "fixture_only": bool(fixture_components),
+        "fixture_only": bool(
+            fixture_components
+            or source_materialization_fixture_only
+            or gvhmr_export_fixture_only
+        ),
         "fixture_components": fixture_components,
-        "real_gvhmr_artifact_imported": True,
+        "gvhmr_artifact_imported": True,
+        "real_gvhmr_artifact_imported": real_gvhmr_artifact_imported,
+        "source_materialization_fixture_only": source_materialization_fixture_only,
+        "gvhmr_export_fixture_only": gvhmr_export_fixture_only,
         "source_materialization": _relative_path(source_materialization, manifest_path.parent),
         "source_validation": _relative_path(validation.report_path, manifest_path.parent),
         "validated_gvhmr_json": _relative_path(validation.validated_export_path, manifest_path.parent),
@@ -171,11 +195,7 @@ def write_real_conversion_demo(
         "reference_video_sync_available": reference_video is not None,
         "scoring_source": "smplx",
         "g1_scoring_allowed": False,
-        "notes": (
-            "This command consumes an externally generated GVHMR JSON export. It "
-            "does not run GVHMR locally or commit source video, motion outputs, "
-            "rendered media, or model assets."
-        ),
+        "notes": notes,
     }
     _write_json(manifest_path, manifest)
     checked_paths = list(dict.fromkeys([

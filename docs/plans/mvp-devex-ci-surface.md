@@ -58,6 +58,9 @@ screenshot capture and refreshes the capture bundle with browser evidence.
 `make real-artifact-intake-smoke` writes fixture-only source materialization
 and GVHMR JSON inputs, then runs the standard `make real-artifact-intake`
 wrapper so the returned-artifact import path is covered without a GPU artifact.
+The generated real-demo manifest distinguishes `gvhmr_artifact_imported` from
+`real_gvhmr_artifact_imported` so fixture smoke does not masquerade as a real
+GVHMR result.
 
 `.github/workflows/public-demo.yml` installs the package, runs lint, plan
 quality checks, tests, wheel build, runs `make real-handoff-smoke`, uploads a

@@ -380,7 +380,9 @@ path 的更简单 post-return wrapper。使用标准路径时，它默认读取
 `neodojo.gvhmr_smplx_joints.v1` JSON。
 `make real-artifact-intake-smoke` 会写 fixture-only source materialization 与
 GVHMR JSON 输入，再运行同一个 wrapper，让 returned-artifact intake path 在本地
-和 CI 中都有覆盖，但不声称已经运行过真实 GVHMR。
+和 CI 中都有覆盖，但不声称已经运行过真实 GVHMR。生成的 real-demo manifest 会用
+`gvhmr_artifact_imported: true` 表示 contract import 已完成，并用
+`real_gvhmr_artifact_imported: false` 表示这是 fixture smoke。
 
 `make demo-html` 会写出 `outputs/html-demo/index.html`，这是一个由本地
 motion/track manifest contract 支撑的自包含合成 fixture demo，用来验证目标教学

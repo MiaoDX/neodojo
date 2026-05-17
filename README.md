@@ -434,7 +434,9 @@ post-return wrapper for the same validated import path. It defaults to
 `neodojo.gvhmr_smplx_joints.v1` export when those standard paths are used.
 `make real-artifact-intake-smoke` writes fixture-only source materialization
 and GVHMR JSON inputs, then runs the same wrapper to keep the returned-artifact
-intake path covered locally and in CI without claiming a real GVHMR run.
+intake path covered locally and in CI without claiming a real GVHMR run. The
+resulting real-demo manifest sets `gvhmr_artifact_imported: true` for the
+contract import and `real_gvhmr_artifact_imported: false` for fixture smoke.
 
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local

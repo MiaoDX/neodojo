@@ -423,8 +423,9 @@ produces source-validation, real-demo, public-demo, and capture manifests
 without media. GitHub Actions run
 `https://github.com/MiaoDX/neodojo/actions/runs/26006038003` uploaded the
 `neodojo-real-artifact-intake-smoke` artifact and verified 36 frames at 24 fps
-with matching provenance. This proves the local intake command surface, not a
-real GVHMR execution.
+with matching provenance. The generated real-demo manifest separates
+`gvhmr_artifact_imported` from `real_gvhmr_artifact_imported`, so fixture smoke
+records the contract import without claiming a real GVHMR execution.
 
 When the external artifact exists, the next command is:
 
