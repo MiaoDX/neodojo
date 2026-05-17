@@ -390,7 +390,8 @@ archive-gpu-input` and `make gpu-input-archive GPU_INPUT=...` package that
 directory as `neodojo-gvhmr-gpu-input.tar.gz` plus a
 `neodojo.gvhmr_gpu_input_archive.v1` manifest. Metadata-only archives are
 CI-safe; media-containing archives stay ignored and must not be committed or
-published.
+published. The durable external-GPU operator checklist is
+[`docs/runbooks/gvhmr-external-gpu.md`](docs/runbooks/gvhmr-external-gpu.md).
 `neodojo real-conversion inspect-gvhmr-result` and `make gvhmr-inspect
 GVHMR_RESULT=...` inspect a returned `hmr4d_results.pt` when the optional
 `torch` dependency is available in the GVHMR/GPU environment, or a JSON summary

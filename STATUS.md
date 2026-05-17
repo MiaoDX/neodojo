@@ -18,10 +18,10 @@ capture bundle, and metadata-only real-handoff smoke artifact,
 `make real-handoff`, `make gpu-handoff`, `make gpu-input-bundle`,
 `make gpu-input-bundle-smoke`, `make gpu-input-archive`, and
 `make gpu-input-archive-smoke` for external GVHMR run metadata, transfer
-bundles/archives, and CI-safe GPU runner packaging, `make gvhmr-inspect` for
-returned GVHMR result inspection, and `make demo-real` for a validated external
-GVHMR JSON once a GPU artifact exists, with a verified live fixture-only
-GitHub Pages demo at
+bundles/archives, CI-safe GPU runner packaging, and a tracked external-GPU
+operator runbook, `make gvhmr-inspect` for returned GVHMR result inspection,
+and `make demo-real` for a validated external GVHMR JSON once a GPU artifact
+exists, with a verified live fixture-only GitHub Pages demo at
 `https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, `real-conversion package-gpu-handoff` can package the handoff
@@ -280,6 +280,11 @@ motion artifact, or hosted/live-client Viser capture.
   `run_gvhmr_neodojo.sh`. The smoke used dry-run source materialization, so the
   handoff correctly reports
   `needs_materialization` until a real trimmed clip exists.
+- A tracked external-GPU operator runbook now lives at
+  `docs/runbooks/gvhmr-external-gpu.md`. It records the archive transfer,
+  upstream GVHMR setup shape, packaged `run_gvhmr_neodojo.sh` invocation,
+  returned-export validation command, and failure-classification loop without
+  committing media, checkpoints, SMPL-X assets, or returned motion artifacts.
 - GVHMR result inspection smoke generated
   `outputs/gvhmr-result-inspection-smoke/manifest.json` from the existing local
   fixture export and reported `already_neodojo_export`. Unit tests also cover a
@@ -539,8 +544,10 @@ bundle exists under `outputs/gvhmr-gpu-input-local-bilibili/`, with a
 git. A local ignored transfer archive has also been generated at
 `outputs/gvhmr-gpu-input-archive-local-bilibili/neodojo-gvhmr-gpu-input.tar.gz`;
 its manifest reports `archive_with_media`, `media_included: true`, and
-`safe_for_git: false`. The next external step is to copy the bundle or archive
-to a GPU-capable machine, run GVHMR, and return the neodojo export.
+`safe_for_git: false`. The tracked operator checklist is
+`docs/runbooks/gvhmr-external-gpu.md`. The next external step is to copy the
+bundle or archive to a GPU-capable machine, run GVHMR, and return the neodojo
+export.
 Once that artifact exists, the remaining task is to validate it with
 `real-conversion import-demo`, then inspect the generated `outputs/real-demo/`
 artifacts.

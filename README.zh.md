@@ -339,7 +339,9 @@ bundle 和 runner script，不复制媒体，也不运行 GVHMR。`neodojo real-
 archive-gpu-input` 和 `make gpu-input-archive GPU_INPUT=...` 会把这个目录打成
 `neodojo-gvhmr-gpu-input.tar.gz`，并写出
 `neodojo.gvhmr_gpu_input_archive.v1` manifest。metadata-only archive 可用于 CI；
-包含媒体的 archive 仍必须留在 ignored outputs，不能提交或发布。
+包含媒体的 archive 仍必须留在 ignored outputs，不能提交或发布。持久化的外部 GPU
+operator checklist 在
+[`docs/runbooks/gvhmr-external-gpu.md`](docs/runbooks/gvhmr-external-gpu.md)。
 `neodojo real-conversion inspect-gvhmr-result` 和
 `make gvhmr-inspect GVHMR_RESULT=...` 会在 GVHMR/GPU 环境安装了 optional `torch`
 时检查返回的 `hmr4d_results.pt`，或者在默认本地环境检查 JSON summary。inspection

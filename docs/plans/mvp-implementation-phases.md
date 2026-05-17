@@ -18,12 +18,13 @@ an optional first Viser local runtime, optional source-media probing with
 custom local-source provenance, local source-media materialization handoff, a
 copyable ignored GPU input bundle with explicit media inclusion, a CI-safe
 GPU-side runner script for external GVHMR execution, a metadata-only GPU input
-transfer archive smoke, a fixture-only static public-demo fallback artifact, a
-generated roboharness-style capture bundle boundary, optional MuJoCo simulator
-recorder-capture integration, and a GitHub Actions workflow with verified
-fixture-only Pages publication, optional browser-rendered public-demo screenshot
-capture, metadata-only real-handoff smoke artifact upload, and metadata-only
-GPU input bundle/archive smoke upload. It
+transfer archive smoke, a tracked external-GPU operator runbook, a fixture-only
+static public-demo fallback artifact, a generated roboharness-style capture
+bundle boundary, optional MuJoCo simulator recorder-capture integration, and a
+GitHub Actions workflow with verified fixture-only Pages publication, optional
+browser-rendered public-demo screenshot capture, metadata-only real-handoff
+smoke artifact upload, and metadata-only GPU input bundle/archive smoke upload.
+It
 does not yet have a checked-in local GVHMR/GMR execution environment, completed
 simulator runtime pipeline, built-in official SMPL-X body-model renderer,
 hosted/live-client Viser capture, or broad static-analysis/release gates beyond
@@ -91,6 +92,7 @@ of truth for the next waves.
 | [mvp-gvhmr-export-adapter.md](mvp-gvhmr-export-adapter.md) | implemented GPU-side export helper; real artifact still external | Standalone GPU-side helper packaged with the handoff to convert GVHMR `hmr4d_results.pt` plus licensed SMPL-X assets into the neodojo import schema. |
 | [mvp-gvhmr-gpu-runner-surface.md](mvp-gvhmr-gpu-runner-surface.md) | implemented CI-safe GPU runner packaging; real artifact still external | Executable GPU-side runner script packaged with handoff/input bundles and smoke-tested without media or GVHMR execution. |
 | [mvp-gvhmr-gpu-transfer-archive.md](mvp-gvhmr-gpu-transfer-archive.md) | implemented CI-safe transfer archive; real artifact still external | Metadata-only and media-including GPU input bundle archives for transfer to the external GPU machine. |
+| [mvp-gvhmr-external-gpu-runbook.md](mvp-gvhmr-external-gpu-runbook.md) | implemented tracked runbook; real artifact still external | Durable operator checklist for unpacking the archive, running GVHMR on a CUDA machine, and validating the returned export locally. |
 | [mvp-quality-release-surface.md](mvp-quality-release-surface.md) | implemented first quality gate | Project-owned static quality check for MVP plan links and scaffolding beyond the minimal lint/build commands. |
 
 The numbered plans are semantically independent execution slices, not
@@ -262,6 +264,8 @@ docs:
   - path: docs/plans/mvp-gvhmr-gpu-runner-surface.md
     type: SPEC
   - path: docs/plans/mvp-gvhmr-gpu-transfer-archive.md
+    type: SPEC
+  - path: docs/plans/mvp-gvhmr-external-gpu-runbook.md
     type: SPEC
   - path: docs/plans/mvp-quality-release-surface.md
     type: SPEC
