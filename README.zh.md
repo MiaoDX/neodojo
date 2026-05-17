@@ -239,7 +239,8 @@ G1 retargeting 已经完成。
 - [ ] SMPL-X 与 Unitree G1 双轨同屏 Viser UI
 - [ ] 更广的关键定式自动检测 + 几何约束式术语反馈（超过第一个 opening-form detector）
 
-完整 roadmap 会以 issue 形式持续展开。
+详细 implementation queue 放在 [`docs/plans/`](docs/plans/)，之后可以再同步成
+GitHub issues。
 
 ---
 

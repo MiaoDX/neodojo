@@ -286,7 +286,8 @@ In progress:
 - [ ] Broader automatic key-frame detection + geometry-constrained verbal
       feedback beyond the first opening-form detector
 
-The full roadmap is being unfolded as GitHub issues.
+The detailed implementation queue lives in [`docs/plans/`](docs/plans/) and
+can later be mirrored into GitHub issues.
 
 ---
 

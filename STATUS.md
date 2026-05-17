@@ -171,18 +171,25 @@ artifacts for the later GPU GVHMR input handoff.
 ## Remaining Non-GPU Gaps
 
 - MuJoCo/Genesis real Unitree G1 mesh rendering from local URDF/MJCF plus
-  meshes.
-- Native GMR execution/parsing from upstream pickle/NumPy outputs. The repo now
-  has a normalized imported-GMR JSON boundary, but not local GMR execution.
-- SMPL-X mesh/body-surface playback; current demos draw joints and bones.
-- Simulator/Viser runtime integration and multi-camera offscreen capture.
-- True Rerun SDK `.rrd` export and verification of the live GitHub Pages URL.
+  meshes: `docs/plans/mvp-simulator-mesh-rendering.md`.
+- Native GMR execution/parsing from upstream pickle/NumPy outputs:
+  `docs/plans/mvp-native-gmr-runner.md`. The repo now has a normalized
+  imported-GMR JSON boundary, but not local GMR execution.
+- SMPL-X mesh/body-surface playback; current demos draw joints and bones:
+  `docs/plans/mvp-smplx-body-surface-playback.md`.
+- Simulator/Viser runtime integration and multi-camera offscreen capture:
+  `docs/plans/mvp-viser-multicamera-runtime.md`.
+- True Rerun SDK `.rrd` export and verification of the live GitHub Pages URL:
+  `docs/plans/mvp-rerun-pages-release.md`.
 - Feedback beyond the first deterministic opening-form detector: more posture
-  terms, multi-keyframe detection, and routine-level review.
+  terms, multi-keyframe detection, and routine-level review:
+  `docs/plans/mvp-feedback-routine-review.md`.
 - Validation that an imported real GVHMR artifact was produced from the exact
-  materialized source clip and trim window.
+  materialized source clip and trim window:
+  `docs/plans/mvp-gvhmr-source-validation.md`.
 - Broader static analysis, type checking, coverage, and release packaging
-  beyond the minimal syntax-lint and wheel-build commands.
+  beyond the minimal syntax-lint and wheel-build commands:
+  `docs/plans/mvp-quality-release-surface.md`.
 
 ## Next Safe Task
 

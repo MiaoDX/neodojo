@@ -58,6 +58,23 @@ local/user-supplied source video
 | 12 | [mvp-source-media-materialization.md](mvp-source-media-materialization.md) | implemented local handoff | Turn source prep plus a local video into a dry-run or ffmpeg-backed trimmed-clip/reference-frame handoff. | A source-materialization manifest records source validation, commands, generated outputs when available, and the GVHMR input handoff path without committing media. |
 | 13 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep/materialization ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata and source materialization can prepare the trimmed input; final stop condition still requires a real GVHMR artifact imported through the hardened contracts. |
 
+## Future Gap Plans
+
+These plans are not required to keep the current fixture public-demo lane
+working. They turn remaining `STATUS.md` gaps into explicit execution sources
+of truth for the next waves.
+
+| Plan | Status | Gap Covered |
+| --- | --- | --- |
+| [mvp-simulator-mesh-rendering.md](mvp-simulator-mesh-rendering.md) | planned; blocked on user-supplied G1 assets and simulator dependency | MuJoCo/Genesis real Unitree G1 mesh rendering. |
+| [mvp-native-gmr-runner.md](mvp-native-gmr-runner.md) | planned; blocked on upstream GMR environment and sample outputs | Native GMR execution/parsing beyond normalized JSON import. |
+| [mvp-smplx-body-surface-playback.md](mvp-smplx-body-surface-playback.md) | planned; blocked on licensed SMPL-X assets | SMPL-X mesh/body-surface playback. |
+| [mvp-viser-multicamera-runtime.md](mvp-viser-multicamera-runtime.md) | planned; blocked on runtime dependency and interaction design | Local Viser runtime and multi-camera/offscreen workflow. |
+| [mvp-rerun-pages-release.md](mvp-rerun-pages-release.md) | planned; blocked on Rerun SDK install and repository Pages settings | True Rerun SDK `.rrd` export and verified live GitHub Pages URL. |
+| [mvp-feedback-routine-review.md](mvp-feedback-routine-review.md) | planned | Broader key-frame/posture feedback and routine-level review. |
+| [mvp-gvhmr-source-validation.md](mvp-gvhmr-source-validation.md) | planned; blocked on a real GVHMR export | Validation that imported GVHMR artifacts match the materialized source clip and trim. |
+| [mvp-quality-release-surface.md](mvp-quality-release-surface.md) | planned | Type/static/coverage/release quality surface beyond the minimal lint/build commands. |
+
 The numbered plans are semantically independent execution slices, not
 necessarily separate GSD phases. The grouping boundary is:
 
@@ -195,6 +212,22 @@ docs:
   - path: docs/plans/mvp-source-media-materialization.md
     type: SPEC
   - path: docs/plans/mvp-real-conversion-gate.md
+    type: SPEC
+  - path: docs/plans/mvp-simulator-mesh-rendering.md
+    type: SPEC
+  - path: docs/plans/mvp-native-gmr-runner.md
+    type: SPEC
+  - path: docs/plans/mvp-smplx-body-surface-playback.md
+    type: SPEC
+  - path: docs/plans/mvp-viser-multicamera-runtime.md
+    type: SPEC
+  - path: docs/plans/mvp-rerun-pages-release.md
+    type: SPEC
+  - path: docs/plans/mvp-feedback-routine-review.md
+    type: SPEC
+  - path: docs/plans/mvp-gvhmr-source-validation.md
+    type: SPEC
+  - path: docs/plans/mvp-quality-release-surface.md
     type: SPEC
   - path: docs/technical-roadmap.md
     type: DOC
