@@ -416,6 +416,16 @@ Latest local execution probe, now reproducible with `make gpu-execution-probe`:
 That probe keeps the blocker classified as external artifact acquisition rather
 than an unimplemented local command or contract gap.
 
+The returned-artifact import wrapper is now covered by fixture-only local and
+CI smoke evidence: `make real-artifact-intake-smoke` writes fixture source
+materialization and GVHMR JSON inputs, runs `make real-artifact-intake`, and
+produces source-validation, real-demo, public-demo, and capture manifests
+without media. GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26006038003` uploaded the
+`neodojo-real-artifact-intake-smoke` artifact and verified 36 frames at 24 fps
+with matching provenance. This proves the local intake command surface, not a
+real GVHMR execution.
+
 When the external artifact exists, the next command is:
 
 ```bash

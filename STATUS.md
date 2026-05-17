@@ -274,6 +274,18 @@ motion artifact, or hosted/live-client Viser capture.
   `external_gpu_artifact_missing`, `safe_for_git: true`,
   `secret_values_recorded: false`, no local CUDA, no Docker GPU runtime, and no
   configured provider candidates.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26006038003` verified the
+  real-artifact intake smoke lane on `main`: lint, plan checks, tests, wheel
+  build, real-handoff smoke, GPU input bundle smoke, GPU input archive smoke,
+  GPU execution probe, `make real-artifact-intake-smoke`, smoke artifact
+  upload, browser capture, public-demo artifact upload, capture-bundle upload,
+  Pages artifact upload, and Pages deploy passed. The downloaded
+  `neodojo-real-artifact-intake-smoke` artifact contains fixture-only
+  source-materialization and GVHMR JSON inputs plus real-demo, validation,
+  public-demo, and capture manifests. The source validation report passed with
+  36 frames at 24 fps, 1.5 seconds of motion, matching source provenance, and
+  the artifact includes no `.mp4`, `.pt`, `.pkl`, or `.npz` files.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.

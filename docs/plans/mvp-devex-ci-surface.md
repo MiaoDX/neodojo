@@ -1,6 +1,6 @@
 # MVP DevEx And CI Surface Plan
 
-Status: IMPLEMENTED WITH BROWSER CAPTURE, REAL-HANDOFF, GPU-INPUT, GPU-ARCHIVE, GPU-EXECUTION-PROBE, AND REAL-ARTIFACT-INTAKE SMOKE ARTIFACT CI SURFACE
+Status: IMPLEMENTED WITH BROWSER CAPTURE, REAL-HANDOFF, GPU-INPUT, GPU-ARCHIVE, GPU-EXECUTION-PROBE, AND REAL-ARTIFACT-INTAKE SMOKE ARTIFACT CI VERIFIED
 
 ## Goal
 
@@ -125,6 +125,15 @@ uploaded `neodojo.gvhmr_gpu_execution_probe.v1`, no secret values were recorded,
 and the artifact classified the CI runner as `external_gpu_artifact_missing`
 with no local CUDA, Docker GPU runtime, or configured GPU provider candidate.
 
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26006038003` verified the
+fixture-only real-artifact intake smoke artifact on `main`: `make
+real-artifact-intake-smoke` passed, the
+`neodojo-real-artifact-intake-smoke` artifact uploaded source materialization,
+GVHMR JSON, source-validation, real-demo, public-demo, and capture manifests,
+the source-validation report passed with 36 frames at 24 fps, and the artifact
+contains no source media or checkpoint/model files.
+
 ## Inputs
 
 - Existing fixture generation commands.
@@ -247,9 +256,9 @@ with no local CUDA, Docker GPU runtime, or configured GPU provider candidate.
   media.
 - CI uploads the metadata-only GPU execution probe artifact with command/env-key
   readiness evidence and no secret values, verified by run `26005618093`.
-- CI is configured to upload the fixture-only real-artifact intake smoke
-  artifact with source-validation, public-demo, and capture manifests but no
-  media.
+- CI uploads the fixture-only real-artifact intake smoke artifact with
+  source-validation, public-demo, and capture manifests but no media, verified
+  by run `26006038003`.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages publishes only safe static demo assets once repository Pages is
