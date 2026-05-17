@@ -22,6 +22,10 @@ motion artifact, or UI server is currently part of the repo.
 
 - First end-to-end demo for Baduanjin opening form, "Holding Up the Heavens to
   Regulate the Triple Burner".
+- Pre-GSD implementation phase split in
+  `docs/plans/mvp-implementation-phases.md`.
+- Immediate local-first smoke path: fixture motion -> motion record -> track
+  manifest -> local inspection -> one geometry check.
 - Multi-camera offscreen rendering approach, likely reusing roboharness patterns.
 - Synchronized SMPL-X and Unitree G1 playback in Viser.
 - Key-frame detection and geometry-constrained verbal feedback for terms such as
@@ -37,6 +41,12 @@ motion artifact, or UI server is currently part of the repo.
   out-of-distribution qigong poses, self-occlusion, feet, and hands.
 - Unitree G1 is not the scoring source because its torso and hand DOF cannot
   fully preserve the original human motion.
+- Local execution should stay friendly to this macOS Apple Silicon CPU machine:
+  use imported GVHMR/HAMER outputs or fixtures instead of running heavy GPU/CUDA
+  inference locally.
+- Downstream development may use synthetic or PBHC-sourced bootstrap fixtures to
+  prove interfaces and playback, but the full MVP still requires a real
+  GVHMR-produced Baduanjin artifact before it can be called end-to-end.
 
 ## What Can Be Run Now
 
@@ -46,12 +56,17 @@ README/status updates.
 
 ## Next Safe Task
 
-Add the smallest reproducible pipeline entrypoint for one local source clip:
-validate inputs, call or wrap GVHMR/GMR in a clearly documented way, and produce
-a small non-image motion artifact suitable for later rendering work.
+Execute the immediate local-first smoke path from
+`docs/plans/mvp-implementation-phases.md`: add the smallest package/CLI/test
+surface, import a tiny synthetic or PBHC-sourced fixture, write a motion-record
+manifest, write a track manifest, run a local inspection command, and compute one
+deterministic geometry check. Defer real GVHMR conversion to the GPU follow-up
+gate after this local path works.
 
 ## Background Evidence
 
 - `docs/technical-roadmap.md` is the long technical research report.
 - `docs/humanoid-platform-evaluation.md` records the G1 + SMPL-X dual-track
   platform decision.
+- `docs/plans/mvp-implementation-phases.md` splits that research into three
+  standalone implementation phases.
