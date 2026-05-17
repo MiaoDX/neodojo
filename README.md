@@ -167,8 +167,8 @@ an optional first Viser local runtime, and minimal lint/build/quality-check
 commands. It can also write a dry-run or ffmpeg-backed local source-video
 handoff for a later GPU GVHMR run. There is still no checked-in GVHMR/GMR
 execution pipeline, simulator runtime pipeline, licensed SMPL-X mesh
-generation, production teaching UI, or GMR-driven real Unitree G1 mesh
-playback.
+generation, production teaching UI, or end-to-end real generated motion
+artifact.
 
 What can be run now:
 
@@ -218,7 +218,7 @@ mesh is generated and all feedback still reads SMPL-X joints.
 
 `neodojo robot-model register` and `neodojo tracks build` can write fixture G1
 model and visual-track manifests. These preserve the SMPL-X/G1 responsibility
-split but do not yet load a real Unitree G1 mesh or run GMR retargeting.
+split and still do not run GMR retargeting locally.
 `neodojo tracks normalize-gmr-pkl` parses the native YanjieZe/GMR robot-motion
 pickle shape written by upstream `scripts/*_to_robot.py --save_path` and emits
 the normalized JSON contract used by the repo. `neodojo tracks import-gmr-json`
@@ -237,7 +237,10 @@ registered URDF/MJCF descriptors. It requires installing the `sim` extra or the
 `mujoco` package and local, untracked robot assets for a real Unitree G1 proof.
 The built-in optional smoke verifies the path with a tiny synthetic MJCF model,
 and the real asset-load path has been verified locally with an untracked clone
-of `unitreerobotics/unitree_mujoco` `g1_29dof.xml`.
+of `unitreerobotics/unitree_mujoco` `g1_29dof.xml`. When the G1 track contains
+an imported `unitree_g1_joint_angles` pose stream, matching MuJoCo hinge/slide
+joints are applied to `qpos` for the selected render frame and the manifest
+records applied, missing, skipped, and clipped joints.
 
 `neodojo demo play` consumes the SMPL-X motion-record, optional SMPL-X surface
 proxy, and G1 visual-track manifests together, then writes
@@ -315,6 +318,8 @@ In progress:
       `g1_scoring_allowed: false`
 - [x] Optional MuJoCo offscreen mesh render command, smoke-tested with a tiny
       MJCF model and an untracked local Unitree G1 asset clone
+- [x] Imported GMR joint angles applied to matching real Unitree G1 MuJoCo qpos
+      joints for render evidence
 - [x] Local teaching playback command that consumes SMPL-X and G1 manifests
 - [x] Deterministic SMPL-X opening-form routine feedback review with multiple
       key-frame anchors and posture terms
@@ -334,7 +339,6 @@ In progress:
 - [x] Local real-conversion source materialization handoff for a user-supplied
       video
 - [x] Local GVHMR source-validation report and validated JSON import handoff
-- [ ] applying imported GMR joint angles to real Unitree G1 MuJoCo qpos
 - [ ] roboharness-style multi-camera offscreen capture integration
 - [ ] production Viser teaching UX beyond the first optional local runtime
 

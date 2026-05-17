@@ -16,8 +16,8 @@ materialize-source` can also prepare a dry-run or ffmpeg-backed local source
 clip handoff for a later GPU GVHMR run, and `real-conversion validate-source`
 can validate a GVHMR JSON export against that handoff before import. There is
 still no checked-in GVHMR/GMR execution pipeline, simulator runtime pipeline,
-licensed SMPL-X mesh generation, GMR-driven real Unitree G1 mesh playback, real
-generated motion artifact, or production UI server.
+licensed SMPL-X mesh generation, real generated motion artifact, or production
+UI server.
 
 ## Current Truth
 
@@ -77,7 +77,10 @@ generated motion artifact, or production UI server.
   when the `mujoco` package and local registered URDF/MJCF assets are available.
   The built-in optional smoke verifies the path with a tiny MJCF model; real
   Unitree G1 asset-load proof has also been verified locally with an untracked
-  clone of `unitreerobotics/unitree_mujoco` `g1_29dof.xml`.
+  clone of `unitreerobotics/unitree_mujoco` `g1_29dof.xml`. Imported GMR
+  `unitree_g1_joint_angles` streams are now applied to matching MuJoCo
+  hinge/slide `qpos` joints for the selected render frame, with manifest
+  evidence for applied, missing, skipped, and clipped joints.
 - Hardened artifact manifests now carry schema ids, shared timing,
   coordinate/floor/contact metadata, source-media provenance, optional
   reference-video sync metadata, and normalized annotation manifests.
@@ -102,7 +105,7 @@ generated motion artifact, or production UI server.
   GitHub Pages from `main` when Pages is enabled and the repository variable
   `NEODOJO_DEPLOY_PAGES=true` is set.
 - GitHub Actions run
-  `https://github.com/MiaoDX/neodojo/actions/runs/25998306700` verified the
+  `https://github.com/MiaoDX/neodojo/actions/runs/25998459964` verified the
   default CI lane on `main`, uploaded the `neodojo-public-demo` artifact, and
   produced a CI-generated `index.html` that passes `neodojo demo smoke`.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
@@ -110,9 +113,9 @@ generated motion artifact, or production UI server.
   preserving the SMPL-X scoring boundary.
 - The local non-GPU G1 render evidence slice in
   `docs/plans/mvp-g1-real-model-rendering.md` has landed as an SVG/HTML
-  descriptor/track render path. Optional MuJoCo mesh rendering now has both a
-  tiny-MJCF smoke and a real local Unitree G1 asset-load smoke; applying GMR
-  joint angles to real-model qpos remains a later gap.
+  descriptor/track render path. Optional MuJoCo mesh rendering now has a
+  tiny-MJCF smoke, a real local Unitree G1 asset-load smoke, and a real local
+  GMR joint-angle-to-qpos smoke against matching Unitree G1 joint names.
 - Real-conversion source prep manifest generated under
   `outputs/real-conversion-gate/`, selecting source `03-006` metadata and a
   short trim window for a later GPU run. When `--local-video` is supplied, the
@@ -202,7 +205,9 @@ a G1 model descriptor plus G1 track; fixture model descriptors require explicit
 `--allow-fixture-model`, and this is not MuJoCo/Genesis simulator mesh
 rendering. `neodojo render mujoco-g1` is an optional MuJoCo offscreen renderer
 for registered URDF/MJCF descriptors; install the `sim` extra or `mujoco` and
-provide local untracked robot assets before using it for real G1 evidence.
+provide local untracked robot assets before using it for real G1 evidence. If
+the G1 track carries imported GMR joint angles, matching MuJoCo hinge/slide
+joints are applied to `qpos` and summarized in the render manifest.
 `neodojo demo play` writes
 `outputs/teaching-demo/index.html` and a playback manifest from the SMPL-X,
 optional SMPL-X surface proxy, and G1 manifests. `neodojo demo export-rerun` writes
@@ -245,10 +250,6 @@ when source id, trim, input path/checksum, and duration checks pass.
 
 ## Remaining Non-GPU Gaps
 
-- Applying imported GMR joint angles to a real Unitree G1 MuJoCo qpos stream:
-  `docs/plans/mvp-simulator-mesh-rendering.md`. The optional renderer command
-  exists and has been smoke-tested with both a tiny MJCF model and an untracked
-  local Unitree G1 asset clone.
 - Licensed SMPL-X mesh/body-model playback beyond the current capsule proxy:
   `docs/plans/mvp-smplx-body-surface-playback.md`.
 - Production Viser teaching UX and multi-camera/offscreen screenshot capture:

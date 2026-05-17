@@ -1,6 +1,6 @@
 # MVP Simulator Mesh Rendering Plan
 
-Status: IMPLEMENTED OPTIONAL MUJOCO COMMAND AND REAL G1 ASSET SMOKE; GMR QPOS APPLICATION PENDING
+Status: IMPLEMENTED OPTIONAL MUJOCO COMMAND, REAL G1 ASSET SMOKE, AND GMR QPOS APPLICATION
 
 ## Goal
 
@@ -23,6 +23,11 @@ The asset-load proof has also been verified locally with an untracked clone of
 `https://github.com/unitreerobotics/unitree_mujoco` at revision
 `517e161b4a89d1a62831357314d8aa6d90d9c18d`, registering
 `unitree_robots/g1/g1_29dof.xml` and rendering front/side/top PNG frames.
+The qpos proof has been verified against the same local G1 asset descriptor and
+an imported-GMR fixture track: matching `left_hip_pitch_joint`,
+`right_hip_pitch_joint`, and `waist_yaw_joint` values were applied to MuJoCo
+`qpos`, the PNG frames were nonblank, and the render manifest recorded zero
+missing joints for that smoke.
 
 ## Dependencies
 
@@ -50,6 +55,8 @@ The asset-load proof has also been verified locally with an untracked clone of
   loaded.
 - README/STATUS updates that keep SVG evidence and real simulator rendering
   distinct.
+- Pose-application manifest evidence for imported GMR joint angles: applied,
+  missing, skipped, and clipped joints.
 - CLI command:
 
   ```bash
@@ -78,7 +85,7 @@ The asset-load proof has also been verified locally with an untracked clone of
    - [x] Render a neutral-pose first slice from the registered model.
    - [x] Render front/side/top PNG images at CI-friendly resolution.
    - [x] Preserve `g1_scoring_allowed: false`.
-   - [ ] Apply imported GMR joint angles to model qpos when a matching joint
+   - [x] Apply imported GMR joint angles to model qpos when a matching joint
      stream and real asset bundle are available.
 
 4. Verify.
@@ -86,6 +93,8 @@ The asset-load proof has also been verified locally with an untracked clone of
    - [x] Add an optional smoke that is skipped unless simulator dependency is
      available locally.
    - [x] Verify optional smoke with a tiny synthetic MJCF model.
+   - [x] Verify imported GMR joint-angle qpos application with the optional
+     MuJoCo test and the local untracked Unitree G1 MJCF asset.
 
 ## Acceptance Evidence
 
@@ -97,8 +106,9 @@ The asset-load proof has also been verified locally with an untracked clone of
 - Docs do not claim the simulator path exists until the command and smoke pass.
 - Real Unitree G1 asset-load proof has been verified from an untracked local
   asset clone; generated renders remain under ignored output paths.
-- Applying imported GMR joint angles to real-model qpos remains follow-on until
-  a matching joint stream and asset convention are selected.
+- Imported GMR joint angles are applied to matching MuJoCo hinge/slide qpos
+  entries when present, and the manifest records applied, missing, skipped, and
+  clipped joints.
 
 ## Non-Goals
 
@@ -110,7 +120,7 @@ The asset-load proof has also been verified locally with an untracked clone of
 
 ## Stop Condition
 
-Stopped for the real-asset smoke slice when the optional MuJoCo command rendered
-nonblank PNG frames from an untracked local Unitree G1 MJCF descriptor and wrote
-a render manifest that preserves the SMPL-X/G1 scoring boundary. Continue only
-when applying imported GMR joint angles to real-model qpos becomes necessary.
+Stop for this slice when the optional MuJoCo command renders nonblank PNG
+frames from an untracked local Unitree G1 MJCF descriptor, applies matching
+imported GMR joint angles to `qpos`, and writes a render manifest that preserves
+the SMPL-X/G1 scoring boundary.

@@ -183,6 +183,12 @@ def _render_image_html(manifest: dict[str, Any], frame_paths: dict[str, Path]) -
         f'<section><h2>{name.title()}</h2><img src="frames/{path.name}" alt="{name} G1 simulator render"></section>'
         for name, path in frame_paths.items()
     )
+    pose_source = manifest.get("pose_application", {}).get("source")
+    pose_note = (
+        "Imported GMR joint-angle pose evidence"
+        if pose_source == "imported_gmr_joint_angles"
+        else "Neutral-pose simulator mesh evidence"
+    )
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -211,7 +217,7 @@ def _render_image_html(manifest: dict[str, Any], frame_paths: dict[str, Path]) -
     {cards}
   </main>
   <footer>
-    Renderer: {manifest["renderer"]["backend"]}. Neutral-pose simulator mesh evidence only; scoring source remains SMPL-X.
+    Renderer: {manifest["renderer"]["backend"]}. {pose_note}; scoring source remains SMPL-X.
   </footer>
 </body>
 </html>
@@ -275,6 +281,106 @@ def _camera_for_view(mujoco: Any, model: Any, view: str) -> Any:
     else:
         raise ValueError(f"unsupported view: {view}")
     return camera
+
+
+def _load_g1_joint_angle_frames(
+    track_manifest_path: Path,
+    track_manifest: dict[str, Any],
+    *,
+    expected_frame_count: int,
+) -> tuple[list[dict[str, float]], list[str]]:
+    pose_stream = track_manifest.get("pose_stream")
+    if not isinstance(pose_stream, dict) or pose_stream.get("kind") != "unitree_g1_joint_angles":
+        return [], []
+
+    data_file = track_manifest.get("data_files", {}).get("frames")
+    if not data_file:
+        raise ValueError("G1 track manifest is missing data_files.frames")
+    data_path = track_manifest_path.parent / data_file
+    data = json.loads(data_path.read_text(encoding="utf-8"))
+
+    raw_frames = data.get("joint_angles")
+    if not isinstance(raw_frames, list) or len(raw_frames) != expected_frame_count:
+        raise ValueError("GMR G1 joint-angle frame count must match visual frame count")
+
+    joint_names = data.get("joint_angle_names")
+    if not isinstance(joint_names, list) or not all(isinstance(name, str) and name for name in joint_names):
+        joint_names = sorted(raw_frames[0]) if raw_frames and isinstance(raw_frames[0], dict) else []
+
+    angle_frames: list[dict[str, float]] = []
+    expected_names = sorted(joint_names)
+    for frame_index, raw_frame in enumerate(raw_frames):
+        if not isinstance(raw_frame, dict):
+            raise ValueError(f"GMR G1 joint-angle frame {frame_index} must be an object")
+        normalized: dict[str, float] = {}
+        for joint, value in raw_frame.items():
+            if not isinstance(joint, str) or not joint:
+                raise ValueError(f"GMR G1 joint-angle frame {frame_index} contains an invalid joint name")
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError(f"GMR G1 joint angle {joint} at frame {frame_index} must be numeric")
+            normalized[joint] = float(value)
+        if sorted(normalized) != expected_names:
+            raise ValueError(f"GMR G1 joint-angle keys changed at frame {frame_index}")
+        angle_frames.append(normalized)
+
+    return angle_frames, expected_names
+
+
+def _apply_mujoco_joint_angles(
+    mujoco: Any,
+    model: Any,
+    data: Any,
+    joint_angles: dict[str, float],
+) -> dict[str, Any]:
+    hinge_type = int(mujoco.mjtJoint.mjJNT_HINGE)
+    slide_type = int(mujoco.mjtJoint.mjJNT_SLIDE)
+    supported_types = {hinge_type, slide_type}
+
+    applied: dict[str, float] = {}
+    missing: list[str] = []
+    skipped: dict[str, str] = {}
+    clipped: dict[str, dict[str, float]] = {}
+
+    for joint_name, raw_value in sorted(joint_angles.items()):
+        joint_id = int(mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, joint_name))
+        if joint_id < 0:
+            missing.append(joint_name)
+            continue
+
+        joint_type = int(model.jnt_type[joint_id])
+        if joint_type not in supported_types:
+            skipped[joint_name] = f"unsupported_mujoco_joint_type:{joint_type}"
+            continue
+
+        value = float(raw_value)
+        if bool(model.jnt_limited[joint_id]):
+            lower = float(model.jnt_range[joint_id][0])
+            upper = float(model.jnt_range[joint_id][1])
+            clipped_value = min(max(value, lower), upper)
+            if clipped_value != value:
+                clipped[joint_name] = {
+                    "requested": round(value, 6),
+                    "applied": round(clipped_value, 6),
+                    "lower": round(lower, 6),
+                    "upper": round(upper, 6),
+                }
+                value = clipped_value
+
+        qpos_address = int(model.jnt_qposadr[joint_id])
+        data.qpos[qpos_address] = value
+        applied[joint_name] = round(value, 6)
+
+    return {
+        "applied_joints": sorted(applied),
+        "applied_joint_values": applied,
+        "missing_joints": missing,
+        "skipped_joints": skipped,
+        "clipped_joints": clipped,
+        "applied_joint_count": len(applied),
+        "missing_joint_count": len(missing),
+        "skipped_joint_count": len(skipped),
+        "clipped_joint_count": len(clipped),
+    }
 
 
 def write_g1_render(
@@ -372,12 +478,43 @@ def write_g1_mujoco_render(
 
     g1_track_manifest_path = resolve_g1_track_manifest(g1_track)
     g1_manifest, frames = load_g1_track_frames(g1_track_manifest_path)
+    selected_frame = len(frames) // 2
+    joint_angle_frames, joint_angle_names = _load_g1_joint_angle_frames(
+        g1_track_manifest_path,
+        g1_manifest,
+        expected_frame_count=len(frames),
+    )
     mujoco = _load_mujoco()
     try:
         model = mujoco.MjModel.from_xml_path(str(model_path))
     except Exception as exc:
         raise ValueError(f"failed to load model with MuJoCo: {exc}") from exc
     data = mujoco.MjData(model)
+    data.qpos[:] = model.qpos0
+    pose_application: dict[str, Any] = {
+        "source": "neutral_qpos",
+        "selected_frame": selected_frame,
+        "joint_angle_count": 0,
+        "applied_joint_count": 0,
+        "missing_joint_count": 0,
+        "skipped_joint_count": 0,
+        "clipped_joint_count": 0,
+        "notes": "No imported GMR joint-angle stream was found; rendered the model neutral qpos.",
+    }
+    if joint_angle_frames:
+        application = _apply_mujoco_joint_angles(
+            mujoco,
+            model,
+            data,
+            joint_angle_frames[selected_frame],
+        )
+        pose_application = {
+            "source": "imported_gmr_joint_angles",
+            "selected_frame": selected_frame,
+            "joint_angle_count": len(joint_angle_names),
+            "notes": "Applied matching imported GMR joint angles to MuJoCo qpos; unmatched or unsupported joints remain at model defaults.",
+            **application,
+        }
     mujoco.mj_forward(model, data)
 
     frame_dir = out_dir / "frames"
@@ -418,16 +555,13 @@ def write_g1_mujoco_render(
         "model_joint_count": model_descriptor.get("joint_count"),
         "g1_track": _relative_path(g1_track_manifest_path, manifest_path.parent),
         "track_fixture_only": bool(g1_manifest.get("fixture_only")),
-        "pose_stream": "neutral_qpos_first_slice",
-        "pose_application": {
-            "source": "neutral_qpos",
-            "notes": "First MuJoCo slice proves mesh loading/rendering; applying imported GMR joint angles remains follow-on.",
-        },
+        "pose_stream": g1_manifest.get("derivation", "unknown"),
+        "pose_application": pose_application,
         "frame_count": len(frames),
         "timing": g1_manifest.get("timing"),
         "coordinates": g1_manifest.get("coordinates"),
         "contact": g1_manifest.get("contact"),
-        "selected_frame": len(frames) // 2,
+        "selected_frame": selected_frame,
         "camera_definitions": {
             "front": {"azimuth": 0, "elevation": -15},
             "side": {"azimuth": 90, "elevation": -15},

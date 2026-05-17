@@ -5,11 +5,12 @@ simulated teaching playback that can be inspected from multiple views.
 
 The architecture is currently a target design, not an implemented runtime. The
 repo contains fixture-first motion contracts, G1 visual-track manifests,
-an imported-GMR G1 track boundary, local G1 SVG/HTML render evidence, teaching
-playback HTML, public-demo artifacts, an optional first Viser local runtime,
-real-conversion prep, and local source-media materialization handoff. It does
-not contain the GVHMR/GMR/simulator runtime pipeline, production teaching UI,
-or GMR-driven real Unitree G1 mesh playback.
+an imported-GMR G1 track boundary, local G1 SVG/HTML render evidence, optional
+MuJoCo mesh render evidence with matching imported-GMR qpos application,
+teaching playback HTML, public-demo artifacts, an optional first Viser local
+runtime, real-conversion prep, and local source-media materialization handoff.
+It does not contain the GVHMR/GMR/simulator runtime pipeline, production
+teaching UI, or a real generated motion artifact.
 
 ## MVP Data Flow
 
@@ -41,7 +42,9 @@ checks. This is the accuracy path.
 Humanoid visual track owns retargeting from SMPL-X to Unitree G1 through GMR and
 rendering the robot as a visual companion. The current repo can import a
 normalized external GMR Unitree G1 JSON export, but does not run GMR locally.
-This path may lose motion detail and must not be used as the scoring source.
+When MuJoCo assets are supplied, matching imported GMR joint angles can be
+applied to robot `qpos` for render evidence. This path may lose motion detail
+and must not be used as the scoring source.
 
 Rendering owns MuJoCo/Genesis scene setup, synchronized cameras, offscreen frame
 capture, and trajectory overlays.

@@ -472,6 +472,7 @@ class DemoHtmlTests(unittest.TestCase):
             model_file = root / "g1_fixture.xml"
             model_file.write_text(
                 """<mujoco model="unitree_g1_fixture">
+  <compiler angle="radian"/>
   <worldbody>
     <light pos="0 -3 3"/>
     <body name="pelvis" pos="0 0 0.8">
@@ -507,6 +508,74 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(manifest["nonblank_pixel_check"])
         self.assertEqual(set(result.frame_paths), {"front", "side", "top"})
         self.assertTrue(front_png.startswith(b"\x89PNG"))
+
+    @unittest.skipUnless(importlib.util.find_spec("mujoco"), "mujoco optional dependency is not installed")
+    def test_write_mujoco_render_applies_imported_gmr_joint_angles(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            model_file = root / "g1_fixture.xml"
+            model_file.write_text(
+                """<mujoco model="unitree_g1_fixture">
+  <compiler angle="radian"/>
+  <worldbody>
+    <light pos="0 -3 3"/>
+    <body name="pelvis" pos="0 0 0.8">
+      <geom name="body" type="capsule" size="0.08 0.28" fromto="0 0 0 0 0 0.56"/>
+      <joint name="waist_yaw_joint" type="hinge" axis="0 0 1" range="-1 1"/>
+      <body name="torso" pos="0 0 0.56">
+        <geom name="head" type="sphere" size="0.1" pos="0 0 0.18"/>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>
+""",
+                encoding="utf-8",
+            )
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            _, smplx_frames = load_motion_record_frames(motion.motion_record_manifest_path)
+            model = register_g1_model(root / "model", model_file)
+            source = root / "gmr-unitree-g1.json"
+            source.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gmr_unitree_g1_track.v1",
+                        "robot": "unitree_g1",
+                        "fps": 30,
+                        "frames": [
+                            {
+                                "visual_joints": derive_g1_like_frame(frame),
+                                "joint_angles": {
+                                    "waist_yaw_joint": index * 0.05,
+                                    "right_hip_pitch_joint": -index * 0.01,
+                                },
+                            }
+                            for index, frame in enumerate(smplx_frames)
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            g1 = import_gmr_json_track(
+                root / "g1",
+                source,
+                motion_record=motion.out_dir,
+                model_descriptor_path=model.descriptor_path,
+            )
+
+            result = write_g1_mujoco_render(
+                root / "mujoco-render",
+                model_descriptor_path=model.descriptor_path,
+                g1_track=g1.track_manifest_path,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        pose_application = manifest["pose_application"]
+        self.assertEqual(manifest["pose_stream"], "imported_gmr_unitree_g1")
+        self.assertEqual(pose_application["source"], "imported_gmr_joint_angles")
+        self.assertEqual(pose_application["joint_angle_count"], 2)
+        self.assertEqual(pose_application["applied_joint_count"], 1)
+        self.assertEqual(pose_application["applied_joint_values"]["waist_yaw_joint"], 0.25)
+        self.assertEqual(pose_application["missing_joints"], ["right_hip_pitch_joint"])
 
     def test_write_teaching_playback_demo_from_track_manifests(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

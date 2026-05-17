@@ -1,6 +1,6 @@
 # MVP G1 Real Model Rendering Plan
 
-Status: IMPLEMENTED LOCAL SVG RENDER EVIDENCE; SIMULATOR MESH RENDERING REMAINS FOLLOW-ON
+Status: IMPLEMENTED LOCAL SVG RENDER EVIDENCE; SIMULATOR MESH RENDERING COVERED BY FOLLOW-ON PLAN
 
 ## Purpose
 
@@ -35,7 +35,9 @@ The stop condition is not "the G1 track exists". The implemented stop condition
 is a verifiable local render manifest with front/side/top SVG frame evidence
 from a G1 model descriptor and G1 visual track, while preserving the G1
 non-scoring boundary. This proves the repo-owned render evidence contract. It
-does not yet prove MuJoCo/Genesis simulator mesh rendering.
+does not itself prove MuJoCo/Genesis simulator mesh rendering; that follow-on
+is tracked in `mvp-simulator-mesh-rendering.md` and now has optional MuJoCo
+evidence.
 
 ## Current Gap
 
