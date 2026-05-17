@@ -93,6 +93,63 @@ def _load_source_row(source_index: Path, source_id: str) -> dict[str, str]:
     raise ValueError(f"source id {source_id} was not found in {source_index}")
 
 
+def _title_from_path(path: Path) -> str:
+    return path.stem.replace("_", " ").replace("-", " ").strip() or "Local source video"
+
+
+def _probe_duration_seconds(probe: dict[str, Any], label: str) -> float:
+    if not probe.get("succeeded"):
+        raise ValueError(f"{label} requires ffprobe metadata: {probe.get('error') or 'probe failed'}")
+    format_info = probe.get("format")
+    duration = format_info.get("duration_seconds") if isinstance(format_info, dict) else None
+    try:
+        parsed = float(duration)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{label} probe did not include duration_seconds") from exc
+    if parsed <= 0:
+        raise ValueError(f"{label} probe duration_seconds must be positive")
+    return parsed
+
+
+def _local_source_row(
+    *,
+    local_video: Path,
+    source_id: str,
+    title_english: str | None,
+    title_chinese: str | None,
+    category: str,
+    category_chinese: str,
+    origin_url: str | None,
+) -> tuple[dict[str, str], dict[str, Any]]:
+    metadata = local_file_metadata(
+        local_video,
+        label="local source video",
+        allowed_suffixes={".mp4", ".mov", ".m4v", ".webm"},
+    )
+    probe = _ffprobe_media(local_video)
+    duration_seconds = _probe_duration_seconds(probe, "custom local source")
+    video_stream = probe.get("video_stream") if isinstance(probe.get("video_stream"), dict) else {}
+    width = video_stream.get("width")
+    height = video_stream.get("height")
+    resolution = f"{width}x{height}" if width and height else "unknown"
+    display_title = title_english or _title_from_path(local_video)
+    source_url = origin_url or ""
+    row = {
+        "category_slug": category,
+        "category_chinese": category_chinese,
+        "article_title_chinese": title_chinese or display_title,
+        "title_english": display_title,
+        "article_url": source_url,
+        "source_mp4_url": source_url,
+        "selected_quality": "local",
+        "resolution": resolution,
+        "duration_seconds": str(round(duration_seconds, 6)),
+        "source_size_mib": f"{metadata['size_bytes'] / (1024 * 1024):.2f}",
+        "recommended_output_path": _as_posix(local_video),
+    }
+    return row, {"id": source_id, "probe": probe, "source_kind": "local_user_supplied"}
+
+
 def _validate_trim(start_seconds: float, end_seconds: float, source_duration: float) -> dict[str, Any]:
     if start_seconds < 0:
         raise ValueError("trim start must be non-negative")
@@ -473,6 +530,12 @@ def materialize_real_conversion_source(
             "source_id": prep_payload.get("source", {}).get("id")
             if isinstance(prep_payload.get("source"), dict)
             else None,
+            "source_kind": prep_payload.get("source", {}).get("source_kind")
+            if isinstance(prep_payload.get("source"), dict)
+            else None,
+            "title_english": prep_payload.get("source", {}).get("title_english")
+            if isinstance(prep_payload.get("source"), dict)
+            else None,
             "source_schema": prep_payload.get("schema"),
         },
         "source_media": {
@@ -722,6 +785,8 @@ def package_gvhmr_gpu_handoff(
         "source_materialization_sha256": source_hash,
         "source": {
             "source_id": source_prep.get("source_id"),
+            "source_kind": source_prep.get("source_kind"),
+            "title_english": source_prep.get("title_english"),
             "source_schema": source_prep.get("source_schema"),
         },
         "trim": trim,
@@ -1212,12 +1277,35 @@ def write_real_conversion_prep(
     source_index: Path = DEFAULT_SOURCE_INDEX,
     source_id: str = DEFAULT_SOURCE_ID,
     local_video: Path | None = None,
+    local_source_id: str | None = None,
+    local_title_english: str | None = None,
+    local_title_chinese: str | None = None,
+    local_category: str = "local_user_supplied",
+    local_category_chinese: str = "local/user-supplied",
+    local_origin_url: str | None = None,
     start_seconds: float = 0.0,
     end_seconds: float = 12.0,
     rights_notes: str = "licensing unconfirmed; use local/user-supplied source before GPU run",
 ) -> RealConversionPrepWriteResult:
     validate_output_dir(out_dir)
-    row = _load_source_row(source_index, source_id)
+    if local_source_id is not None:
+        if local_video is None:
+            raise ValueError("--local-source-id requires --local-video")
+        row, local_source = _local_source_row(
+            local_video=local_video,
+            source_id=local_source_id,
+            title_english=local_title_english,
+            title_chinese=local_title_chinese,
+            category=local_category,
+            category_chinese=local_category_chinese,
+            origin_url=local_origin_url,
+        )
+        manifest_source_id = local_source["id"]
+        source_kind = local_source["source_kind"]
+    else:
+        row = _load_source_row(source_index, source_id)
+        manifest_source_id = source_id
+        source_kind = "official_source_index"
     source_duration = _require_float(row["duration_seconds"], "duration_seconds")
     trim = _validate_trim(start_seconds, end_seconds, source_duration)
     planned_video_path = local_video or Path(row["recommended_output_path"])
@@ -1230,7 +1318,8 @@ def write_real_conversion_prep(
         "schema": REAL_CONVERSION_PREP_SCHEMA,
         "status": "gpu_gate_pending",
         "source": {
-            "id": source_id,
+            "id": manifest_source_id,
+            "source_kind": source_kind,
             "category": row["category_slug"],
             "category_chinese": row["category_chinese"],
             "article_title_chinese": row["article_title_chinese"],
@@ -1257,7 +1346,9 @@ def write_real_conversion_prep(
             ),
         },
         "next_commands": {
-            "download_source_dry_run": f"./video/download_originals.py --id {source_id} --dry-run",
+            "download_source_dry_run": None
+            if local_source_id is not None
+            else f"./video/download_originals.py --id {source_id} --dry-run",
             "materialize_source": (
                 "PYTHONPATH=src python -m neodojo real-conversion materialize-source "
                 f"--prep {_as_posix(manifest_path)} --local-video <local-source-video> "

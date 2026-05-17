@@ -14,13 +14,13 @@ generator, `make test`, `make demo-html`, `make demo-public`, versioned local
 artifact contracts, a normalized imported-GMR G1 track boundary, native GMR
 pickle normalization, an SMPL-X surface proxy, G1 SVG/HTML render evidence,
 optional MuJoCo render evidence, optional true Rerun SDK `.rrd` export,
-an optional first Viser local runtime, optional source-media probing, local
-source-media materialization handoff, a fixture-only static public-demo fallback
-artifact, a generated roboharness-style capture bundle boundary, optional
-MuJoCo simulator recorder-capture integration, and a GitHub Actions workflow
-with verified fixture-only Pages publication, optional browser-rendered
-public-demo screenshot capture, and metadata-only real-handoff smoke artifact
-upload. It
+an optional first Viser local runtime, optional source-media probing with
+custom local-source provenance, local source-media materialization handoff, a
+fixture-only static public-demo fallback artifact, a generated
+roboharness-style capture bundle boundary, optional MuJoCo simulator
+recorder-capture integration, and a GitHub Actions workflow with verified
+fixture-only Pages publication, optional browser-rendered public-demo
+screenshot capture, and metadata-only real-handoff smoke artifact upload. It
 does not yet have a checked-in GVHMR/GMR execution pipeline, simulator runtime
 pipeline, built-in official SMPL-X body-model renderer, hosted/live-client
 Viser capture, or broad static-analysis/release gates beyond the minimal
@@ -62,10 +62,10 @@ local/user-supplied source video
 | 8 | [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md) | implemented with static fallback | Define one internal scene/timeline contract and make a fixture-only public demo artifact. | A fixture-only `.rrd` fallback artifact, static viewer page, public-demo manifest, and SVG screenshot can be generated and visually smoke-tested. |
 | 9 | [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) | implemented with browser capture and real-handoff artifact CI verified | Add one-command public-demo orchestration and CI artifact/Page publishing for the fixture lane. | A clean checkout can regenerate, validate, browser-smoke, upload, and publish the non-GPU fixture demo, plus upload the metadata-only real-handoff smoke bundle, without tracking generated outputs. |
 | 10 | [mvp-lint-build-surface.md](mvp-lint-build-surface.md) | implemented | Add the minimal lint/build command surface and all-in-one local verification target. | `make verify` runs lint, plan quality checks, tests, wheel build, public-demo generation, and dry-run real-handoff smoke without tracking generated artifacts. |
-| 11 | [mvp-source-media-probing.md](mvp-source-media-probing.md) | implemented metadata probe | Record optional ffprobe metadata for local source videos without copying media. | Source prep records probe success/failure, duration, resolution, codec, and frame-rate metadata when available. |
-| 12 | [mvp-source-media-materialization.md](mvp-source-media-materialization.md) | implemented local handoff | Turn source prep plus a local video into a dry-run or ffmpeg-backed trimmed-clip/reference-frame handoff. | A source-materialization manifest records source validation, commands, generated outputs when available, and the GVHMR input handoff path without committing media. |
+| 11 | [mvp-source-media-probing.md](mvp-source-media-probing.md) | implemented metadata probe and custom local-source prep | Record optional ffprobe metadata for local source videos without copying media. | Source prep records probe success/failure, duration, resolution, codec, and frame-rate metadata when available, and custom local sources can derive source duration/resolution without an official source-index row. |
+| 12 | [mvp-source-media-materialization.md](mvp-source-media-materialization.md) | implemented local handoff and materialized local candidate | Turn source prep plus a local video into a dry-run or ffmpeg-backed trimmed-clip/reference-frame handoff. | A source-materialization manifest records source validation, commands, generated outputs when available, and the GVHMR input handoff path without committing media; an ignored local Bilibili candidate handoff reports `ready_for_gpu`. |
 | 13 | [mvp-roboharness-capture-boundary.md](mvp-roboharness-capture-boundary.md) | implemented generated bundle and browser public-demo capture; CI verified | Collect public-demo, browser capture, Viser preview, G1 render, and optional recorder artifacts into one roboharness-style multi-camera evidence manifest. | `make demo-public` writes a validated generated capture bundle, and `make demo-public-browser` adds optional real browser screenshot evidence without claiming direct roboharness integration. |
-| 14 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep/materialization/one-command handoff/gpu-handoff/export-helper/result-inspection/validation/import-demo ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata, source materialization can prepare the trimmed input, `make real-handoff` can build the local GPU handoff in one command, `make gpu-handoff` can repackage existing materialization with the GPU-side exporter helper, `make gvhmr-inspect` can inspect returned result structure, and `make demo-real` can validate/import a returned export; final stop condition still requires a real GVHMR artifact from a GPU run. |
+| 14 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep/materialization/custom-source handoff/gpu-handoff/export-helper/result-inspection/validation/import-demo ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata, source materialization can prepare the trimmed input, `make real-handoff` can build the local GPU handoff in one command for official-index or custom local sources, `make gpu-handoff` can repackage existing materialization with the GPU-side exporter helper, `make gvhmr-inspect` can inspect returned result structure, and `make demo-real` can validate/import a returned export; final stop condition still requires a real GVHMR artifact from a GPU run. |
 
 ## Future Gap Plans
 

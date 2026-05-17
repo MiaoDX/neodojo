@@ -25,6 +25,28 @@ REAL_MATERIALIZE_FLAGS =
 else
 REAL_MATERIALIZE_FLAGS = --dry-run
 endif
+REAL_PREP_SOURCE_ARGS = --id "$(REAL_SOURCE_ID)"
+ifdef REAL_LOCAL_SOURCE_ID
+REAL_PREP_SOURCE_ARGS = --local-source-id "$(REAL_LOCAL_SOURCE_ID)"
+endif
+ifdef REAL_LOCAL_TITLE
+REAL_PREP_SOURCE_ARGS += --local-title "$(REAL_LOCAL_TITLE)"
+endif
+ifdef REAL_LOCAL_TITLE_CHINESE
+REAL_PREP_SOURCE_ARGS += --local-title-chinese "$(REAL_LOCAL_TITLE_CHINESE)"
+endif
+ifdef REAL_LOCAL_CATEGORY
+REAL_PREP_SOURCE_ARGS += --local-category "$(REAL_LOCAL_CATEGORY)"
+endif
+ifdef REAL_LOCAL_CATEGORY_CHINESE
+REAL_PREP_SOURCE_ARGS += --local-category-chinese "$(REAL_LOCAL_CATEGORY_CHINESE)"
+endif
+ifdef REAL_LOCAL_ORIGIN_URL
+REAL_PREP_SOURCE_ARGS += --local-origin-url "$(REAL_LOCAL_ORIGIN_URL)"
+endif
+ifdef REAL_RIGHTS_NOTES
+REAL_PREP_SOURCE_ARGS += --rights-notes "$(REAL_RIGHTS_NOTES)"
+endif
 
 all: verify
 
@@ -66,7 +88,7 @@ demo-public-browser: demo-public
 
 real-handoff:
 	@test -n "$(LOCAL_VIDEO)" || (echo "LOCAL_VIDEO=path/to/local-source.mp4 is required" && exit 2)
-	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion prepare --id "$(REAL_SOURCE_ID)" --start "$(REAL_START)" --end "$(REAL_END)" --local-video "$(LOCAL_VIDEO)" --out "$(REAL_PREP_OUT)"
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion prepare $(REAL_PREP_SOURCE_ARGS) --start "$(REAL_START)" --end "$(REAL_END)" --local-video "$(LOCAL_VIDEO)" --out "$(REAL_PREP_OUT)"
 	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion materialize-source --prep "$(REAL_PREP_OUT)/real-conversion-prep.json" --local-video "$(LOCAL_VIDEO)" $(REAL_MATERIALIZE_FLAGS) --out "$(REAL_SOURCE_OUT)"
 	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion package-gpu-handoff --source-materialization "$(REAL_SOURCE_OUT)/source-materialization.json" --out "$(GPU_HANDOFF_OUT)"
 

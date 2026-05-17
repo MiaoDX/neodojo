@@ -309,6 +309,7 @@ PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-dem
 PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --browser-capture outputs/browser-capture --out outputs/capture
 PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --recorder-capture outputs/recorder-capture --out outputs/capture
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
+PYTHONPATH=src python -m neodojo real-conversion prepare --local-source-id local-baduanjin --local-video path/to/local-source.mp4 --local-title "Local Baduanjin proof clip" --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff --source-materialization outputs/real-conversion-source/source-materialization.json --out outputs/gvhmr-gpu-handoff
 PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result --source outputs/real-conversion-gate/hmr4d_results.pt --out outputs/gvhmr-result-inspection
@@ -423,15 +424,18 @@ direct roboharness/live-runtime recording remains follow-on.
 `neodojo real-conversion prepare` writes ignored source/trim metadata for the
 later GPU run and does not download video or execute GVHMR. When a local video
 is supplied, it records checksum data and optional ffprobe duration,
-resolution, codec, and frame-rate metadata. `neodojo real-conversion
+resolution, codec, and frame-rate metadata. It can either select an official
+source-index row with `--id` or preserve custom local/user-supplied provenance
+with `--local-source-id --local-video`. `neodojo real-conversion
 materialize-source` consumes that prep manifest and a local video to write a
 source-materialization manifest. With `--dry-run`, it records the ffmpeg trim
 and reference-frame extraction commands without processing media. Without
 `--dry-run`, it requires ffmpeg and writes ignored trimmed-video and frame
 artifacts for the later GPU GVHMR input handoff. `make real-handoff
 LOCAL_VIDEO=...` runs prep, dry-run source materialization by default, and GPU
-handoff packaging in one command; set `REAL_DRY_RUN=0` to actually trim/extract
-media when ffmpeg is installed. `make real-handoff-smoke` runs that same local
+handoff packaging in one command; set `REAL_LOCAL_SOURCE_ID=...` for custom
+local-source provenance and `REAL_DRY_RUN=0` to actually trim/extract media when
+ffmpeg is installed. `make real-handoff-smoke` runs that same local
 handoff path with an ignored placeholder `.mp4` and is included in
 `make verify`. `neodojo real-conversion
 package-gpu-handoff` packages that manifest into a GPU handoff directory with a
@@ -470,10 +474,13 @@ full-video inference on this macOS CPU workspace; use a GPU-capable machine to
 export a GVHMR SMPL-X teaching-joints JSON artifact, then import it through
 `neodojo motion-record create --from-gvhmr-json`.
 
-The current blocker is external to the local non-GPU pipeline: no local
-licensed/user-supplied source clip plus GPU-produced
-`neodojo.gvhmr_smplx_joints.v1` export is present in this workspace. Once that
-artifact exists, the remaining task is to validate it with
+The current blocker is external to the local non-GPU pipeline: no GPU-produced
+`neodojo.gvhmr_smplx_joints.v1` export is present in this workspace. A local
+ignored Bilibili Baduanjin source candidate has been materialized under
+`outputs/real-handoff-local-bilibili/` with rights marked unconfirmed and media
+kept out of git, so the next external step is to run GVHMR on a GPU-capable
+machine and return the neodojo export. Once that artifact exists, the remaining
+task is to validate it with
 `real-conversion import-demo`, then inspect the generated `outputs/real-demo/`
 artifacts.
 

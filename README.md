@@ -189,6 +189,7 @@ make build
 make demo-public
 make demo-public-browser
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
+make real-handoff LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin REAL_LOCAL_TITLE="Local Baduanjin proof clip"
 make real-handoff-smoke
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
@@ -216,6 +217,7 @@ PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-dem
 PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --browser-capture outputs/browser-capture --out outputs/capture
 PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --recorder-capture outputs/recorder-capture --out outputs/capture
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
+PYTHONPATH=src python -m neodojo real-conversion prepare --local-source-id local-baduanjin --local-video path/to/local-source.mp4 --local-title "Local Baduanjin proof clip" --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff --source-materialization outputs/real-conversion-source/source-materialization.json --out outputs/gvhmr-gpu-handoff
 PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result --source outputs/real-conversion-gate/hmr4d_results.pt --out outputs/gvhmr-result-inspection
@@ -342,7 +344,10 @@ wheel under ignored `outputs/dist/`.
 `neodojo real-conversion prepare` writes source metadata, trim metadata, and
 next-command hints for the later GPU gate. It does not download the source
 video or run GVHMR. When `--local-video` is supplied, it records checksum data
-and optional ffprobe duration, resolution, codec, and frame-rate metadata.
+and optional ffprobe duration, resolution, codec, and frame-rate metadata. Use
+`--local-source-id` with `--local-video` for a local/user-supplied source that
+should keep its own provenance instead of being attached to an official source
+index row.
 `neodojo real-conversion materialize-source` consumes that prep manifest plus a
 local video and writes a source-materialization manifest. With `--dry-run`, it
 records exact ffmpeg trim and reference-frame extraction commands without
@@ -350,7 +355,9 @@ processing media. Without `--dry-run`, it requires ffmpeg and writes ignored
 trimmed-video and reference-frame artifacts for the later GPU GVHMR input.
 `make real-handoff LOCAL_VIDEO=...` runs source prep, dry-run source
 materialization by default, and GPU handoff packaging in one command. Set
-`REAL_DRY_RUN=0` to actually trim/extract media when ffmpeg is installed.
+`REAL_LOCAL_SOURCE_ID=...` and optional `REAL_LOCAL_TITLE=...` to preserve
+custom local-source provenance; set `REAL_DRY_RUN=0` to actually trim/extract
+media when ffmpeg is installed.
 `make real-handoff-smoke` runs the same handoff path with an ignored placeholder
 `.mp4` and is included in `make verify`; it does not run GVHMR or process media.
 `neodojo real-conversion package-gpu-handoff` and `make gpu-handoff
@@ -441,6 +448,7 @@ In progress:
 - [x] One-command local `make verify` flow for lint, quality checks, tests,
       build, public demo generation, and real-handoff smoke
 - [x] Local real-conversion prep manifest for source `03-006`
+- [x] Custom local-source real-conversion prep path with explicit provenance
 - [x] Local real-conversion source materialization handoff for a user-supplied
       video
 - [x] One-command `make real-handoff` local GPU handoff preparation from a

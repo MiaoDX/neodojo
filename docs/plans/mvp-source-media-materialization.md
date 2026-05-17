@@ -32,7 +32,8 @@ not download media, commit media, or imply that GVHMR has run.
 ## Inputs
 
 - A `neodojo.real_conversion_prep.v1` manifest from
-  `neodojo real-conversion prepare`.
+  `neodojo real-conversion prepare`, either from an official source-index row
+  or a custom local/user-supplied source created with `--local-source-id`.
 - A local/user-supplied source video path, either in the prep manifest or passed
   with `--local-video`.
 - A trim window from the prep manifest.
@@ -68,9 +69,14 @@ not download media, commit media, or imply that GVHMR has run.
    - [x] Keep generated clips and frames under ignored `outputs/`.
    - [x] Record checksums and paths, not committed media.
    - [x] Preserve rights notes and source-prep provenance.
+   - [x] Preserve custom local-source id/title provenance through
+     source-materialization and GPU handoff manifests.
 
 4. Verify.
    - [x] Unit-test dry-run manifest generation.
+   - [x] Materialize a local ignored Bilibili Baduanjin candidate with ffmpeg
+     under `outputs/real-handoff-local-bilibili/` and package a `ready_for_gpu`
+     handoff while keeping rights unconfirmed.
    - [x] Keep `make verify` independent from real videos and ffmpeg.
 
 ## Acceptance Evidence
@@ -80,6 +86,9 @@ not download media, commit media, or imply that GVHMR has run.
   source-materialization manifest without processing media.
 - When ffmpeg is installed and a local video is supplied, the command writes a
   trimmed clip, extracts reference frames, and records duration validation.
+- `make real-handoff ... REAL_LOCAL_SOURCE_ID=... REAL_DRY_RUN=0` can produce a
+  materialized, checksum-validated, `ready_for_gpu` handoff from an ignored
+  local source candidate.
 - Generated media stays under ignored output directories.
 
 ## Non-Goals

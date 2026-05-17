@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from neodojo.annotations import detect_opening_form_keyframe, write_detected_annotations
 from neodojo.capture_bundle import write_capture_bundle
@@ -1676,6 +1677,64 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("probe", manifest["source_media"])
         self.assertIn("media_probe_succeeded", manifest["source_media"]["validation"])
         self.assertTrue(manifest["source_media"]["reference_video_sync"]["available"])
+
+    def test_real_conversion_prep_accepts_custom_local_source(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            local_video = root / "bilibili-baduanjin.mp4"
+            local_video.write_bytes(b"fixture source video bytes")
+            probe = {
+                "schema": "neodojo.media_probe.v1",
+                "tool": "ffprobe",
+                "available": True,
+                "succeeded": True,
+                "error": None,
+                "format": {
+                    "duration_seconds": 30.0,
+                    "size_bytes": len(b"fixture source video bytes"),
+                    "bit_rate_bps": 123,
+                    "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+                },
+                "video_stream": {
+                    "codec": "h264",
+                    "width": 852,
+                    "height": 480,
+                    "avg_frame_rate": 30.0,
+                    "duration_seconds": 30.0,
+                },
+            }
+
+            with patch("neodojo.real_conversion._ffprobe_media", return_value=probe):
+                result = write_real_conversion_prep(
+                    root / "prep",
+                    local_video=local_video,
+                    local_source_id="bilibili-baduanjin-480p",
+                    local_title_english="Bilibili Baduanjin complete routine",
+                    local_title_chinese="八段锦完整套路",
+                    local_origin_url="https://www.bilibili.com/video/example",
+                    start_seconds=2.0,
+                    end_seconds=8.0,
+                    rights_notes="local proof candidate; do not publish media",
+                )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(manifest["source"]["id"], "bilibili-baduanjin-480p")
+        self.assertEqual(manifest["source"]["source_kind"], "local_user_supplied")
+        self.assertEqual(manifest["source"]["title_english"], "Bilibili Baduanjin complete routine")
+        self.assertEqual(manifest["source"]["article_title_chinese"], "八段锦完整套路")
+        self.assertEqual(manifest["source"]["article_url"], "https://www.bilibili.com/video/example")
+        self.assertEqual(manifest["source"]["resolution"], "852x480")
+        self.assertEqual(manifest["trim"]["duration_seconds"], 6.0)
+        self.assertIsNone(manifest["next_commands"]["download_source_dry_run"])
+        self.assertTrue(manifest["source_media"]["validation"]["local_file_validated"])
+        self.assertTrue(manifest["source_media"]["validation"]["media_probe_succeeded"])
+
+    def test_real_conversion_prep_custom_local_source_requires_local_video(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            with self.assertRaisesRegex(ValueError, "--local-source-id requires --local-video"):
+                write_real_conversion_prep(root / "prep", local_source_id="local-baduanjin")
 
     def test_ffprobe_payload_parser_extracts_video_metadata(self) -> None:
         parsed = _parse_ffprobe_payload(

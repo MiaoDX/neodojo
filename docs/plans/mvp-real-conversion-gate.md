@@ -111,7 +111,8 @@ The local prep command is:
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 ```
 
-It writes `outputs/real-conversion-gate/real-conversion-prep.json` with:
+For an official source-index row, it writes
+`outputs/real-conversion-gate/real-conversion-prep.json` with:
 
 - source index row `03-006`
 - Chinese title `5八段锦两手托天理三焦`
@@ -124,6 +125,22 @@ It writes `outputs/real-conversion-gate/real-conversion-prep.json` with:
   `--local-video` is supplied
 - expected GVHMR output/export paths
 - downstream import, G1-track, and playback commands
+
+For a local/user-supplied source that should not be attached to an official
+source-index row, use custom local-source provenance:
+
+```bash
+PYTHONPATH=src python -m neodojo real-conversion prepare \
+  --local-source-id local-baduanjin \
+  --local-video path/to/local-source.mp4 \
+  --local-title "Local Baduanjin proof clip" \
+  --start 0 \
+  --end 12 \
+  --out outputs/real-conversion-gate
+```
+
+`make real-handoff` accepts the same route through `REAL_LOCAL_SOURCE_ID=...`
+and optional `REAL_LOCAL_TITLE=...`.
 
 The local source handoff command is:
 
@@ -144,6 +161,10 @@ dry-run handoff path with an ignored placeholder `.mp4` and runs inside
 `neodojo-real-handoff-smoke` without uploading the placeholder source media;
 GitHub Actions run `26003369563` verified that artifact contains the expected
 prep/source/handoff metadata and no video files.
+A local Bilibili Baduanjin candidate was also materialized with
+`REAL_LOCAL_SOURCE_ID=bilibili-baduanjin-480p` and `REAL_DRY_RUN=0` under
+`outputs/real-handoff-local-bilibili/`; that handoff reports `ready_for_gpu`
+and keeps rights marked unconfirmed.
 Package the materialized source metadata for the external GPU operator:
 
 ```bash
@@ -217,6 +238,9 @@ variables, when an external GMR/G1 visual artifact is available.
   window, resolution, and license/rights notes.
 - [x] Record optional local source-video checksum and ffprobe metadata when a
   local file is supplied.
+- [x] Support custom local/user-supplied source provenance with
+  `--local-source-id` so local clips are not misidentified as official
+  source-index rows.
 - [x] Materialize, or dry-run materialize, the trimmed local source clip and
   reference-frame handoff for the GPU run.
 - [x] Package a source-materialization manifest into a GPU handoff bundle with
@@ -264,12 +288,15 @@ variables, when an external GMR/G1 visual artifact is available.
 The local, non-GPU side of this gate is complete through prep,
 source-materialization, GPU handoff packaging, returned-result inspection,
 GPU-side export-helper packaging, returned-export validation, motion import,
-and `import-demo`/`make demo-real` demo regeneration. The remaining blocker is
-external to this macOS CPU workspace:
+and `import-demo`/`make demo-real` demo regeneration. A local ignored Bilibili
+Baduanjin source candidate has been materialized as a replacement-source GPU
+input handoff, but rights remain unconfirmed and no real GVHMR export has been
+returned. The remaining blocker is external to this macOS CPU workspace:
 
-- blocker type: source clip plus GPU artifact missing
-- missing input: a licensed or user-supplied local clip for source `03-006`, or
-  an explicitly selected replacement clip with rights understood
+- blocker type: GPU artifact missing
+- input status: custom local source handoff candidate exists under ignored
+  `outputs/real-handoff-local-bilibili/`; official source `03-006` is still an
+  available source-index path if rights/source selection change
 - missing runtime: a GPU-capable GVHMR environment such as Colab, RunPod,
   Modal, Hugging Face Jobs, or another CUDA machine
 - missing artifact: a `neodojo.gvhmr_smplx_joints.v1` JSON export with

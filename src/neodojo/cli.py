@@ -597,6 +597,32 @@ def build_parser() -> argparse.ArgumentParser:
     )
     real_prepare.add_argument("--local-video", type=Path, help="local/user-supplied source clip path")
     real_prepare.add_argument(
+        "--local-source-id",
+        help="custom source id for a local/user-supplied clip; bypasses --source-index lookup",
+    )
+    real_prepare.add_argument(
+        "--local-title",
+        help="English/display title for --local-source-id; defaults to the local video filename",
+    )
+    real_prepare.add_argument(
+        "--local-title-chinese",
+        help="Chinese/source title for --local-source-id; defaults to --local-title",
+    )
+    real_prepare.add_argument(
+        "--local-category",
+        default="local_user_supplied",
+        help="category slug for --local-source-id",
+    )
+    real_prepare.add_argument(
+        "--local-category-chinese",
+        default="local/user-supplied",
+        help="category label for --local-source-id",
+    )
+    real_prepare.add_argument(
+        "--local-origin-url",
+        help="optional stable origin URL for --local-source-id provenance",
+    )
+    real_prepare.add_argument(
         "--start",
         type=float,
         default=0.0,
@@ -1000,6 +1026,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 source_index=args.source_index,
                 source_id=args.id,
                 local_video=args.local_video,
+                local_source_id=args.local_source_id,
+                local_title_english=args.local_title,
+                local_title_chinese=args.local_title_chinese,
+                local_category=args.local_category,
+                local_category_chinese=args.local_category_chinese,
+                local_origin_url=args.local_origin_url,
                 start_seconds=args.start,
                 end_seconds=args.end,
                 rights_notes=args.rights_notes,

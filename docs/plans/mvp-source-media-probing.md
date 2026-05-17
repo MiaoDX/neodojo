@@ -30,6 +30,9 @@ copying media into the repo or requiring ffprobe in CI.
 ## Inputs
 
 - Optional `--local-video` path passed to `neodojo real-conversion prepare`.
+- Optional `--local-source-id` path for local/user-supplied sources that should
+  derive duration/resolution from the local file instead of an official
+  source-index row.
 - Source-index duration/resolution metadata.
 - Local `ffprobe` executable when available.
 
@@ -49,6 +52,8 @@ copying media into the repo or requiring ffprobe in CI.
    - [x] Run ffprobe with JSON output when local video exists.
    - [x] Parse the first video stream and format metadata.
    - [x] Keep failures advisory, not fatal.
+   - [x] Require successful ffprobe duration only for custom local-source prep,
+     where no source-index duration exists.
 
 2. Preserve artifact policy.
    - [x] Do not copy local video.
@@ -64,6 +69,9 @@ copying media into the repo or requiring ffprobe in CI.
 - `make test` covers probe parsing and manifest presence.
 - `neodojo real-conversion prepare --local-video ...` records probe success or
   failure without copying media.
+- `neodojo real-conversion prepare --local-source-id ... --local-video ...`
+  can derive duration and resolution from a valid local file while keeping that
+  source's provenance separate from official source-index rows.
 - Missing or failing ffprobe does not block fixture/source-prep flows.
 
 ## Non-Goals
