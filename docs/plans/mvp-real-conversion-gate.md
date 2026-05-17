@@ -1,6 +1,6 @@
 # MVP Real Conversion Gate Plan
 
-Status: LATER GPU GATE
+Status: LOCAL PREP READY; LATER GPU GATE
 
 ## Goal
 
@@ -56,30 +56,55 @@ path is acceptable and preferred.
 
 - External GVHMR artifact directory stored outside tracked source files.
 - A small provenance manifest in an ignored output/artifact directory.
+- A local prep manifest from `neodojo real-conversion prepare` that records
+  source metadata, trim metadata, and next commands before the GPU run.
 - A motion-record import run using
   `neodojo motion-record create --from-gvhmr-json`.
 - A short report stating whether downstream local contracts needed changes.
 
+## Implemented Local Prep
+
+The local prep command is:
+
+```bash
+PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
+```
+
+It writes `outputs/real-conversion-gate/real-conversion-prep.json` with:
+
+- source index row `03-006`
+- Chinese title `5八段锦两手托天理三焦`
+- English title `Two Hands Hold Up the Heavens`
+- official article URL and source MP4 URL from the local source index
+- recommended local path
+- 0-12 second proof trim
+- rights notes
+- expected GVHMR output/export paths
+- downstream import, G1-track, and playback commands
+
+This command does not download video, run GVHMR, or prove qigong correctness.
+
 ## Execution Tasks
 
-- Select the shortest useful Baduanjin clip segment for the proof.
-- Record source metadata: title, source URL or local origin, duration, frame
-  range, resolution, and license/rights notes.
-- Run GVHMR on a GPU-capable environment.
-- Export the SMPL-X result directory with enough metadata for reproducibility.
-- Convert or export the GVHMR result into
+- [x] Select an initial Baduanjin source row and bounded 0-12 second proof trim
+  candidate.
+- [x] Record source metadata: title, source URL or local origin, duration, trim
+  window, resolution, and license/rights notes.
+- [ ] Run GVHMR on a GPU-capable environment.
+- [ ] Export the SMPL-X result directory with enough metadata for reproducibility.
+- [ ] Convert or export the GVHMR result into
   `neodojo.gvhmr_smplx_joints.v1` JSON with the teaching joints required by the
   local playback contract.
-- Import the exported JSON artifact using
+- [ ] Import the exported JSON artifact using
   `neodojo motion-record create --from-gvhmr-json`.
-- If import fails, classify the failure:
+- [ ] If import fails, classify the failure:
   - contract too narrow
   - missing GVHMR metadata
   - upstream output format difference
   - source video/clip issue
   - environment issue
-- Fix only contract issues that are necessary for real GVHMR output.
-- Keep all large/generated artifacts out of git.
+- [ ] Fix only contract issues that are necessary for real GVHMR output.
+- [x] Keep all large/generated artifacts out of git.
 
 ## Acceptance Evidence
 

@@ -36,7 +36,7 @@ local/user-supplied source video
 | 1 | [mvp-local-motion-contract.md](mvp-local-motion-contract.md) | done | Turn fixture motion and imported GVHMR-shaped outputs into one project-owned SMPL-X motion contract. | Fixture and external GVHMR teaching-joints JSON inputs both write the same SMPL-X motion-record and teaching-track manifests. |
 | 2 | [mvp-g1-visual-track.md](mvp-g1-visual-track.md) | done | Add the Unitree G1 visual-track boundary: model provenance, derived track manifest, and scoring separation. | G1 assets/tracks are validated as derived visual artifacts and cannot become the scoring source. |
 | 3 | [mvp-teaching-playback-demo.md](mvp-teaching-playback-demo.md) | done | Create the inspectable multi-view teaching playback with trajectories and one manual feedback proof. | The local `demo play` command consumes SMPL-X/G1 manifests and writes fixture-only HTML playback plus manifest evidence. |
-| 4 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | The real artifact imports through the same local contracts without downstream changes. |
+| 4 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata; final stop condition still requires a real GVHMR artifact imported through the same contracts. |
 
 The numbered plans are semantically independent execution slices, not
 necessarily separate GSD phases. The grouping boundary is:

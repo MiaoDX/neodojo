@@ -7,6 +7,7 @@ from typing import Sequence
 from .demo_html import write_demo
 from .g1_visual import build_g1_visual_track, register_g1_model, write_fixture_g1_model_descriptor
 from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
+from .real_conversion import DEFAULT_SOURCE_ID, DEFAULT_SOURCE_INDEX, write_real_conversion_prep
 from .teaching_playback import write_teaching_playback_demo
 
 
@@ -159,6 +160,51 @@ def build_parser() -> argparse.ArgumentParser:
         help="output directory for the teaching playback HTML and manifest",
     )
 
+    real_conversion = subparsers.add_parser(
+        "real-conversion",
+        help="prepare metadata for the later real GVHMR conversion gate",
+    )
+    real_subparsers = real_conversion.add_subparsers(dest="real_command", required=True)
+    real_prepare = real_subparsers.add_parser(
+        "prepare",
+        help="write source and trim metadata for a later GPU GVHMR run",
+    )
+    real_prepare.add_argument(
+        "--source-index",
+        type=Path,
+        default=DEFAULT_SOURCE_INDEX,
+        help="CSV source index to select from",
+    )
+    real_prepare.add_argument(
+        "--id",
+        default=DEFAULT_SOURCE_ID,
+        help="source id in category-item form, for example 03-006",
+    )
+    real_prepare.add_argument("--local-video", type=Path, help="local/user-supplied source clip path")
+    real_prepare.add_argument(
+        "--start",
+        type=float,
+        default=0.0,
+        help="trim start in seconds",
+    )
+    real_prepare.add_argument(
+        "--end",
+        type=float,
+        default=12.0,
+        help="trim end in seconds",
+    )
+    real_prepare.add_argument(
+        "--rights-notes",
+        default="licensing unconfirmed; use local/user-supplied source before GPU run",
+        help="licensing or source-rights note to preserve in the prep manifest",
+    )
+    real_prepare.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/real-conversion-gate"),
+        help="output directory for the real conversion prep manifest",
+    )
+
     return parser
 
 
@@ -220,6 +266,19 @@ def main(argv: Sequence[str] | None = None) -> int:
                 annotations_path=args.annotations,
             )
             print(f"wrote {result.html_path}")
+            print(f"wrote {result.manifest_path}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "prepare":
+            result = write_real_conversion_prep(
+                args.out,
+                source_index=args.source_index,
+                source_id=args.id,
+                local_video=args.local_video,
+                start_seconds=args.start,
+                end_seconds=args.end,
+                rights_notes=args.rights_notes,
+            )
             print(f"wrote {result.manifest_path}")
             return 0
     except ValueError as exc:

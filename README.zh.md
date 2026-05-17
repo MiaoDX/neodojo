@@ -139,6 +139,7 @@ PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
+PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 make demo-html
 ```
 
@@ -157,6 +158,9 @@ Unitree G1 mesh，也没有运行 GMR retargeting。
 一个 simulator-light HTML inspection path：SMPL-X 仍是 scoring source，G1 仍然
 不可用于评分。
 
+`neodojo real-conversion prepare` 会为后续 GPU gate 写出 source metadata、trim
+metadata 和下一步命令提示。它不会下载源视频，也不会运行 GVHMR。
+
 `make demo-html` 会写出 `outputs/html-demo/index.html`，这是一个由本地
 motion/track manifest contract 支撑的自包含合成 fixture demo，用来验证目标教学
 UI 的形态。它不证明源视频转换、气功动作精度、仿真器渲染、Viser 或真实 Unitree
@@ -171,6 +175,7 @@ G1 retargeting 已经完成。
 - [x] 外部 GVHMR teaching-joints JSON 可导入同一 motion contract
 - [x] 本地 fixture G1 model 和 visual-track manifests，并保持 scoring separation
 - [x] 本地 teaching playback 命令，可同时消费 SMPL-X 与 G1 manifests
+- [x] 本地 real-conversion prep manifest，默认 source 为 `03-006`
 - [ ] roboharness 风格的多视角离屏录制集成
 - [ ] SMPL-X 与 Unitree G1 双轨同屏 Viser UI
 - [ ] 关键定式自动检测 + 几何约束式术语反馈

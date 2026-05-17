@@ -14,6 +14,7 @@ from neodojo.motion_contract import (
     write_fixture_motion_contract,
     write_gvhmr_json_motion_contract,
 )
+from neodojo.real_conversion import write_real_conversion_prep
 from neodojo.teaching_playback import write_teaching_playback_demo
 
 
@@ -270,6 +271,50 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["annotation_name"], "fixture key frame")
         self.assertEqual(manifest["evidence"]["rendered_tracks"], ["smplx", "g1"])
         self.assertIn("Unitree G1 visual", html)
+
+    def test_write_real_conversion_prep_from_source_index(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source_index = root / "sources.csv"
+            source_index.write_text(
+                "\n".join(
+                    [
+                        "category_order,category_chinese,category_slug,item_order,article_title_chinese,title_english,selected_quality,available_qualities,source_size_bytes,source_size_mib,width,height,resolution,duration_seconds,duration_minutes,bit_rate_kbps,codec,article_url,source_mp4_url,recommended_output_path,probe_error",
+                        "3,八段锦,03_baduanjin,6,5八段锦两手托天理三焦,Two Hands Hold Up the Heavens,SD,\"LD,SD\",45028780,42.94,1280,720,1280x720,220.843,3.68,1631.2,h264,https://example.invalid/article,https://example.invalid/source.mp4,video/03_baduanjin/006_two-hands-hold-up-the-heavens.mp4,",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            result = write_real_conversion_prep(
+                root / "prep",
+                source_index=source_index,
+                source_id="03-006",
+                start_seconds=1.5,
+                end_seconds=9.0,
+                rights_notes="local proof only",
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(manifest["status"], "gpu_gate_pending")
+        self.assertEqual(manifest["source"]["id"], "03-006")
+        self.assertEqual(manifest["source"]["title_english"], "Two Hands Hold Up the Heavens")
+        self.assertEqual(manifest["trim"]["duration_seconds"], 7.5)
+        self.assertTrue(manifest["gpu_run"]["required"])
+        self.assertIn("--from-gvhmr-json", manifest["next_commands"]["import_motion_record"])
+
+    def test_real_conversion_prep_rejects_unknown_source_id(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source_index = root / "sources.csv"
+            source_index.write_text(
+                "category_order,item_order,duration_seconds\n3,6,220.843\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "was not found"):
+                write_real_conversion_prep(root / "prep", source_index=source_index, source_id="03-999")
 
 
 if __name__ == "__main__":

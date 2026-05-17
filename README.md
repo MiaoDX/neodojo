@@ -171,6 +171,7 @@ PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
+PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 make demo-html
 ```
 
@@ -189,6 +190,10 @@ manifests together and writes `outputs/teaching-demo/index.html` plus a
 playback manifest. This is a simulator-light HTML inspection path: SMPL-X stays
 the scoring source and G1 stays non-scoring.
 
+`neodojo real-conversion prepare` writes source metadata, trim metadata, and
+next-command hints for the later GPU gate. It does not download the source
+video or run GVHMR.
+
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local
 motion/track manifest contract. It does not prove source-video conversion,
@@ -206,6 +211,7 @@ In progress:
 - [x] External GVHMR teaching-joints JSON import into the same motion contract
 - [x] Local fixture G1 model and visual-track manifests with scoring separation
 - [x] Local teaching playback command that consumes SMPL-X and G1 manifests
+- [x] Local real-conversion prep manifest for source `03-006`
 - [ ] roboharness-style multi-camera offscreen capture integration
 - [ ] SMPL-X + Unitree G1 dual-track synchronized Viser UI
 - [ ] Automatic key-frame detection + geometry-constrained verbal

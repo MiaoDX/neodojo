@@ -4,8 +4,9 @@ neodojo is in bootstrap state with one fixture-only local demo.
 
 There is now a minimal checked-in Python package, a `make test` command,
 fixture-backed and external-JSON `motion-record` paths, `robot-model`,
-`tracks`, and `demo play` commands, and a `make demo-html` command that writes
-a self-contained synthetic web demo. There is still no checked-in
+`tracks`, `demo play`, and `real-conversion prepare` commands, and a
+`make demo-html` command that writes a self-contained synthetic web demo. There
+is still no checked-in
 GVHMR/GMR/simulator runtime pipeline, install workflow, lint command, build
 command, CI gate, real generated motion artifact, or UI server.
 
@@ -47,6 +48,9 @@ command, CI gate, real generated motion artifact, or UI server.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
+- Real-conversion source prep manifest generated under
+  `outputs/real-conversion-gate/`, selecting source `03-006` metadata and a
+  short trim window for a later GPU run.
 
 ## Blockers And Constraints
 
@@ -74,6 +78,7 @@ PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/
 PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/teaching-demo
+PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 make demo-html
 ```
 
@@ -91,6 +96,9 @@ the local motion/track manifests it consumes. These artifacts use synthetic
 fixture motion only; they validate UI plumbing, trajectory drawing, timeline
 sync, the local SMPL-X/G1 scoring boundary, and one SMPL-X-based geometry check,
 not qigong correctness.
+
+`neodojo real-conversion prepare` writes ignored source/trim metadata for the
+later GPU run and does not download video or execute GVHMR.
 
 ## Next Safe Task
 
