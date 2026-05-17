@@ -1,6 +1,7 @@
-.PHONY: all verify lint check test build demo-html demo-public demo-public-browser demo-real smoke-public
+.PHONY: all verify lint check test build demo-html demo-public demo-public-browser gpu-handoff demo-real smoke-public
 
 PYTHON ?= python3
+GPU_HANDOFF_OUT ?= outputs/gvhmr-gpu-handoff
 REAL_DEMO_OUT ?= outputs/real-demo
 REAL_DEMO_ARGS = --source-materialization "$(SOURCE_MATERIALIZATION)" --gvhmr-json "$(GVHMR_JSON)" --out "$(REAL_DEMO_OUT)"
 ifdef G1_TRACK
@@ -50,6 +51,10 @@ demo-public-browser: demo-public
 	rm -rf outputs/browser-capture
 	PYTHONPATH=src $(PYTHON) -m neodojo demo browser-smoke --public-demo outputs/public-demo --out outputs/browser-capture
 	PYTHONPATH=src $(PYTHON) -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --browser-capture outputs/browser-capture --out outputs/capture
+
+gpu-handoff:
+	@test -n "$(SOURCE_MATERIALIZATION)" || (echo "SOURCE_MATERIALIZATION=path/to/source-materialization.json is required" && exit 2)
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion package-gpu-handoff --source-materialization "$(SOURCE_MATERIALIZATION)" --out "$(GPU_HANDOFF_OUT)"
 
 demo-real:
 	@test -n "$(SOURCE_MATERIALIZATION)" || (echo "SOURCE_MATERIALIZATION=path/to/source-materialization.json is required" && exit 2)

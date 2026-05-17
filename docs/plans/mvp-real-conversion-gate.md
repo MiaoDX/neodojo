@@ -1,6 +1,6 @@
 # MVP Real Conversion Gate Plan
 
-Status: LOCAL PREP, SOURCE MATERIALIZATION, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
+Status: LOCAL PREP, SOURCE MATERIALIZATION, GPU HANDOFF, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
 
 ## Goal
 
@@ -82,6 +82,10 @@ path is acceptable and preferred.
 - A source materialization manifest from
   `neodojo real-conversion materialize-source` that records the local validated
   source, trim command, optional generated clip/frames, and GVHMR input handoff.
+- A GPU handoff package from `neodojo real-conversion package-gpu-handoff` or
+  `make gpu-handoff` that records source-materialization hash, trimmed-video
+  readiness, expected export schema, provenance fields, and the local return
+  command without copying media.
 - A motion-record import run using
   `neodojo motion-record create --from-gvhmr-json`.
 - A one-command local import/demo run using
@@ -121,6 +125,21 @@ PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outpu
 
 Without `--dry-run`, the same command requires ffmpeg and writes an ignored
 trimmed clip plus reference frames under `outputs/real-conversion-source/`.
+Package the materialized source metadata for the external GPU operator:
+
+```bash
+PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff \
+  --source-materialization outputs/real-conversion-source/source-materialization.json \
+  --out outputs/gvhmr-gpu-handoff
+
+make gpu-handoff \
+  SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
+```
+
+This writes `outputs/gvhmr-gpu-handoff/manifest.json`, a README, and
+`gvhmr-smplx-joints.template.json`. It reports `ready_for_gpu` only when the
+source-materialization manifest points to an existing materialized trimmed clip
+with matching checksum; dry-run handoffs correctly report `needs_materialization`.
 After the GPU run returns a `neodojo.gvhmr_smplx_joints.v1` export with
 matching provenance, validate it locally:
 
@@ -157,6 +176,9 @@ variables, when an external GMR/G1 visual artifact is available.
   local file is supplied.
 - [x] Materialize, or dry-run materialize, the trimmed local source clip and
   reference-frame handoff for the GPU run.
+- [x] Package a source-materialization manifest into a GPU handoff bundle with
+  export template, provenance fields, readiness status, and local return
+  command.
 - [x] Validate a returned GVHMR export against the source-materialization
   manifest before importing the validated JSON copy.
 - [x] Add a local `real-conversion import-demo` / `make demo-real` wrapper that
@@ -183,9 +205,9 @@ variables, when an external GMR/G1 visual artifact is available.
 ## Current Blocker Classification
 
 The local, non-GPU side of this gate is complete through prep,
-source-materialization, returned-export validation, motion import, and
-`import-demo`/`make demo-real` demo regeneration. The remaining blocker is
-external to this macOS CPU workspace:
+source-materialization, GPU handoff packaging, returned-export validation,
+motion import, and `import-demo`/`make demo-real` demo regeneration. The
+remaining blocker is external to this macOS CPU workspace:
 
 - blocker type: source clip plus GPU artifact missing
 - missing input: a licensed or user-supplied local clip for source `03-006`, or

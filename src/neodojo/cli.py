@@ -24,6 +24,7 @@ from .real_conversion import (
     DEFAULT_SOURCE_ID,
     DEFAULT_SOURCE_INDEX,
     materialize_real_conversion_source,
+    package_gvhmr_gpu_handoff,
     validate_gvhmr_source,
     write_real_conversion_prep,
 )
@@ -671,6 +672,27 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/real-conversion-validation"),
         help="output directory for source validation report and validated export copy",
     )
+    real_gpu_handoff = real_subparsers.add_parser(
+        "package-gpu-handoff",
+        help="write a metadata bundle for running GVHMR on an external GPU machine",
+    )
+    real_gpu_handoff.add_argument(
+        "--source-materialization",
+        type=Path,
+        required=True,
+        help="source-materialization.json from real-conversion materialize-source",
+    )
+    real_gpu_handoff.add_argument(
+        "--expected-export-json",
+        type=Path,
+        help="expected returned neodojo.gvhmr_smplx_joints.v1 export path",
+    )
+    real_gpu_handoff.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/gvhmr-gpu-handoff"),
+        help="output directory for the GPU handoff manifest and README",
+    )
     real_import_demo = real_subparsers.add_parser(
         "import-demo",
         help="validate an external GVHMR export and regenerate the local demo lane",
@@ -992,6 +1014,20 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(f"wrote {result.validated_export_path}")
             if result.status != "validated":
                 raise ValueError(f"GVHMR source validation status is {result.status}; see {result.report_path}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "package-gpu-handoff":
+            result = package_gvhmr_gpu_handoff(
+                args.out,
+                source_materialization=args.source_materialization,
+                expected_export_json=args.expected_export_json,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"wrote {result.readme_path}")
+            print(f"wrote {result.export_template_path}")
+            print(f"status {result.status}")
+            for path in result.checked_paths:
+                print(f"checked {path}")
             return 0
 
         if args.command == "real-conversion" and args.real_command == "import-demo":

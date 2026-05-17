@@ -14,6 +14,7 @@ from .motion_contract import GVHMR_JOINT_EXPORT_SCHEMA, _write_json, validate_ou
 REAL_CONVERSION_PREP_SCHEMA = "neodojo.real_conversion_prep.v1"
 SOURCE_MATERIALIZATION_SCHEMA = "neodojo.real_conversion_source_materialization.v1"
 GVHMR_SOURCE_VALIDATION_SCHEMA = "neodojo.gvhmr_source_validation.v1"
+GVHMR_GPU_HANDOFF_SCHEMA = "neodojo.gvhmr_gpu_handoff.v1"
 DEFAULT_SOURCE_INDEX = Path("video/original_videos.csv")
 DEFAULT_SOURCE_ID = "03-006"
 
@@ -34,6 +35,15 @@ class SourceMaterializationWriteResult:
 class SourceValidationWriteResult:
     report_path: Path
     validated_export_path: Path | None
+    status: str
+
+
+@dataclass(frozen=True)
+class GvhmrGpuHandoffWriteResult:
+    manifest_path: Path
+    readme_path: Path
+    export_template_path: Path
+    checked_paths: list[Path]
     status: str
 
 
@@ -511,6 +521,207 @@ def materialize_real_conversion_source(
     )
 
 
+def _resolve_handoff_media_path(reference: str | None, source_materialization: Path) -> Path | None:
+    if not reference:
+        return None
+    path = Path(reference)
+    if path.is_absolute() or path.exists():
+        return path
+    candidate = source_materialization.parent / path
+    return candidate if candidate.exists() else path
+
+
+def _markdown_command(command: str) -> str:
+    return f"```bash\n{command}\n```"
+
+
+def _write_gpu_handoff_readme(
+    path: Path,
+    *,
+    manifest_path: Path,
+    status: str,
+    input_video: str | None,
+    expected_export_json: str,
+    upstream_command: str,
+    local_import_command: str,
+) -> None:
+    body = "\n".join(
+        [
+            "# neodojo GVHMR GPU Handoff",
+            "",
+            f"Status: `{status}`",
+            "",
+            "This directory is a metadata handoff for running GVHMR on a separate GPU-capable machine.",
+            "It does not contain or copy source video by default, and it does not run GVHMR locally.",
+            "",
+            "## Files",
+            "",
+            f"- `{manifest_path.name}`: machine-readable handoff manifest.",
+            "- `gvhmr-smplx-joints.template.json`: JSON shape and provenance fields to preserve in the returned export.",
+            "",
+            "## GPU Input",
+            "",
+            f"- Trimmed video argument: `{input_video or '<missing>'}`",
+            "",
+            "## Upstream GVHMR Command Template",
+            "",
+            _markdown_command(upstream_command),
+            "",
+            "Fill in the concrete GVHMR environment, checkpoint, and output directory on the GPU machine.",
+            "",
+            "## Return Artifact",
+            "",
+            f"Write the returned neodojo export to `{expected_export_json}` and include the provenance fields from the template.",
+            "",
+            "## Local Validation And Demo",
+            "",
+            _markdown_command(local_import_command),
+            "",
+            "The local command validates provenance, imports the SMPL-X teaching joints, and regenerates the local demo/capture lane.",
+            "",
+        ]
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(body, encoding="utf-8")
+
+
+def package_gvhmr_gpu_handoff(
+    out_dir: Path,
+    *,
+    source_materialization: Path,
+    expected_export_json: Path | None = None,
+) -> GvhmrGpuHandoffWriteResult:
+    validate_output_dir(out_dir)
+    materialization = _load_json_object(source_materialization, "source materialization manifest")
+    require_schema(materialization, SOURCE_MATERIALIZATION_SCHEMA, "source materialization manifest")
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = out_dir / "manifest.json"
+    readme_path = out_dir / "README.md"
+    export_template_path = out_dir / "gvhmr-smplx-joints.template.json"
+
+    source_hash = sha256_file(source_materialization)
+    trim = materialization.get("trim") if isinstance(materialization.get("trim"), dict) else {}
+    source_prep = materialization.get("source_prep") if isinstance(materialization.get("source_prep"), dict) else {}
+    outputs = materialization.get("outputs") if isinstance(materialization.get("outputs"), dict) else {}
+    validation = materialization.get("validation") if isinstance(materialization.get("validation"), dict) else {}
+    gpu_handoff = materialization.get("gpu_handoff") if isinstance(materialization.get("gpu_handoff"), dict) else {}
+    trimmed_video = outputs.get("trimmed_video") if isinstance(outputs.get("trimmed_video"), dict) else {}
+
+    input_video = gpu_handoff.get("trimmed_video_argument") or outputs.get("trimmed_video_path")
+    input_video = input_video if isinstance(input_video, str) else None
+    input_video_path = _resolve_handoff_media_path(input_video, source_materialization)
+    input_exists = bool(input_video_path and input_video_path.exists())
+    expected_sha = trimmed_video.get("sha256") if isinstance(trimmed_video.get("sha256"), str) else None
+    actual_sha = sha256_file(input_video_path) if input_exists and input_video_path is not None else None
+    checksum_matches = expected_sha is None or actual_sha == expected_sha
+    materialized_ready = bool(validation.get("gvhmr_input_ready"))
+    status = "ready_for_gpu" if input_exists and materialized_ready and checksum_matches else "needs_materialization"
+    if input_exists and not checksum_matches:
+        status = "checksum_mismatch"
+
+    expected_export = (
+        _as_posix(expected_export_json)
+        if expected_export_json is not None
+        else str(gpu_handoff.get("expected_export_json") or out_dir / "gvhmr-smplx-joints.json")
+    )
+    upstream_command = str(
+        gpu_handoff.get("command_template")
+        or "python tools/demo/demo.py --video <trimmed-video> --output_root <gvhmr-output-dir>"
+    )
+    local_import_command = (
+        "PYTHONPATH=src python -m neodojo real-conversion import-demo "
+        f"--source-materialization {_as_posix(source_materialization)} "
+        f"--gvhmr-json {expected_export} "
+        "--out outputs/real-demo"
+    )
+    provenance = {
+        "source_materialization_manifest": _as_posix(source_materialization),
+        "source_materialization_sha256": source_hash,
+        "source_id": source_prep.get("source_id"),
+        "trim": trim,
+        "input_video": input_video,
+        "input_video_sha256": expected_sha,
+        "gpu_command": "<fill actual GVHMR command>",
+        "runtime": "<fill GPU runtime and hardware>",
+        "upstream_version": "<fill GVHMR commit or package version>",
+    }
+
+    export_template = {
+        "schema": GVHMR_JOINT_EXPORT_SCHEMA,
+        "template_only": True,
+        "routine": "Baduanjin",
+        "form": "imported GVHMR segment",
+        "fps": "<fill exported fps>",
+        "frames": [],
+        "smplx_parameters": {
+            "optional": "include mesh-ready SMPL-X pose/shape parameters when available",
+        },
+        "provenance": provenance,
+    }
+    _write_json(export_template_path, export_template)
+
+    manifest = {
+        "schema": GVHMR_GPU_HANDOFF_SCHEMA,
+        "status": status,
+        "fixture_only": False,
+        "media_committed_to_repo": False,
+        "source_materialization": _as_posix(source_materialization),
+        "source_materialization_sha256": source_hash,
+        "source": {
+            "source_id": source_prep.get("source_id"),
+            "source_schema": source_prep.get("source_schema"),
+        },
+        "trim": trim,
+        "gpu_input": {
+            "trimmed_video_argument": input_video,
+            "local_path_checked": _as_posix(input_video_path) if input_video_path is not None else None,
+            "exists": input_exists,
+            "materialized_ready": materialized_ready,
+            "sha256_expected": expected_sha,
+            "sha256_actual": actual_sha,
+            "checksum_matches": checksum_matches,
+        },
+        "expected_export": {
+            "schema": GVHMR_JOINT_EXPORT_SCHEMA,
+            "path": expected_export,
+            "template": _as_posix(export_template_path),
+        },
+        "commands": {
+            "upstream_gvhmr": upstream_command,
+            "local_import_demo": local_import_command,
+        },
+        "provenance_to_preserve": provenance,
+        "notes": (
+            "This handoff packages metadata for an external GVHMR run. It does "
+            "not copy source media, run GVHMR locally, or make the returned "
+            "artifact valid until the template frames/provenance are filled by "
+            "the GPU-side export step."
+        ),
+    }
+    _write_json(manifest_path, manifest)
+    _write_gpu_handoff_readme(
+        readme_path,
+        manifest_path=manifest_path,
+        status=status,
+        input_video=input_video,
+        expected_export_json=expected_export,
+        upstream_command=upstream_command,
+        local_import_command=local_import_command,
+    )
+
+    checked_paths = [manifest_path, readme_path, export_template_path, source_materialization]
+    if input_exists and input_video_path is not None:
+        checked_paths.append(input_video_path)
+    return GvhmrGpuHandoffWriteResult(
+        manifest_path=manifest_path,
+        readme_path=readme_path,
+        export_template_path=export_template_path,
+        checked_paths=checked_paths,
+        status=status,
+    )
+
+
 def _comparison(
     *,
     name: str,
@@ -797,6 +1008,11 @@ def write_real_conversion_prep(
                 "PYTHONPATH=src python -m neodojo real-conversion materialize-source "
                 f"--prep {_as_posix(manifest_path)} --local-video <local-source-video> "
                 "--dry-run --out outputs/real-conversion-source"
+            ),
+            "package_gpu_handoff": (
+                "PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff "
+                "--source-materialization outputs/real-conversion-source/source-materialization.json "
+                "--out outputs/gvhmr-gpu-handoff"
             ),
             "import_motion_record": (
                 "PYTHONPATH=src python -m neodojo motion-record create "

@@ -32,6 +32,7 @@ from neodojo.recorder_capture import write_simulator_recorder_capture
 from neodojo.real_conversion import (
     _parse_ffprobe_payload,
     materialize_real_conversion_source,
+    package_gvhmr_gpu_handoff,
     validate_gvhmr_source,
     write_real_conversion_prep,
 )
@@ -1633,6 +1634,7 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertFalse(manifest["source_media"]["validation"]["local_file_validated"])
         self.assertTrue(manifest["gpu_run"]["required"])
         self.assertIn("materialize-source", manifest["next_commands"]["materialize_source"])
+        self.assertIn("package-gpu-handoff", manifest["next_commands"]["package_gpu_handoff"])
         self.assertIn("--from-gvhmr-json", manifest["next_commands"]["import_motion_record"])
         self.assertIn("import-demo", manifest["next_commands"]["import_demo"])
 
@@ -1740,6 +1742,93 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["outputs"]["extracted_frame_count"], 0)
         self.assertEqual(manifest["ffmpeg"]["commands"][0]["kind"], "trim_clip")
         self.assertIn("trimmed-clip.mp4", manifest["gpu_handoff"]["trimmed_video_argument"])
+
+    def test_real_conversion_gpu_handoff_packages_materialized_source(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            trimmed = root / "trimmed-clip.mp4"
+            trimmed.write_bytes(b"fixture trimmed video bytes")
+            materialization = root / "source-materialization.json"
+            materialization.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.real_conversion_source_materialization.v1",
+                        "status": "materialized",
+                        "source_prep": {
+                            "source_id": "03-006",
+                            "source_schema": "neodojo.real_conversion_prep.v1",
+                        },
+                        "trim": {
+                            "start_seconds": 0.25,
+                            "end_seconds": 1.75,
+                            "duration_seconds": 1.5,
+                        },
+                        "outputs": {
+                            "trimmed_video_path": str(trimmed),
+                            "trimmed_video": {"sha256": sha256_file(trimmed)},
+                        },
+                        "validation": {"gvhmr_input_ready": True},
+                        "gpu_handoff": {
+                            "trimmed_video_argument": str(trimmed),
+                            "expected_export_json": "outputs/real-conversion-gate/gvhmr-smplx-joints.json",
+                            "command_template": "python tools/demo/demo.py --video trimmed-clip.mp4 --output_root gvhmr-output",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = package_gvhmr_gpu_handoff(
+                root / "handoff",
+                source_materialization=materialization,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            template = json.loads(result.export_template_path.read_text(encoding="utf-8"))
+            readme = result.readme_path.read_text(encoding="utf-8")
+
+        self.assertEqual(result.status, "ready_for_gpu")
+        self.assertEqual(manifest["schema"], "neodojo.gvhmr_gpu_handoff.v1")
+        self.assertEqual(manifest["status"], "ready_for_gpu")
+        self.assertTrue(manifest["gpu_input"]["exists"])
+        self.assertTrue(manifest["gpu_input"]["checksum_matches"])
+        self.assertEqual(manifest["expected_export"]["schema"], "neodojo.gvhmr_smplx_joints.v1")
+        self.assertEqual(template["schema"], "neodojo.gvhmr_smplx_joints.v1")
+        self.assertTrue(template["template_only"])
+        self.assertEqual(template["provenance"]["source_id"], "03-006")
+        self.assertIn("real-conversion import-demo", manifest["commands"]["local_import_demo"])
+        self.assertIn("GVHMR GPU Handoff", readme)
+        self.assertIn(trimmed, result.checked_paths)
+
+    def test_real_conversion_gpu_handoff_reports_dry_run_not_ready(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            materialization = root / "source-materialization.json"
+            materialization.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.real_conversion_source_materialization.v1",
+                        "status": "dry_run",
+                        "source_prep": {"source_id": "03-006"},
+                        "trim": {"start_seconds": 0.0, "end_seconds": 12.0, "duration_seconds": 12.0},
+                        "outputs": {
+                            "trimmed_video_path": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                            "trimmed_video": None,
+                        },
+                        "validation": {"gvhmr_input_ready": False},
+                        "gpu_handoff": {
+                            "trimmed_video_argument": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = package_gvhmr_gpu_handoff(root / "handoff", source_materialization=materialization)
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "needs_materialization")
+        self.assertFalse(manifest["gpu_input"]["exists"])
+        self.assertFalse(manifest["gpu_input"]["materialized_ready"])
 
     def test_gvhmr_source_validation_writes_validated_export(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

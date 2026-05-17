@@ -169,10 +169,10 @@ contract, a generated roboharness-style capture bundle manifest, optional
 browser-rendered public-demo screenshot capture, optional MuJoCo simulator
 recorder-capture integration, and minimal lint/build/quality-check
 commands. It can also write a dry-run or ffmpeg-backed local source-video
-handoff for a later GPU GVHMR run. There is still no checked-in GVHMR/GMR
-execution pipeline, simulator runtime pipeline, built-in official SMPL-X
-body-model renderer, live-client Viser capture, or end-to-end real generated
-motion artifact.
+handoff plus a metadata package for a later GPU GVHMR run. There is still no
+checked-in GVHMR/GMR execution pipeline, simulator runtime pipeline,
+built-in official SMPL-X body-model renderer, live-client Viser capture, or
+end-to-end real generated motion artifact.
 
 Fixture-only public demo: [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
 
@@ -188,6 +188,7 @@ make test
 make build
 make demo-public
 make demo-public-browser
+make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
@@ -213,6 +214,7 @@ PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-dem
 PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --recorder-capture outputs/recorder-capture --out outputs/capture
 PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
+PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff --source-materialization outputs/real-conversion-source/source-materialization.json --out outputs/gvhmr-gpu-handoff
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
 PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
 make demo-html
@@ -340,6 +342,12 @@ local video and writes a source-materialization manifest. With `--dry-run`, it
 records exact ffmpeg trim and reference-frame extraction commands without
 processing media. Without `--dry-run`, it requires ffmpeg and writes ignored
 trimmed-video and reference-frame artifacts for the later GPU GVHMR input.
+`neodojo real-conversion package-gpu-handoff` and `make gpu-handoff
+SOURCE_MATERIALIZATION=...` consume a source-materialization manifest and write
+`outputs/gvhmr-gpu-handoff/manifest.json`, a README, and a
+`gvhmr-smplx-joints.template.json` that preserve the exact source hash, trim,
+input video checksum, expected export schema, and local import command for the
+external GPU operator. This package does not copy media or run GVHMR locally.
 `neodojo real-conversion validate-source` compares a GVHMR teaching-joints JSON
 export against the source-materialization manifest, writes a validation report,
 and emits a validated import JSON copy when provenance matches. `neodojo
@@ -412,6 +420,7 @@ In progress:
 - [x] Local real-conversion prep manifest for source `03-006`
 - [x] Local real-conversion source materialization handoff for a user-supplied
       video
+- [x] Local GVHMR GPU handoff package with export template and return command
 - [x] Local GVHMR source-validation report and validated JSON import handoff
 - [x] One-command local real-artifact import demo after an external GPU GVHMR
       export is available
