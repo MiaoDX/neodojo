@@ -1,6 +1,17 @@
+---
+refactor_scope: reduce-entropy-human-docs
+status: DONE
+accepted_severities:
+  - P1
+  - P2
+last_verified: 2026-05-18
+---
+
 # Reduce Entropy: Human Docs
 
-Status: DONE
+## Status
+
+DONE
 
 ## Goal
 
@@ -27,12 +38,14 @@ re-read the full research notes on every visit.
 
 ## Evidence
 
-- The repo currently has only docs and guidance files tracked.
-- No package metadata, tests, build scripts, or CI config exist.
-- `README.md`, `README.zh.md`, `docs/technical-roadmap.md`, and
-  `docs/humanoid-platform-evaluation.md` carry overlapping current-truth claims.
-- `AGENTS.md` correctly warns that the repo is bootstrap/docs-only, but its read
-  order points directly to long research docs.
+- `README.md` was 717 lines and `README.zh.md` was 610 lines before this pass,
+  mostly because they duplicated current status, command runbooks, CI evidence,
+  and implementation details already tracked in `STATUS.md`.
+- `STATUS.md`, `ARCHITECTURE.md`, `.github/workflows/public-demo.yml`, and
+  `Makefile` are the current evidence for README claims about bootstrap state,
+  CI-generated fixture demo artifacts, and runnable commands.
+- `README.md` already linked the fixture-only Pages demo, but did not present it
+  as a compact CI-generated demo surface.
 
 ## Checklist
 
@@ -42,6 +55,10 @@ re-read the full research notes on every visit.
 - [x] Update `README.zh.md`.
 - [x] Update agent startup pointers.
 - [x] Verify links and whitespace.
+- [x] Shrink `README.md` into a compact L0 orientation page.
+- [x] Keep the CI-generated fixture demo link/screenshot explicit in
+      `README.md`.
+- [x] Align `README.zh.md` with the smaller English README.
 
 ## Parked Items
 
@@ -51,3 +68,23 @@ re-read the full research notes on every visit.
   `data/raw/` convention before adding any source-video workflow.
 - Add package metadata, focused tests, and real command docs in the same change
   that introduces runtime code.
+
+## Evidence Ladder
+
+- L0 static docs: README links, headings, and drift against `STATUS.md`,
+  `ARCHITECTURE.md`, `.github/workflows/public-demo.yml`, and `Makefile`.
+
+## Stop Condition
+
+The English and Chinese README files are compact L0 orientation docs, both
+mention the CI-generated fixture demo, and static link/command-name checks pass.
+
+## Execution Log
+
+- 2026-05-18: Reopened for the README shrink requested through
+  `$intuitive-refactor`.
+- 2026-05-18: Replaced `README.md` and `README.zh.md` with compact L0
+  orientation docs, keeping the CI-generated fixture demo link, generated
+  artifact list, screenshot, and bootstrap caveats.
+- 2026-05-18: Verified with `make check`, README reference grep, Make target
+  grep, and local file existence checks for linked docs and workflow.
