@@ -68,6 +68,13 @@ To regenerate those files and collocate them into one operator package folder:
 make real-gpu-operator-package LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 ```
 
+To regenerate those files, collocate them, and wrap the package directory as
+one transfer archive:
+
+```bash
+make real-gpu-operator-package-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
+```
+
 To record whether this local workspace has any configured GPU execution route:
 
 ```bash
@@ -142,6 +149,19 @@ make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operat
 
 This checks the package, request, and notebook schemas plus the copied archive,
 request, and notebook checksum links.
+
+To wrap the validated package directory as one transfer file:
+
+```bash
+make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
+python -m json.tool outputs/gvhmr-operator-package-archive/manifest.json
+```
+
+The package archive writes
+`outputs/gvhmr-operator-package-archive/neodojo-gvhmr-operator-package.tar.gz`
+plus a `neodojo.gvhmr_operator_package_archive.v1` manifest. Metadata-only
+package archives are CI-safe; media-containing package archives remain ignored
+and must not be committed or uploaded as public CI artifacts.
 
 ## Optional Self-Hosted GPU Workflow
 

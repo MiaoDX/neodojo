@@ -36,6 +36,7 @@ GVHMR_GPU_INPUT_ARCHIVE_SCHEMA = "neodojo.gvhmr_gpu_input_archive.v1"
 GVHMR_GPU_RUN_REQUEST_SCHEMA = "neodojo.gvhmr_gpu_run_request.v1"
 GVHMR_COLAB_OPERATOR_NOTEBOOK_SCHEMA = "neodojo.gvhmr_colab_operator_notebook.v1"
 GVHMR_OPERATOR_PACKAGE_SCHEMA = "neodojo.gvhmr_operator_package.v1"
+GVHMR_OPERATOR_PACKAGE_ARCHIVE_SCHEMA = "neodojo.gvhmr_operator_package_archive.v1"
 GVHMR_RESULT_INSPECTION_SCHEMA = "neodojo.gvhmr_result_inspection.v1"
 GVHMR_GPU_EXECUTION_PROBE_SCHEMA = "neodojo.gvhmr_gpu_execution_probe.v1"
 REAL_CONVERSION_AUDIT_SCHEMA = "neodojo.real_conversion_audit.v1"
@@ -118,6 +119,14 @@ class GvhmrOperatorPackageWriteResult:
 @dataclass(frozen=True)
 class GvhmrOperatorPackageValidationResult:
     manifest_path: Path
+    checked_paths: list[Path]
+    status: str
+
+
+@dataclass(frozen=True)
+class GvhmrOperatorPackageArchiveWriteResult:
+    manifest_path: Path
+    archive_path: Path
     checked_paths: list[Path]
     status: str
 
@@ -2445,6 +2454,105 @@ def validate_gvhmr_operator_package(operator_package: Path) -> GvhmrOperatorPack
         manifest_path=manifest_path,
         checked_paths=checked_paths,
         status=str(package_manifest.get("status", "unknown")),
+    )
+
+
+def _iter_operator_package_files(package_dir: Path, *, archive_output_dir: Path) -> list[tuple[Path, str]]:
+    package_root = package_dir.resolve()
+    archive_root = archive_output_dir.resolve()
+    files: list[tuple[Path, str]] = []
+    for path in sorted(package_dir.rglob("*")):
+        if not path.is_file():
+            continue
+        resolved = path.resolve()
+        if archive_root != package_root and archive_root in resolved.parents:
+            continue
+        arcname = _as_posix(resolved.relative_to(package_root))
+        files.append((path, arcname))
+    if not files:
+        raise ValueError(f"GVHMR operator package has no files to archive: {package_dir}")
+    return files
+
+
+def archive_gvhmr_operator_package(
+    out_dir: Path,
+    *,
+    operator_package: Path,
+    archive_name: str = "neodojo-gvhmr-operator-package.tar.gz",
+) -> GvhmrOperatorPackageArchiveWriteResult:
+    validate_output_dir(out_dir)
+    if not archive_name.endswith((".tar.gz", ".tgz")):
+        raise ValueError("GVHMR operator package archive name must end with .tar.gz or .tgz")
+    if Path(archive_name).name != archive_name:
+        raise ValueError("GVHMR operator package archive name must be a simple filename")
+
+    validation = validate_gvhmr_operator_package(operator_package)
+    package_manifest_path, package_manifest = _load_operator_package_manifest(operator_package)
+    package_dir = package_manifest_path.parent
+    media_included = bool(package_manifest.get("media_included"))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    archive_path = out_dir / archive_name
+    files = _iter_operator_package_files(package_dir, archive_output_dir=out_dir)
+    with tarfile.open(archive_path, "w:gz") as archive:
+        for source_path, arcname in files:
+            archive.add(source_path, arcname=arcname, recursive=False)
+    members = [
+        {
+            "path": arcname,
+            "sha256": sha256_file(source_path),
+            "size_bytes": source_path.stat().st_size,
+        }
+        for source_path, arcname in files
+    ]
+    status = (
+        "ready_for_external_gpu_operator_package_archive"
+        if media_included
+        else "metadata_only_not_ready_for_gpu"
+    )
+    manifest_path = out_dir / "manifest.json"
+    manifest = {
+        "schema": GVHMR_OPERATOR_PACKAGE_ARCHIVE_SCHEMA,
+        "status": status,
+        "blocked_locally": True,
+        "media_included": media_included,
+        "source": package_manifest.get("source"),
+        "trim": package_manifest.get("trim"),
+        "source_operator_package": {
+            "manifest": _as_posix(package_manifest_path),
+            "schema": package_manifest.get("schema"),
+            "status": package_manifest.get("status"),
+            "sha256": sha256_file(package_manifest_path),
+        },
+        "archive": {
+            "path": _as_posix(archive_path),
+            "filename": archive_path.name,
+            "sha256": sha256_file(archive_path),
+            "size_bytes": archive_path.stat().st_size,
+            "member_count": len(members),
+        },
+        "members": members,
+        "expected_return_artifact": package_manifest.get("expected_return_artifact"),
+        "commands": package_manifest.get("commands"),
+        "policy": {
+            "safe_for_git": not media_included,
+            "notes": (
+                "Metadata-only operator package archives are CI-safe. Media-containing "
+                "operator package archives must stay ignored and must not be committed or "
+                "uploaded as public artifacts."
+            ),
+        },
+        "notes": (
+            "This archive wraps the validated GVHMR operator package directory as one "
+            "copyable handoff file. It does not run GVHMR locally."
+        ),
+    }
+    _write_json(manifest_path, manifest)
+    checked_paths = [manifest_path, archive_path, *validation.checked_paths]
+    return GvhmrOperatorPackageArchiveWriteResult(
+        manifest_path=manifest_path,
+        archive_path=archive_path,
+        checked_paths=checked_paths,
+        status=status,
     )
 
 

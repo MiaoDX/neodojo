@@ -1,12 +1,13 @@
 # MVP GVHMR Operator Package Plan
 
-Status: IMPLEMENTED COLLOCATED OPERATOR PACKAGE; REAL ARTIFACT STILL EXTERNAL
+Status: IMPLEMENTED COLLOCATED OPERATOR PACKAGE AND PACKAGE ARCHIVE; REAL ARTIFACT STILL EXTERNAL
 
 ## Goal
 
-Create one copyable operator package directory that collocates the GPU input
-archive, generated run request, Colab operator notebook, and a package manifest
-for the external GVHMR operator.
+Create one copyable operator package directory, plus an optional single-file
+package archive, that collocates the GPU input archive, generated run request,
+Colab operator notebook, and a package manifest for the external GVHMR
+operator.
 
 The package must not run GVHMR locally, must keep media-containing packages
 under ignored outputs, and must preserve the existing checksum, source
@@ -37,6 +38,8 @@ provenance, rights, and returned-artifact validation boundaries.
 - Copied `archive/neodojo-gvhmr-gpu-input.tar.gz`.
 - Copied `request/manifest.json` and `request/README.md`.
 - Copied `colab/manifest.json` and `colab/gvhmr-colab-operator.ipynb`.
+- Optional `neodojo.gvhmr_operator_package_archive.v1` manifest plus
+  `neodojo-gvhmr-operator-package.tar.gz` transfer archive.
 - CLI command:
 
   ```bash
@@ -56,8 +59,10 @@ provenance, rights, and returned-artifact validation boundaries.
     GVHMR_COLAB_NOTEBOOK=outputs/gvhmr-colab-operator
 
   make real-gpu-operator-package LOCAL_VIDEO=path/to/local-source.mp4
+  make real-gpu-operator-package-archive LOCAL_VIDEO=path/to/local-source.mp4
   make gvhmr-operator-package-smoke
   make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
+  make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
   ```
 
 ## Execution Tasks
@@ -74,8 +79,13 @@ provenance, rights, and returned-artifact validation boundaries.
 - [x] Run that validator as part of the direct package Make target so
   one-command package creation fails before handoff when copied package
   checksums drift.
+- [x] Add a package-archive writer and Make target that validate the
+  collocated package before writing one transfer `.tar.gz`.
+- [x] Include a metadata-only package-archive smoke in `make verify`.
 - [x] Upload the metadata-only package smoke artifact from the public-demo
   GitHub Actions workflow.
+- [x] Upload the metadata-only package-archive smoke artifact from the
+  public-demo GitHub Actions workflow.
 - [x] Add focused tests for media-including and metadata-only package creation.
 - [x] Update README.md, README.zh.md, STATUS.md, the runbook, and the MVP plan
   index without claiming a real GVHMR artifact has been produced.
@@ -99,10 +109,18 @@ provenance, rights, and returned-artifact validation boundaries.
   collocated package.
 - `make gvhmr-operator-package` and therefore `make real-gpu-operator-package`
   run copied-package validation before reporting success.
+- `make gvhmr-operator-package-archive-smoke` writes
+  `outputs/gvhmr-operator-package-archive-smoke/manifest.json` and
+  `neodojo-gvhmr-operator-package.tar.gz`.
+- Package archive manifests record schema
+  `neodojo.gvhmr_operator_package_archive.v1`, expected return schema
+  `neodojo.gvhmr_smplx_joints.v1`, member checksums, and the same safe-for-git
+  policy as the collocated package.
 - The public-demo workflow uploads `neodojo-gvhmr-operator-package-smoke`,
   and copied-package validation in the package Make target was verified by
   GitHub Actions run
-  `https://github.com/MiaoDX/neodojo/actions/runs/26011378922`.
+  `https://github.com/MiaoDX/neodojo/actions/runs/26011378922`. The public-demo
+  workflow also uploads `neodojo-gvhmr-operator-package-archive-smoke`.
 
 ## Non-Goals
 
@@ -115,5 +133,6 @@ provenance, rights, and returned-artifact validation boundaries.
 ## Stop Condition
 
 Stopped when the archive, run request, and Colab notebook can be collocated into
-one validated operator package, with metadata-only CI smoke coverage, leaving the
-actual GVHMR execution as the only remaining external step.
+one validated operator package and optionally wrapped as one validated transfer
+archive, with metadata-only CI smoke coverage, leaving the actual GVHMR
+execution as the only remaining external step.

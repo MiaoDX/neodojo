@@ -23,6 +23,7 @@ from .recorder_capture import write_simulator_recorder_capture
 from .real_conversion import (
     DEFAULT_SOURCE_ID,
     DEFAULT_SOURCE_INDEX,
+    archive_gvhmr_operator_package,
     audit_real_conversion_completion,
     inspect_gvhmr_result,
     materialize_real_conversion_source,
@@ -856,6 +857,27 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="GVHMR operator package directory or manifest.json",
     )
+    real_operator_archive = real_subparsers.add_parser(
+        "archive-operator-package",
+        help="archive a validated GVHMR operator package directory as one transfer file",
+    )
+    real_operator_archive.add_argument(
+        "--package",
+        type=Path,
+        required=True,
+        help="GVHMR operator package directory or manifest.json",
+    )
+    real_operator_archive.add_argument(
+        "--archive-name",
+        default="neodojo-gvhmr-operator-package.tar.gz",
+        help="archive filename ending in .tar.gz or .tgz",
+    )
+    real_operator_archive.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/gvhmr-operator-package-archive"),
+        help="output directory for the package archive and manifest",
+    )
     real_intake_smoke = real_subparsers.add_parser(
         "write-intake-smoke-input",
         help="write fixture-only inputs for smoke-testing returned-artifact intake",
@@ -1353,6 +1375,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "real-conversion" and args.real_command == "validate-operator-package":
             result = validate_gvhmr_operator_package(args.package)
             print(f"validated {result.manifest_path}")
+            print(f"status {result.status}")
+            for path in result.checked_paths:
+                print(f"checked {path}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "archive-operator-package":
+            result = archive_gvhmr_operator_package(
+                args.out,
+                operator_package=args.package,
+                archive_name=args.archive_name,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"wrote {result.archive_path}")
             print(f"status {result.status}")
             for path in result.checked_paths:
                 print(f"checked {path}")

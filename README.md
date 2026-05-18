@@ -194,6 +194,7 @@ make real-gpu-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=
 make real-gpu-run-request LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-gpu-colab-notebook LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-gpu-operator-package LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
+make real-gpu-operator-package-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin REAL_LOCAL_TITLE="Local Baduanjin proof clip"
 make real-handoff-smoke
@@ -211,6 +212,7 @@ make gvhmr-colab-notebook-smoke
 make gvhmr-operator-package GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request GVHMR_COLAB_NOTEBOOK=outputs/gvhmr-colab-operator
 make gvhmr-operator-package-smoke
 make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
+make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
@@ -444,10 +446,13 @@ GVHMR_COLAB_NOTEBOOK=...` collocates those generated handoff files into one
 package with a package manifest and README, then validates the copied package
 before returning. The validation target is
 `make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=...`.
+`make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=...` wraps that
+validated package directory into one transfer `.tar.gz` plus manifest.
 `make gvhmr-run-request-smoke` covers the metadata-only request path in
 `make verify`; `make gvhmr-colab-notebook-smoke` covers the generated notebook
 path; `make gvhmr-operator-package-smoke` covers the collocated package path
-and package validation.
+and package validation; `make gvhmr-operator-package-archive-smoke` covers the
+single-file operator package archive path.
 For user-managed GitHub Actions GPU hardware, the manual
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow can unpack a
 runner-local media archive or collocated operator package on a self-hosted
@@ -580,6 +585,8 @@ In progress:
       request, and Colab notebook preparation
 - [x] One-command `make real-gpu-operator-package` collocated archive, request,
       notebook, and package manifest preparation
+- [x] One-command `make real-gpu-operator-package-archive` single-file operator
+      package archive preparation
 - [x] Local GVHMR GPU handoff package with export template and return command
 - [x] Ignored copyable GPU input bundle with optional trimmed media inclusion
 - [x] Ignored GPU input transfer archive for upload to the selected GPU machine
@@ -588,6 +595,7 @@ In progress:
 - [x] Generated Colab operator notebook from a GPU run-request manifest
 - [x] Generated collocated operator package from archive, run request, and
       notebook manifests
+- [x] Generated operator package archive from a validated collocated package
 - [x] GPU-side GVHMR-to-neodojo export helper packaged with the handoff
 - [x] Local GVHMR result inspection manifest for returned `.pt` or JSON export
 - [x] Local GVHMR source-validation report and validated JSON import handoff

@@ -23,11 +23,14 @@ real-gpu-archive`, `make real-gpu-run-request`,
 `make gpu-execution-probe`, `make gvhmr-run-request`, and
 `make gvhmr-run-request-smoke`, `make gvhmr-colab-notebook`,
 `make gvhmr-colab-notebook-smoke`, `make gvhmr-operator-package`, and
-`make gvhmr-operator-package-smoke` for external GVHMR run metadata, transfer
-bundles/archives, CI-safe GPU runner packaging, reproducible GPU/provider
-readiness classification, generated GPU-operator run requests, Colab operator
-notebooks, and collocated operator packages, metadata-only CI GPU
-run-request/notebook/package/probe artifacts, and a
+`make gvhmr-operator-package-smoke`, plus
+`make gvhmr-operator-package-archive` and
+`make gvhmr-operator-package-archive-smoke` for external GVHMR run metadata,
+transfer bundles/archives, CI-safe GPU runner packaging, reproducible
+GPU/provider readiness classification, generated GPU-operator run requests,
+Colab operator notebooks, collocated operator packages, and single-file
+operator package archives, metadata-only CI GPU
+run-request/notebook/package/package-archive/probe artifacts, and a
 tracked external-GPU operator runbook, `make gvhmr-inspect` for returned GVHMR
 result inspection, `make demo-real` / `make real-artifact-intake` for a
 validated external GVHMR JSON once a GPU artifact exists, and
@@ -867,6 +870,13 @@ schemas, archive/request/notebook checksums, media flags, and expected return
 schema before transfer. `make gvhmr-operator-package-smoke` covers the
 metadata-only package path and package validation in `make verify`;
 media-containing operator packages stay ignored.
+`neodojo real-conversion archive-operator-package` and `make
+gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=...` validate that
+collocated package and write a single
+`neodojo.gvhmr_operator_package_archive.v1` transfer `.tar.gz` plus manifest.
+`make gvhmr-operator-package-archive-smoke` covers the metadata-only archive in
+`make verify`; media-containing package archives stay ignored and unsafe for
+git.
 `neodojo real-conversion
 inspect-gvhmr-result` writes a result
 inspection manifest for a returned `hmr4d_results.pt` when `torch` is available
