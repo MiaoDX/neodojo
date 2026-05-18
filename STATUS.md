@@ -525,9 +525,10 @@ motion artifact, or hosted/live-client Viser capture.
 - `.github/workflows/gvhmr-self-hosted-gpu.yml` is a manual
   `workflow_dispatch` path for user-managed runners labeled `self-hosted` and
   `gpu`. It can run the packaged GVHMR wrapper from a runner-local archive or
-  collocated operator package, validate/import the returned export with
-  `make real-artifact-intake`, run the strict real-conversion audit, and
-  optionally upload only
+  collocated operator package. For package inputs it validates schemas and
+  archive/request/notebook checksums before unpacking. It then validates/imports
+  the returned export with `make real-artifact-intake`, runs the strict
+  real-conversion audit, and optionally uploads only
   `gvhmr-smplx-joints.json` or generated real-demo/public-demo evidence; it is
   not part of default push/PR CI and does not upload media, checkpoints, SMPL-X
   assets, or `.pt` result files.

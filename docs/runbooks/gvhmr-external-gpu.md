@@ -144,6 +144,10 @@ Its required runtime inputs are:
 - `gvhmr_repo`: existing GVHMR checkout or install destination
 - `smplx_model_dir`: licensed local SMPL-X model directory
 
+When `gvhmr_operator_package_path` is provided, the workflow validates the
+package, run-request, and notebook manifest schemas plus the copied archive,
+request, and notebook checksums before unpacking.
+
 Optional inputs allow installing GVHMR, exporting from an existing
 `hmr4d_results.pt` with `skip_gvhmr`, selecting `smpl_params_global` or
 `smpl_params_incam`, opting into a short-lived upload of only

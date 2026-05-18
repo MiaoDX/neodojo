@@ -58,7 +58,7 @@ upload.
   of uploading media through default CI.
 - [x] Also accept a runner-local GVHMR operator package directory or
   `manifest.json`, deriving the contained archive after validating the package
-  sidecar files.
+  sidecar files, schemas, and checksums.
 - [x] Require explicit SMPL-X model directory and GVHMR repo inputs.
 - [x] Support running full GVHMR or exporting from an existing
   `hmr4d_results.pt` with `skip_gvhmr`.
@@ -79,8 +79,8 @@ upload.
   source materialization before executing the wrapper.
 - The workflow accepts either `gpu_input_archive_path` or
   `gvhmr_operator_package_path`; the package path validates the package
-  manifest, request files, Colab notebook files, and contained archive before
-  unpacking.
+  manifest, request files, Colab notebook files, contained archive, and
+  checksum links before unpacking.
 - The only uploaded path in the workflow is
   `outputs/self-hosted-gvhmr-run/gvhmr-smplx-joints.json` unless
   `upload_real_demo` is explicitly enabled for generated public-demo/capture
