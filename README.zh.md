@@ -123,7 +123,7 @@ Viser (web 端三视角同步 + 关节轨迹 polyline + 时间轴)
 
 ## Status
 
-🚧 **Bootstrap 阶段，已有 fixture-only HTML demo。**
+🚧 **Bootstrap 阶段：fixture public demo，加上本机 ignored real GVHMR proof。**
 
 当前 repo 状态、已知约束与下一步安全任务见 [`STATUS.md`](STATUS.md)。现在已经有
 一个很小的 Python package、本地 SMPL-X 与 G1 fixture artifact 命令、教学 playback
@@ -135,15 +135,18 @@ SDK `.rrd` export、可选 first Viser local
 runtime 与 production teaching review-loop contract、generated roboharness-style
 capture bundle manifest、可选 browser-rendered public-demo screenshot capture、
 可选 MuJoCo simulator recorder-capture integration，以及最小 lint/build/quality-check
-命令。它也可以为后续 GPU GVHMR run 写出 dry-run 或
+命令。它也可以为 GPU GVHMR run 写出 dry-run 或
 ffmpeg-backed 的本地 source-video handoff，并写出 GPU handoff metadata package、
 copyable input bundle、executable GPU-side runner、ignored transfer archive、
 collocated operator package、operator-package archive、non-failing
 acquisition-status preflight、可选 self-hosted GPU workflow，以及 guarded
-manual real-demo Pages promotion workflow。但还没有提交到仓库的本地 GVHMR/GMR
-execution environment、完整
-simulator runtime pipeline、内置 official SMPL-X body-model renderer、production
-live-client Viser capture，或 end-to-end 的真实 generated motion artifact。
+manual real-demo Pages promotion workflow。本机 GPU workspace 也已经在 ignored
+local real-conversion lane 中生成 non-fixture GVHMR SMPL-X teaching-joints export，
+并通过 strict real-demo audit。但还没有提交到仓库的本地 GVHMR/GMR execution
+environment、完整 simulator runtime pipeline、内置 official SMPL-X body-model
+renderer、production live-client Viser capture、已提交 generated motion artifact，
+或已发布 real demo。当前 real proof 仍只在 ignored `outputs/` 下，本机 G1 companion
+仍是 fixture-derived，除非显式传入真实 GMR track。
 
 Fixture-only public demo：[`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
 
@@ -338,7 +341,7 @@ repository variable `NEODOJO_DEPLOY_PAGES=true` 时把 fixture-only public demo
 MVP plan links 和最低限度的 plan scaffolding；`make build` 会把 wheel 写到被忽略的
 `outputs/dist/`。
 
-`neodojo real-conversion prepare` 会为后续 GPU gate 写出 source metadata、trim
+`neodojo real-conversion prepare` 会为 GPU conversion run 写出 source metadata、trim
 metadata 和下一步命令提示。它不会下载源视频，也不会运行 GVHMR。如果传入
 `--local-video`，它会记录 checksum 数据和可选的 ffprobe duration、resolution、codec、
 frame-rate metadata。对于本地/用户提供且不应套用 official source index row 的视频，
@@ -347,7 +350,7 @@ frame-rate metadata。对于本地/用户提供且不应套用 official source i
 manifest 与本地视频，写出 source-materialization manifest。传入 `--dry-run` 时，
 它只记录准确的 ffmpeg trim 与 reference-frame extraction 命令，不处理媒体；不传
 `--dry-run` 时，它需要 ffmpeg，并把 ignored trimmed-video 与 reference-frame
-artifacts 写给后续 GPU GVHMR input。`make real-handoff LOCAL_VIDEO=...` 会用一个
+artifacts 写给 GPU GVHMR input。`make real-handoff LOCAL_VIDEO=...` 会用一个
 命令运行 source prep、默认 dry-run source materialization 和 GPU handoff packaging；
 设置 `REAL_LOCAL_SOURCE_ID=...` 和可选 `REAL_LOCAL_TITLE=...` 可保留 custom
 local-source provenance；安装了 ffmpeg 并希望实际 trim/extract media 时，可设置
@@ -443,6 +446,10 @@ path 的更简单 post-return wrapper。使用标准路径时，它默认读取
 `outputs/real-conversion-source/source-materialization.json` 并写入
 `outputs/real-demo`，因此 GPU operator 返回 export 后只需要指定这个
 `neodojo.gvhmr_smplx_joints.v1` JSON。
+本机 GPU workspace 已经用 packaged GVHMR wrapper 跑过 ignored Bilibili proof
+clip，生成
+`outputs/gvhmr-gpu-input-local-bilibili/gvhmr-smplx-joints.json`，其中
+`fixture_only: false`、25 fps、300 frames，并已导入 `outputs/real-demo/`。
 `make real-artifact-intake-smoke` 会写 fixture-only source materialization 与
 GVHMR JSON 输入，再运行同一个 wrapper，让 returned-artifact intake path 在本地
 和 CI 中都有覆盖，但不声称已经运行过真实 GVHMR。生成的 real-demo manifest 会用
@@ -450,11 +457,12 @@ GVHMR JSON 输入，再运行同一个 wrapper，让 returned-artifact intake pa
 `real_gvhmr_artifact_imported: false` 表示这是 fixture smoke。
 `make real-conversion-audit` 会写出
 `outputs/real-conversion-audit/manifest.json`，判断 real gate 是否已完成，或是否仍
-blocked on external GPU artifact。传入 `REAL_AUDIT_GITHUB_REPO=OWNER/REPO`，或
+blocked on non-fixture GPU artifact。传入 `REAL_AUDIT_GITHUB_REPO=OWNER/REPO`，或
 在 CLI 使用 `--github-repo OWNER/REPO`，可把 opt-in GitHub runner /
 secret-count probe 一起写入 audit。它在 blocker classification 状态下也会成功退出；
 需要脚本在没有真实 non-fixture demo 时失败时，可使用
-`make real-conversion-audit-strict` 或 `make verify-real`。底层 CLI 形式是
+`make real-conversion-audit-strict` 或 `make verify-real`。当前 workspace 中，本地
+Bilibili proof audit 报告 `real_demo_verified`。底层 CLI 形式是
 `PYTHONPATH=src python -m neodojo real-conversion audit-completion --require-complete`。
 `make real-demo-pages-promotion-validate PROMOTION_DOWNLOAD_ROOT=...
 PROMOTION_SOURCE_RUN_ID=...` 会在 guarded Pages promotion workflow 上传之前，
@@ -534,11 +542,13 @@ capture 或真实 Unitree G1 retargeting 已经完成。
 - [x] 从已验证 collocated package 生成 operator package archive
 - [x] 可复用验证已有下载 operator package archive artifact
 - [x] non-failing `make real-gvhmr-acquisition-status` preflight，用于记录
-      operator package handoff readiness 与仍被阻塞的 real audit
+      operator package handoff readiness 与 real-conversion audit state
 - [x] 随 handoff 打包的 GPU-side GVHMR-to-neodojo export helper
 - [x] 本地 GVHMR result inspection manifest，用于返回的 `.pt` 或 JSON export
 - [x] 本地 GVHMR source-validation report 与 validated JSON import handoff
 - [x] 外部 GPU GVHMR export 可用后的一命令本地 real-artifact import demo
+- [x] 本机 GPU GVHMR proof：针对 ignored Bilibili 八段锦 clip 生成 non-fixture
+      300-frame SMPL-X teaching-joints export，并通过 strict real-conversion audit
 - [x] 面向标准返回 GVHMR export 路径的简化 `make real-artifact-intake` wrapper
 - [x] 用 fixture-backed `make real-artifact-intake-smoke` 覆盖 returned artifact
       wrapper

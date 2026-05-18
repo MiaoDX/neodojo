@@ -77,6 +77,13 @@ def _free_local_port() -> int:
         return int(sock.getsockname()[1])
 
 
+def _check_by_name(manifest: dict, name: str) -> dict:
+    for check in manifest["checks"]:
+        if check.get("name") == name:
+            return check
+    raise AssertionError(f"missing audit check {name}")
+
+
 def _write_verified_real_demo_download_fixture(root: Path) -> Path:
     source = root / "source-materialization.json"
     source.write_text(
@@ -1984,10 +1991,12 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("real-conversion import-demo", manifest["commands"]["local_import_demo"])
         self.assertIn("Export GVHMR hmr4d_results.pt", exporter_script)
         self.assertIn('"fixture_only": False', exporter_script)
+        self.assertIn("_resolve_smplx_model_path", exporter_script)
         self.assertIn("Run GVHMR and export a neodojo", runner_script)
         self.assertEqual(runner_syntax.returncode, 0, runner_syntax.stderr)
         self.assertEqual(runner_help.returncode, 0, runner_help.stderr)
         self.assertIn("SMPLX_MODEL_DIR", runner_help.stdout)
+        self.assertIn("body_models root", runner_help.stdout)
         self.assertIn("export_neodojo_gvhmr.py", readme)
         self.assertIn("run_gvhmr_neodojo.sh", readme)
         self.assertIn("source-materialization.json", readme)
@@ -2424,6 +2433,7 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertIn("--hmr4d-results", completed.stdout)
         self.assertIn("--smplx-model-dir", completed.stdout)
+        self.assertIn("SMPLX_NEUTRAL.npz", completed.stdout)
 
     def test_real_conversion_gpu_handoff_reports_dry_run_not_ready(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -3239,10 +3249,13 @@ class DemoHtmlTests(unittest.TestCase):
                 encoding="utf-8",
             )
             write_real_conversion_demo(root / "real-demo", source_materialization=materialization, gvhmr_json=gvhmr)
+            relocated_materialization = root / "relocated" / "source-materialization.json"
+            relocated_materialization.parent.mkdir()
+            relocated_materialization.write_text(materialization.read_text(encoding="utf-8"), encoding="utf-8")
 
             result = audit_real_conversion_completion(
                 root / "audit",
-                source_materialization=materialization,
+                source_materialization=relocated_materialization,
                 gvhmr_json=gvhmr,
                 real_demo=root / "real-demo",
                 env={},
@@ -3255,6 +3268,79 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertFalse(manifest["blocked"])
         self.assertTrue(manifest["real_demo"]["real_gvhmr_artifact_imported"])
         self.assertEqual(manifest["artifact"]["validation_status"], "validated")
+        self.assertTrue(_check_by_name(manifest, "source_validation_passed")["passed"])
+
+    def test_real_conversion_audit_rejects_verified_demo_with_missing_configured_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            materialization = root / "source-materialization.json"
+            materialization.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.real_conversion_source_materialization.v1",
+                        "source_prep": {"source_id": "03-006"},
+                        "trim": {
+                            "start_seconds": 0.25,
+                            "end_seconds": 1.75,
+                            "duration_seconds": 1.5,
+                        },
+                        "outputs": {
+                            "trimmed_video_path": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                            "trimmed_video": {"sha256": "abc123"},
+                        },
+                        "gpu_handoff": {
+                            "trimmed_video_argument": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            gvhmr = root / "gvhmr-smplx-joints.json"
+            gvhmr.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gvhmr_smplx_joints.v1",
+                        "routine": "Baduanjin",
+                        "form": "Two Hands Hold Up the Heavens",
+                        "fps": 24,
+                        "frames": build_smplx_fixture_frames(36),
+                        "provenance": {
+                            "source_materialization_manifest": str(materialization),
+                            "source_materialization_sha256": sha256_file(materialization),
+                            "source_id": "03-006",
+                            "trim": {
+                                "start_seconds": 0.25,
+                                "end_seconds": 1.75,
+                                "duration_seconds": 1.5,
+                            },
+                            "input_video": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                            "input_video_sha256": "abc123",
+                            "gpu_command": "python tools/demo/demo.py --video trimmed-clip.mp4",
+                            "runtime": "test gpu",
+                            "upstream_version": "gvhmr-test",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            write_real_conversion_demo(root / "real-demo", source_materialization=materialization, gvhmr_json=gvhmr)
+
+            result = audit_real_conversion_completion(
+                root / "audit",
+                source_materialization=root / "missing-source-materialization.json",
+                gvhmr_json=root / "missing-gvhmr-smplx-joints.json",
+                real_demo=root / "real-demo",
+                env={},
+                command_lookup=lambda command: "/usr/bin/nvidia-smi" if command == "nvidia-smi" else None,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "real_artifact_missing")
+        self.assertFalse(result.complete)
+        self.assertTrue(manifest["blocked"])
+        self.assertFalse(_check_by_name(manifest, "source_materialization_available")["passed"])
+        self.assertFalse(_check_by_name(manifest, "gvhmr_export_available")["passed"])
+        self.assertTrue(manifest["real_demo"]["real_gvhmr_artifact_imported"])
 
     def test_real_conversion_prep_rejects_unknown_source_id(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

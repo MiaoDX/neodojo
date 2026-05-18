@@ -16,7 +16,8 @@ Important environment variables:
   GVHMR_REV         GVHMR revision to checkout when --install is used. Default: main.
   VIDEO             Trimmed clip path. Default: ./source/trimmed-clip.mp4.
   OUTPUT_ROOT       GVHMR output root. Default: ./gvhmr-output.
-  SMPLX_MODEL_DIR   Required for export; local licensed SMPL-X model directory.
+  SMPLX_MODEL_DIR   Required for export; local licensed SMPL-X body_models root,
+                    nested smplx directory, or direct SMPLX_NEUTRAL.npz path.
   HMR4D_RESULTS     Existing result path when --skip-gvhmr is used.
   RETURNED_EXPORT   Output neodojo JSON path. Default: ./gvhmr-smplx-joints.json.
   STATIC_CAM        1 adds GVHMR -s / --static_cam. Default: 1.
@@ -111,6 +112,15 @@ require_dir() {
   fi
 }
 
+require_path() {
+  local path="$1"
+  local label="$2"
+  if [[ ! -e "$path" ]]; then
+    echo "missing $label: $path" >&2
+    exit 2
+  fi
+}
+
 if [[ "$INSTALL" == "1" ]]; then
   if [[ ! -d "$GVHMR_REPO/.git" ]]; then
     run_cmd git clone "$GVHMR_REMOTE" "$GVHMR_REPO"
@@ -147,7 +157,7 @@ if [[ "$RUN_EXPORT" == "1" ]]; then
     echo "SMPLX_MODEL_DIR is required for neodojo export" >&2
     exit 2
   fi
-  require_dir "$SMPLX_MODEL_DIR" "licensed SMPL-X model directory"
+  require_path "$SMPLX_MODEL_DIR" "licensed SMPL-X model path"
   require_file "$HMR4D_RESULTS" "GVHMR hmr4d_results.pt"
   require_file "$ROOT_DIR/export_neodojo_gvhmr.py" "neodojo GVHMR exporter"
   require_file "$ROOT_DIR/gvhmr-smplx-joints.template.json" "neodojo export template"
