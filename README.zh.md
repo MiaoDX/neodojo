@@ -174,6 +174,8 @@ make gvhmr-run-request GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive
 make gvhmr-run-request-smoke
 make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request
 make gvhmr-colab-notebook-smoke
+make gvhmr-operator-package GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request GVHMR_COLAB_NOTEBOOK=outputs/gvhmr-colab-operator
+make gvhmr-operator-package-smoke
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
