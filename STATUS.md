@@ -397,8 +397,8 @@ motion artifact, or hosted/live-client Viser capture.
   public-demo artifact passes `neodojo demo smoke`.
 - GitHub Actions run
   `https://github.com/MiaoDX/neodojo/actions/runs/26015918309` verified the
-  current head `ba8e36f` in the default public-demo workflow and deployed
-  Pages. The downloaded `neodojo-public-demo` artifact passes
+  default public-demo workflow and deployed Pages. The downloaded
+  `neodojo-public-demo` artifact passes
   `neodojo demo smoke` and contains the CI-generated `index.html`,
   `scene.json`, `neodojo-demo.rrd`, and `screenshot.svg` fixture-demo
   artifacts.

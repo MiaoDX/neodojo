@@ -103,7 +103,7 @@ GVHMR result.
 
 ## Current Evidence
 
-- Latest verified CI run for current head `ba8e36f`:
+- Recent verified default CI run:
   `https://github.com/MiaoDX/neodojo/actions/runs/26015918309`.
 - The downloaded latest CI public-demo artifact passes `neodojo demo smoke`
   and contains `index.html`, `scene.json`, `neodojo-demo.rrd`,

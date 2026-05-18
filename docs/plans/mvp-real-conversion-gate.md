@@ -585,7 +585,7 @@ revalidates as `metadata_only_not_ready_for_gpu`, the downloaded public-demo
 artifact passes `neodojo demo smoke`, and Pages deployed.
 GitHub Actions run
 `https://github.com/MiaoDX/neodojo/actions/runs/26015918309` verified the
-current head `ba8e36f` in the default public-demo workflow. The downloaded
+default public-demo workflow. The downloaded
 `neodojo-public-demo` artifact passed `neodojo demo smoke` and contained the
 CI-generated `index.html`, `scene.json`, `neodojo-demo.rrd`, and
 `screenshot.svg` fixture-demo artifacts.
