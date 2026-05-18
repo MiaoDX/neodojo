@@ -14,6 +14,7 @@ from .smplx_surface import load_smplx_surface_layer
 
 SCENE_TIMELINE_SCHEMA = "neodojo.scene_timeline.v1"
 RERUN_RECORDING_EXPORT_SCHEMA = "neodojo.rerun_recording_export.v1"
+TWO_PANEL_TEACHING_HTML_PROFILE = "neodojo.two_panel_teaching_replay.v1"
 
 
 @dataclass(frozen=True)
@@ -164,6 +165,25 @@ def build_scene_timeline(
                 "role": g1_manifest["role"],
                 "scoring_allowed": False,
                 "frames": g1_frames,
+            },
+        },
+        "track_metadata": {
+            "smplx": {
+                "fixture_only": bool(motion_manifest.get("fixture_only")),
+                "frame_count": len(smplx_frames),
+                "fps": motion_manifest.get("fps"),
+                "role": "teaching accuracy source",
+            },
+            "g1": {
+                "fixture_only": bool(g1_manifest.get("fixture_only")),
+                "robot": g1_manifest.get("robot"),
+                "role": g1_manifest.get("role"),
+                "derivation": g1_manifest.get("derivation"),
+                "model_descriptor": g1_manifest.get("model_descriptor"),
+                "source_motion_record": g1_manifest.get("source_motion_record"),
+                "frame_count": len(g1_frames),
+                "fps": g1_manifest.get("fps"),
+                "scoring_allowed": False,
             },
         },
         "annotations": annotations,
@@ -370,64 +390,271 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
     routine_summary = routine_review.get("summary") if isinstance(routine_review, dict) else {}
     if not isinstance(routine_summary, dict):
         routine_summary = {}
+    routine_status = routine_summary.get("status", "pending")
     surface_proxy = scene.get("surface_proxy")
     surface_label = surface_proxy.get("label") if surface_proxy else "off"
+    g1_meta = scene.get("track_metadata", {}).get("g1", {})
+    render_evidence = scene.get("render_evidence") or {}
+    renderer = render_evidence.get("renderer") if isinstance(render_evidence, dict) else {}
+    renderer_backend = renderer.get("backend") if isinstance(renderer, dict) else "none"
+    g1_track_source = "fixture-derived track" if g1_meta.get("fixture_only") else "imported GMR track"
+    g1_model_source = (
+        "fixture model descriptor"
+        if render_evidence.get("model_fixture_only")
+        else "registered model descriptor"
+        if render_evidence
+        else "model descriptor unavailable"
+    )
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>neodojo public fixture demo</title>
+  <title>neodojo two-panel teaching replay</title>
   <style>
-    :root {{ --bg: #eef2f6; --panel: #fff; --ink: #17212b; --muted: #66717f; --line: #d8e0e8; --smplx: #147c72; --g1: #b84e32; }}
+    :root {{ --bg: #eef2f6; --panel: #fff; --ink: #17212b; --muted: #66717f; --line: #d8e0e8; --smplx: #147c72; --g1: #b84e32; --trail: #d73f7c; }}
     * {{ box-sizing: border-box; }}
-    body {{ margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, sans-serif; }}
-    header {{ display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 18px 22px; background: var(--panel); border-bottom: 1px solid var(--line); }}
+    body {{ margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }}
+    .app {{ min-height: 100vh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }}
+    header {{ display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 14px 18px; background: var(--panel); border-bottom: 1px solid var(--line); }}
     h1, h2, p {{ margin: 0; }}
-    h1 {{ font-size: 20px; }}
-    .badge {{ border: 1px solid var(--line); border-radius: 999px; padding: 7px 11px; color: #b54708; background: #fff8f2; font-size: 12px; font-weight: 800; }}
-    main {{ display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; padding: 16px; }}
-    .stage {{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }}
-    .stage img {{ display: block; width: 100%; background: #fbfcfe; }}
-    aside {{ display: grid; align-content: start; gap: 12px; }}
-    section {{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }}
-    h2 {{ font-size: 15px; margin-bottom: 10px; }}
-    .metric {{ display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }}
+    h1 {{ font-size: 19px; }}
+    .badges {{ display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }}
+    .badge {{ border: 1px solid var(--line); border-radius: 999px; padding: 7px 11px; color: #334155; background: #f9fbfd; font-size: 12px; font-weight: 800; white-space: nowrap; }}
+    main {{ display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: 0; gap: 16px; padding: 16px; }}
+    .panel {{ min-width: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }}
+    .panel-head {{ display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }}
+    h2 {{ font-size: 17px; }}
+    .panel-head span {{ color: var(--muted); font-size: 12px; font-weight: 800; text-align: right; }}
+    canvas {{ width: 100%; min-height: 420px; aspect-ratio: 1 / 1; display: block; background: #fbfcfe; border: 1px solid var(--line); border-radius: 8px; }}
+    .meta {{ display: grid; gap: 7px; color: var(--muted); font-size: 13px; }}
+    .metric {{ display: flex; justify-content: space-between; gap: 12px; padding-top: 7px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }}
     .metric strong {{ color: var(--ink); text-align: right; }}
-    a {{ color: #2c6fbb; }}
-    @media (max-width: 900px) {{ main {{ grid-template-columns: 1fr; }} }}
+    footer {{ display: grid; grid-template-columns: auto minmax(160px, 1fr) auto; gap: 12px; align-items: center; padding: 12px 16px 16px; background: rgba(255,255,255,0.92); border-top: 1px solid var(--line); }}
+    button {{ min-width: 84px; min-height: 38px; border: 1px solid #b9c5d0; border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-weight: 800; cursor: pointer; }}
+    input[type="range"] {{ width: 100%; accent-color: var(--smplx); }}
+    .readout {{ min-width: 126px; color: var(--muted); font-size: 13px; font-weight: 800; text-align: right; }}
+    @media (max-width: 900px) {{ main {{ grid-template-columns: 1fr; }} canvas {{ min-height: 300px; }} footer {{ grid-template-columns: 1fr; }} .readout {{ text-align: left; }} }}
   </style>
 </head>
-<body>
+<body data-teaching-html-profile="{TWO_PANEL_TEACHING_HTML_PROFILE}">
+<div class="app">
   <header>
-    <h1>neodojo public demo</h1>
-    <div class="badge">{fixture_note}</div>
+    <h1>neodojo teaching replay</h1>
+    <div class="badges">
+      <span class="badge">{fixture_note}</span>
+      <span class="badge">SMPL-X scoring</span>
+      <span class="badge">G1 non-scoring</span>
+      <span class="badge">Synchronized timeline</span>
+    </div>
   </header>
-  <main>
-    <div class="stage"><img src="screenshot.svg" alt="SMPL-X teacher and Unitree G1 visual fixture demo"></div>
-    <aside>
-      <section>
-        <h2>Tracks</h2>
-        <div class="metric"><span>Teaching source</span><strong>SMPL-X teacher</strong></div>
+  <main aria-label="two-panel synchronized teaching replay">
+    <section class="panel" data-panel="smplx">
+      <div class="panel-head">
+        <h2>SMPL-X skeleton teaching track</h2>
+        <span>accuracy source</span>
+      </div>
+      <canvas id="smplxCanvas" width="720" height="720" aria-label="SMPL-X skeleton teaching track"></canvas>
+      <div class="meta">
+        <div class="metric"><span>Feedback source</span><strong>SMPL-X</strong></div>
         <div class="metric"><span>Surface layer</span><strong>{surface_label}</strong></div>
-        <div class="metric"><span>Visual companion</span><strong>Unitree G1 visual</strong></div>
-        <div class="metric"><span>G1 scoring</span><strong>false</strong></div>
-      </section>
-      <section>
-        <h2>Artifacts</h2>
-        <div class="metric"><span>Scene</span><strong>{manifest["scene"]}</strong></div>
-        <div class="metric"><span>Recording</span><strong>{manifest["recording"]}</strong></div>
-        <div class="metric"><span>Actual Rerun SDK .rrd</span><strong>{manifest["rerun"]["actual_rrd"]}</strong></div>
-      </section>
-      <section>
-        <h2>Routine feedback</h2>
-        <div class="metric"><span>Anchors</span><strong>{anchor_text}</strong></div>
-        <div class="metric"><span>Terms</span><strong>{routine_summary.get("passed_terms", 0)} / {routine_summary.get("term_count", 0)}</strong></div>
-        <div class="metric"><span>Source</span><strong>SMPL-X</strong></div>
-      </section>
-    </aside>
+        <div class="metric"><span>Routine feedback</span><strong>{routine_status}</strong></div>
+        <div class="metric"><span>Routine anchors</span><strong>{anchor_text}</strong></div>
+      </div>
+    </section>
+    <section class="panel" data-panel="g1">
+      <div class="panel-head">
+        <h2>Unitree G1 robot model replay</h2>
+        <span>visual companion</span>
+      </div>
+      <canvas id="g1Canvas" width="720" height="720" aria-label="Unitree G1 robot model replay"></canvas>
+      <div class="meta">
+        <div class="metric"><span>Track source</span><strong>{g1_track_source}</strong></div>
+        <div class="metric"><span>Model source</span><strong>{g1_model_source}</strong></div>
+        <div class="metric"><span>Renderer</span><strong>{renderer_backend}</strong></div>
+      </div>
+    </section>
   </main>
-  <script>const PUBLIC_DEMO = {payload};</script>
+  <footer aria-label="Synchronized timeline controls">
+    <button id="playButton" type="button">Pause</button>
+    <input id="timeline" type="range" min="0" max="0" value="0" aria-label="Synchronized timeline">
+    <div class="readout" id="frameReadout">Frame 1</div>
+  </footer>
+</div>
+<script>
+const SCENE = {payload};
+const BONES = SCENE.bones || [];
+const smplxCanvas = document.getElementById("smplxCanvas");
+const g1Canvas = document.getElementById("g1Canvas");
+const playButton = document.getElementById("playButton");
+const timeline = document.getElementById("timeline");
+const frameReadout = document.getElementById("frameReadout");
+const frameCount = SCENE.tracks.smplx.frames.length;
+const fps = Number((SCENE.timing && SCENE.timing.fps) || (SCENE.track_metadata.smplx && SCENE.track_metadata.smplx.fps) || 25);
+let frame = 0;
+let playing = true;
+let lastTick = 0;
+timeline.max = String(Math.max(0, frameCount - 1));
+
+function project(point) {{
+  return [point[0], point[1]];
+}}
+
+function boundsFor(pose) {{
+  const values = Object.values(pose).map(project);
+  const xs = values.map((point) => point[0]);
+  const ys = values.map((point) => point[1]);
+  return {{
+    minX: Math.min(...xs),
+    maxX: Math.max(...xs),
+    minY: Math.min(...ys),
+    maxY: Math.max(...ys)
+  }};
+}}
+
+function toCanvas(point, bounds, width, height) {{
+  const [x, y] = project(point);
+  const spanX = Math.max(bounds.maxX - bounds.minX, 0.25);
+  const spanY = Math.max(bounds.maxY - bounds.minY, 0.25);
+  const scale = Math.min((width - 96) / spanX, (height - 96) / spanY);
+  const centerX = (bounds.minX + bounds.maxX) / 2;
+  const centerY = (bounds.minY + bounds.maxY) / 2;
+  return [width / 2 + (x - centerX) * scale, height / 2 - (y - centerY) * scale];
+}}
+
+function drawGrid(ctx, width, height) {{
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = "#fbfcfe";
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = "#e5ebf1";
+  ctx.lineWidth = 1;
+  for (let offset = 48; offset < width; offset += 48) {{
+    ctx.beginPath();
+    ctx.moveTo(offset, 0);
+    ctx.lineTo(offset, height);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, offset);
+    ctx.lineTo(width, offset);
+    ctx.stroke();
+  }}
+}}
+
+function drawTrajectory(ctx, frames, bounds, width, height, color) {{
+  const joints = SCENE.trajectory_joints || ["left_wrist", "right_wrist"];
+  ctx.globalAlpha = 0.48;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  for (const joint of joints) {{
+    ctx.beginPath();
+    for (let index = 0; index <= frame; index += 1) {{
+      const point = frames[index][joint];
+      if (!point) continue;
+      const [x, y] = toCanvas(point, bounds, width, height);
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }}
+    ctx.stroke();
+  }}
+  ctx.globalAlpha = 1;
+}}
+
+function drawSkeleton(ctx, pose, bounds, width, height) {{
+  ctx.strokeStyle = "#147c72";
+  ctx.lineWidth = 5;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const [a, b] of BONES) {{
+    if (!pose[a] || !pose[b]) continue;
+    const [ax, ay] = toCanvas(pose[a], bounds, width, height);
+    const [bx, by] = toCanvas(pose[b], bounds, width, height);
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(bx, by);
+    ctx.stroke();
+  }}
+  for (const [joint, point] of Object.entries(pose)) {{
+    const [x, y] = toCanvas(point, bounds, width, height);
+    ctx.fillStyle = joint.includes("wrist") || joint.includes("elbow") ? "#d73f7c" : "#ffffff";
+    ctx.strokeStyle = "#147c72";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }}
+}}
+
+function drawRobotModel(ctx, pose, bounds, width, height) {{
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const [a, b] of BONES) {{
+    if (!pose[a] || !pose[b]) continue;
+    const [ax, ay] = toCanvas(pose[a], bounds, width, height);
+    const [bx, by] = toCanvas(pose[b], bounds, width, height);
+    ctx.strokeStyle = "#b84e32";
+    ctx.lineWidth = a === "pelvis" || b === "pelvis" || a === "spine" || b === "spine" ? 16 : 11;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(bx, by);
+    ctx.stroke();
+  }}
+  for (const [joint, point] of Object.entries(pose)) {{
+    const [x, y] = toCanvas(point, bounds, width, height);
+    const isCore = joint === "pelvis" || joint === "spine" || joint === "neck" || joint === "head";
+    ctx.fillStyle = isCore ? "#17212b" : "#fff7ed";
+    ctx.strokeStyle = "#b84e32";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(x - (isCore ? 8 : 6), y - (isCore ? 8 : 6), isCore ? 16 : 12, isCore ? 16 : 12, 3);
+    ctx.fill();
+    ctx.stroke();
+  }}
+}}
+
+function drawPanel(canvas, trackId) {{
+  const ctx = canvas.getContext("2d");
+  const frames = SCENE.tracks[trackId].frames;
+  const pose = frames[frame];
+  const bounds = boundsFor(pose);
+  drawGrid(ctx, canvas.width, canvas.height);
+  drawTrajectory(ctx, frames, bounds, canvas.width, canvas.height, trackId === "smplx" ? "#147c72" : "#b84e32");
+  if (trackId === "smplx") drawSkeleton(ctx, pose, bounds, canvas.width, canvas.height);
+  else drawRobotModel(ctx, pose, bounds, canvas.width, canvas.height);
+}}
+
+function render() {{
+  drawPanel(smplxCanvas, "smplx");
+  drawPanel(g1Canvas, "g1");
+  timeline.value = String(frame);
+  frameReadout.textContent = `Frame ${{frame + 1}} / ${{frameCount}}`;
+}}
+
+function tick(timestamp) {{
+  if (!lastTick) lastTick = timestamp;
+  if (playing && timestamp - lastTick > 1000 / fps) {{
+    frame = (frame + 1) % frameCount;
+    lastTick = timestamp;
+    render();
+  }}
+  window.requestAnimationFrame(tick);
+}}
+
+playButton.addEventListener("click", () => {{
+  playing = !playing;
+  playButton.textContent = playing ? "Pause" : "Play";
+}});
+
+timeline.addEventListener("input", (event) => {{
+  frame = Number(event.target.value);
+  playing = false;
+  playButton.textContent = "Play";
+  render();
+}});
+
+render();
+window.requestAnimationFrame(tick);
+</script>
 </body>
 </html>
 """
@@ -468,6 +695,9 @@ def write_public_demo(
     screenshot_path.write_text(_render_screenshot_svg(scene), encoding="utf-8")
 
     surface_key = _surface_layer_key(scene.get("surface_proxy"))
+    g1_meta = scene.get("track_metadata", {}).get("g1", {})
+    render_evidence = scene.get("render_evidence") or {}
+    fixture_label = "fixture-only" if scene["fixture_only"] else "real-artifact"
     manifest = {
         "schema": PUBLIC_DEMO_SCHEMA,
         "fixture_only": bool(scene["fixture_only"]),
@@ -480,6 +710,34 @@ def write_public_demo(
         "tracks": {
             "smplx": {"label": "SMPL-X teacher", "scoring_allowed": True},
             "g1": {"label": "Unitree G1 visual", "scoring_allowed": False},
+        },
+        "teaching_html": {
+            "profile": TWO_PANEL_TEACHING_HTML_PROFILE,
+            "layout": "split_smplx_left_g1_right",
+            "interactive": True,
+            "synchronized_replay": True,
+            "controls": ["play_pause", "timeline_slider"],
+            "panels": {
+                "left": {
+                    "track": "smplx",
+                    "label": "SMPL-X skeleton teaching track",
+                    "scoring_allowed": True,
+                },
+                "right": {
+                    "track": "g1",
+                    "label": "Unitree G1 robot model replay",
+                    "scoring_allowed": False,
+                },
+            },
+            "g1_replay": {
+                "robot": g1_meta.get("robot"),
+                "track_fixture_only": bool(g1_meta.get("fixture_only")),
+                "track_derivation": g1_meta.get("derivation"),
+                "model_fixture_only": render_evidence.get("model_fixture_only"),
+                "renderer_backend": (render_evidence.get("renderer") or {}).get("backend")
+                if isinstance(render_evidence.get("renderer"), dict)
+                else None,
+            },
         },
         "routine_feedback": {
             "available": bool(scene.get("routine_review")),
@@ -509,9 +767,10 @@ def write_public_demo(
         },
         "visual_smoke_expectations": {
             "required_labels": [
-                "SMPL-X teacher",
-                "Unitree G1 visual",
-                "fixture-only",
+                "SMPL-X skeleton teaching track",
+                "Unitree G1 robot model replay",
+                "Synchronized timeline",
+                fixture_label,
                 "Routine feedback",
                 *([scene["surface_proxy"]["label"]] if scene.get("surface_proxy") else []),
             ],
@@ -561,6 +820,15 @@ def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
         raise ValueError("public demo must keep SMPL-X as scoring_source")
     if manifest.get("tracks", {}).get("g1", {}).get("scoring_allowed"):
         raise ValueError("public demo cannot allow G1 scoring")
+    teaching_html = manifest.get("teaching_html")
+    if not isinstance(teaching_html, dict):
+        raise ValueError("public demo manifest must define teaching_html metadata")
+    if teaching_html.get("profile") != TWO_PANEL_TEACHING_HTML_PROFILE:
+        raise ValueError("public demo teaching_html profile is not the two-panel teaching replay")
+    if teaching_html.get("layout") != "split_smplx_left_g1_right":
+        raise ValueError("public demo teaching_html layout must split SMPL-X left and G1 right")
+    if teaching_html.get("interactive") is not True or teaching_html.get("synchronized_replay") is not True:
+        raise ValueError("public demo teaching_html must be interactive and synchronized")
 
     required_labels = manifest.get("visual_smoke_expectations", {}).get("required_labels", [])
     if not required_labels:
@@ -586,6 +854,16 @@ def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
     missing = [label for label in required_labels if label not in smoke_text]
     if missing:
         raise ValueError(f"public demo visual smoke labels are missing: {', '.join(missing)}")
+    required_html_fragments = [
+        f'data-teaching-html-profile="{TWO_PANEL_TEACHING_HTML_PROFILE}"',
+        'data-panel="smplx"',
+        'data-panel="g1"',
+        'id="timeline"',
+        "drawRobotModel",
+    ]
+    missing_fragments = [fragment for fragment in required_html_fragments if fragment not in html]
+    if missing_fragments:
+        raise ValueError("public demo HTML is missing interactive two-panel replay controls")
 
     return PublicDemoSmokeResult(
         manifest_path=manifest_path,
