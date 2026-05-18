@@ -151,6 +151,14 @@ strict local gate is `make verify-real`, which runs the same audit with
 `--require-complete` and is expected to fail until a real non-fixture artifact
 has been imported.
 
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26006738133` verified the
+strict gate change on `main`: the default fixture CI lane still passed and
+deployed, the downloaded public-demo artifact contained `index.html`,
+`screenshot.svg`, `fixture_only: true`, and the expected SMPL-X/G1/fixture
+labels, and the downloaded real-conversion audit artifact remained
+`external_gpu_artifact_missing` with `complete: false`.
+
 ## Inputs
 
 - Existing fixture generation commands.

@@ -435,6 +435,11 @@ GitHub Actions run
 `neodojo-real-conversion-audit` artifact and verified the CI state is still
 `external_gpu_artifact_missing` with no media/checkpoint files and no recorded
 secret values.
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26006738133` verified the
+strict gate change without making the default fixture CI lane fail; the
+downloaded real-conversion audit artifact remains
+`external_gpu_artifact_missing`, `complete: false`, and `blocked: true`.
 
 The returned-artifact import wrapper is now covered by fixture-only local and
 CI smoke evidence: `make real-artifact-intake-smoke` writes fixture source
