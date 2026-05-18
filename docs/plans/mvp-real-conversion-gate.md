@@ -573,6 +573,16 @@ downloaded operator-package README and archived README record the expected
 return fixture flag as `false`, and the downloaded real-conversion audit still
 reports `external_gpu_artifact_missing`, `complete: false`, and
 `blocked: true`.
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26015790002` verified the
+metadata-only acquisition-status artifact upload in the default CI lane. The
+downloaded `neodojo-real-gvhmr-artifact-acquisition-status` artifact reports
+`neodojo.real_gvhmr_artifact_acquisition.v1`, `status:
+operator_package_archive_not_ready_for_gpu`, `blocked: true`, `complete:
+false`, nested audit status `external_gpu_artifact_missing`, and expected
+return `fixture_only: false`. The downloaded operator-package archive
+revalidates as `metadata_only_not_ready_for_gpu`, the downloaded public-demo
+artifact passes `neodojo demo smoke`, and Pages deployed.
 
 The local high-level media-containing
 `make real-gpu-operator-package-archive LOCAL_VIDEO=...` target was run against

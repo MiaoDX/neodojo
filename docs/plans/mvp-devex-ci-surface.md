@@ -1,6 +1,6 @@
 # MVP DevEx And CI Surface Plan
 
-Status: IMPLEMENTED WITH BROWSER CAPTURE, REAL-HANDOFF, GPU-INPUT, GPU-ARCHIVE, OPERATOR-PACKAGE, GPU-EXECUTION-PROBE, AND REAL-ARTIFACT-INTAKE SMOKE ARTIFACT CI VERIFIED; ACQUISITION-STATUS CI WIRED
+Status: IMPLEMENTED WITH BROWSER CAPTURE, REAL-HANDOFF, GPU-INPUT, GPU-ARCHIVE, OPERATOR-PACKAGE, ACQUISITION-STATUS, GPU-EXECUTION-PROBE, AND REAL-ARTIFACT-INTAKE SMOKE ARTIFACT CI VERIFIED
 
 ## Goal
 
@@ -329,7 +329,12 @@ public-demo artifact passed `neodojo demo smoke`, and Pages deployed.
   artifact with a `neodojo.real_gvhmr_artifact_acquisition.v1` manifest and
   nested real-conversion audit. It is a non-failing preflight that records the
   metadata-only archive is not ready for GPU handoff while preserving the
-  `fixture_only: false` return-artifact contract.
+  `fixture_only: false` return-artifact contract. Verified by run
+  `26015790002`: the downloaded artifact reported
+  `operator_package_archive_not_ready_for_gpu`, `blocked: true`,
+  `complete: false`, nested audit status `external_gpu_artifact_missing`, and
+  expected return `fixture_only: false`; the same run's public-demo artifact
+  passed `neodojo demo smoke` and Pages deployed.
 - CI verifies that generated GPU handoff/operator docs ask for a returned
   non-fixture GVHMR export: run `26014431712` uploaded a GPU input template
   with `fixture_only: false`, GPU run-request and nested operator-package

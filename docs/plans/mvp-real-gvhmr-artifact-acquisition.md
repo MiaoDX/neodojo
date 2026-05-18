@@ -112,6 +112,12 @@ GVHMR result.
   `make real-gvhmr-acquisition-status`; its CI smoke target uses metadata-only
   artifacts, so it intentionally reports the archive is not ready for GPU
   handoff while preserving the non-fixture return-artifact contract.
+- GitHub Actions run `26015790002` verified the metadata-only
+  acquisition-status artifact upload: the downloaded manifest reports
+  `neodojo.real_gvhmr_artifact_acquisition.v1`,
+  `operator_package_archive_not_ready_for_gpu`, `blocked: true`, `complete:
+  false`, nested audit status `external_gpu_artifact_missing`, and expected
+  return `fixture_only: false`.
 - The downloaded latest CI real-conversion audit still reports
   `external_gpu_artifact_missing`, `complete: false`, and `blocked: true`.
 - Local `make verify-real` still fails with `external_gpu_artifact_missing`.

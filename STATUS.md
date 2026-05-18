@@ -385,6 +385,17 @@ motion artifact, or hosted/live-client Viser capture.
   `neodojo demo smoke`, and the real-conversion audit still reports
   `external_gpu_artifact_missing`, `complete: false`, and `blocked: true`.
 - GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26015790002` verified the
+  real GVHMR acquisition-status preflight in CI and deployed Pages. The
+  downloaded `neodojo-real-gvhmr-artifact-acquisition-status` artifact contains
+  `neodojo.real_gvhmr_artifact_acquisition.v1`, `status:
+  operator_package_archive_not_ready_for_gpu`, `blocked: true`, `complete:
+  false`, nested audit status `external_gpu_artifact_missing`, expected return
+  `fixture_only: false`, and nested GPU probe status
+  `external_gpu_artifact_missing`. The downloaded operator-package archive
+  revalidates as `metadata_only_not_ready_for_gpu`, and the downloaded
+  public-demo artifact passes `neodojo demo smoke`.
+- GitHub Actions run
   `https://github.com/MiaoDX/neodojo/actions/runs/26009044473` verified the
   generated Colab operator notebook handoff on `main`: lint, plan checks,
   tests, wheel build, real-handoff smoke, GPU input bundle smoke, GPU input
