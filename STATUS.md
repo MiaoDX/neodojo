@@ -459,6 +459,19 @@ motion artifact, or hosted/live-client Viser capture.
   `safe_for_git: true`. The live Pages manifest still reports
   `neodojo.public_demo.v1`, `fixture_only: true`, `scoring_source: smplx`,
   SMPL-X scoring enabled, and Unitree G1 scoring disabled.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26013769581` verified the
+  current `main` command-surface alignment on commit `b33c94f`: lint, plan
+  checks, tests, wheel build, real/GPU smoke artifacts, operator package
+  archive validation, default and GitHub-route real-conversion audits, browser
+  capture, public-demo artifact upload, capture-bundle upload, Pages artifact
+  upload, and Pages deploy passed. The downloaded `neodojo-public-demo`
+  artifact passes `neodojo demo smoke` and reports
+  `neodojo.public_demo.v1`, `fixture_only: true`, and `scoring_source: smplx`.
+  The downloaded `neodojo-gvhmr-operator-package-archive-smoke` artifact
+  revalidates as `metadata_only_not_ready_for_gpu`, `media_included: false`,
+  and `safe_for_git: true`; the downloaded real-conversion audit still reports
+  `external_gpu_artifact_missing`, `complete: false`, and `blocked: true`.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
@@ -958,6 +971,13 @@ For a single copyable handoff folder, those files can be collocated with
 the collocated package can be wrapped with
 `make real-gpu-operator-package-archive LOCAL_VIDEO=...`, then rechecked later
 with `make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`.
+That high-level archive target has been run against the ignored local
+Bilibili proof candidate with isolated outputs under
+`outputs/real-gpu-operator-package-archive-target-smoke/`; it produced a
+`neodojo.gvhmr_operator_package_archive.v1` archive with
+`status: ready_for_external_gpu_operator_package_archive`, `media_included:
+true`, `policy.safe_for_git: false`, and archive checksum
+`39ff72c8390161b16766eb5d6bb19c3918ce2d958e4739506c358a228433deb2`.
 The default ignored package at `outputs/gvhmr-operator-package/` is ready for
 external GPU operator handoff and marked unsafe for git because it contains
 media.
