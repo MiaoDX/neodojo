@@ -1223,7 +1223,8 @@ def package_gvhmr_gpu_handoff(
     input_video = gpu_handoff.get("trimmed_video_argument") or outputs.get("trimmed_video_path")
     input_video = input_video if isinstance(input_video, str) else None
     input_video_path = _resolve_handoff_media_path(input_video, source_materialization)
-    input_exists = bool(input_video_path and input_video_path.exists())
+    input_declared = bool(trimmed_video)
+    input_exists = bool(input_declared and input_video_path and input_video_path.exists())
     expected_sha = trimmed_video.get("sha256") if isinstance(trimmed_video.get("sha256"), str) else None
     actual_sha = sha256_file(input_video_path) if input_exists and input_video_path is not None else None
     checksum_matches = expected_sha is None or actual_sha == expected_sha
@@ -1697,7 +1698,8 @@ def _write_gpu_run_request_readme(path: Path, manifest: dict[str, Any]) -> None:
         "## Optional GitHub Workflow",
         "",
         "If a self-hosted GitHub Actions runner labeled `self-hosted` and `gpu` is registered,",
-        "use `.github/workflows/gvhmr-self-hosted-gpu.yml` with this archive path.",
+        "use `.github/workflows/gvhmr-self-hosted-gpu.yml` with this archive path or a",
+        "GVHMR operator package path.",
         "",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -2108,6 +2110,10 @@ def _write_operator_package_readme(path: Path, manifest: dict[str, Any]) -> None
         "3. Verify the archive checksum in the notebook before unpacking.",
         "4. Set `RUN_GVHMR = True` only after assets, checkpoints, and rights review are ready.",
         "5. Return `gvhmr-smplx-joints.json` to this local neodojo workspace.",
+        "",
+        "For a user-managed self-hosted GitHub Actions GPU runner, dispatch",
+        "`.github/workflows/gvhmr-self-hosted-gpu.yml` with",
+        "`gvhmr_operator_package_path` pointing at this package directory or `manifest.json`.",
         "",
         "After the returned JSON exists locally, run:",
         "",

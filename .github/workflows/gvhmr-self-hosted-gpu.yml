@@ -5,7 +5,13 @@ on:
     inputs:
       gpu_input_archive_path:
         description: "Path on the self-hosted GPU runner to neodojo-gvhmr-gpu-input.tar.gz"
-        required: true
+        required: false
+        default: ""
+        type: string
+      gvhmr_operator_package_path:
+        description: "Optional path on the self-hosted GPU runner to a GVHMR operator package directory or manifest.json"
+        required: false
+        default: ""
         type: string
       gvhmr_repo:
         description: "Path to an existing GVHMR checkout, or install destination when install_gvhmr is true"
@@ -77,6 +83,7 @@ jobs:
     timeout-minutes: 360
     env:
       GPU_INPUT_ARCHIVE_PATH: ${{ inputs.gpu_input_archive_path }}
+      GVHMR_OPERATOR_PACKAGE_PATH: ${{ inputs.gvhmr_operator_package_path }}
       GVHMR_REPO_INPUT: ${{ inputs.gvhmr_repo }}
       SMPLX_MODEL_DIR_INPUT: ${{ inputs.smplx_model_dir }}
       OUTPUT_ROOT_INPUT: ${{ inputs.output_root }}
@@ -94,8 +101,29 @@ jobs:
         run: |
           set -euo pipefail
           archive="$GPU_INPUT_ARCHIVE_PATH"
+          package="$GVHMR_OPERATOR_PACKAGE_PATH"
+          if [[ -n "$package" ]]; then
+            package_dir="$package"
+            if [[ -f "$package" ]]; then
+              package_dir="$(dirname "$package")"
+            fi
+            if [[ ! -d "$package_dir" ]]; then
+              echo "::error::gvhmr_operator_package_path must point to a package directory or manifest.json: $package" >&2
+              exit 2
+            fi
+            test -f "$package_dir/manifest.json"
+            test -f "$package_dir/request/manifest.json"
+            test -f "$package_dir/request/README.md"
+            test -f "$package_dir/colab/manifest.json"
+            test -f "$package_dir/colab/gvhmr-colab-operator.ipynb"
+            archive="$package_dir/archive/neodojo-gvhmr-gpu-input.tar.gz"
+          fi
+          if [[ -z "$archive" ]]; then
+            echo "::error::Provide gpu_input_archive_path or gvhmr_operator_package_path" >&2
+            exit 2
+          fi
           if [[ ! -f "$archive" ]]; then
-            echo "::error::gpu_input_archive_path does not exist on this self-hosted runner: $archive" >&2
+            echo "::error::GVHMR GPU input archive does not exist on this self-hosted runner: $archive" >&2
             exit 2
           fi
           case "$archive" in

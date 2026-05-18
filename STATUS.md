@@ -524,9 +524,10 @@ motion artifact, or hosted/live-client Viser capture.
   non-fixture GVHMR demo has been imported and regenerated.
 - `.github/workflows/gvhmr-self-hosted-gpu.yml` is a manual
   `workflow_dispatch` path for user-managed runners labeled `self-hosted` and
-  `gpu`. It can run the packaged GVHMR wrapper from a runner-local archive,
-  validate/import the returned export with `make real-artifact-intake`, run the
-  strict real-conversion audit, and optionally upload only
+  `gpu`. It can run the packaged GVHMR wrapper from a runner-local archive or
+  collocated operator package, validate/import the returned export with
+  `make real-artifact-intake`, run the strict real-conversion audit, and
+  optionally upload only
   `gvhmr-smplx-joints.json` or generated real-demo/public-demo evidence; it is
   not part of default push/PR CI and does not upload media, checkpoints, SMPL-X
   assets, or `.pt` result files.
@@ -872,8 +873,9 @@ archive writer now rejects missing required GPU-operator files, including stale
 bundles that omit the runner script. The tracked operator checklist is
 `docs/runbooks/gvhmr-external-gpu.md`. The optional manual
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow can run the same bundle
-on a user-managed self-hosted GPU runner when one exists, then immediately run
-real-artifact intake and strict completion audit in that workflow. The separate
+or collocated operator package on a user-managed self-hosted GPU runner when
+one exists, then immediately run real-artifact intake and strict completion
+audit in that workflow. The separate
 manual `.github/workflows/promote-real-demo-pages.yml` workflow can publish a
 validated self-hosted real-demo artifact to Pages only after the operator
 selects the source run, confirms replacement, and enables

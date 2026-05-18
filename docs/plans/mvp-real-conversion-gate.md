@@ -489,9 +489,10 @@ fixture-only and the downloaded real-conversion audit artifact remains
 
 An optional manual GitHub Actions path now exists at
 `.github/workflows/gvhmr-self-hosted-gpu.yml`. It requires a user-managed
-self-hosted runner labeled `gpu`, a runner-local media-containing archive path,
-GVHMR dependencies/checkpoints, and licensed local SMPL-X assets. It is not
-triggered by push or pull request events. After the wrapper writes
+self-hosted runner labeled `gpu`, either a runner-local media-containing archive
+path or a runner-local GVHMR operator package path, GVHMR
+dependencies/checkpoints, and licensed local SMPL-X assets. It is not triggered
+by push or pull request events. After the wrapper writes
 `gvhmr-smplx-joints.json`, it runs `make real-artifact-intake` and
 `real-conversion audit-completion --require-complete` against the returned
 artifact. It only uploads returned JSON or generated real-demo/public-demo

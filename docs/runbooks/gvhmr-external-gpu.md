@@ -126,16 +126,21 @@ and must not be committed or uploaded as public CI artifacts.
 ## Optional Self-Hosted GPU Workflow
 
 If a user-managed GitHub Actions runner with labels `self-hosted` and `gpu`
-has access to the prepared archive, GVHMR dependencies, checkpoints, and
-licensed local SMPL-X assets, use the manual workflow
+has access to the prepared archive or operator package, GVHMR dependencies,
+checkpoints, and licensed local SMPL-X assets, use the manual workflow
 `gvhmr-self-hosted-gpu`.
 
 The workflow is defined at
 `.github/workflows/gvhmr-self-hosted-gpu.yml`. It is `workflow_dispatch` only;
-it does not run on push or pull requests. Its required inputs are:
+it does not run on push or pull requests. It accepts either:
 
 - `gpu_input_archive_path`: path on the self-hosted runner to
   `neodojo-gvhmr-gpu-input.tar.gz`
+- `gvhmr_operator_package_path`: path on the self-hosted runner to
+  `outputs/gvhmr-operator-package/` or its `manifest.json`
+
+Its required runtime inputs are:
+
 - `gvhmr_repo`: existing GVHMR checkout or install destination
 - `smplx_model_dir`: licensed local SMPL-X model directory
 

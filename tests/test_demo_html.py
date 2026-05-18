@@ -2129,6 +2129,7 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(operator_colab_notebook_exists)
         self.assertIn("GVHMR Operator Package", operator_package_readme)
         self.assertIn("RUN_GVHMR = True", operator_package_readme)
+        self.assertIn("gvhmr_operator_package_path", operator_package_readme)
 
     def test_real_conversion_gpu_input_bundle_metadata_only_omits_media(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2740,6 +2741,11 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertNotIn("\n  push:", workflow)
         self.assertNotIn("\n  pull_request:", workflow)
         self.assertIn("gpu_input_archive_path", workflow)
+        self.assertIn("gvhmr_operator_package_path", workflow)
+        self.assertIn("GVHMR_OPERATOR_PACKAGE_PATH", workflow)
+        self.assertIn("request/manifest.json", workflow)
+        self.assertIn("colab/gvhmr-colab-operator.ipynb", workflow)
+        self.assertIn("Provide gpu_input_archive_path or gvhmr_operator_package_path", workflow)
         self.assertIn("SMPLX_MODEL_DIR_INPUT", workflow)
         self.assertIn("skip_gvhmr", workflow)
         self.assertIn("upload_neodojo_export", workflow)

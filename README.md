@@ -439,8 +439,9 @@ package with a package manifest and README.
 path; `make gvhmr-operator-package-smoke` covers the collocated package path.
 For user-managed GitHub Actions GPU hardware, the manual
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow can unpack a
-runner-local media archive on a self-hosted runner labeled `gpu`, run the same
-packaged wrapper, run `make real-artifact-intake` plus the strict
+runner-local media archive or collocated operator package on a self-hosted
+runner labeled `gpu`, run the same packaged wrapper, run
+`make real-artifact-intake` plus the strict
 real-conversion audit, and optionally upload only `gvhmr-smplx-joints.json` or
 generated real-demo/public-demo evidence. It is not triggered by push or pull
 request events and does not make the default CI lane run GVHMR.

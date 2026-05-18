@@ -9,7 +9,8 @@ GitHub Actions workflow for a user-managed self-hosted GPU runner.
 
 This does not make the default GitHub-hosted CI lane run GVHMR. It adds a
 manual `workflow_dispatch` path that can unpack a prepared neodojo GPU input
-archive on a runner labeled `self-hosted` and `gpu`, run the packaged
+archive, or a collocated GVHMR operator package containing that archive, on a
+runner labeled `self-hosted` and `gpu`, run the packaged
 `run_gvhmr_neodojo.sh` wrapper, and optionally upload only the returned
 `gvhmr-smplx-joints.json` export. A follow-on intake step now validates and
 imports the returned export in the same workflow before any optional artifact
@@ -23,13 +24,16 @@ upload.
   `run_gvhmr_neodojo.sh`.
 - [mvp-gvhmr-gpu-transfer-archive.md](mvp-gvhmr-gpu-transfer-archive.md)
   packages the media-including archive that the self-hosted runner consumes.
+- [mvp-gvhmr-operator-package.md](mvp-gvhmr-operator-package.md) collocates the
+  archive, run request, notebook, and README into one handoff directory that
+  the workflow can now consume directly.
 - [mvp-gvhmr-external-gpu-runbook.md](mvp-gvhmr-external-gpu-runbook.md)
   remains the durable operator checklist.
 
 ## Inputs
 
-- A media-including `neodojo-gvhmr-gpu-input.tar.gz` archive already present on
-  the self-hosted GPU runner.
+- Either a media-including `neodojo-gvhmr-gpu-input.tar.gz` archive or a GVHMR
+  operator package already present on the self-hosted GPU runner.
 - A self-hosted GitHub Actions runner labeled `gpu`.
 - A GVHMR checkout or permission to clone/install GVHMR on that runner.
 - Licensed local SMPL-X assets and GVHMR checkpoints kept outside git.
@@ -52,6 +56,9 @@ upload.
   runners labeled `[self-hosted, gpu]`.
 - [x] Require the media-containing archive path as a runner-local input instead
   of uploading media through default CI.
+- [x] Also accept a runner-local GVHMR operator package directory or
+  `manifest.json`, deriving the contained archive after validating the package
+  sidecar files.
 - [x] Require explicit SMPL-X model directory and GVHMR repo inputs.
 - [x] Support running full GVHMR or exporting from an existing
   `hmr4d_results.pt` with `skip_gvhmr`.
@@ -70,6 +77,10 @@ upload.
 - The workflow runs only on `[self-hosted, gpu]`.
 - The workflow validates the archive, runner script, exporter, template, and
   source materialization before executing the wrapper.
+- The workflow accepts either `gpu_input_archive_path` or
+  `gvhmr_operator_package_path`; the package path validates the package
+  manifest, request files, Colab notebook files, and contained archive before
+  unpacking.
 - The only uploaded path in the workflow is
   `outputs/self-hosted-gvhmr-run/gvhmr-smplx-joints.json` unless
   `upload_real_demo` is explicitly enabled for generated public-demo/capture
