@@ -444,6 +444,12 @@ GitHub Actions run
 strict gate change without making the default fixture CI lane fail; the
 downloaded real-conversion audit artifact remains
 `external_gpu_artifact_missing`, `complete: false`, and `blocked: true`.
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26007158313` verified the
+self-hosted return-artifact intake workflow changes without changing the
+default fixture CI lane; the downloaded public-demo artifact remains
+fixture-only and the downloaded real-conversion audit artifact remains
+`external_gpu_artifact_missing`, `complete: false`, and `blocked: true`.
 
 An optional manual GitHub Actions path now exists at
 `.github/workflows/gvhmr-self-hosted-gpu.yml`. It requires a user-managed

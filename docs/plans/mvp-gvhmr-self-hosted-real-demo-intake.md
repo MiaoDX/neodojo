@@ -72,6 +72,12 @@ manual local import step first.
   SMPL-X assets, `.pt`, `.pkl`, `.npz`, or rendered videos.
 - `make test` covers the workflow intake and upload boundary.
 - `make check` includes this plan through the MVP index.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26007158313` verified the
+  default fixture CI lane still passes and deploys after this workflow change;
+  the downloaded public-demo artifact remains fixture-only and the
+  real-conversion audit artifact remains blocked on the missing external GPU
+  export.
 
 ## Non-Goals
 
