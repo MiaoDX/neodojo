@@ -408,6 +408,23 @@ motion artifact, or hosted/live-client Viser capture.
   `neodojo.public_demo.v1`, `fixture_only: true`, and `scoring_source: smplx`,
   while the audit remains `external_gpu_artifact_missing`, `complete: false`,
   and `blocked: true`.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26011378922` verified copied
+  operator-package validation during package creation on `main`: lint, plan
+  checks, tests, wheel build, real-handoff smoke, GPU input bundle smoke, GPU
+  input archive/run-request smoke, Colab notebook smoke, operator package
+  smoke plus validation, GPU execution probe, real-artifact intake smoke,
+  real-conversion audit, browser capture, public-demo artifact upload,
+  capture-bundle upload, Pages artifact upload, and Pages deploy passed. The
+  downloaded `neodojo-public-demo` artifact passed `neodojo demo smoke` and
+  contains non-empty `index.html`, `screenshot.svg`, and
+  `neodojo-demo.rrd` files with `neodojo.public_demo.v1`, `fixture_only:
+  true`, `scoring_source: smplx`, SMPL-X teacher scoring enabled, and Unitree
+  G1 scoring disabled. A local validation of the ignored media-containing
+  `outputs/gvhmr-operator-package/` handoff reports
+  `ready_for_external_gpu_operator_package`. The strict local completion gate
+  still reports `external_gpu_artifact_missing`, `complete: false`, and
+  `blocked: true`.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.

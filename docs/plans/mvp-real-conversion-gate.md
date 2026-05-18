@@ -494,6 +494,13 @@ Colab-notebook schemas plus archive/request/notebook checksum links for
 `gvhmr_operator_package_path`, and the downloaded real-conversion audit artifact
 still reports `external_gpu_artifact_missing` with `complete: false` and
 `blocked: true`.
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26011378922` verified copied
+operator-package validation during package creation without changing the default
+fixture CI lane. The downloaded public-demo artifact passes
+`neodojo demo smoke` and remains fixture-only with SMPL-X scoring and G1
+visual-only labels, while the real-conversion audit still reports
+`external_gpu_artifact_missing`, `complete: false`, and `blocked: true`.
 
 An optional manual GitHub Actions path now exists at
 `.github/workflows/gvhmr-self-hosted-gpu.yml`. It requires a user-managed

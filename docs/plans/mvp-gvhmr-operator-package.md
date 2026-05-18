@@ -100,8 +100,9 @@ provenance, rights, and returned-artifact validation boundaries.
 - `make gvhmr-operator-package` and therefore `make real-gpu-operator-package`
   run copied-package validation before reporting success.
 - The public-demo workflow uploads `neodojo-gvhmr-operator-package-smoke`,
-  verified by GitHub Actions run
-  `https://github.com/MiaoDX/neodojo/actions/runs/26009913491`.
+  and copied-package validation in the package Make target was verified by
+  GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26011378922`.
 
 ## Non-Goals
 
