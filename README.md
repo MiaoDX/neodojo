@@ -2,716 +2,77 @@
 
 **English** · [中文](README.zh.md)
 
-> *"This is the Construct. It's our loading program.*
-> *We can load anything, from clothing, to equipment,*
-> *weapons, training simulations..."*
->
-> — Morpheus, *The Matrix* (1999)
+neodojo converts official or user-supplied instructional movement videos into
+simulated multi-view teaching playback.
 
----
+Intended MVP path:
 
-## I know kung fu.
-
-27 years later, we finally have a real Construct.
-
-Not for loading weapons. Not for loading combat programs. This Construct
-loads **Baduanjin, Wu Qin Xi, Yi Jin Jing**—and, eventually, any human
-movement practice that benefits from *seeing* the standard form.
-
-**neodojo** is a simulation training dojo for *kung fu* in its broadest
-sense—qigong, taichi, traditional martial arts, daoyin, and beyond. It
-converts official instructional videos into joint trajectories of a humanoid
-in simulation, then renders the result from multiple angles with overlaid
-joint paths. You see exactly what the "standard shadow" of each move
-should look like.
-
-Then you load that shadow into your training loop—the way Morpheus loaded
-kung fu into Neo's mind.
-
----
-
-## What it does
-
-- **The Loading Program** — official video → monocular 3D pose estimation
-  → SMPL-X full-body parameters → humanoid joint trajectories
-- **The Sparring Partner** — SMPL-X human model + Unitree G1 humanoid
-  side-by-side on one screen: one for accuracy, one to look like the
-  opponent Neo trained against
-- **Show Me** — synchronized front / side / top views with overlaid
-  trajectories for wrist, elbow, knee
-- **Free Your Mind** — webcam-based real-time comparison mode (future
-  work)
-
----
-
-## Why "kung fu" (not just qigong)
-
-In English, *kung fu* long ago outgrew its literal meaning of "martial
-arts." It now refers to **any skill acquired through prolonged practice**.
-
-> *"There is no try."*
-> *"There is no shortcut."*
-
-Qigong, taichi, Baduanjin, Wu Qin Xi, Yi Jin Jing, yoga poses, the
-standard movements in physical rehab—all of it fits under that broader
-umbrella. The project name leaves room so the first use case doesn't lock
-in everything that follows.
-
-**The first programs to be loaded are Chinese Health Qigong**—because
-they're publicly endorsed by the General Administration of Sport of
-China, have standardized instructional videos, are slow enough to suit
-SMPL-X pose estimation, and have a built-in community of practitioners
-who would actually benefit.
-
----
-
-## First instances
-
-From the official instructional videos of the Chinese Health Qigong
-Association and the Health Qigong Management Center of the General
-Administration of Sport of China:
-
-- [ ] Health Qigong · Baduanjin (Eight Pieces of Brocade)
-- [ ] Health Qigong · Wu Qin Xi (Five Animal Frolics)
-- [ ] Health Qigong · Yi Jin Jing (Muscle-Tendon Changing Classic)
-- [ ] Health Qigong · Liu Zi Jue (Six Healing Sounds)
-- [ ] Health Qigong · Da Wu (Great Dance)
-- [ ] Health Qigong · Mawangdui Daoyin Shu
-- [ ] Health Qigong · Shi Er Duan Jin (Twelve Pieces of Brocade)
-- [ ] Health Qigong · Taiji Yangsheng Zhang (Health-Preserving Staff)
-- [ ] Health Qigong · Daoyin Yangsheng Gong Shi Er Fa
-- [ ] Campus Wu Qin Xi (primary / middle / high school editions)
-- [ ] Ming Mu Gong / Eye-Brightening Qigong (youth / adult editions)
-
----
-
-## Tech stack at a glance
-
-Current project truth lives in:
-
-- 📄 [`STATUS.md`](STATUS.md) — current state, constraints, and next safe task
-- 📄 [`ARCHITECTURE.md`](ARCHITECTURE.md) — MVP data flow, subsystem
-  boundaries, and proof boundaries
-
-Full technical investigation, SOTA model comparisons, robot platform
-evaluation, and failure-mode analysis live in these background notes:
-
-- 📄 [`docs/technical-roadmap.md`](docs/technical-roadmap.md) —
-  end-to-end pipeline study (GVHMR / GMR / Genesis / Viser / KungfuBot
-  etc.)
-- 📄 [`docs/humanoid-platform-evaluation.md`](docs/humanoid-platform-evaluation.md) —
-  why G1 + SMPL-X dual-track, instead of waiting for a "perfect
-  humanoid"
-
-Core pipeline:
-
-```
-Official instructional video
-  │
-  ▼
-GVHMR (monocular video → SMPL-X, with 22+15 hand joints)
-  │
-  ▼
-GMR (SMPL-X → humanoid joint angles; real-time on CPU, 15+ robots)
-  │
-  ├─→ SMPL-X kinematic playback   (primary: lossless teaching accuracy)
-  └─→ Unitree G1 kinematic playback (secondary: visual appeal)
-  │
-  ▼
-MuJoCo / Genesis multi-camera offscreen rendering
-  │
-  ▼
-Viser (synchronized 3-view web UI + joint trajectory overlays + timeline)
+```text
+source video
+  -> GVHMR SMPL-X output
+  -> GMR retargeting
+  -> SMPL-X teaching track + Unitree G1 visual track
+  -> MuJoCo / Genesis rendering
+  -> Viser teaching UI
 ```
 
----
+SMPL-X is the teaching and scoring source. Unitree G1 is a visual and ecosystem
+track only.
 
-## Why this exists (the unfair advantage)
+## CI-Generated Demo
 
-> *"I'm trying to free your mind, Neo. But I can only show you the door.*
-> *You're the one that has to walk through it."*
+The public demo is fixture-only. It is generated in CI by
+[`.github/workflows/public-demo.yml`](.github/workflows/public-demo.yml) through
+`make demo-public-browser`, uploaded as the `neodojo-public-demo` artifact, and
+published to GitHub Pages from `main` when `NEODOJO_DEPLOY_PAGES=true`.
 
-Following a single-angle qigong video has one fundamental problem:
-**you only see one angle**.
-
-- The teacher turns sideways for *Deer Charging Backwards*—you cannot see
-  the footwork.
-- You've practiced *Holding Up the Heavens* for six months and no one's
-  told you your shoulders are still raised, your elbows still floating.
-- You want to know how many degrees your *White Crane Spreads Its Wings*
-  deviates from standard, but no mirror can tell you.
-
-**neodojo reconstructs the standard motion in 3D from single-angle
-footage, so you can look at it from any angle.** Push it further: feed
-your own practice video into the same pipeline, overlay it next to the
-standard, and see the gap.
-
-This is not prompt engineering. Not context engineering. It's
-**kinematic engineering**: designing a Construct for humans to learn
-embodied skills.
-
----
-
-## Status
-
-🚧 **Bootstrap phase: fixture public demo, plus a local ignored real GVHMR proof.**
-
-See [`STATUS.md`](STATUS.md) for the current repo state, known constraints,
-and next safe task. There is now a small checked-in Python package, local
-SMPL-X and G1 fixture artifact commands, a normalized imported-GMR G1 track
-boundary, native GMR pickle normalization, a dependency-light SMPL-X surface
-proxy, a local external SMPL-X mesh-frame import boundary, a teaching-playback
-HTML command, a static HTML demo generator, local
-SVG/HTML G1 render evidence from a model descriptor plus visual track, optional
-MuJoCo offscreen mesh render evidence, optional true Rerun SDK `.rrd` export,
-an optional Viser local runtime with a production teaching review-loop
-contract, a generated roboharness-style capture bundle manifest, optional
-browser-rendered public-demo screenshot capture, optional MuJoCo simulator
-recorder-capture integration, and minimal lint/build/quality-check
-commands. It can also write a dry-run or ffmpeg-backed local source-video
-handoff plus a metadata package, copyable input bundle, executable GPU-side
-runner, ignored transfer archive, collocated operator package, operator-package
-archive, non-failing acquisition-status preflight, optional self-hosted GPU
-workflow, and guarded manual real-demo Pages promotion workflow for GPU GVHMR
-runs. On this GPU workstation, the ignored local real-conversion lane has
-also produced a non-fixture GVHMR SMPL-X teaching-joints export and passed the
-strict real-demo audit.
-There is still no checked-in local GVHMR/GMR execution environment, completed
-simulator runtime pipeline, built-in official SMPL-X body-model renderer,
-live-client Viser capture, committed generated motion artifact, or published
-real demo. The current real proof remains local under ignored `outputs/`, and
-its G1 companion is still fixture-derived unless a real GMR track is supplied.
-
-Fixture-only public demo: [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
+- Live fixture-only demo: [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
+- Generated files: `index.html`, `manifest.json`, `scene.json`,
+  `screenshot.svg`, `neodojo-demo.rrd`
+- Current CI evidence: [`STATUS.md`](STATUS.md) records the verified GitHub
+  Actions runs and the fixture-only Pages state.
 
 ![Fixture-only neodojo public demo screenshot](https://miaodx.com/neodojo/screenshot.svg)
 
-What can be run now:
+## Current State
+
+This repo is still in bootstrap state. It has fixture-backed motion,
+annotation, SMPL-X surface, G1 visual-track, local render-evidence, public-demo,
+browser-smoke, capture-bundle, and metadata-only GPU handoff/operator-package
+commands.
+
+It does not yet ship a checked-in local GVHMR/GMR execution environment,
+completed simulator runtime pipeline, committed generated motion artifact,
+production Viser UI, or published real demo. A local real GVHMR proof exists
+only under ignored `outputs/`.
+
+## Run
 
 ```bash
 make verify
-make lint
-make check
-make test
-make build
-make demo-public
 make demo-public-browser
-make real-gpu-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
-make real-gpu-run-request LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
-make real-gpu-colab-notebook LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
-make real-gpu-operator-package LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
-make real-gpu-operator-package-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
-make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
-make real-handoff LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin REAL_LOCAL_TITLE="Local Baduanjin proof clip"
-make real-handoff-smoke
-make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
-make gpu-input-bundle GPU_HANDOFF=outputs/gvhmr-gpu-handoff GPU_INPUT_INCLUDE_MEDIA=1
-make gpu-input-bundle-smoke
-make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
-make gpu-input-archive-smoke
-make gpu-execution-probe
-make gpu-execution-probe GPU_PROBE_GITHUB_REPO=MiaoDX/neodojo
-make gvhmr-run-request GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive
-make gvhmr-run-request-smoke
-make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request
-make gvhmr-colab-notebook-smoke
-make gvhmr-operator-package GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request GVHMR_COLAB_NOTEBOOK=outputs/gvhmr-colab-operator
-make gvhmr-operator-package-smoke
-make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
-make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
-make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive
-make real-gvhmr-acquisition-status GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive
-make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
-make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
-make real-artifact-intake-smoke
-make real-conversion-audit
-make real-conversion-audit REAL_AUDIT_GITHUB_REPO=MiaoDX/neodojo
-make real-demo-pages-promotion-validate PROMOTION_DOWNLOAD_ROOT=outputs/promoted-real-demo-download PROMOTION_SOURCE_RUN_ID=123456789
-make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
-PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
-PYTHONPATH=src python -m neodojo motion-record create --from-gvhmr-json path/to/gvhmr-smplx-joints.json --out outputs/motion-contract
-PYTHONPATH=src python -m neodojo smplx-surface proxy --motion-record outputs/motion-contract --out outputs/smplx-surface
-PYTHONPATH=src python -m neodojo smplx-surface register-assets --model path/to/SMPLX_NEUTRAL.npz --license "local licensed SMPL-X asset; do not commit" --out outputs/smplx-assets
-PYTHONPATH=src python -m neodojo smplx-surface mesh --motion-record outputs/motion-contract --asset-descriptor outputs/smplx-assets/assets/smplx/manifest.json --mesh-frames path/to/smplx-mesh-frames.json --out outputs/smplx-mesh
-PYTHONPATH=src python -m neodojo annotations detect --motion-record outputs/motion-contract --out outputs/annotations
-PYTHONPATH=src python -m neodojo robot-model register --robot unitree_g1 --fixture --out outputs/g1-visual
-PYTHONPATH=src python -m neodojo tracks build --motion-record outputs/motion-contract --robot unitree_g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
-PYTHONPATH=src python -m neodojo tracks normalize-gmr-pkl --source path/to/gmr-motion.pkl --motion-record outputs/motion-contract --out outputs/gmr-native
-PYTHONPATH=src python -m neodojo tracks import-gmr-json --source path/to/gmr-unitree-g1.json --motion-record outputs/motion-contract --out outputs/g1-visual
-PYTHONPATH=src python -m neodojo render g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --allow-fixture-model --out outputs/g1-render
-PYTHONPATH=src python -m neodojo render mujoco-g1 --model-descriptor path/to/registered-g1-model/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/g1-mujoco-render
-PYTHONPATH=src python -m neodojo demo play --motion-record outputs/motion-contract --g1-track outputs/g1-visual/tracks/g1/manifest.json --smplx-surface outputs/smplx-surface/surfaces/smplx/manifest.json --out outputs/teaching-demo
-PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/public-demo/neodojo-demo.rrd
-PYTHONPATH=src python -m neodojo demo export-rerun --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --use-rerun-sdk --out outputs/public-demo/neodojo-demo.rrd
-PYTHONPATH=src python -m neodojo demo serve-viser --playback outputs/teaching-demo/manifest.json --g1-render outputs/g1-render/manifest.json --out outputs/viser-runtime
-PYTHONPATH=src python -m neodojo demo browser-smoke --public-demo outputs/public-demo --out outputs/browser-capture
-PYTHONPATH=src python -m neodojo capture recorder --simulator-render outputs/g1-mujoco-render --out outputs/recorder-capture
-PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --out outputs/capture
-PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --browser-capture outputs/browser-capture --out outputs/capture
-PYTHONPATH=src python -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --recorder-capture outputs/recorder-capture --out outputs/capture
-PYTHONPATH=src python -m neodojo real-conversion prepare --id 03-006 --start 0 --end 12 --out outputs/real-conversion-gate
-PYTHONPATH=src python -m neodojo real-conversion prepare --local-source-id local-baduanjin --local-video path/to/local-source.mp4 --local-title "Local Baduanjin proof clip" --start 0 --end 12 --out outputs/real-conversion-gate
-PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --dry-run --out outputs/real-conversion-source
-PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff --source-materialization outputs/real-conversion-source/source-materialization.json --out outputs/gvhmr-gpu-handoff
-PYTHONPATH=src python -m neodojo real-conversion package-gpu-input --gpu-handoff outputs/gvhmr-gpu-handoff --include-media --out outputs/gvhmr-gpu-input
-PYTHONPATH=src python -m neodojo real-conversion archive-gpu-input --gpu-input outputs/gvhmr-gpu-input --out outputs/gvhmr-gpu-input-archive
-PYTHONPATH=src python -m neodojo real-conversion probe-gpu-execution --out outputs/gvhmr-gpu-execution-probe
-PYTHONPATH=src python -m neodojo real-conversion probe-gpu-execution --github-repo MiaoDX/neodojo --out outputs/gvhmr-gpu-execution-probe
-PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result --source outputs/real-conversion-gate/hmr4d_results.pt --out outputs/gvhmr-result-inspection
-PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
-PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
-make demo-html
 ```
 
-`neodojo motion-record create` writes fixture-backed SMPL-X motion-record and
-teaching-track manifests, or imports an external GVHMR SMPL-X teaching-joints
-JSON export with `--from-gvhmr-json`. If that JSON also includes
-`smplx_parameters`, the importer preserves mesh-ready pose/shape parameter
-metadata and writes `motion-record/smplx-parameters.json` for the future
-licensed mesh path. The repo still does not run GVHMR locally or parse raw
-GVHMR `.pt` files; the JSON path is the CPU-side import boundary for a later
-GPU run.
+See [`STATUS.md`](STATUS.md) for the full command list, blockers, and next safe
+task.
 
-`neodojo annotations detect` writes an explicit SMPL-X-only annotation manifest
-and routine feedback report for opening stance, settled support, and
-raised-hands apex anchors. `make demo-public` feeds those anchors into the
-teaching playback instead of relying on an implicit final frame.
+## Project Docs
 
-`neodojo smplx-surface proxy` writes a dependency-light capsule surface proxy
-derived from SMPL-X teaching joints. It improves visual inspection in the
-teaching/public demo while staying honest that no licensed SMPL-X body-model
-mesh is generated and all feedback still reads SMPL-X joints.
-`neodojo smplx-surface register-assets` can write a local-only descriptor for
-an existing licensed SMPL-X model file without copying it. `neodojo
-smplx-surface mesh` imports a local `neodojo.smplx_mesh_frames.v1` JSON written
-by an external licensed SMPL-X renderer into a
-`neodojo.smplx_mesh_surface.v1` visual layer. It validates the local asset
-descriptor, imported `smplx_parameters`, frame count, vertices, faces, and
-scoring boundary, then lets teaching/public playback reference the mesh
-evidence. The repo still does not execute or redistribute official SMPL-X model
-assets itself.
+- [`STATUS.md`](STATUS.md) — current truth, runnable commands, blockers, and CI
+  evidence
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — MVP data flow, subsystem boundaries,
+  contracts, and proof boundaries
+- [`docs/technical-roadmap.md`](docs/technical-roadmap.md) — background
+  technical research
+- [`docs/humanoid-platform-evaluation.md`](docs/humanoid-platform-evaluation.md)
+  — why the MVP uses SMPL-X plus G1 dual tracks
 
-`neodojo robot-model register` and `neodojo tracks build` can write fixture G1
-model and visual-track manifests. These preserve the SMPL-X/G1 responsibility
-split and still do not run GMR retargeting locally.
-`neodojo tracks normalize-gmr-pkl` parses the native YanjieZe/GMR robot-motion
-pickle shape written by upstream `scripts/*_to_robot.py --save_path` and emits
-the normalized JSON contract used by the repo. `neodojo tracks import-gmr-json`
-imports a normalized external
-`neodojo.gmr_unitree_g1_track.v1` export with Unitree G1 joint-angle frames
-into the same non-scoring G1 track contract; it does not run GMR locally or
-claim support for every native upstream GMR output format.
+## Constraints
 
-`neodojo render g1` consumes a G1 model descriptor and G1 visual-track manifest,
-then writes SVG front/side/top frame evidence plus a local HTML page and render
-manifest. Fixture descriptors require `--allow-fixture-model`; registered
-URDF/MJCF descriptors are accepted without that flag. This is local render
-evidence, not MuJoCo/Genesis simulator mesh rendering.
-`neodojo render mujoco-g1` is the optional MuJoCo offscreen renderer for
-registered URDF/MJCF descriptors. It requires installing the `sim` extra or the
-`mujoco` package and local, untracked robot assets for a real Unitree G1 proof.
-The built-in optional smoke verifies the path with a tiny synthetic MJCF model,
-and the real asset-load path has been verified locally with an untracked clone
-of `unitreerobotics/unitree_mujoco` `g1_29dof.xml`. When the G1 track contains
-an imported `unitree_g1_joint_angles` pose stream, matching MuJoCo hinge/slide
-joints are applied to `qpos` for the selected render frame and the manifest
-records applied, missing, skipped, and clipped joints.
-
-`neodojo demo play` consumes the SMPL-X motion-record, optional SMPL-X surface
-proxy or mesh surface, and G1 visual-track manifests together, then writes
-`outputs/teaching-demo/index.html` plus a playback manifest. This is a
-simulator-light HTML inspection path: SMPL-X joints stay the scoring source,
-the surface layer is visual-only, and G1 stays non-scoring. It can also
-preserve optional local-only original-video sync metadata with
-`--reference-video`.
-
-`neodojo demo export-rerun` writes the internal scene/timeline contract, a
-fixture-only static public-demo HTML page, an SVG screenshot, and a `.rrd`-named
-recording artifact under `outputs/public-demo/`. By default, the `.rrd` file is
-an honest JSON fallback artifact, not a real Rerun SDK recording. With
-`--use-rerun-sdk` and the optional `rerun` extra installed, the same command
-writes a true Rerun SDK recording and marks
-`rerun.actual_rrd: true` in the public-demo manifest.
-
-`neodojo demo serve-viser` writes `outputs/viser-runtime/scene.json` plus a
-Viser runtime manifest and generated front/side/top preview screenshots, then
-starts an optional local Viser server from the same scene/timeline contract. It
-requires installing the `viser` extra or the `viser` package unless
-`--write-contract-only` is used. The runtime shows SMPL-X and G1 as
-synchronized 3D tracks with a frame slider, frame-step controls,
-playback-speed metadata, trajectory overlays, camera-preset metadata and
-buttons, annotation-anchor navigation, layer visibility toggles, feedback
-drilldown, and explicit SMPL-X scoring/G1 visual labels. The manifest includes
-`neodojo.viser_teaching_ui.v1` review-loop metadata while live-client Viser
-browser capture remains follow-on work.
-
-`neodojo capture bundle` writes `outputs/capture/manifest.json`, a generated
-roboharness-style multi-camera evidence manifest. It validates the public-demo
-artifacts, Viser front/side/top preview screenshots, and G1 front/side/top
-render frames while preserving `scoring_source: smplx` and
-`g1_scoring_allowed: false`. Passing `--browser-capture` includes a real
-headless Chromium public-demo screenshot manifest from
-`neodojo demo browser-smoke`. Passing `--recorder-capture` includes optional
-direct MuJoCo simulator-recorder evidence from `neodojo capture recorder`.
-Direct roboharness and live-runtime recording remain follow-on work.
-
-`make verify` runs lint, MVP plan quality checks, tests, wheel build, the
-public-demo plus capture-bundle smoke lane, the dry-run real-handoff smoke
-lane, metadata-only GPU input bundle/archive smoke lanes, GPU execution probe,
-metadata-only GPU run-request, Colab notebook, operator package,
-operator-package archive, and acquisition-status smoke lanes, fixture-only
-real-artifact intake smoke lane, and real-conversion completion audit.
-`make demo-public` regenerates the fixture motion contract, detected
-annotations, SMPL-X surface proxy, G1 visual track, G1 render evidence,
-teaching playback, Viser runtime preview, public-demo artifact, generated
-capture bundle, and smoke check in one local command.
-`make demo-public-browser` runs the same lane, then uses the optional
-Playwright browser extra to render the public-demo HTML in Chromium, write
-`outputs/browser-capture/public-demo-browser.png`, and refresh the capture
-bundle with that browser evidence.
-`make smoke-public`
-validates an existing
-`outputs/public-demo` artifact set. The GitHub Actions workflow at
-`.github/workflows/public-demo.yml` runs the fixture lane with browser capture,
-also runs the metadata-only real/GPU smoke lanes, uploads the real-handoff,
-GPU input bundle, GPU input archive, GPU run-request, Colab notebook, operator
-package, operator package archive, real GVHMR acquisition-status preflight, GPU
-execution probe, and real-artifact intake smoke artifacts, uploads both the
-default real-conversion audit and opt-in GitHub-route audit artifacts plus the
-standalone public-demo,
-browser-capture, and capture-bundle artifacts, and publishes the fixture-only
-public demo to GitHub Pages when `NEODOJO_DEPLOY_PAGES=true` is set as a
-repository variable.
-`make lint` is currently a syntax/import bytecode compile check; `make check`
-validates MVP plan links and minimum plan scaffolding; `make build` writes a
-wheel under ignored `outputs/dist/`.
-
-`neodojo real-conversion prepare` writes source metadata, trim metadata, and
-next-command hints for a GPU conversion run. It does not download the source
-video or run GVHMR. When `--local-video` is supplied, it records checksum data
-and optional ffprobe duration, resolution, codec, and frame-rate metadata. Use
-`--local-source-id` with `--local-video` for a local/user-supplied source that
-should keep its own provenance instead of being attached to an official source
-index row.
-`neodojo real-conversion materialize-source` consumes that prep manifest plus a
-local video and writes a source-materialization manifest. With `--dry-run`, it
-records exact ffmpeg trim and reference-frame extraction commands without
-processing media. Without `--dry-run`, it requires ffmpeg and writes ignored
-trimmed-video and reference-frame artifacts for the GPU GVHMR input.
-`make real-handoff LOCAL_VIDEO=...` runs source prep, dry-run source
-materialization by default, and GPU handoff packaging in one command. Set
-`REAL_LOCAL_SOURCE_ID=...` and optional `REAL_LOCAL_TITLE=...` to preserve
-custom local-source provenance; set `REAL_DRY_RUN=0` to actually trim/extract
-media when ffmpeg is installed.
-`make real-handoff-smoke` runs the same handoff path with an ignored placeholder
-`.mp4` and is included in `make verify`; it does not run GVHMR or process media.
-`make real-gpu-archive LOCAL_VIDEO=...` is the one-command local packaging path
-for the external GPU operator: it runs non-dry-run source materialization,
-packages the media-including GPU input bundle, and writes the ignored transfer
-archive. It requires ffmpeg and must only be used with local/user-supplied media
-that is allowed to be transferred to the selected GPU machine.
-`make real-gpu-run-request LOCAL_VIDEO=...` extends that local packaging path by
-also writing the GPU operator request manifest and README from the generated
-archive.
-`make real-gpu-colab-notebook LOCAL_VIDEO=...` extends it one step further by
-also writing the Colab-ready operator notebook from that request.
-`make real-gpu-operator-package LOCAL_VIDEO=...` collocates and validates the
-archive, request, and notebook in one ignored operator package directory for
-transfer.
-`neodojo real-conversion package-gpu-handoff` and `make gpu-handoff
-SOURCE_MATERIALIZATION=...` consume a source-materialization manifest and write
-`outputs/gvhmr-gpu-handoff/manifest.json`, a README, and a
-copy of `source-materialization.json` plus `gvhmr-smplx-joints.template.json`
-and `export_neodojo_gvhmr.py` that preserve the exact source hash, trim, input
-video checksum, expected export schema, GPU-side export command, and local
-import command for the external GPU operator. The package also includes
-`run_gvhmr_neodojo.sh`, a GPU-side runner that wraps the upstream GVHMR demo
-command and the neodojo exporter. The exporter helper uses bundle-local
-filenames and is intended to run after GVHMR in the GPU environment with
-`torch`, `smplx`, and licensed local SMPL-X assets; this package does not copy
-media or run GVHMR locally.
-`neodojo real-conversion package-gpu-input` and `make gpu-input-bundle
-GPU_HANDOFF=... GPU_INPUT_INCLUDE_MEDIA=1` create an ignored copyable GPU input
-bundle with `RUN_ON_GPU.md`, handoff metadata, the runner script, exporter
-helper, template, and the materialized `source/trimmed-clip.mp4`. This bundle
-is for transfer to the selected GPU machine and must not be committed or
-published. `make gpu-input-bundle-smoke` verifies the metadata-only bundle and
-runner script without copying media or running GVHMR. `neodojo real-conversion
-archive-gpu-input` and `make gpu-input-archive GPU_INPUT=...` package that
-directory as `neodojo-gvhmr-gpu-input.tar.gz` plus a
-`neodojo.gvhmr_gpu_input_archive.v1` manifest. Metadata-only archives are
-CI-safe; media-containing archives stay ignored and must not be committed or
-published. Archive creation validates that the transfer package contains the
-runner script, exporter, template, runbook, manifests, and source metadata
-needed by the GPU operator. The durable external-GPU operator checklist is
-[`docs/runbooks/gvhmr-external-gpu.md`](docs/runbooks/gvhmr-external-gpu.md).
-`make gvhmr-run-request GPU_INPUT_ARCHIVE=...` turns an existing archive
-manifest into a concise operator request manifest and README with archive hash,
-required GPU assets, manual run commands, and local return commands.
-`make gvhmr-colab-notebook GVHMR_RUN_REQUEST=...` turns that request into a
-Colab-ready operator notebook with checksum verification, guarded GVHMR
-execution, returned JSON download, and local validation commands.
-`make gvhmr-operator-package GPU_INPUT_ARCHIVE=... GVHMR_RUN_REQUEST=...
-GVHMR_COLAB_NOTEBOOK=...` collocates those generated handoff files into one
-package with a package manifest and README, then validates the copied package
-before returning. The validation target is
-`make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=...`.
-`make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=...` wraps that
-validated package directory into one transfer `.tar.gz` plus manifest, then
-validates the archive member checksums and nested package. The archive
-validation target is `make gvhmr-operator-package-archive-validate
-GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`.
-`make gvhmr-run-request-smoke` covers the metadata-only request path in
-`make verify`; `make gvhmr-colab-notebook-smoke` covers the generated notebook
-path; `make gvhmr-operator-package-smoke` covers the collocated package path
-and package validation; `make gvhmr-operator-package-archive-smoke` covers the
-single-file operator package archive path and archive validation.
-`make real-gvhmr-acquisition-status GVHMR_OPERATOR_PACKAGE_ARCHIVE=...` writes
-a non-failing acquisition status manifest that validates the operator archive,
-records whether it is ready for external GPU handoff, embeds the existing
-real-conversion audit status, and repeats the required non-fixture return
-artifact contract. The smoke variant is included in `make verify` without
-uploading media.
-For user-managed GitHub Actions GPU hardware, the manual
-`.github/workflows/gvhmr-self-hosted-gpu.yml` workflow can unpack a
-runner-local media archive or collocated operator package on a self-hosted
-runner labeled `gpu`, run the same packaged wrapper, run
-`make real-artifact-intake` plus the strict
-real-conversion audit, and optionally upload only `gvhmr-smplx-joints.json` or
-generated real-demo/public-demo evidence. It is not triggered by push or pull
-request events and does not make the default CI lane run GVHMR.
-`neodojo real-conversion probe-gpu-execution` and `make gpu-execution-probe`
-write a safe local/provider readiness manifest with command presence and
-environment-variable names only. It does not record secret values or run GVHMR;
-it is included in `make verify` to keep the blocker classification executable.
-Pass `GPU_PROBE_GITHUB_REPO=OWNER/REPO` or CLI `--github-repo OWNER/REPO` to
-also record self-hosted GitHub GPU runner availability and repository secret
-counts through `gh` without recording secret values or secret names.
-`neodojo real-conversion inspect-gvhmr-result` and `make gvhmr-inspect
-GVHMR_RESULT=...` inspect a returned `hmr4d_results.pt` when the optional
-`torch` dependency is available in the GVHMR/GPU environment, or a JSON summary
-in the default local environment. The inspection manifest reports top-level
-keys, candidate `smpl_params_global` / `smpl_params_incam` parameter blocks,
-and whether the input is already a `neodojo.gvhmr_smplx_joints.v1` export. It
-still does not convert raw GVHMR `.pt` files locally.
-`neodojo real-conversion validate-source` compares a GVHMR teaching-joints JSON
-export against the source-materialization manifest, writes a validation report,
-and emits a validated import JSON copy when provenance matches. `neodojo
-real-conversion import-demo` and `make demo-real SOURCE_MATERIALIZATION=...
-GVHMR_JSON=...` validate that external GVHMR export, import it into the
-motion-record contract, and regenerate the same annotations, SMPL-X surface,
-G1 visual/render, teaching playback, public-demo, Viser preview, and capture
-bundle lane under `outputs/real-demo/`. By default they derive a fixture G1
-visual companion unless `--g1-track` and `--model-descriptor` are supplied to
-the CLI, or `G1_TRACK=... MODEL_DESCRIPTOR=...` are supplied to `make
-demo-real`. They still do not run GVHMR as part of the checked-in neodojo
-package. The current GPU workstation has already run the packaged GVHMR wrapper
-against an ignored Bilibili proof clip, producing
-`outputs/gvhmr-gpu-input-local-bilibili/gvhmr-smplx-joints.json` with
-`fixture_only: false`, 300 frames at 25 fps, then importing it through
-`outputs/real-demo/`.
-`make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=...` is the simpler
-post-return wrapper for the same validated import path. It defaults to
-`outputs/real-conversion-source/source-materialization.json` and
-`outputs/real-demo`, so the GPU operator only needs to point it at the returned
-`neodojo.gvhmr_smplx_joints.v1` export when those standard paths are used.
-`make real-artifact-intake-smoke` writes fixture-only source materialization
-and GVHMR JSON inputs, then runs the same wrapper to keep the returned-artifact
-intake path covered locally and in CI without claiming a real GVHMR run. The
-resulting real-demo manifest sets `gvhmr_artifact_imported: true` for the
-contract import and `real_gvhmr_artifact_imported: false` for fixture smoke.
-`make real-conversion-audit` writes `outputs/real-conversion-audit/manifest.json`,
-classifying whether the real gate is complete or still blocked on a non-fixture
-GPU artifact. Pass `REAL_AUDIT_GITHUB_REPO=OWNER/REPO` or CLI
-`--github-repo OWNER/REPO` to include the opt-in GitHub runner/secret-count
-probe in that audit. It exits successfully for blocker classification; use
-`make real-conversion-audit-strict` or `make verify-real` when a script should
-fail unless a real non-fixture demo exists. In this workspace, the local
-Bilibili proof audit reports `real_demo_verified`. The underlying CLI form is
-`PYTHONPATH=src python -m neodojo real-conversion audit-completion --require-complete`.
-`make real-demo-pages-promotion-validate PROMOTION_DOWNLOAD_ROOT=...
-PROMOTION_SOURCE_RUN_ID=...` validates and stages a downloaded
-`neodojo-self-hosted-real-demo` artifact before the guarded Pages promotion
-workflow uploads it. It rejects fixture-only imports, incomplete strict audits,
-unsafe file paths, non-SMPL-X scoring, and blank public-demo files.
-
-`make demo-html` writes `outputs/html-demo/index.html`, a self-contained
-synthetic fixture demo for the intended teaching UI shape, backed by the local
-motion/track manifest contract. It does not prove source-video conversion,
-qigong motion accuracy, simulator rendering, live-client Viser capture, or real
-Unitree G1 retargeting.
-
-In progress:
-
-- [ ] First end-to-end demo: Baduanjin opening form *"Holding Up the
-      Heavens to Regulate the Triple Burner"*
-- [x] Fixture-only web/HTML teaching demo for synchronized SMPL-X/G1-style
-      playback, trajectory overlays, timeline controls, and one SMPL-X-based
-      geometry check
-- [x] Local fixture SMPL-X motion-record and teaching-track manifests
-- [x] External GVHMR teaching-joints JSON import into the same motion contract
-- [x] Optional imported SMPL-X pose/shape parameter contract for licensed mesh
-      evidence
-- [x] Dependency-light SMPL-X surface proxy layer in teaching/public demos
-- [x] Local-only licensed SMPL-X asset descriptor and mesh-input validation
-- [x] Local external licensed SMPL-X mesh-frame import into teaching/public demos
-- [x] Local fixture G1 model and visual-track manifests with scoring separation
-- [x] Normalized external GMR Unitree G1 JSON import into the non-scoring G1
-      visual-track contract
-- [x] Native GMR robot-motion pickle normalization into that same G1 JSON import
-      contract
-- [x] Local G1 SVG/HTML render evidence command with front/side/top frames and
-      `g1_scoring_allowed: false`
-- [x] Optional MuJoCo offscreen mesh render command, smoke-tested with a tiny
-      MJCF model and an untracked local Unitree G1 asset clone
-- [x] Imported GMR joint angles applied to matching real Unitree G1 MuJoCo qpos
-      joints for render evidence
-- [x] Local teaching playback command that consumes SMPL-X and G1 manifests
-- [x] Deterministic SMPL-X opening-form routine feedback review with multiple
-      key-frame anchors and posture terms
-- [x] Fixture-only static public-demo export with scene/timeline contract,
-      `.rrd` fallback artifact, HTML, and SVG screenshot
-- [x] Optional true Rerun SDK `.rrd` export; live fixture-only GitHub Pages URL
-      verified at [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
-- [x] Optional first Viser local runtime with synchronized SMPL-X/G1 tracks,
-      frame slider, camera/annotation controls, trajectory overlays, and
-      scoring-source labels
-- [x] Production Viser teaching review-loop contract with frame stepping,
-      playback-speed metadata, layer visibility toggles, and feedback drilldown
-- [x] Generated Viser front/side/top preview screenshots in the one-command
-      public-demo lane
-- [x] Generated roboharness-style multi-camera capture evidence bundle that
-      validates public-demo, Viser preview, and G1 render artifacts
-- [x] Optional browser-rendered Chromium screenshot capture for the public demo,
-      wired into the CI capture bundle
-- [x] Optional MuJoCo simulator recorder-capture manifest that can be included
-      in the capture bundle when local simulator assets are available
-- [x] One-command local `make demo-public` flow and GitHub Actions artifact/Page
-      workflow for the fixture public demo
-- [x] Metadata-only CI artifact for the dry-run real-handoff smoke bundle
-- [x] Metadata-only CI artifacts for GPU input bundle/archive/run-request smokes
-      and GPU execution probe
-- [x] Minimal `make lint` and `make build` command surface
-- [x] Project-owned `make check` quality gate for MVP plan links/scaffolding
-- [x] One-command local `make verify` flow for lint, quality checks, tests,
-      build, public demo generation, real/GPU smoke lanes, and real-artifact
-      intake smoke
-- [x] Local real-conversion prep manifest for source `03-006`
-- [x] Custom local-source real-conversion prep path with explicit provenance
-- [x] Local real-conversion source materialization handoff for a user-supplied
-      video
-- [x] One-command `make real-handoff` local GPU handoff preparation from a
-      user-supplied video
-- [x] One-command `make real-gpu-archive` media-containing transfer archive
-      preparation for the external GPU operator
-- [x] One-command `make real-gpu-run-request` local archive plus operator
-      request preparation
-- [x] One-command `make real-gpu-colab-notebook` local archive, operator
-      request, and Colab notebook preparation
-- [x] One-command `make real-gpu-operator-package` collocated archive, request,
-      notebook, and package manifest preparation
-- [x] One-command `make real-gpu-operator-package-archive` single-file operator
-      package archive preparation
-- [x] Local GVHMR GPU handoff package with export template and return command
-- [x] Ignored copyable GPU input bundle with optional trimmed media inclusion
-- [x] Ignored GPU input transfer archive for upload to the selected GPU machine
-- [x] Generated external GPU run-request manifest and README from a transfer
-      archive
-- [x] Generated Colab operator notebook from a GPU run-request manifest
-- [x] Generated collocated operator package from archive, run request, and
-      notebook manifests
-- [x] Generated operator package archive from a validated collocated package
-- [x] Reusable operator package archive validation for existing downloaded
-      archive artifacts
-- [x] Non-failing `make real-gvhmr-acquisition-status` preflight for operator
-      package handoff readiness and real-conversion audit state
-- [x] GPU-side GVHMR-to-neodojo export helper packaged with the handoff
-- [x] Local GVHMR result inspection manifest for returned `.pt` or JSON export
-- [x] Local GVHMR source-validation report and validated JSON import handoff
-- [x] One-command local real-artifact import demo after an external GPU GVHMR
-      export is available
-- [x] Local GPU GVHMR proof for an ignored Bilibili Baduanjin clip, producing
-      a non-fixture 300-frame SMPL-X teaching-joints export and passing the
-      strict real-conversion audit
-- [x] Simpler `make real-artifact-intake` wrapper for the standard returned
-      GVHMR export path
-- [x] Fixture-backed `make real-artifact-intake-smoke` coverage for the returned
-      artifact wrapper
-- [x] Executable `make real-conversion-audit` blocker classifier for the real
-      GVHMR gate
-The detailed implementation queue lives in [`docs/plans/`](docs/plans/) and
-can later be mirrored into GitHub issues.
-
----
-
-## Related work in the MiaoDX ecosystem
-
-- 🤖 [roboharness](https://github.com/MiaoDX/roboharness) — eyes for
-  robot simulation agents. neodojo currently mirrors its multi-camera evidence
-  pattern through a generated capture bundle, browser-rendered public-demo
-  screenshot, and optional MuJoCo simulator recorder manifest; direct
-  roboharness integration is still follow-on work.
-- 🦾 [robowbc](https://github.com/MiaoDX/robowbc) — whole-body control
-  showcase built on roboharness.
-
-> *roboharness gave robots eyes to see themselves;*
-> *neodojo gives humans a shadow that always demonstrates the standard.*
-
----
-
-## License & Acknowledgments
-
-> *"There is no spoon."*
-
-There are no real robots here. Only simulation. But simulation is enough—
-the accuracy ceiling is set by GVHMR, by SMPL-X, by the motion-tracking
-research thread of KungfuBot/PBHC. **Not by steel.**
-
-Standing on the shoulders of (see
-[`docs/technical-roadmap.md`](docs/technical-roadmap.md) for the full
-list):
-
-- [GVHMR](https://github.com/zju3dv/GVHMR) (SIGGRAPH Asia 2024) —
-  monocular video → SMPL-X
-- [GMR](https://github.com/YanjieZe/GMR) (ICRA 2026) — General Motion
-  Retargeting
-- [PBHC / KungfuBot](https://github.com/TeleHuman/PBHC) — martial-arts
-  humanoid simulation
-- [GR00T-WholeBodyControl](https://github.com/NVlabs/GR00T-WholeBodyControl)
-  (NVIDIA) — whole-body control reference stack
-- [Genesis](https://github.com/Genesis-Embodied-AI/Genesis) /
-  [MuJoCo](https://github.com/google-deepmind/mujoco) — simulators
-- [Viser](https://github.com/nerfstudio-project/viser) — web 3D
-  visualization
-- [Chinese Health Qigong Association](https://www.chqa.org.cn/) &
-  Health Qigong Management Center of the General Administration of
-  Sport of China — official instructional videos and routine standards
-
-License: MIT (TBD)
-
----
-
-## Contributing
-
-> *"What if I told you... the dojo isn't the place. The dojo is the
-> practice."*
-
-Issues, PRs, ideas, war stories—all welcome. At this early stage every
-piece of feedback is valuable.
-
-If you are:
-
-- **A qigong / taichi / martial-arts practitioner**: the details your
-  teacher tells you but the video can't reveal are exactly what this
-  project most needs
-- **An HMR / humanoid researcher**: please review the technical roadmap
-  and suggest better models or retargeting approaches
-- **A roboharness / AI-coding-agent enthusiast**: this is an open
-  experiment in Claude-Code-routines-driven development
-
----
-
-> *"I know kung fu."*
->
-> *"Show me."*
+- Do not commit raw videos, generated motion files, rendered videos,
+  checkpoints, logs, or large outputs.
+- Treat official instructional videos as licensing-sensitive; prefer local or
+  user-supplied source media unless rights are confirmed.
+- Do not treat the fixture demo as real GVHMR/GMR/simulator proof.
+- Do not use G1 as the scoring source.
