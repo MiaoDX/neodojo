@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .contracts import PLAYBACK_SCHEMA, PUBLIC_DEMO_SCHEMA, require_schema
+from .contracts import PLAYBACK_SCHEMA, PUBLIC_DEMO_SCHEMA, TWO_PANEL_TEACHING_HTML_PROFILE, require_schema
 from .fixtures import BONES, TRAJECTORY_JOINTS
 from .g1_render import G1_RENDER_SCHEMA
 from .g1_visual import load_g1_track_frames
@@ -14,7 +14,6 @@ from .smplx_surface import load_smplx_surface_layer
 
 SCENE_TIMELINE_SCHEMA = "neodojo.scene_timeline.v1"
 RERUN_RECORDING_EXPORT_SCHEMA = "neodojo.rerun_recording_export.v1"
-TWO_PANEL_TEACHING_HTML_PROFILE = "neodojo.two_panel_teaching_replay.v1"
 
 
 @dataclass(frozen=True)

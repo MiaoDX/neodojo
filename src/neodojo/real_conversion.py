@@ -11,7 +11,13 @@ from importlib import resources
 from pathlib import Path
 from typing import Any, Mapping
 
-from .contracts import local_file_metadata, require_schema, sha256_file
+from .contracts import (
+    PUBLIC_DEMO_SCHEMA,
+    TWO_PANEL_TEACHING_HTML_PROFILE,
+    local_file_metadata,
+    require_schema,
+    sha256_file,
+)
 from .fixtures import (
     FIXTURE_FORM,
     FIXTURE_FPS,
@@ -1545,9 +1551,26 @@ def audit_real_conversion_completion(
         if isinstance(public_demo_ref, str) and public_demo_ref
         else real_demo_manifest.parent / "public-demo" / "manifest.json"
     )
-    public_demo_available = public_demo_manifest.exists()
-    if public_demo_available:
+    public_demo_payload, public_demo_error = _audit_json_schema(
+        public_demo_manifest,
+        PUBLIC_DEMO_SCHEMA,
+        "public-demo manifest",
+    )
+    public_demo_available = public_demo_payload is not None
+    if public_demo_payload is not None:
         checked_paths.append(public_demo_manifest)
+    teaching_html = (
+        public_demo_payload.get("teaching_html")
+        if isinstance(public_demo_payload, dict)
+        else None
+    )
+    teaching_html_two_panel = bool(
+        isinstance(teaching_html, dict)
+        and teaching_html.get("profile") == TWO_PANEL_TEACHING_HTML_PROFILE
+        and teaching_html.get("layout") == "split_smplx_left_g1_right"
+        and teaching_html.get("interactive") is True
+        and teaching_html.get("synchronized_replay") is True
+    )
     _audit_add_check(
         checks,
         name="real_demo_manifest_imported_real_artifact",
@@ -1567,7 +1590,18 @@ def audit_real_conversion_completion(
         message=(
             "Real-demo public-demo manifest is available."
             if real_demo_imported and public_demo_available
-            else "No verified public-demo manifest exists for a real GVHMR artifact."
+            else public_demo_error or "No verified public-demo manifest exists for a real GVHMR artifact."
+        ),
+    )
+    _audit_add_check(
+        checks,
+        name="public_demo_two_panel_teaching_html",
+        passed=real_demo_imported and teaching_html_two_panel,
+        path=public_demo_manifest,
+        message=(
+            "Public demo manifest declares an interactive two-panel SMPL-X/G1 teaching replay."
+            if real_demo_imported and teaching_html_two_panel
+            else "Public demo manifest does not declare the required two-panel teaching replay."
         ),
     )
 
@@ -1578,7 +1612,7 @@ def audit_real_conversion_completion(
         and not gvhmr_export_fixture_only
         and validation_status == "validated"
     )
-    complete = inputs_verified and real_demo_imported and public_demo_available
+    complete = inputs_verified and real_demo_imported and public_demo_available and teaching_html_two_panel
     if complete:
         status = "real_demo_verified"
         next_action = "Inspect outputs/real-demo/public-demo and archive the real conversion evidence outside git."
@@ -1623,6 +1657,7 @@ def audit_real_conversion_completion(
             "real_gvhmr_artifact_imported": real_demo_imported,
             "public_demo_manifest": _as_posix(public_demo_manifest),
             "public_demo_manifest_exists": public_demo_available,
+            "two_panel_teaching_html": teaching_html_two_panel,
         },
         "checks": checks,
         "next_action": next_action,

@@ -2293,11 +2293,14 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertFalse(manifest["gvhmr_export_fixture_only"])
         self.assertIn("derived_g1_visual_track", manifest["fixture_components"])
         self.assertTrue(manifest["g1_track_generated_from_smplx"])
+        self.assertEqual(manifest["teaching_html"]["profile"], "neodojo.two_panel_teaching_replay.v1")
+        self.assertEqual(manifest["teaching_html"]["layout"], "split_smplx_left_g1_right")
         self.assertEqual(manifest["scoring_source"], "smplx")
         self.assertFalse(manifest["g1_scoring_allowed"])
         self.assertFalse(motion_manifest["fixture_only"])
         self.assertEqual(motion_manifest["provenance"]["source_validation"]["status"], "validated")
         self.assertEqual(public_manifest["schema"], "neodojo.public_demo.v1")
+        self.assertEqual(public_manifest["teaching_html"]["profile"], "neodojo.two_panel_teaching_replay.v1")
         self.assertEqual(capture_manifest["schema"], "neodojo.capture_bundle.v1")
         self.assertTrue(capture_manifest["verification"]["public_demo_smoke_checked"])
         self.assertGreaterEqual(len(result.checked_paths), len(public_smoke.checked_paths))
@@ -2505,8 +2508,10 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(result.complete)
         self.assertFalse(manifest["blocked"])
         self.assertTrue(manifest["real_demo"]["real_gvhmr_artifact_imported"])
+        self.assertTrue(manifest["real_demo"]["two_panel_teaching_html"])
         self.assertEqual(manifest["artifact"]["validation_status"], "validated")
         self.assertTrue(_check_by_name(manifest, "source_validation_passed")["passed"])
+        self.assertTrue(_check_by_name(manifest, "public_demo_two_panel_teaching_html")["passed"])
 
     def test_real_conversion_audit_rejects_verified_demo_with_missing_configured_artifact(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
