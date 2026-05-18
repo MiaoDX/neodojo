@@ -1,6 +1,6 @@
 # MVP GVHMR GPU Runner Surface Plan
 
-Status: IMPLEMENTED CI-SAFE GPU RUNNER PACKAGING; REAL ARTIFACT STILL EXTERNAL
+Status: IMPLEMENTED CI-SAFE GPU RUNNER PACKAGING; LOCAL REAL ARTIFACT VERIFIED
 
 ## Goal
 
@@ -71,12 +71,12 @@ run upstream GVHMR and then call the neodojo exporter helper.
 - Downloading GVHMR checkpoints or licensed SMPL/SMPL-X assets into this repo.
 - Committing source videos, `.pt`, `.pkl`, `.npz`, rendered videos, or generated
   motion outputs.
-- Marking the real-conversion gate complete before a real
-  `neodojo.gvhmr_smplx_joints.v1` export is returned and imported.
+- Treating runner packaging alone as real-conversion completion without a
+  validated non-fixture `neodojo.gvhmr_smplx_joints.v1` export.
 
 ## Stop Condition
 
 Stopped when every generated GPU handoff/input bundle includes an executable
-runner script, CI verifies the runner packaging without media or GPU execution,
-and the only remaining real-conversion blocker is still the external
-GPU-produced GVHMR export.
+runner script and CI verifies the runner packaging without media or GPU
+execution. A later local GPU proof produced and validated the non-fixture GVHMR
+export through ignored `outputs/`.

@@ -1,12 +1,12 @@
 # MVP GVHMR GPU Transfer Archive Plan
 
-Status: IMPLEMENTED CI-SAFE TRANSFER ARCHIVE; REAL ARTIFACT STILL EXTERNAL
+Status: IMPLEMENTED CI-SAFE TRANSFER ARCHIVE; LOCAL REAL ARTIFACT VERIFIED
 
 ## Goal
 
 Turn the generated GVHMR GPU input bundle into one ignored transfer archive so
-the remaining external GPU step can be moved to Colab, RunPod, Modal, or another
-CUDA machine with a single upload.
+GPU execution can be moved to Colab, RunPod, Modal, or another CUDA machine
+with a single upload.
 
 The archive command must be safe for CI when the source bundle is metadata-only
 and must preserve the media-safety boundary when the bundle explicitly includes
@@ -85,7 +85,7 @@ and must preserve the media-safety boundary when the bundle explicitly includes
 
 ## Stop Condition
 
-Stopped when a GPU input bundle can be turned into a single ignored archive,
-the metadata-only archive is smoke-tested locally and in CI, and the only
-remaining real-conversion blocker is still the external GPU-produced
-`neodojo.gvhmr_smplx_joints.v1` export.
+Stopped when a GPU input bundle can be turned into a single ignored archive and
+the metadata-only archive is smoke-tested locally and in CI. A later local GPU
+proof produced and validated the non-fixture
+`neodojo.gvhmr_smplx_joints.v1` export through ignored `outputs/`.

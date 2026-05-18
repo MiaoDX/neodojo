@@ -1,6 +1,6 @@
 # MVP GVHMR Self-Hosted Real Demo Intake Plan
 
-Status: IMPLEMENTED OPTIONAL WORKFLOW INTAKE; REAL ARTIFACT STILL EXTERNAL
+Status: IMPLEMENTED OPTIONAL WORKFLOW INTAKE; LOCAL REAL ARTIFACT VERIFIED; WORKFLOW REMAINS OPTIONAL
 
 ## Goal
 
@@ -8,10 +8,10 @@ Close the handoff gap after the optional self-hosted GVHMR workflow produces
 `gvhmr-smplx-joints.json`: run the returned artifact through neodojo's own
 validation, import-demo, and strict audit steps in the same workflow.
 
-This keeps the default fixture CI lane unchanged. The real path still requires
-a user-managed GPU runner and a real GVHMR export, but when that exists the
-workflow can produce a validated real-demo HTML artifact without requiring a
-manual local import step first.
+This keeps the default fixture CI lane unchanged. The optional workflow path
+still requires a user-managed GPU runner and a real GVHMR export, but the repo
+also documents a separate local GPU proof that already passed the strict real
+gate through ignored `outputs/`.
 
 ## Dependencies
 
@@ -57,7 +57,8 @@ manual local import step first.
   commands and does not upload media, checkpoints, SMPL-X assets, or `.pt`
   files.
 - [x] Update README.md, README.zh.md, STATUS.md, the runbook, and the plan
-  index without claiming the real artifact has already been produced.
+  index with intake boundaries; local real-artifact status is documented
+  separately after proof.
 
 ## Acceptance Evidence
 
@@ -75,9 +76,9 @@ manual local import step first.
 - GitHub Actions run
   `https://github.com/MiaoDX/neodojo/actions/runs/26007158313` verified the
   default fixture CI lane still passes and deploys after this workflow change;
-  the downloaded public-demo artifact remains fixture-only and the
-  real-conversion audit artifact remains blocked on the missing external GPU
-  export.
+  the downloaded public-demo artifact remains fixture-only. That historical CI
+  artifact predates the local GPU proof, so its real-conversion audit still
+  reported the missing returned export.
 
 ## Non-Goals
 
@@ -93,5 +94,6 @@ manual local import step first.
 
 Stopped when the optional self-hosted GPU workflow can validate/import the
 returned JSON, run the strict audit, and optionally upload a generated real-demo
-HTML artifact set while the current repo state still honestly reports that no
-real GPU artifact has been produced yet.
+HTML artifact set. A later local GPU proof produced and validated the
+non-fixture returned export through ignored `outputs/`; the workflow remains an
+optional rerun/promotion path.

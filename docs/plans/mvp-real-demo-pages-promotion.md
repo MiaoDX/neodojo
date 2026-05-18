@@ -1,6 +1,6 @@
 # MVP Real Demo Pages Promotion Plan
 
-Status: IMPLEMENTED GUARDED MANUAL PROMOTION; REAL ARTIFACT STILL EXTERNAL
+Status: IMPLEMENTED GUARDED MANUAL PROMOTION; LOCAL REAL ARTIFACT VERIFIED; LIVE PAGES STILL FIXTURE-ONLY
 
 ## Goal
 
@@ -76,7 +76,8 @@ until a human explicitly promotes a verified real artifact.
 - [x] Add unit and CLI tests for accepting a verified synthetic real-demo
   artifact and rejecting fixture-only intake artifacts.
 - [x] Update STATUS, README, README.zh, the external GPU runbook, and the MVP
-  plan index without claiming that a real artifact exists.
+  plan index with guarded-promotion boundaries; live Pages remains fixture-only
+  until an explicit real-demo promotion.
 
 ## Acceptance Evidence
 
@@ -98,8 +99,9 @@ until a human explicitly promotes a verified real artifact.
   `https://github.com/MiaoDX/neodojo/actions/runs/26007531255` verified that
   the default fixture public-demo lane still passes and deploys after this
   workflow change; the downloaded public-demo artifact passes
-  `neodojo demo smoke` and remains fixture-only, while the downloaded
-  real-conversion audit remains blocked on the missing external GPU export.
+  `neodojo demo smoke` and remains fixture-only. That historical CI artifact
+  predates the local GPU proof, so its downloaded real-conversion audit still
+  reported the missing returned export.
 
 ## Non-Goals
 

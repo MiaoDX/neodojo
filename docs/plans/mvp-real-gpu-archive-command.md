@@ -1,6 +1,6 @@
 # MVP Real GPU Archive Command Plan
 
-Status: IMPLEMENTED ONE-COMMAND MEDIA ARCHIVE PREP; REAL ARTIFACT STILL EXTERNAL
+Status: IMPLEMENTED ONE-COMMAND MEDIA ARCHIVE PREP; LOCAL REAL ARTIFACT VERIFIED
 
 ## Goal
 
@@ -79,6 +79,6 @@ validation boundaries.
 
 ## Stop Condition
 
-Stopped when one make command can produce the complete ignored media archive for
-external GPU transfer and the only remaining real-conversion blocker is still
-the external GPU-produced `neodojo.gvhmr_smplx_joints.v1` export.
+Stopped when one make command can produce the complete ignored media archive
+for GPU transfer. A later local GPU proof produced and validated the
+non-fixture `neodojo.gvhmr_smplx_joints.v1` export through ignored `outputs/`.

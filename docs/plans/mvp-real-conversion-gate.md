@@ -415,23 +415,24 @@ artifact path; it defaults to
 - [x] Add a guarded manual Pages promotion workflow that can publish a validated
   self-hosted real-demo artifact only after explicit confirmation and strict
   real-demo audit validation.
-- [ ] Run GVHMR on a GPU-capable environment.
-- [ ] Export the SMPL-X result directory with enough metadata for reproducibility.
-- [ ] Convert or export the GVHMR result into
+- [x] Run GVHMR on a GPU-capable environment.
+- [x] Export the SMPL-X result directory with enough metadata for reproducibility.
+- [x] Convert or export the GVHMR result into
   `neodojo.gvhmr_smplx_joints.v1` JSON with the teaching joints required by the
   local playback contract.
-- [ ] Import the exported JSON artifact using
+- [x] Import the exported JSON artifact using
   `neodojo motion-record create --from-gvhmr-json`.
-- [ ] Run `neodojo real-conversion import-demo`, `make demo-real`, or
+- [x] Run `neodojo real-conversion import-demo`, `make demo-real`, or
   `make real-artifact-intake` on the real exported artifact and inspect
   `outputs/real-demo/`.
-- [ ] If import fails, classify the failure:
+- [x] If import fails, classify the failure:
   - contract too narrow
   - missing GVHMR metadata
   - upstream output format difference
   - source video/clip issue
   - environment issue
-- [ ] Fix only contract issues that are necessary for real GVHMR output.
+  - not triggered for the current proof; import and strict audit passed
+- [x] Fix only contract issues that are necessary for real GVHMR output.
 - [x] Keep all large/generated artifacts out of git.
 
 ## Current Local Gate Status

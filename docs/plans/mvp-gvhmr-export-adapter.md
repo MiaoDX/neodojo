@@ -1,6 +1,6 @@
 # MVP GVHMR Export Adapter Plan
 
-Status: IMPLEMENTED GPU-SIDE EXPORT HELPER; REAL ARTIFACT STILL EXTERNAL
+Status: IMPLEMENTED GPU-SIDE EXPORT HELPER; LOCAL REAL ARTIFACT VERIFIED
 
 ## Goal
 
@@ -73,7 +73,8 @@ export helper instead of only a blank JSON template.
    - [x] Compile the generated exporter script.
    - [x] Confirm `--help` works without importing `torch` or `smplx`.
    - [x] Keep the real conversion gate blocked until a real GPU-produced JSON
-     artifact is returned and validated.
+     artifact is returned and validated; later local proof satisfied that gate
+     through ignored `outputs/`.
 
 ## Acceptance Evidence
 
@@ -93,9 +94,9 @@ export helper instead of only a blank JSON template.
   source-materialization manifest, and returned JSON.
 - Unit tests compile the generated exporter and run `--help` without optional
   GPU dependencies installed.
-- Docs continue to state that actual GVHMR inference, SMPL-X model execution,
-  and the first real artifact remain external to this repo until the GPU run
-  returns a validated JSON export.
+- Docs distinguish the GPU-side export helper from the later local GPU proof;
+  actual GVHMR inference, SMPL-X model execution, and generated artifacts remain
+  outside tracked source.
 
 ## Non-Goals
 
@@ -109,8 +110,8 @@ export helper instead of only a blank JSON template.
 
 ## Stop Condition
 
-Stop when the GPU handoff package contains an executable exporter helper,
+Stopped when the GPU handoff package contains an executable exporter helper,
 records the helper in machine-readable metadata, and local tests prove the
-helper can be inspected without optional GPU dependencies. The broader real
-conversion gate remains open until a real GVHMR run returns a validated
-neodojo export.
+helper can be inspected without optional GPU dependencies. A later local GPU
+proof returned and validated the non-fixture neodojo export through ignored
+`outputs/`.

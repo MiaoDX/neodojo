@@ -1,6 +1,6 @@
 # MVP Real GVHMR Artifact Acquisition Plan
 
-Status: IMPLEMENTED LOCAL ACQUISITION STATUS; BLOCKED ON EXTERNAL GPU OPERATOR
+Status: LOCAL REAL GVHMR ARTIFACT ACQUIRED; STRICT AUDIT PASSED
 
 ## Goal
 
@@ -9,11 +9,12 @@ short local Baduanjin proof clip, import it with the existing real-conversion
 lane, and make `make verify-real` pass without committing source media,
 checkpoints, model assets, returned JSON, rendered videos, or generated outputs.
 
-This is the operational completion plan for the remaining real-conversion gap.
+This is the operational completion plan for the real-conversion gap.
 The local command surface, GPU handoff package, validation, import-demo, audit,
 self-hosted workflow intake, and guarded Pages promotion are already
-implemented by the earlier plans; the missing artifact is the actual GPU-run
-GVHMR result.
+implemented by the earlier plans. On this GPU workstation, the actual GPU-run
+GVHMR result has now been produced locally under ignored `outputs/` and
+validated through the strict real gate.
 
 ## Dependencies
 
@@ -66,9 +67,9 @@ GVHMR result.
 3. Write the operator-facing preflight:
    `make real-gvhmr-acquisition-status GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive`.
 4. Confirm the preflight reports `ready_for_external_gpu_operator` for a
-   media-containing archive and still reports a blocked real-conversion audit
-   until the returned export exists.
-5. Move the package archive to a private GPU runtime or self-hosted GPU runner.
+   media-containing archive before the returned export exists.
+5. Move the package archive to a private GPU runtime, self-hosted GPU runner, or
+   this local GPU workstation.
 6. On the GPU runtime, install GVHMR dependencies, provide checkpoints and
    licensed SMPL-X assets, unpack the archive, run
    `run_gvhmr_neodojo.sh --install`, and export `gvhmr-smplx-joints.json`.
@@ -78,8 +79,8 @@ GVHMR result.
 9. Run:
    `make real-artifact-intake REAL_ARTIFACT_SOURCE_MATERIALIZATION=outputs/gvhmr-gpu-input/source-materialization.json REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json`.
 10. Run `make verify-real`.
-11. If the strict audit passes and publication is desired, use the guarded
-   real-demo Pages promotion workflow with explicit confirmation.
+11. If publication is desired, use the guarded real-demo Pages promotion
+   workflow with explicit confirmation.
 
 ## Acceptance Evidence
 
@@ -92,10 +93,10 @@ GVHMR result.
   `PYTHONPATH=src python3 -m neodojo demo smoke --public-demo outputs/real-demo/public-demo`.
 - The returned GVHMR JSON and generated outputs remain ignored and are not
   committed.
-- Before the external GPU run, `make real-gvhmr-acquisition-status` writes
+- Before a GPU run, `make real-gvhmr-acquisition-status` writes
   `neodojo.real_gvhmr_artifact_acquisition.v1`, validates a media-containing
-  operator package archive as ready for handoff, embeds the still-blocked audit,
-  and repeats that the returned export must be non-fixture.
+  operator package archive as ready for handoff, embeds the real-conversion
+  audit state, and repeats that the returned export must be non-fixture.
 - `README.md`, `README.zh.md`, and `STATUS.md` may document the local
   preflight before the GPU run, but any claims about a real demo are added only
   after the real artifact exists and clearly distinguish it from the existing
@@ -103,37 +104,26 @@ GVHMR result.
 
 ## Current Evidence
 
-- Recent verified default CI run:
-  `https://github.com/MiaoDX/neodojo/actions/runs/26015918309`.
-- The downloaded latest CI public-demo artifact passes `neodojo demo smoke`
-  and contains `index.html`, `scene.json`, `neodojo-demo.rrd`,
-  `screenshot.svg`, and the expected SMPL-X teacher / Unitree G1 visual
-  tracks.
-- The downloaded latest CI GPU input template records `fixture_only: false`.
-- The downloaded latest CI run-request and operator-package READMEs require a
-  GPU-generated returned export with `fixture_only: false`.
-- The local acquisition-status preflight exists as
-  `make real-gvhmr-acquisition-status`; its CI smoke target uses metadata-only
-  artifacts, so it intentionally reports the archive is not ready for GPU
-  handoff while preserving the non-fixture return-artifact contract.
-- GitHub Actions run `26015790002` verified the metadata-only
-  acquisition-status artifact upload: the downloaded manifest reports
-  `neodojo.real_gvhmr_artifact_acquisition.v1`,
-  `operator_package_archive_not_ready_for_gpu`, `blocked: true`, `complete:
-  false`, nested audit status `external_gpu_artifact_missing`, and expected
-  return `fixture_only: false`.
-- The downloaded latest CI real-conversion audit still reports
-  `external_gpu_artifact_missing`, `complete: false`, and `blocked: true`.
-- A refreshed local `make gpu-execution-probe
-  GPU_PROBE_GITHUB_REPO=MiaoDX/neodojo` check still reports
-  `external_gpu_artifact_missing`: no local CUDA runtime, no configured GPU
-  provider CLI/environment, zero self-hosted GitHub Actions runners, zero
-  repository secrets, no secret names or values, and no self-hosted GPU
-  workflow runs.
-- A local search found only fixture/smoke
-  `neodojo.gvhmr_smplx_joints.v1` JSON files and no returned
-  `hmr4d_results.pt` or non-fixture `gvhmr-smplx-joints.json` artifact.
-- Local `make verify-real` still fails with `external_gpu_artifact_missing`.
+- The local GPU workstation produced
+  `outputs/gvhmr-gpu-input-local-bilibili/gvhmr-smplx-joints.json`.
+- The returned export records `schema: neodojo.gvhmr_smplx_joints.v1`,
+  `fixture_only: false`, 300 frames at 25 fps, runtime
+  `local RTX 3500 Ada, torch 2.3.0+cu121`, and upstream GVHMR revision
+  `088caff492aa38c2d82cea363b78a3c65a83118f`.
+- The standard ignored return-artifact paths are populated at
+  `outputs/real-conversion-source/source-materialization.json` and
+  `outputs/real-conversion-gate/gvhmr-smplx-joints.json` for local strict
+  verification.
+- `outputs/real-demo/manifest.json` records
+  `real_gvhmr_artifact_imported: true`,
+  `gvhmr_export_fixture_only: false`, and
+  `source_materialization_fixture_only: false`.
+- `outputs/real-conversion-audit/manifest.json` records
+  `status: real_demo_verified`, `complete: true`, `blocked: false`, 300 frames,
+  and `validation_status: validated`.
+- `make verify-real PYTHON=.venv/bin/python` exits zero locally.
+- `make verify PYTHON=.venv/bin/python` exits zero locally and still keeps the
+  default public-demo lane fixture-only.
 
 ## Non-Goals
 
@@ -141,13 +131,13 @@ GVHMR result.
 - Running GVHMR on default GitHub-hosted CI.
 - Committing source video, returned JSON, generated motion files, model assets,
   checkpoints, rendered media, logs, or other large outputs.
-- Replacing the fixture-only public demo before a strict real audit passes.
+- Replacing the fixture-only public demo without an explicit guarded promotion
+  decision.
 - Treating a fixture smoke export as evidence of real conversion.
 
 ## Stop Condition
 
-Stop when the first returned non-fixture GVHMR export is validated and imported,
+Stopped: the first returned non-fixture GVHMR export is validated and imported,
 `make verify-real` passes, and the real-demo evidence is documented without
-tracking generated media or artifacts. Until then, this plan remains blocked on
-an external GPU operator action, even though the local command surface and CI
-fixture lane are complete.
+tracking generated media or artifacts. Follow-on work should be a separate real
+GMR, simulator-rendering, live-client, or guarded publishing phase.

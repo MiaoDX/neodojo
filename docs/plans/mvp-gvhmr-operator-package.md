@@ -1,6 +1,6 @@
 # MVP GVHMR Operator Package Plan
 
-Status: IMPLEMENTED COLLOCATED OPERATOR PACKAGE AND PACKAGE ARCHIVE; REAL ARTIFACT STILL EXTERNAL
+Status: IMPLEMENTED COLLOCATED OPERATOR PACKAGE AND PACKAGE ARCHIVE; LOCAL REAL ARTIFACT VERIFIED
 
 ## Goal
 
@@ -91,7 +91,8 @@ provenance, rights, and returned-artifact validation boundaries.
   public-demo GitHub Actions workflow.
 - [x] Add focused tests for media-including and metadata-only package creation.
 - [x] Update README.md, README.zh.md, STATUS.md, the runbook, and the MVP plan
-  index without claiming a real GVHMR artifact has been produced.
+  index with operator-package boundaries; local real-artifact status is
+  documented separately after proof.
 
 ## Acceptance Evidence
 

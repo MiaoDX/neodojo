@@ -1,6 +1,6 @@
 # MVP Real GPU Colab Command Plan
 
-Status: IMPLEMENTED ONE-COMMAND ARCHIVE, REQUEST, AND COLAB HANDOFF; REAL ARTIFACT STILL EXTERNAL
+Status: IMPLEMENTED ONE-COMMAND ARCHIVE, REQUEST, AND COLAB HANDOFF; LOCAL REAL ARTIFACT VERIFIED
 
 ## Goal
 
@@ -81,5 +81,5 @@ checksum, runner, exporter, and returned-artifact validation boundaries.
 ## Stop Condition
 
 Stopped when one make command can produce the complete ignored Colab handoff
-for external GPU execution and the only remaining real-conversion blocker is
-still the external GPU-produced `neodojo.gvhmr_smplx_joints.v1` export.
+for GPU execution. A later local GPU proof produced and validated the
+non-fixture `neodojo.gvhmr_smplx_joints.v1` export through ignored `outputs/`.

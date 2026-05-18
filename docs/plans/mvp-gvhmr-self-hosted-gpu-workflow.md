@@ -1,11 +1,11 @@
 # MVP GVHMR Self-Hosted GPU Workflow Plan
 
-Status: IMPLEMENTED OPTIONAL WORKFLOW; REAL ARTIFACT STILL EXTERNAL
+Status: IMPLEMENTED OPTIONAL WORKFLOW; LOCAL REAL ARTIFACT VERIFIED; WORKFLOW REMAINS OPTIONAL
 
 ## Goal
 
-Turn the remaining external GVHMR execution step into an optional, tracked
-GitHub Actions workflow for a user-managed self-hosted GPU runner.
+Keep GVHMR execution available as an optional, tracked GitHub Actions workflow
+for a user-managed self-hosted GPU runner.
 
 This does not make the default GitHub-hosted CI lane run GVHMR. It adds a
 manual `workflow_dispatch` path that can unpack a prepared neodojo GPU input
@@ -69,7 +69,8 @@ upload.
 - [x] Add focused tests/smoke checks that the workflow is manual, self-hosted,
   and does not upload media or checkpoint/model files.
 - [x] Update README.md, README.zh.md, STATUS.md, the runbook, and the plan
-  index without claiming a real GVHMR artifact has been produced.
+  index with the workflow boundaries; local real-artifact status is documented
+  separately after proof.
 
 ## Acceptance Evidence
 
@@ -95,8 +96,9 @@ upload.
   before unpacking.
 - GitHub Actions run
   `https://github.com/MiaoDX/neodojo/actions/runs/26010670374` passed the
-  default fixture CI lane after the package-validation hardening, while the
-  real-conversion audit remained blocked on the missing external GPU export.
+  default fixture CI lane after the package-validation hardening. That
+  historical run predated the local GPU proof, so its real-conversion audit
+  still reported the missing returned export.
 - `make check` includes this plan through the MVP index.
 
 ## Non-Goals
@@ -106,12 +108,12 @@ upload.
 - Provisioning, paying for, or registering the self-hosted GPU runner.
 - Uploading source videos, trimmed clips, checkpoints, SMPL-X assets, `.pt`
   files, rendered videos, logs, or full result directories as artifacts.
-- Marking the real-conversion gate complete before the returned export is
-  validated and imported locally.
+- Treating workflow existence alone as real-conversion completion without a
+  validated non-fixture returned export.
 
 ## Stop Condition
 
-Stopped when the optional self-hosted GPU workflow is tracked, documented,
-smoke-tested as a manual GPU-only path, and the remaining real-conversion
-blocker is still the actual GPU-produced
-`neodojo.gvhmr_smplx_joints.v1` export.
+Stopped when the optional self-hosted GPU workflow is tracked, documented, and
+smoke-tested as a manual GPU-only path. A later local GPU proof produced and
+validated the non-fixture `neodojo.gvhmr_smplx_joints.v1` export through
+ignored `outputs/`; the workflow remains an optional rerun/publishing path.
