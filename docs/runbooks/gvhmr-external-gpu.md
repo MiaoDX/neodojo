@@ -123,6 +123,16 @@ The package writes `outputs/gvhmr-operator-package/manifest.json`, `README.md`,
 `archive/`, `request/`, and `colab/`. Media-containing packages remain ignored
 and must not be committed or uploaded as public CI artifacts.
 
+To validate an already-collocated package before transfer or self-hosted
+workflow dispatch:
+
+```bash
+make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
+```
+
+This checks the package, request, and notebook schemas plus the copied archive,
+request, and notebook checksum links.
+
 ## Optional Self-Hosted GPU Workflow
 
 If a user-managed GitHub Actions runner with labels `self-hosted` and `gpu`

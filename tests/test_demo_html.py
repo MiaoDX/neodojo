@@ -44,6 +44,7 @@ from neodojo.real_conversion import (
     package_gvhmr_gpu_input_archive,
     package_gvhmr_gpu_input_bundle,
     probe_gpu_execution_environment,
+    validate_gvhmr_operator_package,
     validate_gvhmr_source,
     write_gvhmr_colab_operator_notebook,
     write_gvhmr_gpu_run_request,
@@ -2062,6 +2063,7 @@ class DemoHtmlTests(unittest.TestCase):
                 gpu_run_request=request.manifest_path,
                 colab_notebook=colab.manifest_path,
             )
+            validated_operator_package = validate_gvhmr_operator_package(root / "operator-package")
             operator_package_manifest = json.loads(operator_package.manifest_path.read_text(encoding="utf-8"))
             operator_package_readme = operator_package.readme_path.read_text(encoding="utf-8")
             operator_archive_exists = (root / "operator-package" / "archive" / archive.archive_path.name).exists()
@@ -2117,6 +2119,8 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("RUN_GVHMR = False", colab_source)
         self.assertIn("Unsafe archive member path", colab_source)
         self.assertEqual(operator_package.status, "ready_for_external_gpu_operator_package")
+        self.assertEqual(validated_operator_package.status, "ready_for_external_gpu_operator_package")
+        self.assertIn(root / "operator-package" / "request" / "manifest.json", validated_operator_package.checked_paths)
         self.assertEqual(operator_package_manifest["schema"], "neodojo.gvhmr_operator_package.v1")
         self.assertTrue(operator_package_manifest["media_included"])
         self.assertFalse(operator_package_manifest["policy"]["safe_for_git"])
@@ -2184,7 +2188,15 @@ class DemoHtmlTests(unittest.TestCase):
                 gpu_run_request=request.manifest_path,
                 colab_notebook=colab.manifest_path,
             )
+            validated_operator_package = validate_gvhmr_operator_package(operator_package.manifest_path)
             operator_package_manifest = json.loads(operator_package.manifest_path.read_text(encoding="utf-8"))
+            package_colab_manifest_path = root / "operator-package" / "colab" / "manifest.json"
+            package_colab_manifest = json.loads(package_colab_manifest_path.read_text(encoding="utf-8"))
+            package_colab_manifest["notebook"] = dict(package_colab_manifest["notebook"])
+            package_colab_manifest["notebook"]["sha256"] = "0" * 64
+            package_colab_manifest_path.write_text(json.dumps(package_colab_manifest), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "Colab notebook checksum"):
+                validate_gvhmr_operator_package(root / "operator-package")
             bad_archive_manifest = dict(archive_manifest)
             bad_archive_manifest["archive"] = dict(archive_manifest["archive"])
             bad_archive_manifest["archive"]["sha256"] = "0" * 64
@@ -2231,6 +2243,7 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(colab_manifest["schema"], "neodojo.gvhmr_colab_operator_notebook.v1")
         self.assertTrue(colab_manifest["policy"]["safe_for_git"])
         self.assertEqual(operator_package.status, "metadata_only_not_ready_for_gpu")
+        self.assertEqual(validated_operator_package.status, "metadata_only_not_ready_for_gpu")
         self.assertEqual(operator_package_manifest["schema"], "neodojo.gvhmr_operator_package.v1")
         self.assertTrue(operator_package_manifest["policy"]["safe_for_git"])
 

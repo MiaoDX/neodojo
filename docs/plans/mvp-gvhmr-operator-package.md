@@ -57,6 +57,7 @@ provenance, rights, and returned-artifact validation boundaries.
 
   make real-gpu-operator-package LOCAL_VIDEO=path/to/local-source.mp4
   make gvhmr-operator-package-smoke
+  make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
   ```
 
 ## Execution Tasks
@@ -68,6 +69,8 @@ provenance, rights, and returned-artifact validation boundaries.
 - [x] Write a package manifest and package README with local return commands.
 - [x] Add CLI and Make targets for direct packaging and local-video packaging.
 - [x] Include a metadata-only package smoke in `make verify`.
+- [x] Add a reusable validator for an already-collocated package before
+  external transfer or self-hosted workflow dispatch.
 - [x] Upload the metadata-only package smoke artifact from the public-demo
   GitHub Actions workflow.
 - [x] Add focused tests for media-including and metadata-only package creation.
@@ -88,6 +91,9 @@ provenance, rights, and returned-artifact validation boundaries.
   `neodojo.gvhmr_smplx_joints.v1` and local `make real-artifact-intake` /
   `make verify-real` commands.
 - `make verify` includes the operator package smoke target.
+- `make gvhmr-operator-package-validate` validates package, request, and
+  notebook schemas plus archive/request/notebook checksum links for an existing
+  collocated package.
 - The public-demo workflow uploads `neodojo-gvhmr-operator-package-smoke`,
   verified by GitHub Actions run
   `https://github.com/MiaoDX/neodojo/actions/runs/26009913491`.

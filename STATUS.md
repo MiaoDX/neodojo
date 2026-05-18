@@ -606,6 +606,7 @@ make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request
 make gvhmr-colab-notebook-smoke
 make gvhmr-operator-package GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request GVHMR_COLAB_NOTEBOOK=outputs/gvhmr-colab-operator
 make gvhmr-operator-package-smoke
+make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
@@ -820,9 +821,13 @@ the local `make real-artifact-intake` / `make verify-real` return commands.
 archive/request.
 `neodojo real-conversion package-operator` and `make gvhmr-operator-package`
 validate matching archive, request, and notebook checksums, then copy them into
-one `neodojo.gvhmr_operator_package.v1` handoff directory. `make
-gvhmr-operator-package-smoke` covers the metadata-only package path in
-`make verify`; media-containing operator packages stay ignored.
+one `neodojo.gvhmr_operator_package.v1` handoff directory. `neodojo
+real-conversion validate-operator-package` and `make
+gvhmr-operator-package-validate` validate an already-collocated package's
+schemas, archive/request/notebook checksums, media flags, and expected return
+schema before transfer. `make gvhmr-operator-package-smoke` covers the
+metadata-only package path and package validation in `make verify`;
+media-containing operator packages stay ignored.
 `neodojo real-conversion
 inspect-gvhmr-result` writes a result
 inspection manifest for a returned `hmr4d_results.pt` when `torch` is available

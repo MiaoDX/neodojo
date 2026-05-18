@@ -96,8 +96,8 @@ jobs:
             outputs/gvhmr-colab-operator-smoke/manifest.json
             outputs/gvhmr-colab-operator-smoke/gvhmr-colab-operator.ipynb
           if-no-files-found: error
-      - name: GVHMR operator package smoke
-        run: make gvhmr-operator-package-smoke
+      - name: GVHMR operator package smoke and validation
+        run: make gvhmr-operator-package-validate-smoke
       - name: Upload GVHMR operator package smoke artifact
         uses: actions/upload-artifact@v7
         with:

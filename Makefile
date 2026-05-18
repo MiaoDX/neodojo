@@ -1,4 +1,4 @@
-.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-gpu-run-request real-gpu-colab-notebook real-gpu-operator-package real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-run-request gvhmr-run-request-smoke gvhmr-colab-notebook gvhmr-colab-notebook-smoke gvhmr-operator-package gvhmr-operator-package-smoke gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict real-demo-pages-promotion-validate smoke-public
+.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-gpu-run-request real-gpu-colab-notebook real-gpu-operator-package real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-run-request gvhmr-run-request-smoke gvhmr-colab-notebook gvhmr-colab-notebook-smoke gvhmr-operator-package gvhmr-operator-package-smoke gvhmr-operator-package-validate gvhmr-operator-package-validate-smoke gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict real-demo-pages-promotion-validate smoke-public
 
 PYTHON ?= python3
 REAL_SOURCE_ID ?= 03-006
@@ -16,6 +16,7 @@ GPU_EXECUTION_PROBE_OUT ?= outputs/gvhmr-gpu-execution-probe
 GVHMR_RUN_REQUEST_OUT ?= outputs/gvhmr-gpu-run-request
 GVHMR_COLAB_NOTEBOOK_OUT ?= outputs/gvhmr-colab-operator
 GVHMR_OPERATOR_PACKAGE_OUT ?= outputs/gvhmr-operator-package
+GVHMR_OPERATOR_PACKAGE ?= outputs/gvhmr-operator-package
 GVHMR_INSPECT_OUT ?= outputs/gvhmr-result-inspection
 REAL_DEMO_OUT ?= outputs/real-demo
 REAL_ARTIFACT_SOURCE_MATERIALIZATION ?= outputs/real-conversion-source/source-materialization.json
@@ -73,7 +74,7 @@ endif
 
 all: verify
 
-verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke gpu-execution-probe gvhmr-run-request-smoke gvhmr-colab-notebook-smoke gvhmr-operator-package-smoke real-artifact-intake-smoke real-conversion-audit
+verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke gpu-execution-probe gvhmr-run-request-smoke gvhmr-colab-notebook-smoke gvhmr-operator-package-smoke gvhmr-operator-package-validate-smoke real-artifact-intake-smoke real-conversion-audit
 
 verify-real: real-conversion-audit-strict
 
@@ -217,6 +218,13 @@ gvhmr-operator-package-smoke: gvhmr-colab-notebook-smoke
 	$(MAKE) gvhmr-operator-package GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive-smoke GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request-smoke GVHMR_COLAB_NOTEBOOK=outputs/gvhmr-colab-operator-smoke GVHMR_OPERATOR_PACKAGE_OUT=outputs/gvhmr-operator-package-smoke
 	test -f outputs/gvhmr-operator-package-smoke/manifest.json
 	test -f outputs/gvhmr-operator-package-smoke/README.md
+
+gvhmr-operator-package-validate:
+	@test -n "$(GVHMR_OPERATOR_PACKAGE)" || (echo "GVHMR_OPERATOR_PACKAGE=path/to/operator-package is required" && exit 2)
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion validate-operator-package --package "$(GVHMR_OPERATOR_PACKAGE)"
+
+gvhmr-operator-package-validate-smoke: gvhmr-operator-package-smoke
+	$(MAKE) gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package-smoke
 
 gvhmr-inspect:
 	@test -n "$(GVHMR_RESULT)" || (echo "GVHMR_RESULT=path/to/hmr4d_results.pt is required" && exit 2)

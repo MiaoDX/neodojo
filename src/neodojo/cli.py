@@ -30,6 +30,7 @@ from .real_conversion import (
     package_gvhmr_gpu_input_archive,
     package_gvhmr_gpu_input_bundle,
     probe_gpu_execution_environment,
+    validate_gvhmr_operator_package,
     validate_gvhmr_source,
     write_gvhmr_colab_operator_notebook,
     write_gvhmr_gpu_run_request,
@@ -841,6 +842,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/gvhmr-operator-package"),
         help="output directory for the collocated operator package",
     )
+    real_operator_validate = real_subparsers.add_parser(
+        "validate-operator-package",
+        help="validate a collocated GVHMR operator package before external GPU transfer",
+    )
+    real_operator_validate.add_argument(
+        "--package",
+        type=Path,
+        required=True,
+        help="GVHMR operator package directory or manifest.json",
+    )
     real_intake_smoke = real_subparsers.add_parser(
         "write-intake-smoke-input",
         help="write fixture-only inputs for smoke-testing returned-artifact intake",
@@ -1326,6 +1337,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(f"wrote {result.manifest_path}")
             print(f"wrote {result.readme_path}")
+            print(f"status {result.status}")
+            for path in result.checked_paths:
+                print(f"checked {path}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "validate-operator-package":
+            result = validate_gvhmr_operator_package(args.package)
+            print(f"validated {result.manifest_path}")
             print(f"status {result.status}")
             for path in result.checked_paths:
                 print(f"checked {path}")

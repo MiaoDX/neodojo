@@ -209,6 +209,7 @@ make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request
 make gvhmr-colab-notebook-smoke
 make gvhmr-operator-package GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request GVHMR_COLAB_NOTEBOOK=outputs/gvhmr-colab-operator
 make gvhmr-operator-package-smoke
+make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
@@ -435,10 +436,13 @@ Colab-ready operator notebook with checksum verification, guarded GVHMR
 execution, returned JSON download, and local validation commands.
 `make gvhmr-operator-package GPU_INPUT_ARCHIVE=... GVHMR_RUN_REQUEST=...
 GVHMR_COLAB_NOTEBOOK=...` collocates those generated handoff files into one
-package with a package manifest and README.
+package with a package manifest and README. `make
+gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=...` validates a
+collocated package directory before transfer.
 `make gvhmr-run-request-smoke` covers the metadata-only request path in
 `make verify`; `make gvhmr-colab-notebook-smoke` covers the generated notebook
-path; `make gvhmr-operator-package-smoke` covers the collocated package path.
+path; `make gvhmr-operator-package-smoke` covers the collocated package path
+and package validation.
 For user-managed GitHub Actions GPU hardware, the manual
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow can unpack a
 runner-local media archive or collocated operator package on a self-hosted

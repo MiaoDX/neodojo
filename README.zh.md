@@ -176,6 +176,7 @@ make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request
 make gvhmr-colab-notebook-smoke
 make gvhmr-operator-package GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request GVHMR_COLAB_NOTEBOOK=outputs/gvhmr-colab-operator
 make gvhmr-operator-package-smoke
+make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
@@ -378,9 +379,11 @@ request 生成 Colab operator notebook，包含 checksum verification、guarded 
 execution、returned JSON download 和本地 validation commands。`make
 gvhmr-operator-package GPU_INPUT_ARCHIVE=... GVHMR_RUN_REQUEST=...
 GVHMR_COLAB_NOTEBOOK=...` 会把这些生成的 handoff files 整理成一个包含 package
-manifest 和 README 的 package。`make gvhmr-run-request-smoke` 会在 `make verify` 中覆盖
-metadata-only request path；`make gvhmr-colab-notebook-smoke` 会覆盖 generated
-notebook path；`make gvhmr-operator-package-smoke` 会覆盖 collocated package path。
+manifest 和 README 的 package。`make gvhmr-operator-package-validate
+GVHMR_OPERATOR_PACKAGE=...` 会在转交前验证已有的 collocated package。`make
+gvhmr-run-request-smoke` 会在 `make verify` 中覆盖 metadata-only request path；`make
+gvhmr-colab-notebook-smoke` 会覆盖 generated notebook path；`make
+gvhmr-operator-package-smoke` 会覆盖 collocated package path 和 package validation。
 如果使用用户自己管理的 GitHub Actions GPU 硬件，手动触发的
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow 可以在带 `gpu` label 的
 self-hosted runner 上解压 runner-local media archive 或 collocated operator package，

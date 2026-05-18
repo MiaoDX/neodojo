@@ -116,6 +116,13 @@ class GvhmrOperatorPackageWriteResult:
 
 
 @dataclass(frozen=True)
+class GvhmrOperatorPackageValidationResult:
+    manifest_path: Path
+    checked_paths: list[Path]
+    status: str
+
+
+@dataclass(frozen=True)
 class GvhmrResultInspectionWriteResult:
     manifest_path: Path
     checked_paths: list[Path]
@@ -980,6 +987,13 @@ def _load_colab_operator_notebook_manifest(colab_notebook: Path) -> tuple[Path, 
     manifest_path = colab_notebook / "manifest.json" if colab_notebook.is_dir() else colab_notebook
     manifest = _load_json_object(manifest_path, "GVHMR Colab operator notebook manifest")
     require_schema(manifest, GVHMR_COLAB_OPERATOR_NOTEBOOK_SCHEMA, "GVHMR Colab operator notebook manifest")
+    return manifest_path, manifest
+
+
+def _load_operator_package_manifest(operator_package: Path) -> tuple[Path, dict[str, Any]]:
+    manifest_path = operator_package / "manifest.json" if operator_package.is_dir() else operator_package
+    manifest = _load_json_object(manifest_path, "GVHMR operator package manifest")
+    require_schema(manifest, GVHMR_OPERATOR_PACKAGE_SCHEMA, "GVHMR operator package manifest")
     return manifest_path, manifest
 
 
@@ -2240,6 +2254,70 @@ def write_gvhmr_operator_package(
         readme_path=readme_path,
         checked_paths=checked_paths,
         status=status,
+    )
+
+
+def validate_gvhmr_operator_package(operator_package: Path) -> GvhmrOperatorPackageValidationResult:
+    manifest_path, package_manifest = _load_operator_package_manifest(operator_package)
+    package_dir = manifest_path.parent
+    archive_name = str(package_manifest.get("archive", {}).get("filename") or "neodojo-gvhmr-gpu-input.tar.gz")
+    if Path(archive_name).name != archive_name:
+        raise ValueError("GVHMR operator package archive filename must be a simple filename")
+    archive_path = package_dir / "archive" / archive_name
+    request_manifest_path = package_dir / "request" / "manifest.json"
+    request_readme_path = package_dir / "request" / "README.md"
+    colab_manifest_path = package_dir / "colab" / "manifest.json"
+    colab_notebook_path = package_dir / "colab" / "gvhmr-colab-operator.ipynb"
+    package_readme_path = package_dir / "README.md"
+
+    required_files = [
+        archive_path,
+        request_manifest_path,
+        request_readme_path,
+        colab_manifest_path,
+        colab_notebook_path,
+        package_readme_path,
+    ]
+    for path in required_files:
+        if not path.exists():
+            raise ValueError(f"GVHMR operator package file is missing: {path}")
+
+    request_manifest = _load_json_object(request_manifest_path, "GVHMR operator package run request manifest")
+    colab_manifest = _load_json_object(colab_manifest_path, "GVHMR operator package Colab manifest")
+    require_schema(request_manifest, GVHMR_GPU_RUN_REQUEST_SCHEMA, "GVHMR operator package run request manifest")
+    require_schema(colab_manifest, GVHMR_COLAB_OPERATOR_NOTEBOOK_SCHEMA, "GVHMR operator package Colab manifest")
+
+    archive_sha = sha256_file(archive_path)
+    if package_manifest.get("archive", {}).get("sha256") != archive_sha:
+        raise ValueError("GVHMR operator package archive checksum does not match manifest")
+    if request_manifest.get("archive", {}).get("sha256") != archive_sha:
+        raise ValueError("GVHMR operator package run request archive checksum does not match package archive")
+    if colab_manifest.get("archive", {}).get("sha256") != archive_sha:
+        raise ValueError("GVHMR operator package Colab archive checksum does not match package archive")
+    if package_manifest.get("run_request", {}).get("sha256") != sha256_file(request_manifest_path):
+        raise ValueError("GVHMR operator package run-request checksum does not match copied request manifest")
+    if colab_manifest.get("gpu_run_request", {}).get("sha256") != sha256_file(request_manifest_path):
+        raise ValueError("GVHMR operator package Colab manifest does not match copied request manifest")
+    if package_manifest.get("colab_notebook", {}).get("sha256") != sha256_file(colab_notebook_path):
+        raise ValueError("GVHMR operator package Colab notebook checksum does not match package manifest")
+    if colab_manifest.get("notebook", {}).get("sha256") != sha256_file(colab_notebook_path):
+        raise ValueError("GVHMR operator package Colab notebook checksum does not match Colab manifest")
+
+    media_included = bool(package_manifest.get("media_included"))
+    if bool(request_manifest.get("media_included")) != media_included:
+        raise ValueError("GVHMR operator package run request media flag does not match package")
+    if bool(colab_manifest.get("media_included")) != media_included:
+        raise ValueError("GVHMR operator package Colab media flag does not match package")
+    expected_return = package_manifest.get("expected_return_artifact") or {}
+    expected_schema = expected_return.get("schema")
+    if expected_schema != GVHMR_JOINT_EXPORT_SCHEMA:
+        raise ValueError("GVHMR operator package expected return schema is not neodojo.gvhmr_smplx_joints.v1")
+
+    checked_paths = [manifest_path, *required_files]
+    return GvhmrOperatorPackageValidationResult(
+        manifest_path=manifest_path,
+        checked_paths=checked_paths,
+        status=str(package_manifest.get("status", "unknown")),
     )
 
 
