@@ -442,9 +442,8 @@ execution, returned JSON download, and local validation commands.
 `make gvhmr-operator-package GPU_INPUT_ARCHIVE=... GVHMR_RUN_REQUEST=...
 GVHMR_COLAB_NOTEBOOK=...` collocates those generated handoff files into one
 package with a package manifest and README, then validates the copied package
-before returning. `make
-gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=...` validates a
-collocated package directory before transfer.
+before returning. The validation target is
+`make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=...`.
 `make gvhmr-run-request-smoke` covers the metadata-only request path in
 `make verify`; `make gvhmr-colab-notebook-smoke` covers the generated notebook
 path; `make gvhmr-operator-package-smoke` covers the collocated package path

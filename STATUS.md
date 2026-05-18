@@ -426,6 +426,18 @@ motion artifact, or hosted/live-client Viser capture.
   `ready_for_external_gpu_operator_package`. The strict local completion gate
   still reports `external_gpu_artifact_missing`, `complete: false`, and
   `blocked: true`.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26012215777` verified the
+  opt-in GitHub-route real-conversion audit artifact on `main`: lint, plan
+  checks, tests, wheel build, real/GPU smoke artifacts, default audit,
+  GitHub-route audit, browser capture, public-demo artifact upload,
+  capture-bundle upload, Pages artifact upload, and Pages deploy passed. The
+  downloaded `neodojo-real-conversion-audit-github` artifact still reports
+  `external_gpu_artifact_missing`, `complete: false`, no secret names, and no
+  secret values. The nested GitHub probe records safe 403 API errors when the
+  CI integration token cannot read runner/secret-count endpoints instead of
+  inventing counts. The downloaded `neodojo-public-demo` artifact remains
+  fixture-only with SMPL-X scoring.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.

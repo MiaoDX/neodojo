@@ -511,6 +511,14 @@ fixture CI lane. The downloaded public-demo artifact passes
 `neodojo demo smoke` and remains fixture-only with SMPL-X scoring and G1
 visual-only labels, while the real-conversion audit still reports
 `external_gpu_artifact_missing`, `complete: false`, and `blocked: true`.
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26012215777` verified the
+separate opt-in GitHub-route real-conversion audit artifact without changing
+the default fixture CI lane. The artifact records the same
+`external_gpu_artifact_missing` blocker and no secret names or values. In CI,
+the default integration token could not read runner/secret-count endpoints, so
+the nested probe safely recorded GitHub API 403 errors rather than recording
+unknown counts as facts.
 
 An optional manual GitHub Actions path now exists at
 `.github/workflows/gvhmr-self-hosted-gpu.yml`. It requires a user-managed

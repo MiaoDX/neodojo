@@ -383,8 +383,8 @@ request 生成 Colab operator notebook，包含 checksum verification、guarded 
 execution、returned JSON download 和本地 validation commands。`make
 gvhmr-operator-package GPU_INPUT_ARCHIVE=... GVHMR_RUN_REQUEST=...
 GVHMR_COLAB_NOTEBOOK=...` 会把这些生成的 handoff files 整理成一个包含 package
-manifest 和 README 的 package，然后验证复制后的 package。`make gvhmr-operator-package-validate
-GVHMR_OPERATOR_PACKAGE=...` 会在转交前验证已有的 collocated package。`make
+manifest 和 README 的 package，然后验证复制后的 package。验证 target 是
+`make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=...`。`make
 gvhmr-run-request-smoke` 会在 `make verify` 中覆盖 metadata-only request path；`make
 gvhmr-colab-notebook-smoke` 会覆盖 generated notebook path；`make
 gvhmr-operator-package-smoke` 会覆盖 collocated package path 和 package validation。
