@@ -182,6 +182,7 @@ make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
 make real-conversion-audit
+make real-conversion-audit REAL_AUDIT_GITHUB_REPO=MiaoDX/neodojo
 make real-demo-pages-promotion-validate PROMOTION_DOWNLOAD_ROOT=outputs/promoted-real-demo-download PROMOTION_SOURCE_RUN_ID=123456789
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
@@ -427,7 +428,9 @@ GVHMR JSON 输入，再运行同一个 wrapper，让 returned-artifact intake pa
 `real_gvhmr_artifact_imported: false` 表示这是 fixture smoke。
 `make real-conversion-audit` 会写出
 `outputs/real-conversion-audit/manifest.json`，判断 real gate 是否已完成，或是否仍
-blocked on external GPU artifact。它在 blocker classification 状态下也会成功退出；
+blocked on external GPU artifact。传入 `REAL_AUDIT_GITHUB_REPO=OWNER/REPO`，或
+在 CLI 使用 `--github-repo OWNER/REPO`，可把 opt-in GitHub runner /
+secret-count probe 一起写入 audit。它在 blocker classification 状态下也会成功退出；
 需要脚本在没有真实 non-fixture demo 时失败时，可使用
 `make real-conversion-audit-strict` 或 `make verify-real`。底层 CLI 形式是
 `PYTHONPATH=src python -m neodojo real-conversion audit-completion --require-complete`。

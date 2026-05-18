@@ -549,7 +549,10 @@ motion artifact, or hosted/live-client Viser capture.
   that classifies the real-conversion gate as complete or blocked. In the
   current local state it reports `external_gpu_artifact_missing`, `complete:
   false`, and the next action to run GVHMR externally and return a
-  `neodojo.gvhmr_smplx_joints.v1` export.
+  `neodojo.gvhmr_smplx_joints.v1` export. With
+  `REAL_AUDIT_GITHUB_REPO=OWNER/REPO`, it includes the opt-in GitHub
+  self-hosted runner and repository secret-count probe in the nested GPU
+  execution manifest without recording secret values or secret names.
 - `make real-conversion-audit-strict` and `make verify-real` run the same
   audit with `--require-complete`, so they intentionally fail until a real
   non-fixture GVHMR demo has been imported and regenerated.

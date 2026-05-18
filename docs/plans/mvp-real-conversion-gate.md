@@ -472,7 +472,9 @@ The broader real-conversion completion audit is now executable with
 `outputs/real-conversion-audit/manifest.json` with schema
 `neodojo.real_conversion_audit.v1`, the GPU probe status, source/export/demo
 checks, `complete: false`, and the next action while the real artifact is
-missing. This target exits successfully for blocker classification. Use
+missing. Use `make real-conversion-audit REAL_AUDIT_GITHUB_REPO=OWNER/REPO`
+when the audit should include the opt-in GitHub runner/secret-count probe. This
+target exits successfully for blocker classification. Use
 `make real-conversion-audit-strict`, `make verify-real`, or
 `neodojo real-conversion audit-completion --require-complete` when automation
 should fail unless a real non-fixture demo has been generated.

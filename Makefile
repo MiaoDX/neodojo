@@ -29,6 +29,14 @@ REAL_ARTIFACT_OUT ?= outputs/real-demo
 REAL_ARTIFACT_SMOKE_INPUT_OUT ?= outputs/real-artifact-intake-smoke-input
 REAL_ARTIFACT_SMOKE_OUT ?= outputs/real-artifact-intake-smoke
 REAL_CONVERSION_AUDIT_OUT ?= outputs/real-conversion-audit
+REAL_CONVERSION_AUDIT_ARGS = \
+	--source-materialization "$(REAL_ARTIFACT_SOURCE_MATERIALIZATION)" \
+	--gvhmr-json "$(REAL_ARTIFACT_GVHMR_JSON)" \
+	--real-demo "$(REAL_ARTIFACT_OUT)" \
+	--out "$(REAL_CONVERSION_AUDIT_OUT)"
+ifdef REAL_AUDIT_GITHUB_REPO
+REAL_CONVERSION_AUDIT_ARGS += --github-repo "$(REAL_AUDIT_GITHUB_REPO)"
+endif
 PROMOTION_DOWNLOAD_ROOT ?= outputs/promoted-real-demo-download
 PROMOTION_SOURCE_RUN_ID ?=
 PROMOTION_ARTIFACT_NAME ?= neodojo-self-hosted-real-demo
@@ -254,11 +262,11 @@ real-artifact-intake-smoke:
 	test -f "$(REAL_ARTIFACT_SMOKE_OUT)/capture/manifest.json"
 
 real-conversion-audit:
-	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion audit-completion --source-materialization "$(REAL_ARTIFACT_SOURCE_MATERIALIZATION)" --gvhmr-json "$(REAL_ARTIFACT_GVHMR_JSON)" --real-demo "$(REAL_ARTIFACT_OUT)" --out "$(REAL_CONVERSION_AUDIT_OUT)"
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion audit-completion $(REAL_CONVERSION_AUDIT_ARGS)
 	test -f "$(REAL_CONVERSION_AUDIT_OUT)/manifest.json"
 
 real-conversion-audit-strict:
-	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion audit-completion --source-materialization "$(REAL_ARTIFACT_SOURCE_MATERIALIZATION)" --gvhmr-json "$(REAL_ARTIFACT_GVHMR_JSON)" --real-demo "$(REAL_ARTIFACT_OUT)" --out "$(REAL_CONVERSION_AUDIT_OUT)" --require-complete
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion audit-completion $(REAL_CONVERSION_AUDIT_ARGS) --require-complete
 	test -f "$(REAL_CONVERSION_AUDIT_OUT)/manifest.json"
 
 real-demo-pages-promotion-validate:

@@ -900,6 +900,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="exit with an error unless the audit proves a real non-fixture demo exists",
     )
     real_audit.add_argument(
+        "--github-repo",
+        help="optional OWNER/REPO to include self-hosted GitHub GPU runner evidence via gh",
+    )
+    real_audit.add_argument(
         "--out",
         type=Path,
         default=Path("outputs/real-conversion-audit"),
@@ -1366,6 +1370,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 source_materialization=args.source_materialization,
                 gvhmr_json=args.gvhmr_json,
                 real_demo=args.real_demo,
+                github_repo=args.github_repo,
             )
             print(f"wrote {result.manifest_path}")
             print(f"status {result.status}")

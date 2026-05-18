@@ -2863,6 +2863,8 @@ def audit_real_conversion_completion(
     real_demo: Path = Path("outputs/real-demo"),
     env: Mapping[str, str] | None = None,
     command_lookup: Callable[[str], str | None] | None = None,
+    command_runner: Callable[[Sequence[str]], subprocess.CompletedProcess[str]] | None = None,
+    github_repo: str | None = None,
 ) -> RealConversionCompletionAuditWriteResult:
     """Write an executable audit of the remaining real GVHMR conversion gate."""
 
@@ -2876,6 +2878,8 @@ def audit_real_conversion_completion(
         out_dir / "gpu-execution-probe",
         env=env,
         command_lookup=command_lookup,
+        command_runner=command_runner,
+        github_repo=github_repo,
     )
     checked_paths.append(probe.manifest_path)
     gpu_route_visible = probe.status != "external_gpu_artifact_missing"
@@ -2888,7 +2892,10 @@ def audit_real_conversion_completion(
         message=(
             "A possible GPU execution route is visible."
             if gpu_route_visible
-            else "No local CUDA runtime, Docker GPU runtime, or configured provider was detected."
+            else (
+                "No local CUDA runtime, Docker GPU runtime, configured provider, "
+                "or optional GitHub self-hosted GPU runner was detected."
+            )
         ),
     )
 

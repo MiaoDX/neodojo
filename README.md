@@ -215,6 +215,7 @@ make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
 make real-conversion-audit
+make real-conversion-audit REAL_AUDIT_GITHUB_REPO=MiaoDX/neodojo
 make real-demo-pages-promotion-validate PROMOTION_DOWNLOAD_ROOT=outputs/promoted-real-demo-download PROMOTION_SOURCE_RUN_ID=123456789
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
@@ -492,7 +493,9 @@ resulting real-demo manifest sets `gvhmr_artifact_imported: true` for the
 contract import and `real_gvhmr_artifact_imported: false` for fixture smoke.
 `make real-conversion-audit` writes `outputs/real-conversion-audit/manifest.json`,
 classifying whether the real gate is complete or still blocked on an external
-GPU artifact. It exits successfully for blocker classification; use
+GPU artifact. Pass `REAL_AUDIT_GITHUB_REPO=OWNER/REPO` or CLI
+`--github-repo OWNER/REPO` to include the opt-in GitHub runner/secret-count
+probe in that audit. It exits successfully for blocker classification; use
 `make real-conversion-audit-strict` or `make verify-real` when a script should
 fail unless a real non-fixture demo exists. The underlying CLI form is
 `PYTHONPATH=src python -m neodojo real-conversion audit-completion --require-complete`.

@@ -2765,6 +2765,53 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["gpu_execution_probe"]["status"], "external_gpu_artifact_missing")
         self.assertFalse(manifest["checks"][0]["passed"])
 
+    def test_real_conversion_audit_can_include_github_gpu_probe(self) -> None:
+        def command_runner(args: Sequence[str]) -> subprocess.CompletedProcess[str]:
+            endpoint = args[-1]
+            if endpoint.endswith("/actions/runners"):
+                stdout = json.dumps(
+                    {
+                        "total_count": 1,
+                        "runners": [
+                            {
+                                "name": "private-runner-name",
+                                "status": "online",
+                                "labels": [{"name": "self-hosted"}, {"name": "gpu"}],
+                            }
+                        ],
+                    }
+                )
+            elif endpoint.endswith("/actions/secrets"):
+                stdout = json.dumps({"total_count": 0, "secrets": []})
+            else:
+                stdout = "{}"
+            return subprocess.CompletedProcess(args=list(args), returncode=0, stdout=stdout, stderr="")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            result = audit_real_conversion_completion(
+                root / "audit",
+                source_materialization=root / "missing-source-materialization.json",
+                gvhmr_json=root / "missing-gvhmr-smplx-joints.json",
+                real_demo=root / "real-demo",
+                env={},
+                command_lookup=lambda command: "/usr/local/bin/gh" if command == "gh" else None,
+                command_runner=command_runner,
+                github_repo="MiaoDX/neodojo",
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            probe = json.loads((root / "audit" / "gpu-execution-probe" / "manifest.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "real_artifact_missing")
+        self.assertFalse(result.complete)
+        self.assertTrue(manifest["gpu_execution_probe"]["route_visible"])
+        self.assertEqual(manifest["gpu_execution_probe"]["status"], "github_actions_gpu_runner_available")
+        self.assertTrue(probe["github_actions"]["self_hosted_gpu_runner_available"])
+        self.assertFalse(probe["github_actions"]["secret_values_recorded"])
+        self.assertFalse(probe["github_actions"]["secret_names_recorded"])
+        self.assertNotIn("private-runner-name", json.dumps(probe["github_actions"]))
+
     def test_real_conversion_audit_cli_require_complete_fails_when_incomplete(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
