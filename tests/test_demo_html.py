@@ -45,6 +45,7 @@ from neodojo.real_conversion import (
     package_gvhmr_gpu_input_bundle,
     probe_gpu_execution_environment,
     validate_gvhmr_source,
+    write_gvhmr_gpu_run_request,
     write_real_artifact_intake_smoke_input,
     write_real_conversion_prep,
 )
@@ -2040,7 +2041,13 @@ class DemoHtmlTests(unittest.TestCase):
                 root / "gpu-input-archive",
                 gpu_input=bundle.manifest_path,
             )
+            request = write_gvhmr_gpu_run_request(
+                root / "gpu-run-request",
+                gpu_input_archive=archive.manifest_path,
+            )
             archive_manifest = json.loads(archive.manifest_path.read_text(encoding="utf-8"))
+            request_manifest = json.loads(request.manifest_path.read_text(encoding="utf-8"))
+            request_readme = request.readme_path.read_text(encoding="utf-8")
             with tarfile.open(archive.archive_path, "r:gz") as tar:
                 archive_members = sorted(tar.getnames())
 
@@ -2067,6 +2074,16 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertFalse(archive_manifest["policy"]["safe_for_git"])
         self.assertIn("source/trimmed-clip.mp4", archive_members)
         self.assertIn("run_gvhmr_neodojo.sh", archive_members)
+        self.assertEqual(request.status, "ready_for_external_gpu")
+        self.assertEqual(request_manifest["schema"], "neodojo.gvhmr_gpu_run_request.v1")
+        self.assertTrue(request_manifest["media_included"])
+        self.assertFalse(request_manifest["archive"]["safe_for_git"])
+        self.assertEqual(request_manifest["expected_return_artifact"]["schema"], "neodojo.gvhmr_smplx_joints.v1")
+        self.assertIn("make real-artifact-intake", request_manifest["commands"]["local_real_artifact_intake"])
+        self.assertIn("make verify-real", request_manifest["commands"]["local_strict_verify"])
+        self.assertIn("GVHMR GPU Run Request", request_readme)
+        self.assertIn("SMPLX_MODEL_DIR", request_readme)
+        self.assertIn(archive.archive_path, request.checked_paths)
 
     def test_real_conversion_gpu_input_bundle_metadata_only_omits_media(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2104,7 +2121,22 @@ class DemoHtmlTests(unittest.TestCase):
                 root / "gpu-input-archive",
                 gpu_input=bundle.manifest_path,
             )
+            request = write_gvhmr_gpu_run_request(
+                root / "gpu-run-request",
+                gpu_input_archive=archive.manifest_path,
+            )
             archive_manifest = json.loads(archive.manifest_path.read_text(encoding="utf-8"))
+            request_manifest = json.loads(request.manifest_path.read_text(encoding="utf-8"))
+            bad_archive_manifest = dict(archive_manifest)
+            bad_archive_manifest["archive"] = dict(archive_manifest["archive"])
+            bad_archive_manifest["archive"]["sha256"] = "0" * 64
+            bad_archive_manifest_path = root / "bad-archive-manifest.json"
+            bad_archive_manifest_path.write_text(json.dumps(bad_archive_manifest), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "checksum"):
+                write_gvhmr_gpu_run_request(
+                    root / "bad-gpu-run-request",
+                    gpu_input_archive=bad_archive_manifest_path,
+                )
             with tarfile.open(archive.archive_path, "r:gz") as tar:
                 archive_members = sorted(tar.getnames())
 
@@ -2121,6 +2153,10 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("RUN_ON_GPU.md", archive_members)
         self.assertIn("run_gvhmr_neodojo.sh", archive_members)
         self.assertNotIn("source/trimmed-clip.mp4", archive_members)
+        self.assertEqual(request.status, "metadata_only_not_ready_for_gpu")
+        self.assertEqual(request_manifest["schema"], "neodojo.gvhmr_gpu_run_request.v1")
+        self.assertFalse(request_manifest["media_included"])
+        self.assertTrue(request_manifest["archive"]["safe_for_git"])
 
     def test_gpu_input_archive_rejects_missing_runner(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

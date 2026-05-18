@@ -18,9 +18,11 @@ capture bundle, and metadata-only real-handoff smoke artifact,
 `make real-handoff`, `make gpu-handoff`, `make gpu-input-bundle`,
 `make gpu-input-bundle-smoke`, `make gpu-input-archive`, `make
 real-gpu-archive`, `make gpu-input-archive-smoke`, and
-`make gpu-execution-probe` for external GVHMR run metadata, transfer
+`make gpu-execution-probe`, `make gvhmr-run-request`, and
+`make gvhmr-run-request-smoke` for external GVHMR run metadata, transfer
 bundles/archives, CI-safe GPU runner packaging, reproducible GPU/provider
-readiness classification, metadata-only CI GPU execution probe artifacts, and a
+readiness classification, generated GPU-operator run requests, metadata-only CI
+GPU execution probe artifacts, and a
 tracked external-GPU operator runbook, `make gvhmr-inspect` for returned GVHMR
 result inspection, `make demo-real` / `make real-artifact-intake` for a
 validated external GVHMR JSON once a GPU artifact exists, and
@@ -169,6 +171,11 @@ motion artifact, or hosted/live-client Viser capture.
   `outputs/gvhmr-gpu-input-archive-smoke/neodojo-gvhmr-gpu-input.tar.gz` plus
   `neodojo.gvhmr_gpu_input_archive.v1` manifest and lists the archive members.
   It is included in `make verify` and does not copy media or run GVHMR.
+- `make gvhmr-run-request` writes a concise
+  `neodojo.gvhmr_gpu_run_request.v1` operator request manifest plus README from
+  an existing GPU input archive. `make gvhmr-run-request-smoke` covers the
+  metadata-only request path in `make verify`; media-including requests remain
+  ignored and must not be committed or published.
 - `make gvhmr-inspect GVHMR_RESULT=...` writes
   `outputs/gvhmr-result-inspection/manifest.json`, a
   `neodojo.gvhmr_result_inspection.v1` manifest that reports result keys,
@@ -474,6 +481,8 @@ make gpu-input-bundle-smoke
 make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
 make gpu-input-archive-smoke
 make gpu-execution-probe
+make gvhmr-run-request GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive
+make gvhmr-run-request-smoke
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
@@ -508,6 +517,7 @@ PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff --source-ma
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-input --gpu-handoff outputs/gvhmr-gpu-handoff --include-media --out outputs/gvhmr-gpu-input
 PYTHONPATH=src python -m neodojo real-conversion archive-gpu-input --gpu-input outputs/gvhmr-gpu-input --out outputs/gvhmr-gpu-input-archive
 PYTHONPATH=src python -m neodojo real-conversion probe-gpu-execution --out outputs/gvhmr-gpu-execution-probe
+PYTHONPATH=src python -m neodojo real-conversion write-gpu-run-request --gpu-input-archive outputs/gvhmr-gpu-input-archive --out outputs/gvhmr-gpu-run-request
 PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result --source outputs/real-conversion-gate/hmr4d_results.pt --out outputs/gvhmr-result-inspection
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
 PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
@@ -517,8 +527,8 @@ make demo-html
 `make verify` runs lint, MVP plan quality checks, tests, wheel build, the
 public-demo plus capture-bundle smoke lane, the dry-run real-handoff smoke
 lane, metadata-only GPU input bundle/archive smoke lanes, GPU execution probe,
-fixture-only real-artifact intake smoke lane, and real-conversion completion
-audit.
+metadata-only GPU run-request smoke, fixture-only real-artifact intake smoke
+lane, and real-conversion completion audit.
 `make lint` runs a minimal syntax/import bytecode compile check over `src/` and
 `tests/`. `make check` validates MVP plan links and minimum plan scaffolding.
 `make test` runs the focused Python unit tests for the fixture demo generator
@@ -660,6 +670,12 @@ published.
 `neodojo real-conversion archive-gpu-input` and `make gpu-input-archive
 GPU_INPUT=...` write a single ignored `.tar.gz` transfer archive plus manifest
 from that bundle.
+`neodojo real-conversion write-gpu-run-request` and `make gvhmr-run-request
+GPU_INPUT_ARCHIVE=...` turn that archive manifest into a concise
+`neodojo.gvhmr_gpu_run_request.v1` operator request plus README with archive
+hash, required GPU assets, expected return artifact, GPU command, and local
+return checks. `make gvhmr-run-request-smoke` covers the metadata-only path in
+`make verify`; media-containing requests stay ignored with their source archive.
 `neodojo real-conversion
 inspect-gvhmr-result` writes a result
 inspection manifest for a returned `hmr4d_results.pt` when `torch` is available

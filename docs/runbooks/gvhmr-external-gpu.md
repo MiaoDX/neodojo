@@ -68,6 +68,20 @@ make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
 The resulting media-containing archive must remain under ignored outputs and
 must not be committed or uploaded as a public CI artifact.
 
+Before sending the archive to a GPU operator, generate the concise request
+artifact:
+
+```bash
+make gvhmr-run-request GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive
+python -m json.tool outputs/gvhmr-gpu-run-request/manifest.json
+```
+
+The generated `outputs/gvhmr-gpu-run-request/README.md` summarizes the archive
+hash, required GPU assets, expected return artifact, GPU command, and local
+`make real-artifact-intake` / `make verify-real` checks. It is a handoff aid;
+the media-containing archive and returned GVHMR artifacts still stay under
+ignored outputs.
+
 ## Optional Self-Hosted GPU Workflow
 
 If a user-managed GitHub Actions runner with labels `self-hosted` and `gpu`

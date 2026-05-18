@@ -31,6 +31,7 @@ from .real_conversion import (
     package_gvhmr_gpu_input_bundle,
     probe_gpu_execution_environment,
     validate_gvhmr_source,
+    write_gvhmr_gpu_run_request,
     write_real_artifact_intake_smoke_input,
     write_real_conversion_prep,
 )
@@ -778,6 +779,22 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/gvhmr-gpu-execution-probe"),
         help="output directory for the GPU execution probe manifest",
     )
+    real_gpu_request = real_subparsers.add_parser(
+        "write-gpu-run-request",
+        help="write a concise external-GPU operator request from a GPU input archive manifest",
+    )
+    real_gpu_request.add_argument(
+        "--gpu-input-archive",
+        type=Path,
+        required=True,
+        help="GVHMR GPU input archive manifest path or directory",
+    )
+    real_gpu_request.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/gvhmr-gpu-run-request"),
+        help="output directory for the GPU run request manifest and README",
+    )
     real_intake_smoke = real_subparsers.add_parser(
         "write-intake-smoke-input",
         help="write fixture-only inputs for smoke-testing returned-artifact intake",
@@ -1228,6 +1245,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = probe_gpu_execution_environment(args.out)
             print(f"wrote {result.manifest_path}")
             print(f"status {result.status}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "write-gpu-run-request":
+            result = write_gvhmr_gpu_run_request(
+                args.out,
+                gpu_input_archive=args.gpu_input_archive,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"wrote {result.readme_path}")
+            print(f"status {result.status}")
+            for path in result.checked_paths:
+                print(f"checked {path}")
             return 0
 
         if args.command == "real-conversion" and args.real_command == "write-intake-smoke-input":

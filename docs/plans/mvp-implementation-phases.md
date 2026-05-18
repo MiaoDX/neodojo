@@ -30,7 +30,7 @@ real-conversion completion audit artifact, plus an opt-in strict
 `make verify-real` completion gate and an optional manual self-hosted GPU
 workflow for external GVHMR execution plus returned-artifact intake, and an
 optional guarded manual workflow for promoting a validated real-demo artifact to
-GitHub Pages. It
+GitHub Pages, plus a generated external GPU run-request artifact. It
 does not yet have a checked-in local GVHMR/GMR execution environment, completed
 simulator runtime pipeline, built-in official SMPL-X body-model renderer,
 hosted/live-client Viser capture, or broad static-analysis/release gates beyond
@@ -100,6 +100,7 @@ of truth for the next waves.
 | [mvp-gvhmr-gpu-transfer-archive.md](mvp-gvhmr-gpu-transfer-archive.md) | implemented CI-safe transfer archive; real artifact still external | Metadata-only and media-including GPU input bundle archives for transfer to the external GPU machine. |
 | [mvp-real-gpu-archive-command.md](mvp-real-gpu-archive-command.md) | implemented one-command media archive prep; real artifact still external | Single local make target that prepares the ignored media-containing GPU transfer archive from a local source video. |
 | [mvp-gvhmr-external-gpu-runbook.md](mvp-gvhmr-external-gpu-runbook.md) | implemented tracked runbook; real artifact still external | Durable operator checklist for unpacking the archive, running GVHMR on a CUDA machine, and validating the returned export locally. |
+| [mvp-gvhmr-external-run-request.md](mvp-gvhmr-external-run-request.md) | implemented generated run request; real artifact still external | Concise generated operator request manifest/README from an existing GPU input archive, with archive hash, required GPU assets, return commands, and smoke coverage. |
 | [mvp-gvhmr-self-hosted-gpu-workflow.md](mvp-gvhmr-self-hosted-gpu-workflow.md) | implemented optional workflow; real artifact still external | Manual GitHub Actions workflow for user-managed self-hosted GPU runners that can run the packaged GVHMR wrapper from a prepared archive. |
 | [mvp-gvhmr-self-hosted-real-demo-intake.md](mvp-gvhmr-self-hosted-real-demo-intake.md) | implemented optional workflow intake; real artifact still external | Same manual self-hosted workflow validates/imports the returned export, runs the strict audit, and can upload generated real-demo evidence. |
 | [mvp-real-demo-pages-promotion.md](mvp-real-demo-pages-promotion.md) | implemented guarded manual promotion; real artifact still external | Manual GitHub Pages replacement workflow that downloads a validated self-hosted real-demo artifact, revalidates real GVHMR and strict audit evidence, smoke-checks the staged public demo, and deploys only when explicitly confirmed. |
@@ -278,6 +279,8 @@ docs:
   - path: docs/plans/mvp-real-gpu-archive-command.md
     type: SPEC
   - path: docs/plans/mvp-gvhmr-external-gpu-runbook.md
+    type: SPEC
+  - path: docs/plans/mvp-gvhmr-external-run-request.md
     type: SPEC
   - path: docs/plans/mvp-gvhmr-self-hosted-gpu-workflow.md
     type: SPEC

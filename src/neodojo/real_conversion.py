@@ -33,6 +33,7 @@ GVHMR_SOURCE_VALIDATION_SCHEMA = "neodojo.gvhmr_source_validation.v1"
 GVHMR_GPU_HANDOFF_SCHEMA = "neodojo.gvhmr_gpu_handoff.v1"
 GVHMR_GPU_INPUT_BUNDLE_SCHEMA = "neodojo.gvhmr_gpu_input_bundle.v1"
 GVHMR_GPU_INPUT_ARCHIVE_SCHEMA = "neodojo.gvhmr_gpu_input_archive.v1"
+GVHMR_GPU_RUN_REQUEST_SCHEMA = "neodojo.gvhmr_gpu_run_request.v1"
 GVHMR_RESULT_INSPECTION_SCHEMA = "neodojo.gvhmr_result_inspection.v1"
 GVHMR_GPU_EXECUTION_PROBE_SCHEMA = "neodojo.gvhmr_gpu_execution_probe.v1"
 REAL_CONVERSION_AUDIT_SCHEMA = "neodojo.real_conversion_audit.v1"
@@ -84,6 +85,14 @@ class GvhmrGpuInputBundleWriteResult:
 class GvhmrGpuInputArchiveWriteResult:
     manifest_path: Path
     archive_path: Path
+    checked_paths: list[Path]
+    status: str
+
+
+@dataclass(frozen=True)
+class GvhmrGpuRunRequestWriteResult:
+    manifest_path: Path
+    readme_path: Path
     checked_paths: list[Path]
     status: str
 
@@ -935,6 +944,13 @@ def _load_gpu_input_manifest(gpu_input: Path) -> tuple[Path, dict[str, Any]]:
     return manifest_path, manifest
 
 
+def _load_gpu_input_archive_manifest(gpu_input_archive: Path) -> tuple[Path, dict[str, Any]]:
+    manifest_path = gpu_input_archive / "manifest.json" if gpu_input_archive.is_dir() else gpu_input_archive
+    manifest = _load_json_object(manifest_path, "GVHMR GPU input archive manifest")
+    require_schema(manifest, GVHMR_GPU_INPUT_ARCHIVE_SCHEMA, "GVHMR GPU input archive manifest")
+    return manifest_path, manifest
+
+
 def _copy_handoff_file(
     *,
     handoff_dir: Path,
@@ -1569,6 +1585,191 @@ def package_gvhmr_gpu_input_archive(
     return GvhmrGpuInputArchiveWriteResult(
         manifest_path=manifest_path,
         archive_path=archive_path,
+        checked_paths=checked_paths,
+        status=status,
+    )
+
+
+def _archive_path_from_manifest(manifest_path: Path, manifest: dict[str, Any]) -> Path:
+    archive = manifest.get("archive")
+    if not isinstance(archive, dict):
+        raise ValueError("GVHMR GPU input archive manifest is missing archive metadata")
+    raw_path = archive.get("path")
+    if isinstance(raw_path, str) and raw_path:
+        candidate = Path(raw_path)
+        if candidate.exists():
+            return candidate
+    filename = archive.get("filename")
+    if isinstance(filename, str) and filename:
+        candidate = manifest_path.parent / filename
+        if candidate.exists():
+            return candidate
+    raise ValueError("GVHMR GPU input archive file does not exist")
+
+
+def _member_source(manifest: dict[str, Any], member_name: str) -> str | None:
+    members = manifest.get("members")
+    if not isinstance(members, list):
+        return None
+    for member in members:
+        if not isinstance(member, dict):
+            continue
+        if member.get("path") == member_name and isinstance(member.get("source"), str):
+            return str(member["source"])
+    return None
+
+
+def _optional_existing_path(path: Path) -> Path | None:
+    return path if path.exists() else None
+
+
+def _write_gpu_run_request_readme(path: Path, manifest: dict[str, Any]) -> None:
+    archive = manifest["archive"]
+    source = manifest.get("source") or {}
+    trim = manifest.get("trim") or {}
+    commands = manifest["commands"]
+    required_assets = manifest["required_gpu_assets"]
+    lines = [
+        "# GVHMR GPU Run Request",
+        "",
+        "This generated request is the handoff for producing the real neodojo GVHMR artifact.",
+        "It does not include SMPL-X assets, checkpoints, raw GVHMR results, or returned motion artifacts.",
+        "",
+        "## Archive",
+        "",
+        f"- Path: `{archive['path']}`",
+        f"- SHA-256: `{archive['sha256']}`",
+        f"- Media included: `{str(manifest['media_included']).lower()}`",
+        f"- Status: `{manifest['status']}`",
+        "",
+        "## Source",
+        "",
+        f"- Source ID: `{source.get('source_id')}`",
+        f"- Title: `{source.get('title_english')}`",
+        f"- Trim: `{trim.get('start_seconds')}` to `{trim.get('end_seconds')}` seconds",
+        "",
+        "## Required GPU Assets",
+        "",
+        *[f"- {item}" for item in required_assets],
+        "",
+        "## Manual GPU Steps",
+        "",
+        _markdown_command(commands["unpack_archive"]),
+        _markdown_command(commands["run_gvhmr_wrapper"]),
+        "",
+        "Return `gvhmr-smplx-joints.json` to the local neodojo workspace, then run:",
+        "",
+        _markdown_command(commands["local_real_artifact_intake"]),
+        _markdown_command(commands["local_strict_verify"]),
+        "",
+        "## Optional GitHub Workflow",
+        "",
+        "If a self-hosted GitHub Actions runner labeled `self-hosted` and `gpu` is registered,",
+        "use `.github/workflows/gvhmr-self-hosted-gpu.yml` with this archive path.",
+        "",
+    ]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_gvhmr_gpu_run_request(
+    out_dir: Path,
+    *,
+    gpu_input_archive: Path,
+    runbook: Path = Path("docs/runbooks/gvhmr-external-gpu.md"),
+    self_hosted_workflow: Path = Path(".github/workflows/gvhmr-self-hosted-gpu.yml"),
+) -> GvhmrGpuRunRequestWriteResult:
+    validate_output_dir(out_dir)
+    archive_manifest_path, archive_manifest = _load_gpu_input_archive_manifest(gpu_input_archive)
+    archive_path = _archive_path_from_manifest(archive_manifest_path, archive_manifest)
+    expected_sha = archive_manifest.get("archive", {}).get("sha256")
+    actual_sha = sha256_file(archive_path)
+    if expected_sha != actual_sha:
+        raise ValueError("GVHMR GPU input archive checksum does not match its manifest")
+
+    media_included = bool(archive_manifest.get("media_included"))
+    status = "ready_for_external_gpu" if media_included else "metadata_only_not_ready_for_gpu"
+    source_materialization = _member_source(archive_manifest, "source-materialization.json")
+    local_source_materialization = source_materialization or "outputs/real-conversion-source/source-materialization.json"
+    local_return_json = "path/to/gvhmr-smplx-joints.json"
+    archive_name = archive_manifest.get("archive", {}).get("filename", archive_path.name)
+    request_manifest_path = out_dir / "manifest.json"
+    request_readme_path = out_dir / "README.md"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    manifest = {
+        "schema": GVHMR_GPU_RUN_REQUEST_SCHEMA,
+        "status": status,
+        "blocked_locally": True,
+        "media_included": media_included,
+        "source": archive_manifest.get("source"),
+        "trim": archive_manifest.get("trim"),
+        "archive_manifest": _as_posix(archive_manifest_path),
+        "archive": {
+            "path": _as_posix(archive_path),
+            "filename": archive_name,
+            "sha256": actual_sha,
+            "size_bytes": archive_path.stat().st_size,
+            "member_count": archive_manifest.get("archive", {}).get("member_count"),
+            "safe_for_git": archive_manifest.get("policy", {}).get("safe_for_git"),
+        },
+        "runbook": {
+            "path": _as_posix(runbook),
+            "exists": runbook.exists(),
+        },
+        "self_hosted_workflow": {
+            "path": _as_posix(self_hosted_workflow),
+            "exists": self_hosted_workflow.exists(),
+            "required_runner_labels": ["self-hosted", "gpu"],
+        },
+        "required_gpu_assets": [
+            "CUDA-capable GPU machine or self-hosted GitHub Actions runner",
+            "GVHMR checkout, dependencies, and checkpoints",
+            "licensed local SMPL-X model assets",
+            "rights approval for the selected source clip",
+        ],
+        "expected_return_artifact": {
+            "filename": "gvhmr-smplx-joints.json",
+            "schema": GVHMR_JOINT_EXPORT_SCHEMA,
+            "must_not_commit": True,
+        },
+        "commands": {
+            "unpack_archive": f"mkdir -p neodojo-gvhmr-run && tar -xzf {archive_name} -C neodojo-gvhmr-run",
+            "run_gvhmr_wrapper": (
+                "cd neodojo-gvhmr-run && "
+                "SMPLX_MODEL_DIR=<path-to-licensed-smplx-model-dir> "
+                "./run_gvhmr_neodojo.sh --install"
+            ),
+            "local_real_artifact_intake": (
+                "make real-artifact-intake "
+                f"REAL_ARTIFACT_SOURCE_MATERIALIZATION={local_source_materialization} "
+                f"REAL_ARTIFACT_GVHMR_JSON={local_return_json}"
+            ),
+            "local_strict_verify": "make verify-real",
+        },
+        "policy": {
+            "safe_for_git": not media_included,
+            "notes": (
+                "This request is safe to commit only when media_included is false. "
+                "Media-containing archives and returned GVHMR artifacts stay ignored."
+            ),
+        },
+        "notes": (
+            "This request makes the remaining external GVHMR step explicit; it does not run GVHMR locally."
+        ),
+    }
+    _write_json(request_manifest_path, manifest)
+    _write_gpu_run_request_readme(request_readme_path, manifest)
+    checked_paths = [
+        request_manifest_path,
+        request_readme_path,
+        archive_manifest_path,
+        archive_path,
+        *[path for path in (_optional_existing_path(runbook), _optional_existing_path(self_hosted_workflow)) if path],
+    ]
+    return GvhmrGpuRunRequestWriteResult(
+        manifest_path=request_manifest_path,
+        readme_path=request_readme_path,
         checked_paths=checked_paths,
         status=status,
     )

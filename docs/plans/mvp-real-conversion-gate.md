@@ -330,6 +330,9 @@ artifact path; it defaults to
   handoff and input bundles, and smoke-check it without running GVHMR.
 - [x] Package the GPU input bundle into a `.tar.gz` transfer archive and
   metadata manifest, with CI-safe metadata-only smoke coverage.
+- [x] Generate an external GPU run-request manifest and README from a transfer
+  archive so the remaining operator step has archive hash, required assets,
+  expected return artifact, GPU commands, and local return checks in one place.
 - [x] Add `make real-handoff LOCAL_VIDEO=...` to run local prep,
   materialization, and GPU handoff packaging as one command without running
   GVHMR locally.

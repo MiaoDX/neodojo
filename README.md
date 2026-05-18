@@ -200,6 +200,8 @@ make gpu-input-bundle-smoke
 make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
 make gpu-input-archive-smoke
 make gpu-execution-probe
+make gvhmr-run-request GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive
+make gvhmr-run-request-smoke
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
@@ -336,8 +338,8 @@ Direct roboharness and live-runtime recording remain follow-on work.
 `make verify` runs lint, MVP plan quality checks, tests, wheel build, the
 public-demo plus capture-bundle smoke lane, the dry-run real-handoff smoke
 lane, metadata-only GPU input bundle/archive smoke lanes, GPU execution probe,
-fixture-only real-artifact intake smoke lane, and real-conversion completion
-audit.
+metadata-only GPU run-request smoke, fixture-only real-artifact intake smoke
+lane, and real-conversion completion audit.
 `make demo-public` regenerates the fixture motion contract, detected
 annotations, SMPL-X surface proxy, G1 visual track, G1 render evidence,
 teaching playback, Viser runtime preview, public-demo artifact, generated
@@ -409,6 +411,11 @@ published. Archive creation validates that the transfer package contains the
 runner script, exporter, template, runbook, manifests, and source metadata
 needed by the GPU operator. The durable external-GPU operator checklist is
 [`docs/runbooks/gvhmr-external-gpu.md`](docs/runbooks/gvhmr-external-gpu.md).
+`make gvhmr-run-request GPU_INPUT_ARCHIVE=...` turns an existing archive
+manifest into a concise operator request manifest and README with archive hash,
+required GPU assets, manual run commands, and local return commands.
+`make gvhmr-run-request-smoke` covers the metadata-only request path in
+`make verify`.
 For user-managed GitHub Actions GPU hardware, the manual
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow can unpack a
 runner-local media archive on a self-hosted runner labeled `gpu`, run the same
@@ -530,6 +537,8 @@ In progress:
 - [x] Local GVHMR GPU handoff package with export template and return command
 - [x] Ignored copyable GPU input bundle with optional trimmed media inclusion
 - [x] Ignored GPU input transfer archive for upload to the selected GPU machine
+- [x] Generated external GPU run-request manifest and README from a transfer
+      archive
 - [x] GPU-side GVHMR-to-neodojo export helper packaged with the handoff
 - [x] Local GVHMR result inspection manifest for returned `.pt` or JSON export
 - [x] Local GVHMR source-validation report and validated JSON import handoff
