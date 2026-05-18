@@ -380,6 +380,9 @@ motion artifact, or hosted/live-client Viser capture.
   current local state it reports `external_gpu_artifact_missing`, `complete:
   false`, and the next action to run GVHMR externally and return a
   `neodojo.gvhmr_smplx_joints.v1` export.
+- `make real-conversion-audit-strict` and `make verify-real` run the same
+  audit with `--require-complete`, so they intentionally fail until a real
+  non-fixture GVHMR demo has been imported and regenerated.
 
 ## Blockers And Constraints
 
@@ -659,9 +662,10 @@ CLIs, no GitHub repository secrets for a GPU job, and only the existing Pages
 deploy repository variable; Docker is available locally but does not expose a
 GPU runtime. The next external step is therefore to copy the bundle or archive
 to a GPU-capable machine, run GVHMR, and return the neodojo export.
-Once that artifact exists, the remaining task is to validate it with
-`real-conversion import-demo`, then inspect the generated `outputs/real-demo/`
-artifacts.
+Until then, `make verify-real` is expected to fail as the strict end-to-end
+completion gate. Once that artifact exists, the remaining task is to validate
+it with `real-conversion import-demo`, then inspect the generated
+`outputs/real-demo/` artifacts.
 
 ## Background Evidence
 

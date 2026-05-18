@@ -442,8 +442,9 @@ contract import and `real_gvhmr_artifact_imported: false` for fixture smoke.
 `make real-conversion-audit` writes `outputs/real-conversion-audit/manifest.json`,
 classifying whether the real gate is complete or still blocked on an external
 GPU artifact. It exits successfully for blocker classification; use
-`PYTHONPATH=src python -m neodojo real-conversion audit-completion --require-complete`
-when a script should fail unless a real non-fixture demo exists.
+`make real-conversion-audit-strict` or `make verify-real` when a script should
+fail unless a real non-fixture demo exists. The underlying CLI form is
+`PYTHONPATH=src python -m neodojo real-conversion audit-completion --require-complete`.
 
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local

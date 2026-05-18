@@ -359,6 +359,8 @@ artifact path; it defaults to
 - [x] Add `real-conversion audit-completion` / `make real-conversion-audit`
   so local and CI runs write a non-failing blocker classification manifest for
   this gate.
+- [x] Add `make real-conversion-audit-strict` / `make verify-real` as opt-in
+  failing gates that require a real non-fixture demo before reporting success.
 - [ ] Run GVHMR on a GPU-capable environment.
 - [ ] Export the SMPL-X result directory with enough metadata for reproducibility.
 - [ ] Convert or export the GVHMR result into
@@ -424,7 +426,8 @@ The broader real-conversion completion audit is now executable with
 `outputs/real-conversion-audit/manifest.json` with schema
 `neodojo.real_conversion_audit.v1`, the GPU probe status, source/export/demo
 checks, `complete: false`, and the next action while the real artifact is
-missing. This target exits successfully for blocker classification; use
+missing. This target exits successfully for blocker classification. Use
+`make real-conversion-audit-strict`, `make verify-real`, or
 `neodojo real-conversion audit-completion --require-complete` when automation
 should fail unless a real non-fixture demo has been generated.
 GitHub Actions run

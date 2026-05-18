@@ -1,4 +1,4 @@
-.PHONY: all verify lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit smoke-public
+.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict smoke-public
 
 PYTHON ?= python3
 REAL_SOURCE_ID ?= 03-006
@@ -67,6 +67,8 @@ endif
 all: verify
 
 verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke gpu-input-archive-smoke gpu-execution-probe real-artifact-intake-smoke real-conversion-audit
+
+verify-real: real-conversion-audit-strict
 
 lint:
 	PYTHONPATH=src $(PYTHON) -m compileall -q src tests
@@ -180,6 +182,10 @@ real-artifact-intake-smoke:
 
 real-conversion-audit:
 	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion audit-completion --source-materialization "$(REAL_ARTIFACT_SOURCE_MATERIALIZATION)" --gvhmr-json "$(REAL_ARTIFACT_GVHMR_JSON)" --real-demo "$(REAL_ARTIFACT_OUT)" --out "$(REAL_CONVERSION_AUDIT_OUT)"
+	test -f "$(REAL_CONVERSION_AUDIT_OUT)/manifest.json"
+
+real-conversion-audit-strict:
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion audit-completion --source-materialization "$(REAL_ARTIFACT_SOURCE_MATERIALIZATION)" --gvhmr-json "$(REAL_ARTIFACT_GVHMR_JSON)" --real-demo "$(REAL_ARTIFACT_OUT)" --out "$(REAL_CONVERSION_AUDIT_OUT)" --require-complete
 	test -f "$(REAL_CONVERSION_AUDIT_OUT)/manifest.json"
 
 smoke-public:

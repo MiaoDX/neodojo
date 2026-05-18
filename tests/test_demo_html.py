@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 import importlib.util
+import os
 import py_compile
 import socket
 import subprocess
+import sys
 import tarfile
 import tempfile
 import unittest
@@ -2516,6 +2518,42 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["schema"], "neodojo.real_conversion_audit.v1")
         self.assertEqual(manifest["gpu_execution_probe"]["status"], "external_gpu_artifact_missing")
         self.assertFalse(manifest["checks"][0]["passed"])
+
+    def test_real_conversion_audit_cli_require_complete_fails_when_incomplete(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            audit_dir = root / "audit"
+            env = dict(os.environ)
+            env["PYTHONPATH"] = str(Path.cwd() / "src")
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "neodojo",
+                    "real-conversion",
+                    "audit-completion",
+                    "--source-materialization",
+                    str(root / "missing-source-materialization.json"),
+                    "--gvhmr-json",
+                    str(root / "missing-gvhmr-smplx-joints.json"),
+                    "--real-demo",
+                    str(root / "real-demo"),
+                    "--out",
+                    str(audit_dir),
+                    "--require-complete",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+            manifest = json.loads((audit_dir / "manifest.json").read_text(encoding="utf-8"))
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("real conversion gate is not complete", completed.stderr)
+        self.assertEqual(manifest["schema"], "neodojo.real_conversion_audit.v1")
+        self.assertFalse(manifest["complete"])
 
     def test_real_conversion_audit_distinguishes_fixture_intake_smoke(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -146,7 +146,10 @@ real-conversion completion audit artifact on `main`: `make
 real-conversion-audit` passed, the `neodojo-real-conversion-audit` artifact
 uploaded only `neodojo.real_conversion_audit.v1` and nested
 `neodojo.gvhmr_gpu_execution_probe.v1` manifests, and the audit classified the
-gate as `external_gpu_artifact_missing` with `complete: false`.
+gate as `external_gpu_artifact_missing` with `complete: false`. The opt-in
+strict local gate is `make verify-real`, which runs the same audit with
+`--require-complete` and is expected to fail until a real non-fixture artifact
+has been imported.
 
 ## Inputs
 
@@ -230,6 +233,8 @@ gate as `external_gpu_artifact_missing` with `complete: false`.
    - [x] Upload the fixture-only real-artifact intake smoke artifact with no
      media.
    - [x] Upload the metadata-only real-conversion completion audit artifact.
+   - [x] Add an opt-in strict local real-completion gate without making the
+     fixture-only CI lane fail before a GPU artifact exists.
 
 5. Add visual smoke checks.
    - [x] Check generated HTML, scene, `.rrd` fallback, and SVG screenshot are

@@ -388,6 +388,7 @@ GVHMR JSON 输入，再运行同一个 wrapper，让 returned-artifact intake pa
 `outputs/real-conversion-audit/manifest.json`，判断 real gate 是否已完成，或是否仍
 blocked on external GPU artifact。它在 blocker classification 状态下也会成功退出；
 需要脚本在没有真实 non-fixture demo 时失败时，可使用
+`make real-conversion-audit-strict` 或 `make verify-real`。底层 CLI 形式是
 `PYTHONPATH=src python -m neodojo real-conversion audit-completion --require-complete`。
 
 `make demo-html` 会写出 `outputs/html-demo/index.html`，这是一个由本地
