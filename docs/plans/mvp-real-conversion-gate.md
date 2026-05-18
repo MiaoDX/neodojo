@@ -200,7 +200,9 @@ Use `make real-gpu-operator-package LOCAL_VIDEO=...` when the external operator
 should receive one collocated package directory containing the archive, request,
 and notebook.
 Use `make real-gpu-operator-package-archive LOCAL_VIDEO=...` when the external
-operator should receive that validated package as one transfer `.tar.gz`.
+operator should receive that validated package as one transfer `.tar.gz`; use
+`make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`
+to recheck an existing package archive artifact before handoff.
 
 Package the materialized source metadata for the external GPU operator:
 
@@ -361,6 +363,8 @@ artifact path; it defaults to
 - [x] Add `make real-gpu-operator-package-archive LOCAL_VIDEO=...` and
   `make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=...` to wrap a
   validated collocated package as one transfer `.tar.gz`.
+- [x] Add `make gvhmr-operator-package-archive-validate
+  GVHMR_OPERATOR_PACKAGE_ARCHIVE=...` to revalidate existing package archives.
 - [x] Add `make real-handoff LOCAL_VIDEO=...` to run local prep,
   materialization, and GPU handoff packaging as one command without running
   GVHMR locally.
@@ -450,6 +454,8 @@ CPU workspace:
   and the default ignored `outputs/gvhmr-operator-package/manifest.json`
   currently reports `ready_for_external_gpu_operator_package`,
   `media_included: true`, and `safe_for_git: false`;
+  the package archive can be revalidated after transfer or CI download with
+  `make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`;
   official source `03-006` is still an available source-index path if
   rights/source selection change
 - missing runtime: a GPU-capable GVHMR environment such as Colab, RunPod,

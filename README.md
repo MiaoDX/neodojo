@@ -213,6 +213,7 @@ make gvhmr-operator-package GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive GV
 make gvhmr-operator-package-smoke
 make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
 make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
+make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
@@ -448,12 +449,15 @@ package with a package manifest and README, then validates the copied package
 before returning. The validation target is
 `make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=...`.
 `make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=...` wraps that
-validated package directory into one transfer `.tar.gz` plus manifest.
+validated package directory into one transfer `.tar.gz` plus manifest, then
+validates the archive member checksums and nested package. The archive
+validation target is `make gvhmr-operator-package-archive-validate
+GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`.
 `make gvhmr-run-request-smoke` covers the metadata-only request path in
 `make verify`; `make gvhmr-colab-notebook-smoke` covers the generated notebook
 path; `make gvhmr-operator-package-smoke` covers the collocated package path
 and package validation; `make gvhmr-operator-package-archive-smoke` covers the
-single-file operator package archive path.
+single-file operator package archive path and archive validation.
 For user-managed GitHub Actions GPU hardware, the manual
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow can unpack a
 runner-local media archive or collocated operator package on a self-hosted
@@ -597,6 +601,8 @@ In progress:
 - [x] Generated collocated operator package from archive, run request, and
       notebook manifests
 - [x] Generated operator package archive from a validated collocated package
+- [x] Reusable operator package archive validation for existing downloaded
+      archive artifacts
 - [x] GPU-side GVHMR-to-neodojo export helper packaged with the handoff
 - [x] Local GVHMR result inspection manifest for returned `.pt` or JSON export
 - [x] Local GVHMR source-validation report and validated JSON import handoff

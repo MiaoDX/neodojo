@@ -31,6 +31,7 @@ from .real_conversion import (
     package_gvhmr_gpu_input_archive,
     package_gvhmr_gpu_input_bundle,
     probe_gpu_execution_environment,
+    validate_gvhmr_operator_package_archive,
     validate_gvhmr_operator_package,
     validate_gvhmr_source,
     write_gvhmr_colab_operator_notebook,
@@ -878,6 +879,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/gvhmr-operator-package-archive"),
         help="output directory for the package archive and manifest",
     )
+    real_operator_archive_validate = real_subparsers.add_parser(
+        "validate-operator-package-archive",
+        help="validate a GVHMR operator package archive and its nested package checksums",
+    )
+    real_operator_archive_validate.add_argument(
+        "--archive",
+        type=Path,
+        required=True,
+        help="GVHMR operator package archive directory, manifest.json, or tar.gz with sibling manifest.json",
+    )
     real_intake_smoke = real_subparsers.add_parser(
         "write-intake-smoke-input",
         help="write fixture-only inputs for smoke-testing returned-artifact intake",
@@ -1388,6 +1399,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(f"wrote {result.manifest_path}")
             print(f"wrote {result.archive_path}")
+            print(f"status {result.status}")
+            for path in result.checked_paths:
+                print(f"checked {path}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "validate-operator-package-archive":
+            result = validate_gvhmr_operator_package_archive(args.archive)
+            print(f"validated {result.manifest_path}")
+            print(f"validated {result.archive_path}")
             print(f"status {result.status}")
             for path in result.checked_paths:
                 print(f"checked {path}")

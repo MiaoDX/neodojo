@@ -154,6 +154,7 @@ To wrap the validated package directory as one transfer file:
 
 ```bash
 make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
+make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive
 python -m json.tool outputs/gvhmr-operator-package-archive/manifest.json
 ```
 
@@ -162,6 +163,9 @@ The package archive writes
 plus a `neodojo.gvhmr_operator_package_archive.v1` manifest. Metadata-only
 package archives are CI-safe; media-containing package archives remain ignored
 and must not be committed or uploaded as public CI artifacts.
+The validation target rechecks the wrapper checksum, every archive member
+checksum, required nested package files, and the extracted operator package
+contract before handoff.
 
 ## Optional Self-Hosted GPU Workflow
 

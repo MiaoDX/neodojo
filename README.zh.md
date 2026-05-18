@@ -180,6 +180,7 @@ make gvhmr-operator-package GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive GV
 make gvhmr-operator-package-smoke
 make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
 make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
+make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
@@ -389,11 +390,14 @@ GVHMR_COLAB_NOTEBOOK=...` 会把这些生成的 handoff files 整理成一个包
 manifest 和 README 的 package，然后验证复制后的 package。验证 target 是
 `make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=...`。`make
 gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=...` 会把这个已验证 package
-directory 包成一个 transfer `.tar.gz` 和 manifest。`make
+directory 包成一个 transfer `.tar.gz` 和 manifest，然后验证 archive member checksums
+和嵌套 package。archive validation target 是 `make
+gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`。`make
 gvhmr-run-request-smoke` 会在 `make verify` 中覆盖 metadata-only request path；`make
 gvhmr-colab-notebook-smoke` 会覆盖 generated notebook path；`make
 gvhmr-operator-package-smoke` 会覆盖 collocated package path 和 package validation；
-`make gvhmr-operator-package-archive-smoke` 会覆盖单文件 operator package archive path。
+`make gvhmr-operator-package-archive-smoke` 会覆盖单文件 operator package archive path
+和 archive validation。
 如果使用用户自己管理的 GitHub Actions GPU 硬件，手动触发的
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow 可以在带 `gpu` label 的
 self-hosted runner 上解压 runner-local media archive 或 collocated operator package，
@@ -517,6 +521,7 @@ capture 或真实 Unitree G1 retargeting 已经完成。
 - [x] 从 GPU run-request manifest 生成 Colab operator notebook
 - [x] 从 archive、run request 和 notebook manifests 生成 collocated operator package
 - [x] 从已验证 collocated package 生成 operator package archive
+- [x] 可复用验证已有下载 operator package archive artifact
 - [x] 随 handoff 打包的 GPU-side GVHMR-to-neodojo export helper
 - [x] 本地 GVHMR result inspection manifest，用于返回的 `.pt` 或 JSON export
 - [x] 本地 GVHMR source-validation report 与 validated JSON import handoff

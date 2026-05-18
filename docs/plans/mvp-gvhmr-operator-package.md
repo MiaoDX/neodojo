@@ -63,6 +63,7 @@ provenance, rights, and returned-artifact validation boundaries.
   make gvhmr-operator-package-smoke
   make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
   make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
+  make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive
   ```
 
 ## Execution Tasks
@@ -81,6 +82,8 @@ provenance, rights, and returned-artifact validation boundaries.
   checksums drift.
 - [x] Add a package-archive writer and Make target that validate the
   collocated package before writing one transfer `.tar.gz`.
+- [x] Add a reusable package-archive validator for an existing downloaded
+  `.tar.gz` plus manifest.
 - [x] Include a metadata-only package-archive smoke in `make verify`.
 - [x] Upload the metadata-only package smoke artifact from the public-demo
   GitHub Actions workflow.
@@ -116,6 +119,9 @@ provenance, rights, and returned-artifact validation boundaries.
   `neodojo.gvhmr_operator_package_archive.v1`, expected return schema
   `neodojo.gvhmr_smplx_joints.v1`, member checksums, and the same safe-for-git
   policy as the collocated package.
+- `make gvhmr-operator-package-archive-validate` verifies the archive checksum,
+  member checksums, required nested package files, and extracted operator
+  package contract for an existing archive artifact.
 - The public-demo workflow uploads `neodojo-gvhmr-operator-package-smoke`,
   and copied-package validation in the package Make target was verified by
   GitHub Actions run

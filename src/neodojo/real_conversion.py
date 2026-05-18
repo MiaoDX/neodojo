@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import os
 import platform
 import shutil
 import subprocess
 import tarfile
+import tempfile
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
@@ -125,6 +127,14 @@ class GvhmrOperatorPackageValidationResult:
 
 @dataclass(frozen=True)
 class GvhmrOperatorPackageArchiveWriteResult:
+    manifest_path: Path
+    archive_path: Path
+    checked_paths: list[Path]
+    status: str
+
+
+@dataclass(frozen=True)
+class GvhmrOperatorPackageArchiveValidationResult:
     manifest_path: Path
     archive_path: Path
     checked_paths: list[Path]
@@ -1130,6 +1140,22 @@ def _load_operator_package_manifest(operator_package: Path) -> tuple[Path, dict[
     manifest_path = operator_package / "manifest.json" if operator_package.is_dir() else operator_package
     manifest = _load_json_object(manifest_path, "GVHMR operator package manifest")
     require_schema(manifest, GVHMR_OPERATOR_PACKAGE_SCHEMA, "GVHMR operator package manifest")
+    return manifest_path, manifest
+
+
+def _load_operator_package_archive_manifest(operator_package_archive: Path) -> tuple[Path, dict[str, Any]]:
+    if operator_package_archive.is_dir():
+        manifest_path = operator_package_archive / "manifest.json"
+    elif operator_package_archive.suffix == ".json":
+        manifest_path = operator_package_archive
+    else:
+        manifest_path = operator_package_archive.parent / "manifest.json"
+    manifest = _load_json_object(manifest_path, "GVHMR operator package archive manifest")
+    require_schema(
+        manifest,
+        GVHMR_OPERATOR_PACKAGE_ARCHIVE_SCHEMA,
+        "GVHMR operator package archive manifest",
+    )
     return manifest_path, manifest
 
 
@@ -2553,6 +2579,185 @@ def archive_gvhmr_operator_package(
         archive_path=archive_path,
         checked_paths=checked_paths,
         status=status,
+    )
+
+
+def _operator_package_archive_path_from_manifest(manifest_path: Path, manifest: dict[str, Any]) -> Path:
+    archive = manifest.get("archive")
+    if not isinstance(archive, dict):
+        raise ValueError("GVHMR operator package archive manifest is missing archive metadata")
+    raw_path = archive.get("path")
+    if isinstance(raw_path, str) and raw_path:
+        candidate = Path(raw_path)
+        if candidate.exists():
+            return candidate
+    filename = archive.get("filename")
+    if not isinstance(filename, str) or not filename:
+        raise ValueError("GVHMR operator package archive manifest is missing archive filename")
+    if Path(filename).name != filename:
+        raise ValueError("GVHMR operator package archive filename must be a simple filename")
+    candidate = manifest_path.parent / filename
+    if candidate.exists():
+        return candidate
+    raise ValueError("GVHMR operator package archive file does not exist")
+
+
+def _validate_archive_member_name(name: str, *, label: str) -> None:
+    if not name:
+        raise ValueError(f"{label} member path is empty")
+    if "\\" in name:
+        raise ValueError(f"{label} member path must use POSIX separators: {name}")
+    if name.startswith("/"):
+        raise ValueError(f"Unsafe archive member path: {name}")
+    parts = name.split("/")
+    if any(part in {"", ".", ".."} for part in parts):
+        raise ValueError(f"Unsafe archive member path: {name}")
+
+
+def _operator_package_archive_manifest_members(manifest: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    members = manifest.get("members")
+    if not isinstance(members, list) or not members:
+        raise ValueError("GVHMR operator package archive manifest is missing members")
+    expected_members: dict[str, dict[str, Any]] = {}
+    for member in members:
+        if not isinstance(member, dict):
+            raise ValueError("GVHMR operator package archive member metadata must be objects")
+        name = member.get("path")
+        if not isinstance(name, str):
+            raise ValueError("GVHMR operator package archive member is missing a path")
+        _validate_archive_member_name(name, label="GVHMR operator package archive")
+        if name in expected_members:
+            raise ValueError(f"GVHMR operator package archive manifest has duplicate member: {name}")
+        sha256 = member.get("sha256")
+        if not isinstance(sha256, str) or len(sha256) != 64:
+            raise ValueError(f"GVHMR operator package archive member checksum is invalid: {name}")
+        size_bytes = member.get("size_bytes")
+        if not isinstance(size_bytes, int) or size_bytes < 0:
+            raise ValueError(f"GVHMR operator package archive member size is invalid: {name}")
+        expected_members[name] = member
+    return expected_members
+
+
+def _sha256_tar_member(archive: tarfile.TarFile, member: tarfile.TarInfo) -> str:
+    extracted = archive.extractfile(member)
+    if extracted is None:
+        raise ValueError(f"GVHMR operator package archive member is not readable: {member.name}")
+    digest = hashlib.sha256()
+    with extracted:
+        for chunk in iter(lambda: extracted.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _validate_operator_package_archive_tar(archive_path: Path, manifest: dict[str, Any]) -> set[str]:
+    expected_members = _operator_package_archive_manifest_members(manifest)
+    seen: set[str] = set()
+    with tarfile.open(archive_path, "r:gz") as archive:
+        for member in archive.getmembers():
+            _validate_archive_member_name(member.name, label="GVHMR operator package archive")
+            if member.name in seen:
+                raise ValueError(f"GVHMR operator package archive has duplicate member: {member.name}")
+            if not member.isfile():
+                raise ValueError(f"GVHMR operator package archive member must be a regular file: {member.name}")
+            expected = expected_members.get(member.name)
+            if expected is None:
+                raise ValueError(f"GVHMR operator package archive has unexpected member: {member.name}")
+            expected_size = expected.get("size_bytes")
+            if expected_size != member.size:
+                raise ValueError(f"GVHMR operator package archive member size mismatch: {member.name}")
+            expected_sha = expected.get("sha256")
+            actual_sha = _sha256_tar_member(archive, member)
+            if expected_sha != actual_sha:
+                raise ValueError(f"GVHMR operator package archive member checksum mismatch: {member.name}")
+            seen.add(member.name)
+
+    missing = sorted(set(expected_members) - seen)
+    if missing:
+        raise ValueError("GVHMR operator package archive is missing manifest members: " + ", ".join(missing))
+
+    archive = manifest.get("archive")
+    expected_count = archive.get("member_count") if isinstance(archive, dict) else None
+    if expected_count != len(seen):
+        raise ValueError("GVHMR operator package archive member count does not match manifest")
+
+    required = {
+        "manifest.json",
+        "README.md",
+        "request/manifest.json",
+        "request/README.md",
+        "colab/manifest.json",
+        "colab/gvhmr-colab-operator.ipynb",
+    }
+    missing_required = sorted(required - seen)
+    if missing_required:
+        raise ValueError(
+            "GVHMR operator package archive is missing required package files: "
+            + ", ".join(missing_required)
+        )
+    package_archive_members = sorted(
+        name for name in seen if name.startswith("archive/") and name.endswith((".tar.gz", ".tgz"))
+    )
+    if len(package_archive_members) != 1:
+        raise ValueError("GVHMR operator package archive must contain exactly one nested GPU input archive")
+
+    source_package = manifest.get("source_operator_package")
+    expected_package_manifest_sha = (
+        source_package.get("sha256") if isinstance(source_package, dict) else None
+    )
+    if expected_package_manifest_sha != expected_members["manifest.json"].get("sha256"):
+        raise ValueError("GVHMR operator package archive source package checksum does not match manifest member")
+    return seen
+
+
+def _extract_validated_operator_package_archive(archive_path: Path, destination: Path, members: set[str]) -> None:
+    destination.mkdir(parents=True, exist_ok=True)
+    destination_root = destination.resolve()
+    with tarfile.open(archive_path, "r:gz") as archive:
+        for member in archive.getmembers():
+            if member.name not in members:
+                raise ValueError(f"GVHMR operator package archive has unexpected member: {member.name}")
+            member_path = (destination_root / member.name).resolve()
+            if member_path != destination_root and destination_root not in member_path.parents:
+                raise ValueError(f"Unsafe archive member path: {member.name}")
+            archive.extract(member, path=destination_root)
+
+
+def validate_gvhmr_operator_package_archive(
+    operator_package_archive: Path,
+) -> GvhmrOperatorPackageArchiveValidationResult:
+    manifest_path, archive_manifest = _load_operator_package_archive_manifest(operator_package_archive)
+    archive_path = _operator_package_archive_path_from_manifest(manifest_path, archive_manifest)
+    archive_sha = sha256_file(archive_path)
+    expected_archive_sha = archive_manifest.get("archive", {}).get("sha256")
+    if expected_archive_sha != archive_sha:
+        raise ValueError("GVHMR operator package archive checksum does not match manifest")
+    expected_archive_size = archive_manifest.get("archive", {}).get("size_bytes")
+    if expected_archive_size != archive_path.stat().st_size:
+        raise ValueError("GVHMR operator package archive size does not match manifest")
+
+    members = _validate_operator_package_archive_tar(archive_path, archive_manifest)
+    with tempfile.TemporaryDirectory(prefix="neodojo-operator-package-archive-") as temp_dir:
+        package_dir = Path(temp_dir) / "operator-package"
+        _extract_validated_operator_package_archive(archive_path, package_dir, members)
+        package_manifest_path, package_manifest = _load_operator_package_manifest(package_dir)
+        package_validation = validate_gvhmr_operator_package(package_manifest_path)
+
+        source_package = archive_manifest.get("source_operator_package")
+        expected_source_status = source_package.get("status") if isinstance(source_package, dict) else None
+        if expected_source_status != package_validation.status:
+            raise ValueError("GVHMR operator package archive source package status does not match extracted package")
+        if bool(archive_manifest.get("media_included")) != bool(package_manifest.get("media_included")):
+            raise ValueError("GVHMR operator package archive media flag does not match extracted package")
+        expected_return = archive_manifest.get("expected_return_artifact") or {}
+        package_expected_return = package_manifest.get("expected_return_artifact") or {}
+        if expected_return.get("schema") != package_expected_return.get("schema"):
+            raise ValueError("GVHMR operator package archive expected return schema does not match extracted package")
+
+    return GvhmrOperatorPackageArchiveValidationResult(
+        manifest_path=manifest_path,
+        archive_path=archive_path,
+        checked_paths=[manifest_path, archive_path],
+        status=str(archive_manifest.get("status", "unknown")),
     )
 
 

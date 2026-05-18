@@ -24,9 +24,11 @@ real-gpu-archive`, `make real-gpu-run-request`,
 `make gvhmr-run-request-smoke`, `make gvhmr-colab-notebook`,
 `make gvhmr-colab-notebook-smoke`, `make gvhmr-operator-package`, and
 `make gvhmr-operator-package-smoke`, plus
-`make gvhmr-operator-package-archive` and
+`make gvhmr-operator-package-archive`,
+`make gvhmr-operator-package-archive-validate`, and
 `make gvhmr-operator-package-archive-smoke` for external GVHMR run metadata,
-transfer bundles/archives, CI-safe GPU runner packaging, reproducible
+transfer bundles/archives, CI-safe GPU runner packaging and package-archive
+validation, reproducible
 GPU/provider readiness classification, generated GPU-operator run requests,
 Colab operator notebooks, collocated operator packages, and single-file
 operator package archives, metadata-only CI GPU
@@ -220,7 +222,7 @@ motion artifact, or hosted/live-client Viser capture.
   smoke artifact, metadata-only GPU input archive smoke artifact, metadata-only
   GPU run-request smoke artifact, metadata-only Colab operator notebook smoke
   artifact, metadata-only GVHMR operator package smoke artifact,
-  metadata-only GVHMR operator package archive smoke artifact, metadata-only
+  metadata-only GVHMR operator package archive smoke/validation artifact, metadata-only
   GPU execution probe artifact, fixture-only real-artifact intake smoke
   artifact, default real-conversion audit artifact, opt-in GitHub-route
   real-conversion audit artifact, standalone public-demo artifact,
@@ -875,9 +877,12 @@ media-containing operator packages stay ignored.
 gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=...` validate that
 collocated package and write a single
 `neodojo.gvhmr_operator_package_archive.v1` transfer `.tar.gz` plus manifest.
-`make gvhmr-operator-package-archive-smoke` covers the metadata-only archive in
-`make verify`; media-containing package archives stay ignored and unsafe for
-git.
+`neodojo real-conversion validate-operator-package-archive` and `make
+gvhmr-operator-package-archive-validate` validate the wrapper checksum, member
+checksums, required nested files, and extracted package contract for an existing
+archive. `make gvhmr-operator-package-archive-smoke` covers the metadata-only
+archive and archive validation in `make verify`; media-containing package
+archives stay ignored and unsafe for git.
 `neodojo real-conversion
 inspect-gvhmr-result` writes a result
 inspection manifest for a returned `hmr4d_results.pt` when `torch` is available
@@ -928,9 +933,11 @@ now be regenerated together with `make real-gpu-colab-notebook LOCAL_VIDEO=...`.
 For a single copyable handoff folder, those files can be collocated with
 `make real-gpu-operator-package LOCAL_VIDEO=...`; for a single transfer file,
 the collocated package can be wrapped with
-`make real-gpu-operator-package-archive LOCAL_VIDEO=...`. The default ignored
-package at `outputs/gvhmr-operator-package/` is ready for external GPU operator
-handoff and marked unsafe for git because it contains media.
+`make real-gpu-operator-package-archive LOCAL_VIDEO=...`, then rechecked later
+with `make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`.
+The default ignored package at `outputs/gvhmr-operator-package/` is ready for
+external GPU operator handoff and marked unsafe for git because it contains
+media.
 That operator request can also generate a Colab-ready notebook with
 `make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request` for
 manual GPU execution in a notebook runtime; the current ignored local proof

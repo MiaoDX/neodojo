@@ -1,4 +1,4 @@
-.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-gpu-run-request real-gpu-colab-notebook real-gpu-operator-package real-gpu-operator-package-archive real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-run-request gvhmr-run-request-smoke gvhmr-colab-notebook gvhmr-colab-notebook-smoke gvhmr-operator-package gvhmr-operator-package-smoke gvhmr-operator-package-validate gvhmr-operator-package-validate-smoke gvhmr-operator-package-archive gvhmr-operator-package-archive-smoke gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict real-demo-pages-promotion-validate smoke-public
+.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-gpu-run-request real-gpu-colab-notebook real-gpu-operator-package real-gpu-operator-package-archive real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-run-request gvhmr-run-request-smoke gvhmr-colab-notebook gvhmr-colab-notebook-smoke gvhmr-operator-package gvhmr-operator-package-smoke gvhmr-operator-package-validate gvhmr-operator-package-validate-smoke gvhmr-operator-package-archive gvhmr-operator-package-archive-smoke gvhmr-operator-package-archive-validate gvhmr-operator-package-archive-validate-smoke gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict real-demo-pages-promotion-validate smoke-public
 
 PYTHON ?= python3
 REAL_SOURCE_ID ?= 03-006
@@ -22,6 +22,7 @@ GVHMR_COLAB_NOTEBOOK_OUT ?= outputs/gvhmr-colab-operator
 GVHMR_OPERATOR_PACKAGE_OUT ?= outputs/gvhmr-operator-package
 GVHMR_OPERATOR_PACKAGE ?= outputs/gvhmr-operator-package
 GVHMR_OPERATOR_PACKAGE_ARCHIVE_OUT ?= outputs/gvhmr-operator-package-archive
+GVHMR_OPERATOR_PACKAGE_ARCHIVE ?= outputs/gvhmr-operator-package-archive
 GVHMR_OPERATOR_PACKAGE_ARCHIVE_NAME ?= neodojo-gvhmr-operator-package.tar.gz
 GVHMR_INSPECT_OUT ?= outputs/gvhmr-result-inspection
 REAL_DEMO_OUT ?= outputs/real-demo
@@ -88,7 +89,7 @@ endif
 
 all: verify
 
-verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke gpu-execution-probe gvhmr-run-request-smoke gvhmr-colab-notebook-smoke gvhmr-operator-package-smoke gvhmr-operator-package-validate-smoke gvhmr-operator-package-archive-smoke real-artifact-intake-smoke real-conversion-audit
+verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke gpu-execution-probe gvhmr-run-request-smoke gvhmr-colab-notebook-smoke gvhmr-operator-package-smoke gvhmr-operator-package-validate-smoke gvhmr-operator-package-archive-validate-smoke real-artifact-intake-smoke real-conversion-audit
 
 verify-real: real-conversion-audit-strict
 
@@ -251,6 +252,7 @@ gvhmr-operator-package-validate-smoke: gvhmr-operator-package-smoke
 gvhmr-operator-package-archive:
 	@test -n "$(GVHMR_OPERATOR_PACKAGE)" || (echo "GVHMR_OPERATOR_PACKAGE=path/to/operator-package is required" && exit 2)
 	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion archive-operator-package --package "$(GVHMR_OPERATOR_PACKAGE)" --archive-name "$(GVHMR_OPERATOR_PACKAGE_ARCHIVE_NAME)" --out "$(GVHMR_OPERATOR_PACKAGE_ARCHIVE_OUT)"
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion validate-operator-package-archive --archive "$(GVHMR_OPERATOR_PACKAGE_ARCHIVE_OUT)"
 
 gvhmr-operator-package-archive-smoke: gvhmr-operator-package-smoke
 	rm -rf outputs/gvhmr-operator-package-archive-smoke
@@ -258,6 +260,13 @@ gvhmr-operator-package-archive-smoke: gvhmr-operator-package-smoke
 	test -f outputs/gvhmr-operator-package-archive-smoke/manifest.json
 	test -f outputs/gvhmr-operator-package-archive-smoke/neodojo-gvhmr-operator-package.tar.gz
 	$(PYTHON) -m tarfile -l outputs/gvhmr-operator-package-archive-smoke/neodojo-gvhmr-operator-package.tar.gz
+
+gvhmr-operator-package-archive-validate:
+	@test -n "$(GVHMR_OPERATOR_PACKAGE_ARCHIVE)" || (echo "GVHMR_OPERATOR_PACKAGE_ARCHIVE=path/to/operator-package-archive-manifest-or-dir is required" && exit 2)
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion validate-operator-package-archive --archive "$(GVHMR_OPERATOR_PACKAGE_ARCHIVE)"
+
+gvhmr-operator-package-archive-validate-smoke: gvhmr-operator-package-archive-smoke
+	$(MAKE) gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive-smoke
 
 gvhmr-inspect:
 	@test -n "$(GVHMR_RESULT)" || (echo "GVHMR_RESULT=path/to/hmr4d_results.pt is required" && exit 2)
