@@ -22,7 +22,7 @@ real-gpu-archive`, `make gpu-input-archive-smoke`, and
 `make gvhmr-run-request-smoke` for external GVHMR run metadata, transfer
 bundles/archives, CI-safe GPU runner packaging, reproducible GPU/provider
 readiness classification, generated GPU-operator run requests, metadata-only CI
-GPU execution probe artifacts, and a
+GPU run-request/probe artifacts, and a
 tracked external-GPU operator runbook, `make gvhmr-inspect` for returned GVHMR
 result inspection, `make demo-real` / `make real-artifact-intake` for a
 validated external GVHMR JSON once a GPU artifact exists, and
@@ -210,7 +210,8 @@ motion artifact, or hosted/live-client Viser capture.
   browser runtime, builds the fixture public demo with browser capture, uploads
   the metadata-only real-handoff smoke artifact, metadata-only GPU input bundle
   smoke artifact, metadata-only GPU input archive smoke artifact, metadata-only
-  GPU execution probe artifact, fixture-only real-artifact intake smoke
+  GPU run-request smoke artifact, metadata-only GPU execution probe artifact,
+  fixture-only real-artifact intake smoke
   artifact, real-conversion audit artifact, standalone public-demo artifact,
   browser-capture artifact, and capture-bundle artifact containing the capture
   manifest and referenced generated evidence, and publishes the static

@@ -58,6 +58,8 @@ option, and local return commands. It still does not run GVHMR locally.
 - [x] Write a concise operator README next to the request manifest.
 - [x] Add CLI and Make targets for request generation and metadata-only smoke.
 - [x] Include the smoke target in `make verify`.
+- [x] Upload the metadata-only run-request smoke artifact from the public-demo
+  GitHub Actions workflow.
 - [x] Add focused tests for media-including and metadata-only archives.
 - [x] Update README.md, README.zh.md, STATUS.md, the runbook, and the MVP plan
   index without claiming the real artifact has been produced.
@@ -73,6 +75,7 @@ option, and local return commands. It still does not run GVHMR locally.
 - The request manifest records `expected_return_artifact.schema:
   neodojo.gvhmr_smplx_joints.v1`.
 - `make verify` includes the run-request smoke target.
+- The public-demo workflow uploads `neodojo-gpu-run-request-smoke`.
 
 ## Non-Goals
 

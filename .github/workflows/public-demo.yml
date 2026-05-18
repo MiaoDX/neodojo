@@ -68,8 +68,8 @@ jobs:
             outputs/gvhmr-gpu-input-smoke/export_neodojo_gvhmr.py
             outputs/gvhmr-gpu-input-smoke/run_gvhmr_neodojo.sh
           if-no-files-found: error
-      - name: GPU input archive smoke
-        run: make gpu-input-archive-smoke
+      - name: GPU input archive and run request smoke
+        run: make gvhmr-run-request-smoke
       - name: Upload GPU input archive smoke artifact
         uses: actions/upload-artifact@v7
         with:
@@ -77,6 +77,14 @@ jobs:
           path: |
             outputs/gvhmr-gpu-input-archive-smoke/manifest.json
             outputs/gvhmr-gpu-input-archive-smoke/neodojo-gvhmr-gpu-input.tar.gz
+          if-no-files-found: error
+      - name: Upload GPU run request smoke artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neodojo-gpu-run-request-smoke
+          path: |
+            outputs/gvhmr-gpu-run-request-smoke/manifest.json
+            outputs/gvhmr-gpu-run-request-smoke/README.md
           if-no-files-found: error
       - name: GPU execution probe
         run: make gpu-execution-probe
