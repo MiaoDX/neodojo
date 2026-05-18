@@ -646,7 +646,9 @@ make real-gpu-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=
 make real-gpu-run-request LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-gpu-colab-notebook LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-gpu-operator-package LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
+make real-gpu-operator-package-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
+make real-handoff LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin REAL_LOCAL_TITLE="Local Baduanjin proof clip"
 make real-handoff-smoke
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
 make gpu-input-bundle GPU_HANDOFF=outputs/gvhmr-gpu-handoff GPU_INPUT_INCLUDE_MEDIA=1
@@ -654,6 +656,7 @@ make gpu-input-bundle-smoke
 make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
 make gpu-input-archive-smoke
 make gpu-execution-probe
+make gpu-execution-probe GPU_PROBE_GITHUB_REPO=MiaoDX/neodojo
 make gvhmr-run-request GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive
 make gvhmr-run-request-smoke
 make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request
@@ -661,10 +664,14 @@ make gvhmr-colab-notebook-smoke
 make gvhmr-operator-package GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request GVHMR_COLAB_NOTEBOOK=outputs/gvhmr-colab-operator
 make gvhmr-operator-package-smoke
 make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
+make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
+make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
 make real-conversion-audit
+make real-conversion-audit REAL_AUDIT_GITHUB_REPO=MiaoDX/neodojo
+make real-demo-pages-promotion-validate PROMOTION_DOWNLOAD_ROOT=outputs/promoted-real-demo-download PROMOTION_SOURCE_RUN_ID=123456789
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
@@ -705,8 +712,9 @@ make demo-html
 `make verify` runs lint, MVP plan quality checks, tests, wheel build, the
 public-demo plus capture-bundle smoke lane, the dry-run real-handoff smoke
 lane, metadata-only GPU input bundle/archive smoke lanes, GPU execution probe,
-metadata-only GPU run-request smoke, fixture-only real-artifact intake smoke
-lane, and real-conversion completion audit.
+metadata-only GPU run-request smoke, Colab notebook smoke, operator package
+smoke and package-archive validation smoke, fixture-only real-artifact intake
+smoke lane, and real-conversion completion audit.
 `make lint` runs a minimal syntax/import bytecode compile check over `src/` and
 `tests/`. `make check` validates MVP plan links and minimum plan scaffolding.
 `make test` runs the focused Python unit tests for the fixture demo generator
