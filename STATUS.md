@@ -339,6 +339,20 @@ motion artifact, or hosted/live-client Viser capture.
   `fixture_only: true`, while the downloaded real-conversion audit artifact
   still reports `external_gpu_artifact_missing`, `complete: false`, and
   `blocked: true`.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26008421430` verified the
+  generated GPU run-request smoke surface on `main`: lint, plan checks, tests,
+  wheel build, real-handoff smoke, GPU input bundle smoke, `make
+  gvhmr-run-request-smoke`, GPU input archive artifact upload, GPU run-request
+  artifact upload, GPU execution probe, real-artifact intake smoke,
+  real-conversion audit, browser capture, public-demo artifact upload,
+  capture-bundle upload, Pages artifact upload, and Pages deploy passed. The
+  downloaded `neodojo-gpu-run-request-smoke` artifact contains
+  `neodojo.gvhmr_gpu_run_request.v1`, `media_included: false`,
+  `safe_for_git: true`, and expected return schema
+  `neodojo.gvhmr_smplx_joints.v1`; the downloaded public-demo artifact passes
+  `neodojo demo smoke` and the audit still reports
+  `external_gpu_artifact_missing`, `complete: false`, `blocked: true`.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
