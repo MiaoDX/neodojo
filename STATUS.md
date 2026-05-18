@@ -28,8 +28,11 @@ validated external GVHMR JSON once a GPU artifact exists, and
 artifact wrapper, and `make real-conversion-audit` for an executable blocker
 classification of the real GVHMR gate, plus a manual
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow for user-managed
-self-hosted GPU runners that also validates/imports the returned export, with
-a verified live fixture-only GitHub Pages demo at
+self-hosted GPU runners that also validates/imports the returned export, plus a
+manual `.github/workflows/promote-real-demo-pages.yml` workflow for promoting a
+validated self-hosted real-demo artifact to GitHub Pages only after explicit
+confirmation and strict audit validation, with a verified live fixture-only
+GitHub Pages demo at
 `https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, `real-conversion package-gpu-handoff` can package the handoff
@@ -410,6 +413,15 @@ motion artifact, or hosted/live-client Viser capture.
   `gvhmr-smplx-joints.json` or generated real-demo/public-demo evidence; it is
   not part of default push/PR CI and does not upload media, checkpoints, SMPL-X
   assets, or `.pt` result files.
+- `.github/workflows/promote-real-demo-pages.yml` is a separate manual
+  `workflow_dispatch` path for replacing the fixture-only Pages artifact only
+  after a self-hosted run has uploaded `neodojo-self-hosted-real-demo`. It
+  requires `confirm_replace_fixture_pages=true` and repository variable
+  `NEODOJO_DEPLOY_REAL_PAGES=true`, revalidates the real-demo manifest, strict
+  audit manifest, public-demo files, SMPL-X scoring boundary, and
+  `neodojo demo smoke`, and deploys only the generated public-demo directory
+  plus a promotion manifest. It does not run GVHMR and is not triggered by
+  push or pull request events.
 
 ## Blockers And Constraints
 
@@ -686,10 +698,14 @@ bundles that omit the runner script. The tracked operator checklist is
 `docs/runbooks/gvhmr-external-gpu.md`. The optional manual
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow can run the same bundle
 on a user-managed self-hosted GPU runner when one exists, then immediately run
-real-artifact intake and strict completion audit in that workflow. A
+real-artifact intake and strict completion audit in that workflow. The separate
+manual `.github/workflows/promote-real-demo-pages.yml` workflow can publish a
+validated self-hosted real-demo artifact to Pages only after the operator
+selects the source run, confirms replacement, and enables
+`NEODOJO_DEPLOY_REAL_PAGES=true`. A
 local/provider execution probe found no CUDA runtime, no configured GPU-provider
 environment variables or provider CLIs, no GitHub repository secrets for a GPU
-job, and only the existing Pages deploy repository variable; Docker is
+job, and only the existing fixture Pages deploy repository variable; Docker is
 available locally but does not expose a GPU runtime. The next external step is
 therefore to copy the bundle or archive to a GPU-capable machine or
 self-hosted GPU runner, run GVHMR, and return or upload the neodojo export.

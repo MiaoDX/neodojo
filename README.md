@@ -170,10 +170,11 @@ browser-rendered public-demo screenshot capture, optional MuJoCo simulator
 recorder-capture integration, and minimal lint/build/quality-check
 commands. It can also write a dry-run or ffmpeg-backed local source-video
 handoff plus a metadata package, copyable input bundle, executable GPU-side
-runner, and ignored transfer archive for a later GPU GVHMR run. There is still
-no checked-in local GVHMR/GMR execution environment, completed simulator
-runtime pipeline, built-in official SMPL-X body-model renderer, live-client
-Viser capture, or end-to-end real generated motion artifact.
+runner, ignored transfer archive, optional self-hosted GPU workflow, and
+guarded manual real-demo Pages promotion workflow for a later GPU GVHMR run.
+There is still no checked-in local GVHMR/GMR execution environment, completed
+simulator runtime pipeline, built-in official SMPL-X body-model renderer,
+live-client Viser capture, or end-to-end real generated motion artifact.
 
 Fixture-only public demo: [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
 

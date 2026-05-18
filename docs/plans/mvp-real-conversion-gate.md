@@ -365,6 +365,9 @@ artifact path; it defaults to
   packaged archive on a user-managed runner without changing default CI.
 - [x] Have that self-hosted workflow run returned-artifact intake and strict
   audit after the GPU wrapper produces `gvhmr-smplx-joints.json`.
+- [x] Add a guarded manual Pages promotion workflow that can publish a validated
+  self-hosted real-demo artifact only after explicit confirmation and strict
+  real-demo audit validation.
 - [ ] Run GVHMR on a GPU-capable environment.
 - [ ] Export the SMPL-X result directory with enough metadata for reproducibility.
 - [ ] Convert or export the GVHMR result into
@@ -460,6 +463,17 @@ triggered by push or pull request events. After the wrapper writes
 `real-conversion audit-completion --require-complete` against the returned
 artifact. It only uploads returned JSON or generated real-demo/public-demo
 artifacts when the operator explicitly enables the relevant upload input.
+
+A second optional manual GitHub Actions path now exists at
+`.github/workflows/promote-real-demo-pages.yml`. It is also
+`workflow_dispatch` only. It downloads a named `neodojo-self-hosted-real-demo`
+artifact from a selected run, revalidates the real-demo manifest, strict audit
+manifest, generated public-demo files, SMPL-X scoring boundary, and public-demo
+smoke check, then deploys the staged public-demo directory to GitHub Pages only
+when `confirm_replace_fixture_pages=true` and the repository variable
+`NEODOJO_DEPLOY_REAL_PAGES=true` are both set. It does not run GVHMR and must
+not be used to publish raw media, checkpoints, SMPL-X assets, `.pt` files, or
+logs.
 
 The returned-artifact import wrapper is now covered by fixture-only local and
 CI smoke evidence: `make real-artifact-intake-smoke` writes fixture source

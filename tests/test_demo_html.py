@@ -2581,6 +2581,38 @@ class DemoHtmlTests(unittest.TestCase):
             for forbidden in forbidden_fragments:
                 self.assertNotIn(forbidden, path)
 
+    def test_real_demo_pages_promotion_workflow_is_guarded_and_safe(self) -> None:
+        workflow = Path(".github/workflows/promote-real-demo-pages.yml").read_text(encoding="utf-8")
+
+        self.assertIn("workflow_dispatch:", workflow)
+        self.assertNotIn("\n  push:", workflow)
+        self.assertNotIn("\n  pull_request:", workflow)
+        self.assertIn("source_run_id", workflow)
+        self.assertIn("confirm_replace_fixture_pages", workflow)
+        self.assertIn("NEODOJO_DEPLOY_REAL_PAGES", workflow)
+        self.assertIn("actions: read", workflow)
+        self.assertIn("actions/download-artifact@v8", workflow)
+        self.assertIn("neodojo-self-hosted-real-demo", workflow)
+        self.assertIn("neodojo.real_conversion_demo.v1", workflow)
+        self.assertIn("neodojo.real_conversion_audit.v1", workflow)
+        self.assertIn("real_gvhmr_artifact_imported", workflow)
+        self.assertIn("source_materialization_fixture_only", workflow)
+        self.assertIn("gvhmr_export_fixture_only", workflow)
+        self.assertIn("real_demo_verified", workflow)
+        self.assertIn("PYTHONPATH=src python -m neodojo demo smoke", workflow)
+        self.assertIn("actions/upload-pages-artifact@v5", workflow)
+        self.assertIn("actions/deploy-pages@v5", workflow)
+
+        upload_paths = []
+        for line in workflow.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("outputs/"):
+                upload_paths.append(stripped)
+        forbidden_fragments = [".mp4", ".mov", ".mkv", ".pt", ".pkl", ".npz", "checkpoints", "SMPLX_MODEL_DIR"]
+        for path in upload_paths:
+            for forbidden in forbidden_fragments:
+                self.assertNotIn(forbidden, path)
+
     def test_real_conversion_audit_distinguishes_fixture_intake_smoke(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

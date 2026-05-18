@@ -137,10 +137,11 @@ capture bundle manifest、可选 browser-rendered public-demo screenshot capture
 可选 MuJoCo simulator recorder-capture integration，以及最小 lint/build/quality-check
 命令。它也可以为后续 GPU GVHMR run 写出 dry-run 或
 ffmpeg-backed 的本地 source-video handoff，并写出 GPU handoff metadata package、
-copyable input bundle、executable GPU-side runner 和 ignored transfer archive。
-但还没有提交到仓库的本地 GVHMR/GMR execution environment、完整 simulator runtime
-pipeline、内置 official SMPL-X body-model renderer、production live-client Viser
-capture，或 end-to-end 的真实 generated motion artifact。
+copyable input bundle、executable GPU-side runner、ignored transfer archive、
+可选 self-hosted GPU workflow，以及 guarded manual real-demo Pages promotion
+workflow。但还没有提交到仓库的本地 GVHMR/GMR execution environment、完整
+simulator runtime pipeline、内置 official SMPL-X body-model renderer、production
+live-client Viser capture，或 end-to-end 的真实 generated motion artifact。
 
 Fixture-only public demo：[`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
 

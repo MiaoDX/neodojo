@@ -94,6 +94,17 @@ and bundled `source-materialization.json`. Do not use the workflow to upload
 source videos, trimmed clips, checkpoints, SMPL-X assets, `.pt` files, rendered
 videos, logs, or full result directories.
 
+If the self-hosted workflow uploaded `neodojo-self-hosted-real-demo`, the
+generated public-demo artifact can be promoted to GitHub Pages through the
+separate manual workflow `promote-real-demo-pages`. That workflow requires the
+self-hosted workflow run ID, explicit `confirm_replace_fixture_pages=true`, and
+repository variable `NEODOJO_DEPLOY_REAL_PAGES=true`. Before deploying, it
+revalidates the real-demo manifest, strict audit manifest, public-demo files,
+SMPL-X scoring boundary, and `neodojo demo smoke`. Use this only after rights
+and artifact provenance have been reviewed; it does not publish media,
+checkpoints, SMPL-X assets, `.pt` files, logs, or full GVHMR result
+directories.
+
 ## Run On The GPU Machine
 
 Copy the archive to the GPU machine, then unpack it:

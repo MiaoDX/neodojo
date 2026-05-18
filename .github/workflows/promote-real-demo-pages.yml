@@ -1,0 +1,209 @@
+name: promote-real-demo-pages
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: "GitHub Actions run ID containing the neodojo-self-hosted-real-demo artifact"
+        required: true
+        type: string
+      artifact_name:
+        description: "Validated real-demo artifact name from the self-hosted GPU workflow"
+        required: true
+        default: "neodojo-self-hosted-real-demo"
+        type: string
+      confirm_replace_fixture_pages:
+        description: "Confirm replacing the fixture-only Pages artifact with this validated real-demo artifact"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  actions: read
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: real-demo-pages
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  validate:
+    if: ${{ inputs.confirm_replace_fixture_pages && vars.NEODOJO_DEPLOY_REAL_PAGES == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: python -m pip install -e .
+
+      - name: Download validated self-hosted real-demo artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: outputs/promoted-real-demo-download
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.source_run_id }}
+
+      - name: Validate real-demo artifact before Pages promotion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+
+          root = Path("outputs/promoted-real-demo-download")
+          stage = Path("outputs/promoted-real-demo-pages")
+          forbidden_fragments = (
+              ".mp4",
+              ".mov",
+              ".mkv",
+              ".avi",
+              ".webm",
+              ".pt",
+              ".pkl",
+              ".npz",
+              "checkpoints",
+              "SMPLX_MODEL_DIR",
+          )
+
+          def fail(message: str) -> None:
+              raise SystemExit(message)
+
+          def load(path: Path) -> dict:
+              return json.loads(path.read_text(encoding="utf-8"))
+
+          for path in root.rglob("*"):
+              if not path.is_file():
+                  continue
+              rendered = str(path)
+              lowered = rendered.lower()
+              for fragment in forbidden_fragments:
+                  if fragment.lower() in lowered:
+                      fail(f"forbidden generated artifact path in promotion input: {rendered}")
+
+          real_demo_candidates = [
+              path
+              for path in root.rglob("manifest.json")
+              if load(path).get("schema") == "neodojo.real_conversion_demo.v1"
+          ]
+          if len(real_demo_candidates) != 1:
+              fail(f"expected exactly one real-demo manifest, found {len(real_demo_candidates)}")
+          real_demo_manifest_path = real_demo_candidates[0]
+          real_demo_dir = real_demo_manifest_path.parent
+          real_demo = load(real_demo_manifest_path)
+
+          if real_demo.get("status") != "generated":
+              fail("real-demo manifest is not generated")
+          if real_demo.get("real_gvhmr_artifact_imported") is not True:
+              fail("real-demo manifest does not prove a real GVHMR artifact import")
+          if real_demo.get("source_materialization_fixture_only") is not False:
+              fail("source materialization is still fixture-only")
+          if real_demo.get("gvhmr_export_fixture_only") is not False:
+              fail("GVHMR export is still fixture-only")
+          if real_demo.get("scoring_source") != "smplx":
+              fail("real-demo manifest must keep SMPL-X as scoring source")
+          if real_demo.get("g1_scoring_allowed") is not False:
+              fail("real-demo manifest cannot allow G1 scoring")
+
+          public_demo_ref = real_demo.get("public_demo")
+          if not isinstance(public_demo_ref, str):
+              fail("real-demo manifest is missing public_demo reference")
+          public_demo_manifest_path = (real_demo_dir / public_demo_ref).resolve()
+          try:
+              public_demo_manifest_path.relative_to(root.resolve())
+          except ValueError:
+              fail(f"public-demo manifest escapes the downloaded artifact: {public_demo_manifest_path}")
+          public_demo_dir = public_demo_manifest_path.parent
+          public_demo = load(public_demo_manifest_path)
+          if public_demo.get("schema") != "neodojo.public_demo.v1":
+              fail("public-demo manifest has the wrong schema")
+          if public_demo.get("scoring_source") != "smplx":
+              fail("public-demo must keep SMPL-X as scoring source")
+          if public_demo.get("tracks", {}).get("g1", {}).get("scoring_allowed"):
+              fail("public-demo cannot allow G1 scoring")
+
+          required_public_files = [
+              public_demo_manifest_path,
+              public_demo_dir / str(public_demo.get("html", "index.html")),
+              public_demo_dir / str(public_demo.get("scene", "scene.json")),
+              public_demo_dir / str(public_demo.get("recording", "neodojo-demo.rrd")),
+              public_demo_dir / str(public_demo.get("screenshot", "screenshot.svg")),
+          ]
+          for path in required_public_files:
+              if not path.exists() or path.stat().st_size <= 0:
+                  fail(f"missing or blank public-demo file: {path}")
+
+          audit_candidates = [
+              path
+              for path in root.rglob("manifest.json")
+              if load(path).get("schema") == "neodojo.real_conversion_audit.v1"
+          ]
+          if len(audit_candidates) != 1:
+              fail(f"expected exactly one real-conversion audit manifest, found {len(audit_candidates)}")
+          audit = load(audit_candidates[0])
+          if audit.get("complete") is not True:
+              fail("real-conversion audit is not complete")
+          if audit.get("blocked") is not False:
+              fail("real-conversion audit is still blocked")
+          if audit.get("status") != "real_demo_verified":
+              fail("real-conversion audit did not verify the real demo")
+
+          if stage.exists():
+              shutil.rmtree(stage)
+          shutil.copytree(public_demo_dir, stage)
+          promotion = {
+              "schema": "neodojo.real_demo_pages_promotion.v1",
+              "source_run_id": "${{ inputs.source_run_id }}",
+              "artifact_name": "${{ inputs.artifact_name }}",
+              "real_demo_manifest": str(real_demo_manifest_path),
+              "audit_manifest": str(audit_candidates[0]),
+              "real_gvhmr_artifact_imported": True,
+              "source_materialization_fixture_only": False,
+              "gvhmr_export_fixture_only": False,
+              "public_demo_fixture_only": bool(public_demo.get("fixture_only")),
+              "scoring_source": "smplx",
+              "g1_scoring_allowed": False,
+              "notes": (
+                  "The promoted public-demo artifact has a real non-fixture "
+                  "GVHMR/SMPL-X import. The aggregate public_demo_fixture_only "
+                  "flag may remain true when the visual G1 companion still uses "
+                  "fixture-derived assets."
+              ),
+          }
+          (stage / "promotion-manifest.json").write_text(
+              json.dumps(promotion, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(stage)
+          PY
+
+      - name: Public-demo smoke check
+        run: PYTHONPATH=src python -m neodojo demo smoke --public-demo outputs/promoted-real-demo-pages
+
+      - name: Upload real-demo Pages artifact
+        id: stage
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: outputs/promoted-real-demo-pages
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages-real-demo
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy validated real demo to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
