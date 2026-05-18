@@ -31,7 +31,8 @@ real-conversion completion audit artifact, plus an opt-in strict
 workflow for external GVHMR execution plus returned-artifact intake, and an
 optional guarded manual workflow for promoting a validated real-demo artifact to
 GitHub Pages, plus generated external GPU run-request and Colab operator
-notebook artifacts. It
+notebook artifacts, plus validated GVHMR operator package and package-archive
+handoff artifacts. It
 does not yet have a checked-in local GVHMR/GMR execution environment, completed
 simulator runtime pipeline, built-in official SMPL-X body-model renderer,
 hosted/live-client Viser capture, or broad static-analysis/release gates beyond
