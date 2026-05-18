@@ -89,6 +89,14 @@ upload.
   `real-conversion audit-completion --require-complete` before optional
   uploads.
 - `make test` covers the workflow shape and upload boundary.
+- The workflow package-validation step has been executed locally against the
+  ignored default `outputs/gvhmr-operator-package/` handoff by extracting the
+  workflow unpack step; it validated the package manifests and checksum links
+  before unpacking.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26010670374` passed the
+  default fixture CI lane after the package-validation hardening, while the
+  real-conversion audit remained blocked on the missing external GPU export.
 - `make check` includes this plan through the MVP index.
 
 ## Non-Goals
