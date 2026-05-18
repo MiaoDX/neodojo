@@ -17,7 +17,8 @@ workflow for the fixture public-demo artifact, browser capture, generated
 capture bundle, and metadata-only real-handoff smoke artifact,
 `make real-handoff`, `make gpu-handoff`, `make gpu-input-bundle`,
 `make gpu-input-bundle-smoke`, `make gpu-input-archive`, `make
-real-gpu-archive`, `make gpu-input-archive-smoke`, and
+real-gpu-archive`, `make real-gpu-run-request`,
+`make gpu-input-archive-smoke`, and
 `make gpu-execution-probe`, `make gvhmr-run-request`, and
 `make gvhmr-run-request-smoke` for external GVHMR run metadata, transfer
 bundles/archives, CI-safe GPU runner packaging, reproducible GPU/provider
@@ -386,6 +387,14 @@ motion artifact, or hosted/live-client Viser capture.
   `run_gvhmr_neodojo.sh`, `export_neodojo_gvhmr.py`,
   `gvhmr-smplx-joints.template.json`, `source-materialization.json`, and
   `source/trimmed-clip.mp4`.
+- `make real-gpu-run-request LOCAL_VIDEO=...` has been smoke-tested against the
+  ignored local Bilibili candidate with a 2-second trim. The command wrote the
+  same media-containing archive shape plus
+  `outputs/real-gpu-run-request-smoke/run-request/manifest.json`, which reports
+  `schema: neodojo.gvhmr_gpu_run_request.v1`,
+  `status: ready_for_external_gpu`, `media_included: true`,
+  `safe_for_git: false`, and expected return schema
+  `neodojo.gvhmr_smplx_joints.v1`.
 - `make gpu-execution-probe` writes
   `outputs/gvhmr-gpu-execution-probe/manifest.json` and is included in
   `make verify`. On the current macOS ARM workspace it reports
@@ -488,6 +497,7 @@ make build
 make demo-public
 make demo-public-browser
 make real-gpu-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
+make real-gpu-run-request LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
 make real-handoff-smoke
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
@@ -670,6 +680,10 @@ or run GVHMR locally.
 materialization, GPU handoff packaging, media-including GPU input bundle
 creation, and transfer archive creation in one local command for the external
 GPU operator. It requires ffmpeg and does not run GVHMR locally.
+`make real-gpu-run-request LOCAL_VIDEO=...` runs the same local archive
+preparation and then writes the generated GPU operator request under
+`GVHMR_RUN_REQUEST_OUT`, so one local command produces both the ignored transfer
+archive and the request README/manifest.
 `neodojo real-conversion probe-gpu-execution` and `make gpu-execution-probe`
 write `outputs/gvhmr-gpu-execution-probe/manifest.json`, a
 `neodojo.gvhmr_gpu_execution_probe.v1` manifest that records local CUDA command
@@ -732,8 +746,9 @@ ignored Bilibili Baduanjin source candidate has been materialized under
 bundle exists under `outputs/gvhmr-gpu-input-local-bilibili/`, with a
 `run_gvhmr_neodojo.sh` runner, rights marked unconfirmed, and media kept out of
 git. The same media-containing archive can now be regenerated in one command
-with `make real-gpu-archive LOCAL_VIDEO=...`. A local ignored transfer archive
-has also been generated at
+with `make real-gpu-archive LOCAL_VIDEO=...`, or regenerated with a matching
+operator request in one command via `make real-gpu-run-request LOCAL_VIDEO=...`.
+A local ignored transfer archive has also been generated at
 `outputs/gvhmr-gpu-input-archive-local-bilibili/neodojo-gvhmr-gpu-input.tar.gz`;
 its manifest reports `archive_with_media`, `media_included: true`, and
 `safe_for_git: false`, and the extracted archive has been checked to contain

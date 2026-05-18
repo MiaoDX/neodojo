@@ -1,4 +1,4 @@
-.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-run-request gvhmr-run-request-smoke gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict real-demo-pages-promotion-validate smoke-public
+.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-gpu-run-request real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-run-request gvhmr-run-request-smoke gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict real-demo-pages-promotion-validate smoke-public
 
 PYTHON ?= python3
 REAL_SOURCE_ID ?= 03-006
@@ -120,6 +120,13 @@ real-gpu-archive:
 	$(MAKE) real-handoff LOCAL_VIDEO="$(LOCAL_VIDEO)" REAL_DRY_RUN=0 REAL_PREP_OUT="$(REAL_PREP_OUT)" REAL_SOURCE_OUT="$(REAL_SOURCE_OUT)" GPU_HANDOFF_OUT="$(GPU_HANDOFF_OUT)"
 	$(MAKE) gpu-input-bundle GPU_HANDOFF="$(GPU_HANDOFF_OUT)" GPU_INPUT_OUT="$(GPU_INPUT_OUT)" GPU_INPUT_INCLUDE_MEDIA=1
 	$(MAKE) gpu-input-archive GPU_INPUT="$(GPU_INPUT_OUT)" GPU_INPUT_ARCHIVE_OUT="$(GPU_INPUT_ARCHIVE_OUT)" GPU_INPUT_ARCHIVE_NAME="$(GPU_INPUT_ARCHIVE_NAME)"
+
+real-gpu-run-request:
+	@test -n "$(LOCAL_VIDEO)" || (echo "LOCAL_VIDEO=path/to/local-source.mp4 is required" && exit 2)
+	$(MAKE) real-gpu-archive LOCAL_VIDEO="$(LOCAL_VIDEO)" REAL_PREP_OUT="$(REAL_PREP_OUT)" REAL_SOURCE_OUT="$(REAL_SOURCE_OUT)" GPU_HANDOFF_OUT="$(GPU_HANDOFF_OUT)" GPU_INPUT_OUT="$(GPU_INPUT_OUT)" GPU_INPUT_ARCHIVE_OUT="$(GPU_INPUT_ARCHIVE_OUT)" GPU_INPUT_ARCHIVE_NAME="$(GPU_INPUT_ARCHIVE_NAME)"
+	$(MAKE) gvhmr-run-request GPU_INPUT_ARCHIVE="$(GPU_INPUT_ARCHIVE_OUT)" GVHMR_RUN_REQUEST_OUT="$(GVHMR_RUN_REQUEST_OUT)"
+	test -f "$(GVHMR_RUN_REQUEST_OUT)/manifest.json"
+	test -f "$(GVHMR_RUN_REQUEST_OUT)/README.md"
 
 real-handoff-smoke:
 	rm -rf outputs/real-handoff-smoke

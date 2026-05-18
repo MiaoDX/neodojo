@@ -47,6 +47,12 @@ For another local source, regenerate the handoff:
 make real-gpu-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 ```
 
+To regenerate the archive and the operator request together:
+
+```bash
+make real-gpu-run-request LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
+```
+
 To record whether this local workspace has any configured GPU execution route:
 
 ```bash
@@ -69,7 +75,7 @@ The resulting media-containing archive must remain under ignored outputs and
 must not be committed or uploaded as a public CI artifact.
 
 Before sending the archive to a GPU operator, generate the concise request
-artifact:
+artifact if it was not already created by `make real-gpu-run-request`:
 
 ```bash
 make gvhmr-run-request GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive

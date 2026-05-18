@@ -187,6 +187,8 @@ make real-gpu-archive \
 This target forces non-dry-run source materialization, creates the
 media-including GPU input bundle, and writes the transfer archive without
 running GVHMR locally.
+Use `make real-gpu-run-request LOCAL_VIDEO=...` when the same local command
+should also write the generated operator request from that archive.
 
 Package the materialized source metadata for the external GPU operator:
 
@@ -333,6 +335,8 @@ artifact path; it defaults to
 - [x] Generate an external GPU run-request manifest and README from a transfer
   archive so the remaining operator step has archive hash, required assets,
   expected return artifact, GPU commands, and local return checks in one place.
+- [x] Add `make real-gpu-run-request LOCAL_VIDEO=...` to prepare the ignored
+  media archive and generated operator request together for local GPU handoff.
 - [x] Add `make real-handoff LOCAL_VIDEO=...` to run local prep,
   materialization, and GPU handoff packaging as one command without running
   GVHMR locally.
@@ -409,8 +413,9 @@ CPU workspace:
   `run_gvhmr_neodojo.sh`; a media-including ignored transfer archive exists at
   `outputs/gvhmr-gpu-input-archive-local-bilibili/neodojo-gvhmr-gpu-input.tar.gz`
   with manifest status `archive_with_media`, `media_included: true`, and
-  `safe_for_git: false`; official source `03-006` is still an available
-  source-index path if rights/source selection change
+  `safe_for_git: false`; the archive plus generated request can be recreated
+  with `make real-gpu-run-request LOCAL_VIDEO=...`; official source `03-006` is
+  still an available source-index path if rights/source selection change
 - missing runtime: a GPU-capable GVHMR environment such as Colab, RunPod,
   Modal, Hugging Face Jobs, or another CUDA machine
 - missing artifact: a `neodojo.gvhmr_smplx_joints.v1` JSON export with

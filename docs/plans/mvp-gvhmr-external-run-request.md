@@ -45,6 +45,7 @@ option, and local return commands. It still does not run GVHMR locally.
 
   ```bash
   make gvhmr-run-request GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive
+  make real-gpu-run-request LOCAL_VIDEO=path/to/local-source.mp4
   make gvhmr-run-request-smoke
   ```
 
@@ -57,6 +58,8 @@ option, and local return commands. It still does not run GVHMR locally.
   commands, local import command, and strict verification command.
 - [x] Write a concise operator README next to the request manifest.
 - [x] Add CLI and Make targets for request generation and metadata-only smoke.
+- [x] Add a one-command local media archive plus request target for operator
+  handoff preparation.
 - [x] Include the smoke target in `make verify`.
 - [x] Upload the metadata-only run-request smoke artifact from the public-demo
   GitHub Actions workflow.
@@ -74,6 +77,8 @@ option, and local return commands. It still does not run GVHMR locally.
   and preserve `safe_for_git: true`.
 - The request manifest records `expected_return_artifact.schema:
   neodojo.gvhmr_smplx_joints.v1`.
+- `make real-gpu-run-request LOCAL_VIDEO=...` writes both a media-containing
+  archive and a matching request manifest/README under ignored outputs.
 - `make verify` includes the run-request smoke target.
 - The public-demo workflow uploads `neodojo-gpu-run-request-smoke`.
 

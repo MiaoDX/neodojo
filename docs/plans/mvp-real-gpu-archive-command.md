@@ -33,6 +33,7 @@ validation boundaries.
 ## Outputs
 
 - `make real-gpu-archive`.
+- `make real-gpu-run-request` as the archive plus operator-request wrapper.
 - An ignored `outputs/gvhmr-gpu-input-archive/neodojo-gvhmr-gpu-input.tar.gz`
   by default, or a caller-specified `GPU_INPUT_ARCHIVE_OUT`.
 - Docs and runbook updates showing the single command.
@@ -40,6 +41,8 @@ validation boundaries.
 ## Execution Tasks
 
 - [x] Add `real-gpu-archive` to the Makefile.
+- [x] Add `real-gpu-run-request` to chain archive creation and request
+  generation.
 - [x] Chain source prep, non-dry-run materialization, GPU input bundle creation
   with media, and transfer archive creation.
 - [x] Preserve existing output override variables.
@@ -54,6 +57,9 @@ validation boundaries.
   media-containing ignored archive.
 - The archive manifest reports `archive_with_media`, `media_included: true`,
   and `safe_for_git: false`.
+- `make real-gpu-run-request LOCAL_VIDEO=...` writes
+  `outputs/gvhmr-gpu-run-request/manifest.json` with
+  `status: ready_for_external_gpu`.
 - The local smoke artifact at
   `outputs/real-gpu-archive-command-smoke/gpu-input-archive/manifest.json`
   records `source_id: local-archive-command-smoke`, a 2-second trim, and
