@@ -321,6 +321,14 @@ motion artifact, or hosted/live-client Viser capture.
   expected SMPL-X/G1/fixture labels, and the downloaded real-conversion audit
   artifact still reports `external_gpu_artifact_missing`, `complete: false`,
   `blocked: true`, with a safe nested GPU probe and no secret values.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26007531255` verified the
+  guarded real-demo Pages promotion changes on `main`: the default fixture CI
+  lane still passed and deployed, the downloaded public-demo artifact passes
+  `neodojo demo smoke` and remains `neodojo.public_demo.v1` with
+  `fixture_only: true`, while the downloaded real-conversion audit artifact
+  still reports `external_gpu_artifact_missing`, `complete: false`, and
+  `blocked: true`.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.

@@ -84,6 +84,12 @@ until a human explicitly promotes a verified real artifact.
 - `make test` covers the workflow trigger, gating, validation, and unsafe path
   exclusions.
 - `make check` includes this plan through the MVP index.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26007531255` verified that
+  the default fixture public-demo lane still passes and deploys after this
+  workflow change; the downloaded public-demo artifact passes
+  `neodojo demo smoke` and remains fixture-only, while the downloaded
+  real-conversion audit remains blocked on the missing external GPU export.
 
 ## Non-Goals
 
