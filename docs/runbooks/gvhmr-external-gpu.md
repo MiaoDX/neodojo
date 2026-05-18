@@ -120,8 +120,9 @@ make gvhmr-operator-package \
 ```
 
 The package writes `outputs/gvhmr-operator-package/manifest.json`, `README.md`,
-`archive/`, `request/`, and `colab/`. Media-containing packages remain ignored
-and must not be committed or uploaded as public CI artifacts.
+`archive/`, `request/`, and `colab/`, then validates the copied package before
+returning. Media-containing packages remain ignored and must not be committed
+or uploaded as public CI artifacts.
 
 To validate an already-collocated package before transfer or self-hosted
 workflow dispatch:

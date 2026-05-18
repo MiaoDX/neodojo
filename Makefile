@@ -212,6 +212,7 @@ gvhmr-operator-package:
 	@test -n "$(GVHMR_RUN_REQUEST)" || (echo "GVHMR_RUN_REQUEST=path/to/gpu-run-request-manifest-or-dir is required" && exit 2)
 	@test -n "$(GVHMR_COLAB_NOTEBOOK)" || (echo "GVHMR_COLAB_NOTEBOOK=path/to/colab-notebook-manifest-or-dir is required" && exit 2)
 	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion package-operator --gpu-input-archive "$(GPU_INPUT_ARCHIVE)" --gpu-run-request "$(GVHMR_RUN_REQUEST)" --colab-notebook "$(GVHMR_COLAB_NOTEBOOK)" --out "$(GVHMR_OPERATOR_PACKAGE_OUT)"
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion validate-operator-package --package "$(GVHMR_OPERATOR_PACKAGE_OUT)"
 
 gvhmr-operator-package-smoke: gvhmr-colab-notebook-smoke
 	rm -rf outputs/gvhmr-operator-package-smoke

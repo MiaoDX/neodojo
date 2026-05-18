@@ -809,7 +809,8 @@ operator request, and Colab notebook handoff into one command for operators who
 will run GVHMR from a notebook runtime.
 `make real-gpu-operator-package LOCAL_VIDEO=...` continues that chain by
 collocating the archive, request, notebook, and package README/manifest into
-one ignored operator package directory.
+one ignored operator package directory, then validating that copied package
+before returning.
 `neodojo real-conversion write-colab-notebook` and `make gvhmr-colab-notebook
 GVHMR_RUN_REQUEST=...` turn that request manifest into a Colab-ready operator
 notebook plus `neodojo.gvhmr_colab_operator_notebook.v1` sidecar manifest. The
@@ -821,8 +822,9 @@ the local `make real-artifact-intake` / `make verify-real` return commands.
 archive/request.
 `neodojo real-conversion package-operator` and `make gvhmr-operator-package`
 validate matching archive, request, and notebook checksums, then copy them into
-one `neodojo.gvhmr_operator_package.v1` handoff directory. `neodojo
-real-conversion validate-operator-package` and `make
+one `neodojo.gvhmr_operator_package.v1` handoff directory; the Make target also
+validates the copied package before returning. `neodojo real-conversion
+validate-operator-package` and `make
 gvhmr-operator-package-validate` validate an already-collocated package's
 schemas, archive/request/notebook checksums, media flags, and expected return
 schema before transfer. `make gvhmr-operator-package-smoke` covers the

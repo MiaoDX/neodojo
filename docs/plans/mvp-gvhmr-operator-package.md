@@ -71,6 +71,9 @@ provenance, rights, and returned-artifact validation boundaries.
 - [x] Include a metadata-only package smoke in `make verify`.
 - [x] Add a reusable validator for an already-collocated package before
   external transfer or self-hosted workflow dispatch.
+- [x] Run that validator as part of the direct package Make target so
+  one-command package creation fails before handoff when copied package
+  checksums drift.
 - [x] Upload the metadata-only package smoke artifact from the public-demo
   GitHub Actions workflow.
 - [x] Add focused tests for media-including and metadata-only package creation.
@@ -94,6 +97,8 @@ provenance, rights, and returned-artifact validation boundaries.
 - `make gvhmr-operator-package-validate` validates package, request, and
   notebook schemas plus archive/request/notebook checksum links for an existing
   collocated package.
+- `make gvhmr-operator-package` and therefore `make real-gpu-operator-package`
+  run copied-package validation before reporting success.
 - The public-demo workflow uploads `neodojo-gvhmr-operator-package-smoke`,
   verified by GitHub Actions run
   `https://github.com/MiaoDX/neodojo/actions/runs/26009913491`.

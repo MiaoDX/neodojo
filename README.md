@@ -399,8 +399,9 @@ also writing the GPU operator request manifest and README from the generated
 archive.
 `make real-gpu-colab-notebook LOCAL_VIDEO=...` extends it one step further by
 also writing the Colab-ready operator notebook from that request.
-`make real-gpu-operator-package LOCAL_VIDEO=...` collocates the archive,
-request, and notebook into one ignored operator package directory for transfer.
+`make real-gpu-operator-package LOCAL_VIDEO=...` collocates and validates the
+archive, request, and notebook in one ignored operator package directory for
+transfer.
 `neodojo real-conversion package-gpu-handoff` and `make gpu-handoff
 SOURCE_MATERIALIZATION=...` consume a source-materialization manifest and write
 `outputs/gvhmr-gpu-handoff/manifest.json`, a README, and a
@@ -436,7 +437,8 @@ Colab-ready operator notebook with checksum verification, guarded GVHMR
 execution, returned JSON download, and local validation commands.
 `make gvhmr-operator-package GPU_INPUT_ARCHIVE=... GVHMR_RUN_REQUEST=...
 GVHMR_COLAB_NOTEBOOK=...` collocates those generated handoff files into one
-package with a package manifest and README. `make
+package with a package manifest and README, then validates the copied package
+before returning. `make
 gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=...` validates a
 collocated package directory before transfer.
 `make gvhmr-run-request-smoke` covers the metadata-only request path in
