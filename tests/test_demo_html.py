@@ -2088,6 +2088,18 @@ class DemoHtmlTests(unittest.TestCase):
                 archive_members = sorted(tar.getnames())
             with tarfile.open(operator_package_archive.archive_path, "r:gz") as tar:
                 operator_package_archive_members = sorted(tar.getnames())
+            downloaded_operator_package_archive_dir = root / "downloaded-operator-package-archive"
+            downloaded_operator_package_archive_dir.mkdir()
+            (downloaded_operator_package_archive_dir / "manifest.json").write_bytes(
+                operator_package_archive.manifest_path.read_bytes()
+            )
+            (downloaded_operator_package_archive_dir / operator_package_archive.archive_path.name).write_bytes(
+                operator_package_archive.archive_path.read_bytes()
+            )
+            operator_package_archive.archive_path.write_bytes(b"stale local archive bytes")
+            downloaded_operator_package_archive = validate_gvhmr_operator_package_archive(
+                downloaded_operator_package_archive_dir
+            )
 
         self.assertEqual(bundle.status, "ready_for_gpu_with_media")
         self.assertEqual(manifest["schema"], "neodojo.gvhmr_gpu_input_bundle.v1")
@@ -2138,6 +2150,10 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(operator_package_archive.status, "ready_for_external_gpu_operator_package_archive")
         self.assertEqual(
             validated_operator_package_archive.status,
+            "ready_for_external_gpu_operator_package_archive",
+        )
+        self.assertEqual(
+            downloaded_operator_package_archive.status,
             "ready_for_external_gpu_operator_package_archive",
         )
         self.assertIn(operator_package_archive.manifest_path, validated_operator_package_archive.checked_paths)

@@ -2586,11 +2586,6 @@ def _operator_package_archive_path_from_manifest(manifest_path: Path, manifest: 
     archive = manifest.get("archive")
     if not isinstance(archive, dict):
         raise ValueError("GVHMR operator package archive manifest is missing archive metadata")
-    raw_path = archive.get("path")
-    if isinstance(raw_path, str) and raw_path:
-        candidate = Path(raw_path)
-        if candidate.exists():
-            return candidate
     filename = archive.get("filename")
     if not isinstance(filename, str) or not filename:
         raise ValueError("GVHMR operator package archive manifest is missing archive filename")
@@ -2599,6 +2594,11 @@ def _operator_package_archive_path_from_manifest(manifest_path: Path, manifest: 
     candidate = manifest_path.parent / filename
     if candidate.exists():
         return candidate
+    raw_path = archive.get("path")
+    if isinstance(raw_path, str) and raw_path:
+        candidate = Path(raw_path)
+        if candidate.exists():
+            return candidate
     raise ValueError("GVHMR operator package archive file does not exist")
 
 
