@@ -218,7 +218,8 @@ motion artifact, or hosted/live-client Viser capture.
   GPU run-request smoke artifact, metadata-only Colab operator notebook smoke
   artifact, metadata-only GPU execution probe artifact, fixture-only
   real-artifact intake smoke
-  artifact, real-conversion audit artifact, standalone public-demo artifact,
+  artifact, default real-conversion audit artifact, opt-in GitHub-route
+  real-conversion audit artifact, standalone public-demo artifact,
   browser-capture artifact, and capture-bundle artifact containing the capture
   manifest and referenced generated evidence, and publishes the static
   public-demo output to GitHub Pages from `main` when the repository variable

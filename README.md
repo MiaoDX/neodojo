@@ -365,7 +365,8 @@ validates an existing
 `.github/workflows/public-demo.yml` runs the fixture lane with browser capture,
 also runs the metadata-only real/GPU smoke lanes, uploads the real-handoff,
 GPU input bundle, GPU input archive, GPU run-request, GPU execution probe, and
-real-artifact intake smoke artifacts plus the standalone public-demo,
+real-artifact intake smoke artifacts, uploads both the default real-conversion
+audit and opt-in GitHub-route audit artifacts plus the standalone public-demo,
 browser-capture, and capture-bundle artifacts, and publishes the fixture-only
 public demo to GitHub Pages when `NEODOJO_DEPLOY_PAGES=true` is set as a
 repository variable.

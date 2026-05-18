@@ -2848,6 +2848,19 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["schema"], "neodojo.real_conversion_audit.v1")
         self.assertFalse(manifest["complete"])
 
+    def test_public_demo_workflow_uploads_github_route_audit_artifact(self) -> None:
+        workflow = Path(".github/workflows/public-demo.yml").read_text(encoding="utf-8")
+
+        self.assertIn("actions: read", workflow)
+        self.assertIn("Real conversion completion audit with GitHub route probe", workflow)
+        self.assertIn("REAL_AUDIT_GITHUB_REPO=${{ github.repository }}", workflow)
+        self.assertIn("GH_TOKEN: ${{ github.token }}", workflow)
+        self.assertIn("neodojo-real-conversion-audit-github", workflow)
+        self.assertIn(
+            "outputs/real-conversion-audit-github/gpu-execution-probe/manifest.json",
+            workflow,
+        )
+
     def test_self_hosted_gpu_workflow_is_manual_and_uploads_only_safe_artifacts(self) -> None:
         workflow = Path(".github/workflows/gvhmr-self-hosted-gpu.yml").read_text(encoding="utf-8")
 

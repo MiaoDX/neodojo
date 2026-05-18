@@ -478,6 +478,8 @@ target exits successfully for blocker classification. Use
 `make real-conversion-audit-strict`, `make verify-real`, or
 `neodojo real-conversion audit-completion --require-complete` when automation
 should fail unless a real non-fixture demo has been generated.
+The default public-demo workflow uploads both the default audit artifact and a
+separate opt-in GitHub-route audit artifact for CI evidence.
 GitHub Actions run
 `https://github.com/MiaoDX/neodojo/actions/runs/26006485103` uploaded the
 `neodojo-real-conversion-audit` artifact and verified the CI state is still

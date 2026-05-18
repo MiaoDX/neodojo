@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   pages: write
   id-token: write
@@ -142,6 +143,18 @@ jobs:
           path: |
             outputs/real-conversion-audit/manifest.json
             outputs/real-conversion-audit/gpu-execution-probe/manifest.json
+          if-no-files-found: error
+      - name: Real conversion completion audit with GitHub route probe
+        run: make real-conversion-audit REAL_CONVERSION_AUDIT_OUT=outputs/real-conversion-audit-github REAL_AUDIT_GITHUB_REPO=${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Upload real conversion GitHub audit artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neodojo-real-conversion-audit-github
+          path: |
+            outputs/real-conversion-audit-github/manifest.json
+            outputs/real-conversion-audit-github/gpu-execution-probe/manifest.json
           if-no-files-found: error
       - name: Install browser runtime
         run: python -m playwright install --with-deps chromium

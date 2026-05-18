@@ -320,9 +320,10 @@ capture bundle。
 `.github/workflows/public-demo.yml` 里的 GitHub Actions workflow 会运行同一条 fixture
 lane、browser capture 和 metadata-only real/GPU smoke lanes，上传 real-handoff、
 GPU input bundle、GPU input archive、GPU run-request、GPU execution probe、
-real-artifact intake smoke artifacts，以及 public-demo、browser-capture 与
-capture-bundle artifacts，并在 repository variable `NEODOJO_DEPLOY_PAGES=true`
-时把 fixture-only public demo 发布到 GitHub Pages。
+real-artifact intake smoke artifacts，上传默认 real-conversion audit 与 opt-in
+GitHub-route audit artifacts，以及 public-demo、browser-capture 与 capture-bundle
+artifacts，并在 repository variable `NEODOJO_DEPLOY_PAGES=true` 时把 fixture-only
+public demo 发布到 GitHub Pages。
 `make lint` 目前是 syntax/import bytecode compile check；`make check` 会验证
 MVP plan links 和最低限度的 plan scaffolding；`make build` 会把 wheel 写到被忽略的
 `outputs/dist/`。
