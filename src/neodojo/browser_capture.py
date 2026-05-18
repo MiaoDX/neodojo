@@ -100,22 +100,49 @@ def write_public_demo_browser_capture(
                 missing = [label for label in required_labels if label not in body_text]
                 if missing:
                     raise ValueError(f"browser-rendered public demo is missing labels: {', '.join(missing)}")
-                image_state = page.evaluate(
+                page.wait_for_function(
+                    "() => document.querySelectorAll('canvas').length >= 2",
+                    timeout=timeout_ms,
+                )
+                page.wait_for_timeout(250)
+                replay_state = page.evaluate(
                     """() => {
-                        const img = document.querySelector('.stage img');
-                        if (!img) return { ok: false, reason: 'missing stage image' };
-                        const box = img.getBoundingClientRect();
+                        const canvases = Array.from(document.querySelectorAll('canvas'));
+                        const panels = Array.from(document.querySelectorAll('[data-panel]')).map((panel) => panel.dataset.panel);
+                        const states = canvases.map((canvas) => {
+                            const box = canvas.getBoundingClientRect();
+                            const ctx = canvas.getContext('2d');
+                            const sample = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                            let nonBackgroundPixels = 0;
+                            for (let index = 0; index < sample.length; index += 16) {
+                                const r = sample[index];
+                                const g = sample[index + 1];
+                                const b = sample[index + 2];
+                                const a = sample[index + 3];
+                                if (a > 0 && !(r > 245 && g > 248 && b > 250)) nonBackgroundPixels += 1;
+                                if (nonBackgroundPixels > 128) break;
+                            }
+                            return {
+                                width: box.width,
+                                height: box.height,
+                                pixelWidth: canvas.width,
+                                pixelHeight: canvas.height,
+                                nonBackgroundPixels,
+                            };
+                        });
                         return {
-                            ok: img.complete && img.naturalWidth > 0 && img.naturalHeight > 0 && box.width > 0 && box.height > 0,
-                            naturalWidth: img.naturalWidth,
-                            naturalHeight: img.naturalHeight,
-                            width: box.width,
-                            height: box.height,
+                            ok: panels.includes('smplx')
+                                && panels.includes('g1')
+                                && canvases.length >= 2
+                                && states.every((state) => state.width > 0 && state.height > 0 && state.nonBackgroundPixels > 128),
+                            panels,
+                            canvasCount: canvases.length,
+                            states,
                         };
                     }"""
                 )
-                if not isinstance(image_state, dict) or not image_state.get("ok"):
-                    raise ValueError(f"browser-rendered public demo screenshot image did not load: {image_state}")
+                if not isinstance(replay_state, dict) or not replay_state.get("ok"):
+                    raise ValueError(f"browser-rendered public demo replay canvases did not render: {replay_state}")
                 page.screenshot(path=str(screenshot_path), full_page=True)
             finally:
                 browser.close()
@@ -140,7 +167,7 @@ def write_public_demo_browser_capture(
         "checks": {
             "required_labels": required_labels,
             "browser_body_labels_present": True,
-            "stage_image_loaded": True,
+            "two_panel_canvas_replay_rendered": True,
             "screenshot_size_bytes": screenshot_size,
         },
         "scoring_source": "smplx",
