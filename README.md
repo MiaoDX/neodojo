@@ -192,6 +192,7 @@ make demo-public
 make demo-public-browser
 make real-gpu-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-gpu-run-request LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
+make real-gpu-colab-notebook LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin REAL_LOCAL_TITLE="Local Baduanjin proof clip"
 make real-handoff-smoke
@@ -392,6 +393,8 @@ that is allowed to be transferred to the selected GPU machine.
 `make real-gpu-run-request LOCAL_VIDEO=...` extends that local packaging path by
 also writing the GPU operator request manifest and README from the generated
 archive.
+`make real-gpu-colab-notebook LOCAL_VIDEO=...` extends it one step further by
+also writing the Colab-ready operator notebook from that request.
 `neodojo real-conversion package-gpu-handoff` and `make gpu-handoff
 SOURCE_MATERIALIZATION=...` consume a source-materialization manifest and write
 `outputs/gvhmr-gpu-handoff/manifest.json`, a README, and a
@@ -550,6 +553,8 @@ In progress:
       preparation for the external GPU operator
 - [x] One-command `make real-gpu-run-request` local archive plus operator
       request preparation
+- [x] One-command `make real-gpu-colab-notebook` local archive, operator
+      request, and Colab notebook preparation
 - [x] Local GVHMR GPU handoff package with export template and return command
 - [x] Ignored copyable GPU input bundle with optional trimmed media inclusion
 - [x] Ignored GPU input transfer archive for upload to the selected GPU machine

@@ -1,6 +1,6 @@
 # MVP Real Conversion Gate Plan
 
-Status: LOCAL PREP, SOURCE MATERIALIZATION, GPU HANDOFF, GPU INPUT BUNDLE, GPU RUNNER, TRANSFER ARCHIVE, GPU EXECUTION PROBE, EXPORT HELPER, RESULT INSPECTION, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
+Status: LOCAL PREP, SOURCE MATERIALIZATION, GPU HANDOFF, GPU INPUT BUNDLE, GPU RUNNER, TRANSFER ARCHIVE, RUN REQUEST, COLAB NOTEBOOK, GPU EXECUTION PROBE, EXPORT HELPER, RESULT INSPECTION, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
 
 ## Goal
 
@@ -44,6 +44,9 @@ but it is required before calling the MVP an end-to-end neodojo proof.
   executable wrapper around upstream GVHMR and the neodojo exporter.
 - [mvp-gvhmr-gpu-transfer-archive.md](mvp-gvhmr-gpu-transfer-archive.md)
   packages the ignored GPU input bundle as a single `.tar.gz` transfer file.
+- [mvp-real-gpu-colab-command.md](mvp-real-gpu-colab-command.md) chains local
+  source materialization, transfer archive, generated run request, and Colab
+  notebook handoff for notebook-based GPU operators.
 - [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md)
   and [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) are not required to run
   GVHMR, but they should provide the fixture public-demo lane that the imported
@@ -189,6 +192,8 @@ media-including GPU input bundle, and writes the transfer archive without
 running GVHMR locally.
 Use `make real-gpu-run-request LOCAL_VIDEO=...` when the same local command
 should also write the generated operator request from that archive.
+Use `make real-gpu-colab-notebook LOCAL_VIDEO=...` when the same local command
+should also write the generated Colab operator notebook from that request.
 
 Package the materialized source metadata for the external GPU operator:
 
@@ -337,6 +342,9 @@ artifact path; it defaults to
   expected return artifact, GPU commands, and local return checks in one place.
 - [x] Add `make real-gpu-run-request LOCAL_VIDEO=...` to prepare the ignored
   media archive and generated operator request together for local GPU handoff.
+- [x] Add `make real-gpu-colab-notebook LOCAL_VIDEO=...` to prepare the ignored
+  media archive, generated operator request, and Colab operator notebook
+  together for notebook-based GPU handoff.
 - [x] Add `make real-handoff LOCAL_VIDEO=...` to run local prep,
   materialization, and GPU handoff packaging as one command without running
   GVHMR locally.
@@ -414,7 +422,9 @@ CPU workspace:
   `outputs/gvhmr-gpu-input-archive-local-bilibili/neodojo-gvhmr-gpu-input.tar.gz`
   with manifest status `archive_with_media`, `media_included: true`, and
   `safe_for_git: false`; the archive plus generated request can be recreated
-  with `make real-gpu-run-request LOCAL_VIDEO=...`; official source `03-006` is
+  with `make real-gpu-run-request LOCAL_VIDEO=...`, and the combined archive,
+  request, and Colab notebook handoff can be recreated with
+  `make real-gpu-colab-notebook LOCAL_VIDEO=...`; official source `03-006` is
   still an available source-index path if rights/source selection change
 - missing runtime: a GPU-capable GVHMR environment such as Colab, RunPod,
   Modal, Hugging Face Jobs, or another CUDA machine

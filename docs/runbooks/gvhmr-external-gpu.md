@@ -53,6 +53,12 @@ To regenerate the archive and the operator request together:
 make real-gpu-run-request LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 ```
 
+To regenerate the archive, operator request, and Colab notebook together:
+
+```bash
+make real-gpu-colab-notebook LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
+```
+
 To record whether this local workspace has any configured GPU execution route:
 
 ```bash
