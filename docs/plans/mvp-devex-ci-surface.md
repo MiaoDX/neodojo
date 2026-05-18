@@ -289,7 +289,8 @@ labels, and the downloaded real-conversion audit artifact remained
 - CI uploads the metadata-only GPU input archive smoke artifact with no source
   media.
 - CI uploads the metadata-only GPU run-request and Colab operator notebook
-  smoke artifacts with no source media.
+  smoke artifacts with no source media; the Colab notebook artifact upload was
+  verified by run `26009044473`.
 - CI uploads the metadata-only GPU execution probe artifact with command/env-key
   readiness evidence and no secret values, verified by run `26005618093`.
 - CI uploads the fixture-only real-artifact intake smoke artifact with

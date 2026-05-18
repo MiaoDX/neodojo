@@ -79,6 +79,13 @@ returned-artifact gate.
   guarded behind `RUN_GVHMR = False` by default.
 - `make verify` includes the notebook smoke target.
 - The public-demo workflow uploads `neodojo-gvhmr-colab-operator-smoke`.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26009044473` passed and the
+  downloaded notebook smoke artifact reports
+  `neodojo.gvhmr_colab_operator_notebook.v1`,
+  `status: metadata_only_not_ready_for_gpu`, `safe_for_git: true`, checksum
+  verification, guarded `RUN_GVHMR = False`, safe archive-member validation,
+  and local return commands.
 
 ## Non-Goals
 
