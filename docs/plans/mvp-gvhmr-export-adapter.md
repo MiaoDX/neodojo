@@ -81,6 +81,10 @@ export helper instead of only a blank JSON template.
   `export_neodojo_gvhmr.py` beside `manifest.json`, `README.md`, and
   `gvhmr-smplx-joints.template.json`, plus a copyable
   `source-materialization.json`.
+- `gvhmr-smplx-joints.template.json` and the packaged GPU-side exporter
+  explicitly write `fixture_only: false` into the returned
+  `neodojo.gvhmr_smplx_joints.v1` JSON, so real GPU exports are not inferred
+  only from a missing fixture flag.
 - The handoff manifest records `commands.gpu_export_neodojo` and
   `expected_export.gpu_exporter_script`.
 - The generated README has a GPU-side exporter command after the upstream

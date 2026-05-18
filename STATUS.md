@@ -170,9 +170,11 @@ motion artifact, or hosted/live-client Viser capture.
   run. The manifest preserves source-materialization hash, trim, input-video
   checksum, expected `neodojo.gvhmr_smplx_joints.v1` export path, a GPU-side
   export command, the executable GPU runner command, and the local return
-  command. The exporter helper uses bundle-local filenames and is intended to
-  run after GVHMR in the GPU environment with `torch`, `smplx`, and licensed
-  local SMPL-X assets. It does not copy source media or run GVHMR locally.
+  command. The export template and exporter helper explicitly write
+  `fixture_only: false` in the returned JSON. The exporter helper uses
+  bundle-local filenames and is intended to run after GVHMR in the GPU
+  environment with `torch`, `smplx`, and licensed local SMPL-X assets. It does
+  not copy source media or run GVHMR locally.
 - `make gpu-input-bundle-smoke` writes a metadata-only
   `outputs/gvhmr-gpu-input-smoke/` bundle and checks `run_gvhmr_neodojo.sh`
   with `bash -n`. It is included in `make verify` and does not copy media or

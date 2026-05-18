@@ -1456,6 +1456,7 @@ def package_gvhmr_gpu_handoff(
     export_template = {
         "schema": GVHMR_JOINT_EXPORT_SCHEMA,
         "template_only": True,
+        "fixture_only": False,
         "routine": "Baduanjin",
         "form": "imported GVHMR segment",
         "fps": "<fill exported fps>",

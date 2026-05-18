@@ -271,6 +271,9 @@ SMPLX_MODEL_DIR=/path/to/GVHMR/inputs/checkpoints/body_models/smplx \
 
 The wrapper writes `gvhmr-smplx-joints.json` in the bundle directory by
 default. That JSON is the artifact to return to the local neodojo workspace.
+It is generated from `gvhmr-smplx-joints.template.json` and explicitly records
+`fixture_only: false`; fixture-only smoke inputs use a separate generated JSON
+and must not be substituted for this returned GPU artifact.
 
 ## Validate Back Locally
 

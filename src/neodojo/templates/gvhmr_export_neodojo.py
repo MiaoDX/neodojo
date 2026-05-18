@@ -266,6 +266,7 @@ def main() -> int:
 
     export = {
         "schema": SCHEMA,
+        "fixture_only": False,
         "routine": args.routine,
         "form": args.form,
         "fps": args.fps,
