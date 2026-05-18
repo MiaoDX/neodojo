@@ -14,9 +14,15 @@ real GVHMR proof.
   visualization and ecosystem fit only.
 - The live Pages demo remains fixture-only at
   `https://miaodx.com/neodojo/`.
+- The generated public-demo `index.html` is now an interactive two-panel
+  teaching replay: SMPL-X skeleton teaching track on the left, Unitree G1 robot
+  model replay on the right, and one synchronized timeline. The default G1
+  replay is still fixture-derived unless an imported GMR track and registered
+  model descriptor are supplied.
 - A local ignored GPU proof exists in this workspace for a short Baduanjin clip:
   non-fixture GVHMR SMPL-X JSON, imported under ignored `outputs/real-demo/`,
-  with a strict local audit previously reporting `real_demo_verified`.
+  with a strict local audit reporting `real_demo_verified` and checking the
+  two-panel public teaching HTML profile.
 
 ## Supported Command Surface
 
@@ -81,8 +87,8 @@ as supported until a new plan explicitly restores them:
 - Deterministic opening-form key-frame annotation and feedback reports.
 - Local SVG/HTML G1 render evidence and optional MuJoCo render evidence when
   local assets/dependencies are available.
-- Teaching playback HTML, fixture public-demo export, optional Viser local
-  runtime contract, browser smoke, and capture-bundle evidence.
+- Teaching playback HTML, interactive two-panel public-demo export, optional
+  Viser local runtime contract, browser smoke, and capture-bundle evidence.
 - Local GPU-run preparation that writes a source materialization manifest, GVHMR
   export template, `export_neodojo_gvhmr.py`, and `run_gvhmr_neodojo.sh` under
   ignored `outputs/`.
@@ -93,6 +99,7 @@ as supported until a new plan explicitly restores them:
 
 - Checked-in local GVHMR execution environment.
 - Checked-in local GMR execution environment.
+- Default true GMR-derived Unitree G1 replay.
 - Completed simulator runtime pipeline.
 - Built-in official SMPL-X body-model renderer.
 - Production/live-client Viser capture.

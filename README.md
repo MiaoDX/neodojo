@@ -21,7 +21,10 @@ track only.
 
 ## CI-Generated Demo
 
-The public demo is fixture-only. It is generated in CI by
+The public demo is fixture-only. Its `index.html` is an interactive two-panel
+teaching replay: SMPL-X skeleton teaching track on the left, Unitree G1 robot
+model replay on the right, one synchronized timeline, and SMPL-X-only scoring.
+It is generated in CI by
 [`.github/workflows/public-demo.yml`](.github/workflows/public-demo.yml) through
 `make demo-public-browser`, uploaded as the `neodojo-public-demo` artifact, and
 published to GitHub Pages from `main` when `NEODOJO_DEPLOY_PAGES=true`.
@@ -39,14 +42,15 @@ published to GitHub Pages from `main` when `NEODOJO_DEPLOY_PAGES=true`.
 This repo is still in bootstrap state. It has fixture-backed motion,
 annotation, SMPL-X surface, G1 visual-track, local render-evidence, public-demo,
 browser-smoke, capture-bundle, local GPU-run preparation, returned GVHMR export
-inspection/import, and real-demo audit commands.
+inspection/import, real-demo audit commands, and a public two-panel teaching
+HTML profile.
 
-It does not yet ship a checked-in local GVHMR/GMR execution environment,
-completed simulator runtime pipeline, committed generated motion artifact,
-production Viser UI, or published real demo. A local real GVHMR proof exists
-only under ignored `outputs/`. Colab, hosted GPU provider, self-hosted Actions
-GPU, operator-package, and real-demo Pages-promotion workflows are not supported
-by the current command surface.
+It does not yet ship a checked-in local GVHMR/GMR execution environment, true
+GMR-derived default G1 replay, completed simulator runtime pipeline, committed
+generated motion artifact, production Viser UI, or published real demo. A local
+real GVHMR proof exists only under ignored `outputs/`. Colab, hosted GPU
+provider, self-hosted Actions GPU, operator-package, and real-demo
+Pages-promotion workflows are not supported by the current command surface.
 
 ## Run
 
