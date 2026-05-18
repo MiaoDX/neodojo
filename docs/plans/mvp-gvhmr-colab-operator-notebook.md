@@ -1,6 +1,6 @@
 # MVP GVHMR Colab Operator Notebook Plan
 
-Status: IMPLEMENTED GENERATED NOTEBOOK; REAL ARTIFACT STILL EXTERNAL
+Status: IMPLEMENTED GENERATED NOTEBOOK; LOCAL REAL ARTIFACT VERIFIED
 
 ## Goal
 
@@ -64,7 +64,8 @@ returned-artifact gate.
   GitHub Actions workflow.
 - [x] Add focused tests for media-including and metadata-only run requests.
 - [x] Update README.md, README.zh.md, STATUS.md, the runbook, and the MVP plan
-  index without claiming a real GVHMR artifact has been produced.
+  index with notebook handoff boundaries; local real-artifact status is
+  documented separately after proof.
 
 ## Acceptance Evidence
 

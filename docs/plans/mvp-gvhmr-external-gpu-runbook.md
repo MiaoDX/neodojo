@@ -1,10 +1,10 @@
 # MVP GVHMR External GPU Runbook Plan
 
-Status: IMPLEMENTED TRACKED RUNBOOK; REAL ARTIFACT STILL EXTERNAL
+Status: IMPLEMENTED TRACKED RUNBOOK; LOCAL REAL ARTIFACT VERIFIED
 
 ## Goal
 
-Move the final real GVHMR execution instructions out of ignored generated
+Move GVHMR execution instructions out of ignored generated
 bundles and into a tracked operator runbook that can be followed on Colab,
 RunPod, Modal, Hugging Face Jobs, or another CUDA machine.
 
@@ -32,8 +32,8 @@ returned `neodojo.gvhmr_smplx_joints.v1` artifact.
 
 - `docs/runbooks/gvhmr-external-gpu.md`.
 - README and README.zh links to the runbook.
-- STATUS and plan-index updates noting that the external runbook exists while
-  the real artifact remains external.
+- STATUS and plan-index updates noting that the external runbook exists and
+  later local proof status is tracked separately.
 
 ## Execution Tasks
 
@@ -69,7 +69,7 @@ returned `neodojo.gvhmr_smplx_joints.v1` artifact.
 
 ## Stop Condition
 
-Stopped when the external GPU operator path is tracked in repo docs, linked from
-the README surface, validated by `make check`, and the only remaining
-real-conversion blocker is still the external GPU-produced
-`neodojo.gvhmr_smplx_joints.v1` export.
+Stopped when the external GPU operator path is tracked in repo docs, linked
+from the README surface, and validated by `make check`. A later local GPU proof
+produced and validated the non-fixture
+`neodojo.gvhmr_smplx_joints.v1` export through ignored `outputs/`.

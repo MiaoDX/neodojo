@@ -13,8 +13,8 @@ synthetic fixture or imported GVHMR-shaped output
   -> HTML fixture path consuming the same contract
 ```
 
-This plan is local-first and GPU-free. It keeps the current synthetic demo
-useful while making it look like a future real GVHMR import from the outside.
+This plan is local-first and GPU-free. It keeps the synthetic demo useful while
+making fixture and real GVHMR imports share the same downstream contract.
 
 ## Current State
 
@@ -30,8 +30,8 @@ useful while making it look like a future real GVHMR import from the outside.
 
 - Current synthetic fixture generation.
 - Optional fixture metadata for routine, form, fps, and frame count.
-- Optional imported GVHMR-shaped output directory or file, used only for schema
-  validation until the later GPU gate produces a real artifact.
+- Optional imported GVHMR-shaped output directory or file, now also exercised by
+  the local non-fixture GPU proof artifact.
 - Artifact policy from `AGENTS.md`, `STATUS.md`, and `ARCHITECTURE.md`.
 
 ## Outputs

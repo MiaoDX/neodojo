@@ -70,7 +70,8 @@ publication is verified at `https://miaodx.com/neodojo/`.
 
 3. Update public docs.
    - [x] Add live demo link only after Pages URL is verified.
-   - [x] Mark the demo fixture-only until a real GVHMR artifact enters.
+   - [x] Mark the demo fixture-only until an explicit guarded real-demo
+     promotion replaces it.
 
 ## Acceptance Evidence
 

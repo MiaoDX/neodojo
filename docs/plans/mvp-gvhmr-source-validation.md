@@ -1,6 +1,6 @@
 # MVP GVHMR Source Validation Plan
 
-Status: IMPLEMENTED VALIDATOR; BLOCKED ON A REAL GVHMR EXPORT FOR FINAL PROOF
+Status: IMPLEMENTED VALIDATOR; LOCAL REAL GVHMR EXPORT VALIDATED
 
 ## Goal
 
@@ -80,4 +80,5 @@ motion artifacts.
 
 Stopped for the local slice when a GVHMR export can be validated against a
 source-materialization manifest and converted into an importable validated JSON
-copy. Final real-artifact proof still waits for a GPU-produced GVHMR export.
+copy. The local GPU proof now validates the non-fixture Bilibili export and
+feeds the strict real-conversion audit.
