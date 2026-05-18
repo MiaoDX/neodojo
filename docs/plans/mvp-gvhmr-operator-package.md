@@ -133,6 +133,22 @@ provenance, rights, and returned-artifact validation boundaries.
   `neodojo-gvhmr-operator-package-archive-smoke` artifact was also revalidated
   locally from a moved download directory with
   `neodojo real-conversion validate-operator-package-archive`.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26013871155` verified the
+  current metadata-only package-archive upload and validation lane after the
+  command surface was aligned in `STATUS.md`. The downloaded
+  `neodojo-gvhmr-operator-package-archive-smoke` artifact revalidated as
+  `neodojo.gvhmr_operator_package_archive.v1`, `status:
+  metadata_only_not_ready_for_gpu`, `media_included: false`, and
+  `policy.safe_for_git: true`.
+- The high-level `make real-gpu-operator-package-archive LOCAL_VIDEO=...`
+  target was also run against an ignored local Bilibili proof candidate with
+  isolated outputs under
+  `outputs/real-gpu-operator-package-archive-target-smoke/`; it produced a
+  media-containing `neodojo.gvhmr_operator_package_archive.v1` archive with
+  `status: ready_for_external_gpu_operator_package_archive`,
+  `media_included: true`, `policy.safe_for_git: false`, and archive checksum
+  `39ff72c8390161b16766eb5d6bb19c3918ce2d958e4739506c358a228433deb2`.
 
 ## Non-Goals
 

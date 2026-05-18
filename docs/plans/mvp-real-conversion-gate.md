@@ -536,6 +536,23 @@ operator-package archive validator in CI and the downloaded
 `neodojo-gvhmr-operator-package-archive-smoke` artifact was revalidated locally
 from a moved download directory. The real-conversion audit still reports
 `external_gpu_artifact_missing`, `complete: false`, and `blocked: true`.
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26013871155` verified the
+current default CI lane after command-surface alignment: the downloaded
+public-demo artifact passes `neodojo demo smoke`, the downloaded metadata-only
+operator package archive revalidates successfully, and the downloaded
+real-conversion audit still reports `external_gpu_artifact_missing`,
+`complete: false`, and `blocked: true`.
+
+The local high-level media-containing
+`make real-gpu-operator-package-archive LOCAL_VIDEO=...` target was run against
+an ignored local Bilibili proof candidate with isolated outputs under
+`outputs/real-gpu-operator-package-archive-target-smoke/`. It produced a
+validated `neodojo.gvhmr_operator_package_archive.v1` archive with `status:
+ready_for_external_gpu_operator_package_archive`, `media_included: true`,
+`policy.safe_for_git: false`, and archive checksum
+`39ff72c8390161b16766eb5d6bb19c3918ce2d958e4739506c358a228433deb2`, leaving
+only the external GVHMR execution and returned export as the blocker.
 
 An optional manual GitHub Actions path now exists at
 `.github/workflows/gvhmr-self-hosted-gpu.yml`. It requires a user-managed
