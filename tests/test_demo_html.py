@@ -1100,11 +1100,35 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(manifest["fixture_only"])
         self.assertEqual(manifest["recording"], "neodojo-demo.rrd")
         self.assertFalse(manifest["rerun"]["actual_rrd"])
+        self.assertEqual(manifest["teaching_html"]["profile"], "neodojo.two_panel_teaching_replay.v1")
+        self.assertEqual(manifest["teaching_html"]["layout"], "split_smplx_left_g1_right")
+        self.assertTrue(manifest["teaching_html"]["interactive"])
+        self.assertTrue(manifest["teaching_html"]["synchronized_replay"])
+        self.assertEqual(
+            manifest["teaching_html"]["panels"]["left"]["label"],
+            "SMPL-X skeleton teaching track",
+        )
+        self.assertEqual(
+            manifest["teaching_html"]["panels"]["right"]["label"],
+            "Unitree G1 robot model replay",
+        )
+        self.assertTrue(manifest["teaching_html"]["g1_replay"]["track_fixture_only"])
+        self.assertTrue(manifest["teaching_html"]["g1_replay"]["model_fixture_only"])
+        self.assertEqual(
+            manifest["teaching_html"]["g1_replay"]["renderer_backend"],
+            "neodojo_svg_schematic.v1",
+        )
         self.assertEqual(recording["schema"], "neodojo.rerun_recording_export.v1")
         self.assertFalse(recording["actual_rerun_rrd"])
         self.assertEqual(scene["schema"], "neodojo.scene_timeline.v1")
-        self.assertIn("SMPL-X teacher", html)
-        self.assertIn("Unitree G1 visual", html)
+        self.assertTrue(scene["track_metadata"]["g1"]["fixture_only"])
+        self.assertIn('data-teaching-html-profile="neodojo.two_panel_teaching_replay.v1"', html)
+        self.assertIn('data-panel="smplx"', html)
+        self.assertIn('data-panel="g1"', html)
+        self.assertIn("SMPL-X skeleton teaching track", html)
+        self.assertIn("Unitree G1 robot model replay", html)
+        self.assertIn("Synchronized timeline", html)
+        self.assertIn("drawRobotModel", html)
         self.assertIn("fixture-only", html)
         self.assertIn("SMPL-X teacher", screenshot)
         self.assertEqual(smoke.manifest_path.name, "manifest.json")
@@ -1542,9 +1566,15 @@ class DemoHtmlTests(unittest.TestCase):
                 playback_manifest_path=playback.manifest_path,
                 recording_path=root / "public-demo" / "neodojo-demo.rrd",
             )
-            html = result.html_path.read_text(encoding="utf-8").replace("Unitree G1 visual", "Unitree visual")
+            html = result.html_path.read_text(encoding="utf-8").replace(
+                "Unitree G1 robot model replay",
+                "Unitree robot replay",
+            )
             result.html_path.write_text(html, encoding="utf-8")
-            screenshot = result.screenshot_path.read_text(encoding="utf-8").replace("Unitree G1 visual", "Unitree visual")
+            screenshot = result.screenshot_path.read_text(encoding="utf-8").replace(
+                "Unitree G1 visual",
+                "Unitree visual",
+            )
             result.screenshot_path.write_text(screenshot, encoding="utf-8")
 
             with self.assertRaisesRegex(ValueError, "missing"):
