@@ -165,6 +165,15 @@ deployed, the downloaded public-demo artifact contained `index.html`,
 labels, and the downloaded real-conversion audit artifact remained
 `external_gpu_artifact_missing` with `complete: false`.
 
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26009913491` verified the
+metadata-only GVHMR operator package smoke artifact on `main`: `make
+gvhmr-operator-package-smoke` passed, the
+`neodojo-gvhmr-operator-package-smoke` artifact uploaded
+`neodojo.gvhmr_operator_package.v1`, copied archive/request/notebook files,
+and package README, the archive contained no source media, the downloaded
+public-demo artifact passed `neodojo demo smoke`, and Pages deployed.
+
 ## Inputs
 
 - Existing fixture generation commands.
@@ -298,7 +307,7 @@ labels, and the downloaded real-conversion audit artifact remained
   verified by run `26009044473`.
 - CI uploads the metadata-only GVHMR operator package smoke artifact with copied
   archive, request, notebook, package manifest, and package README, and no
-  source media.
+  source media, verified by run `26009913491`.
 - CI uploads the metadata-only GPU execution probe artifact with command/env-key
   readiness evidence and no secret values, verified by run `26005618093`.
 - CI uploads the fixture-only real-artifact intake smoke artifact with

@@ -88,7 +88,9 @@ provenance, rights, and returned-artifact validation boundaries.
   `neodojo.gvhmr_smplx_joints.v1` and local `make real-artifact-intake` /
   `make verify-real` commands.
 - `make verify` includes the operator package smoke target.
-- The public-demo workflow uploads `neodojo-gvhmr-operator-package-smoke`.
+- The public-demo workflow uploads `neodojo-gvhmr-operator-package-smoke`,
+  verified by GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26009913491`.
 
 ## Non-Goals
 
