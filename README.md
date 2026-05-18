@@ -38,19 +38,25 @@ published to GitHub Pages from `main` when `NEODOJO_DEPLOY_PAGES=true`.
 
 This repo is still in bootstrap state. It has fixture-backed motion,
 annotation, SMPL-X surface, G1 visual-track, local render-evidence, public-demo,
-browser-smoke, capture-bundle, and metadata-only GPU handoff/operator-package
-commands.
+browser-smoke, capture-bundle, local GPU-run preparation, returned GVHMR export
+inspection/import, and real-demo audit commands.
 
 It does not yet ship a checked-in local GVHMR/GMR execution environment,
 completed simulator runtime pipeline, committed generated motion artifact,
 production Viser UI, or published real demo. A local real GVHMR proof exists
-only under ignored `outputs/`.
+only under ignored `outputs/`. Colab, hosted GPU provider, self-hosted Actions
+GPU, operator-package, and real-demo Pages-promotion workflows are not supported
+by the current command surface.
 
 ## Run
 
 ```bash
 make verify
 make demo-public-browser
+make real-gpu-prep LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin REAL_DRY_RUN=0
+make gvhmr-inspect GVHMR_RESULT=path/to/hmr4d_results.pt
+make real-artifact-intake REAL_ARTIFACT_SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
+make verify-real
 make smoke-public
 ```
 
@@ -67,6 +73,8 @@ task.
   technical research
 - [`docs/humanoid-platform-evaluation.md`](docs/humanoid-platform-evaluation.md)
   — why the MVP uses SMPL-X plus G1 dual tracks
+- [`docs/runbooks/gvhmr-local-gpu.md`](docs/runbooks/gvhmr-local-gpu.md) —
+  current local-machine GVHMR run path
 
 ## Constraints
 

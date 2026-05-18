@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Export GVHMR hmr4d_results.pt to neodojo.gvhmr_smplx_joints.v1.
 
-Run this on the GPU/GVHMR machine after GVHMR writes hmr4d_results.pt. The
-script intentionally depends only on the external GPU environment plus a
-licensed local SMPL-X model path; it does not import neodojo.
+Run this on the local GPU/GVHMR machine after GVHMR writes hmr4d_results.pt. The
+script intentionally depends only on that GPU environment plus a licensed local
+SMPL-X model path; it does not import neodojo.
 """
 
 from __future__ import annotations

@@ -7,11 +7,9 @@ import py_compile
 import socket
 import subprocess
 import sys
-import tarfile
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Sequence
 from unittest.mock import patch
 
 from neodojo.annotations import detect_opening_form_keyframe, write_detected_annotations
@@ -39,25 +37,14 @@ from neodojo.recorder_capture import write_simulator_recorder_capture
 from neodojo.real_conversion import (
     _parse_ffprobe_payload,
     audit_real_conversion_completion,
-    archive_gvhmr_operator_package,
     inspect_gvhmr_result,
     materialize_real_conversion_source,
     package_gvhmr_gpu_handoff,
-    package_gvhmr_gpu_input_archive,
-    package_gvhmr_gpu_input_bundle,
-    probe_gpu_execution_environment,
-    validate_gvhmr_operator_package,
-    validate_gvhmr_operator_package_archive,
     validate_gvhmr_source,
-    write_gvhmr_colab_operator_notebook,
-    write_gvhmr_gpu_run_request,
-    write_gvhmr_operator_package,
-    write_real_gvhmr_artifact_acquisition_status,
     write_real_artifact_intake_smoke_input,
     write_real_conversion_prep,
 )
 from neodojo.real_demo import write_real_conversion_demo
-from neodojo.real_demo_promotion import validate_real_demo_pages_promotion
 from neodojo.smplx_surface import (
     load_smplx_asset_descriptor,
     load_smplx_surface_layer,
@@ -82,71 +69,6 @@ def _check_by_name(manifest: dict, name: str) -> dict:
         if check.get("name") == name:
             return check
     raise AssertionError(f"missing audit check {name}")
-
-
-def _write_verified_real_demo_download_fixture(root: Path) -> Path:
-    source = root / "source-materialization.json"
-    source.write_text(
-        json.dumps(
-            {
-                "schema": "neodojo.real_conversion_source_materialization.v1",
-                "source_prep": {"source_id": "03-006"},
-                "trim": {
-                    "start_seconds": 0.25,
-                    "end_seconds": 1.75,
-                    "duration_seconds": 1.5,
-                },
-                "outputs": {
-                    "trimmed_video_path": "outputs/real-conversion-source/source/trimmed-clip.mp4",
-                    "trimmed_video": {"sha256": "abc123"},
-                },
-                "gpu_handoff": {
-                    "trimmed_video_argument": "outputs/real-conversion-source/source/trimmed-clip.mp4",
-                },
-            }
-        ),
-        encoding="utf-8",
-    )
-    gvhmr = root / "gvhmr-smplx-joints.json"
-    gvhmr.write_text(
-        json.dumps(
-            {
-                "schema": "neodojo.gvhmr_smplx_joints.v1",
-                "routine": "Baduanjin",
-                "form": "Two Hands Hold Up the Heavens",
-                "fps": 24,
-                "frames": build_smplx_fixture_frames(36),
-                "provenance": {
-                    "source_materialization_manifest": str(source),
-                    "source_materialization_sha256": sha256_file(source),
-                    "source_id": "03-006",
-                    "trim": {
-                        "start_seconds": 0.25,
-                        "end_seconds": 1.75,
-                        "duration_seconds": 1.5,
-                    },
-                    "input_video": "outputs/real-conversion-source/source/trimmed-clip.mp4",
-                    "input_video_sha256": "abc123",
-                    "gpu_command": "python tools/demo/demo.py --video trimmed-clip.mp4",
-                    "runtime": "test gpu",
-                    "upstream_version": "gvhmr-test",
-                },
-            }
-        ),
-        encoding="utf-8",
-    )
-    download_root = root / "download"
-    real_demo_dir = download_root / "outputs" / "self-hosted-real-demo"
-    write_real_conversion_demo(real_demo_dir, source_materialization=source, gvhmr_json=gvhmr)
-    audit_real_conversion_completion(
-        download_root / "outputs" / "self-hosted-real-audit",
-        source_materialization=source,
-        gvhmr_json=gvhmr,
-        real_demo=real_demo_dir,
-        env={},
-        command_lookup=lambda _command: None,
-    )
-    return download_root
 
 
 class DemoHtmlTests(unittest.TestCase):
@@ -1727,7 +1649,7 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertFalse(manifest["source_media"]["validation"]["local_file_validated"])
         self.assertTrue(manifest["gpu_run"]["required"])
         self.assertIn("materialize-source", manifest["next_commands"]["materialize_source"])
-        self.assertIn("package-gpu-handoff", manifest["next_commands"]["package_gpu_handoff"])
+        self.assertIn("prepare-gpu-run", manifest["next_commands"]["prepare_gpu_run"])
         self.assertIn("inspect-gvhmr-result", manifest["next_commands"]["inspect_gvhmr_result"])
         self.assertIn("--from-gvhmr-json", manifest["next_commands"]["import_motion_record"])
         self.assertIn("import-demo", manifest["next_commands"]["import_demo"])
@@ -2000,398 +1922,11 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("export_neodojo_gvhmr.py", readme)
         self.assertIn("run_gvhmr_neodojo.sh", readme)
         self.assertIn("source-materialization.json", readme)
-        self.assertIn("GVHMR GPU Handoff", readme)
+        self.assertIn("GVHMR Local GPU Run Workspace", readme)
         self.assertIn(trimmed, result.checked_paths)
         self.assertIn(result.exporter_script_path, result.checked_paths)
         self.assertIn(result.runner_script_path, result.checked_paths)
         self.assertIn(result.source_materialization_copy_path, result.checked_paths)
-
-    def test_real_conversion_gpu_input_bundle_can_include_media(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            trimmed = root / "trimmed-clip.mp4"
-            trimmed.write_bytes(b"fixture trimmed video bytes")
-            materialization = root / "source-materialization.json"
-            materialization.write_text(
-                json.dumps(
-                    {
-                        "schema": "neodojo.real_conversion_source_materialization.v1",
-                        "status": "materialized",
-                        "source_prep": {
-                            "source_id": "local-baduanjin",
-                            "source_kind": "local_user_supplied",
-                            "title_english": "Local Baduanjin proof clip",
-                            "source_schema": "neodojo.real_conversion_prep.v1",
-                        },
-                        "trim": {"start_seconds": 0.0, "end_seconds": 12.0, "duration_seconds": 12.0},
-                        "outputs": {
-                            "trimmed_video_path": str(trimmed),
-                            "trimmed_video": {"sha256": sha256_file(trimmed)},
-                        },
-                        "validation": {"gvhmr_input_ready": True},
-                        "gpu_handoff": {
-                            "trimmed_video_argument": str(trimmed),
-                            "expected_export_json": "outputs/real-conversion-gate/gvhmr-smplx-joints.json",
-                        },
-                    }
-                ),
-                encoding="utf-8",
-            )
-            handoff = package_gvhmr_gpu_handoff(root / "handoff", source_materialization=materialization)
-            bundle = package_gvhmr_gpu_input_bundle(
-                root / "gpu-input",
-                gpu_handoff=handoff.manifest_path,
-                include_media=True,
-            )
-            manifest = json.loads(bundle.manifest_path.read_text(encoding="utf-8"))
-            runbook = bundle.runbook_path.read_text(encoding="utf-8")
-            bundled_video = root / "gpu-input" / "source" / "trimmed-clip.mp4"
-            bundled_video_exists = bundled_video.exists()
-            bundled_video_sha = sha256_file(bundled_video)
-            trimmed_sha = sha256_file(trimmed)
-            runner_help = subprocess.run(
-                ["bash", str(bundle.runner_script_path), "--help"],
-                capture_output=True,
-                encoding="utf-8",
-                check=False,
-            )
-            archive = package_gvhmr_gpu_input_archive(
-                root / "gpu-input-archive",
-                gpu_input=bundle.manifest_path,
-            )
-            request = write_gvhmr_gpu_run_request(
-                root / "gpu-run-request",
-                gpu_input_archive=archive.manifest_path,
-            )
-            archive_manifest = json.loads(archive.manifest_path.read_text(encoding="utf-8"))
-            request_manifest = json.loads(request.manifest_path.read_text(encoding="utf-8"))
-            request_readme = request.readme_path.read_text(encoding="utf-8")
-            colab = write_gvhmr_colab_operator_notebook(
-                root / "colab-operator",
-                gpu_run_request=request.manifest_path,
-            )
-            colab_manifest = json.loads(colab.manifest_path.read_text(encoding="utf-8"))
-            colab_notebook = json.loads(colab.notebook_path.read_text(encoding="utf-8"))
-            operator_package = write_gvhmr_operator_package(
-                root / "operator-package",
-                gpu_input_archive=archive.manifest_path,
-                gpu_run_request=request.manifest_path,
-                colab_notebook=colab.manifest_path,
-            )
-            validated_operator_package = validate_gvhmr_operator_package(root / "operator-package")
-            operator_package_archive = archive_gvhmr_operator_package(
-                root / "operator-package-archive",
-                operator_package=operator_package.manifest_path,
-            )
-            validated_operator_package_archive = validate_gvhmr_operator_package_archive(
-                operator_package_archive.archive_path
-            )
-            operator_package_manifest = json.loads(operator_package.manifest_path.read_text(encoding="utf-8"))
-            operator_package_archive_manifest = json.loads(
-                operator_package_archive.manifest_path.read_text(encoding="utf-8")
-            )
-            operator_package_readme = operator_package.readme_path.read_text(encoding="utf-8")
-            operator_archive_exists = (root / "operator-package" / "archive" / archive.archive_path.name).exists()
-            operator_request_readme_exists = (root / "operator-package" / "request" / "README.md").exists()
-            operator_colab_notebook_exists = (
-                root / "operator-package" / "colab" / "gvhmr-colab-operator.ipynb"
-            ).exists()
-            with tarfile.open(archive.archive_path, "r:gz") as tar:
-                archive_members = sorted(tar.getnames())
-            with tarfile.open(operator_package_archive.archive_path, "r:gz") as tar:
-                operator_package_archive_members = sorted(tar.getnames())
-            downloaded_operator_package_archive_dir = root / "downloaded-operator-package-archive"
-            downloaded_operator_package_archive_dir.mkdir()
-            (downloaded_operator_package_archive_dir / "manifest.json").write_bytes(
-                operator_package_archive.manifest_path.read_bytes()
-            )
-            (downloaded_operator_package_archive_dir / operator_package_archive.archive_path.name).write_bytes(
-                operator_package_archive.archive_path.read_bytes()
-            )
-            operator_package_archive.archive_path.write_bytes(b"stale local archive bytes")
-            downloaded_operator_package_archive = validate_gvhmr_operator_package_archive(
-                downloaded_operator_package_archive_dir
-            )
-            acquisition_status = write_real_gvhmr_artifact_acquisition_status(
-                root / "artifact-acquisition-status",
-                operator_package_archive=downloaded_operator_package_archive_dir,
-                source_materialization=materialization,
-                gvhmr_json=root / "missing-gvhmr-smplx-joints.json",
-                real_demo=root / "real-demo",
-                env={},
-                command_lookup=lambda _command: None,
-            )
-            acquisition_manifest = json.loads(acquisition_status.manifest_path.read_text(encoding="utf-8"))
-
-        self.assertEqual(bundle.status, "ready_for_gpu_with_media")
-        self.assertEqual(manifest["schema"], "neodojo.gvhmr_gpu_input_bundle.v1")
-        self.assertTrue(manifest["media_included"])
-        self.assertFalse(manifest["media_committed_to_repo"])
-        self.assertEqual(manifest["source"]["source_kind"], "local_user_supplied")
-        self.assertTrue(bundled_video_exists)
-        self.assertEqual(bundled_video_sha, trimmed_sha)
-        self.assertIn("source/trimmed-clip.mp4", runbook)
-        self.assertIn("gvhmr-output/trimmed-clip/hmr4d_results.pt", runbook)
-        self.assertIn("export_neodojo_gvhmr.py", runbook)
-        self.assertIn("run_gvhmr_neodojo.sh", runbook)
-        self.assertEqual(manifest["files"]["runbook"], "RUN_ON_GPU.md")
-        self.assertEqual(manifest["files"]["runner_script"], "run_gvhmr_neodojo.sh")
-        self.assertEqual(runner_help.returncode, 0, runner_help.stderr)
-        self.assertIn("Run GVHMR and export", runner_help.stdout)
-        self.assertIn(bundled_video, bundle.checked_paths)
-        self.assertIn(bundle.runner_script_path, bundle.checked_paths)
-        self.assertEqual(archive.status, "archive_with_media")
-        self.assertEqual(archive_manifest["schema"], "neodojo.gvhmr_gpu_input_archive.v1")
-        self.assertTrue(archive_manifest["media_included"])
-        self.assertFalse(archive_manifest["policy"]["safe_for_git"])
-        self.assertIn("source/trimmed-clip.mp4", archive_members)
-        self.assertIn("run_gvhmr_neodojo.sh", archive_members)
-        self.assertEqual(request.status, "ready_for_external_gpu")
-        self.assertEqual(request_manifest["schema"], "neodojo.gvhmr_gpu_run_request.v1")
-        self.assertTrue(request_manifest["media_included"])
-        self.assertFalse(request_manifest["archive"]["safe_for_git"])
-        self.assertEqual(request_manifest["expected_return_artifact"]["schema"], "neodojo.gvhmr_smplx_joints.v1")
-        self.assertIn("make real-artifact-intake", request_manifest["commands"]["local_real_artifact_intake"])
-        self.assertIn("make verify-real", request_manifest["commands"]["local_strict_verify"])
-        self.assertIn("GVHMR GPU Run Request", request_readme)
-        self.assertIn("SMPLX_MODEL_DIR", request_readme)
-        self.assertIn("fixture_only: false", request_readme)
-        self.assertIn(archive.archive_path, request.checked_paths)
-        self.assertEqual(colab.status, "ready_for_colab_operator")
-        self.assertEqual(colab_manifest["schema"], "neodojo.gvhmr_colab_operator_notebook.v1")
-        self.assertEqual(colab_manifest["expected_return_artifact"]["schema"], "neodojo.gvhmr_smplx_joints.v1")
-        self.assertFalse(colab_manifest["policy"]["safe_for_git"])
-        self.assertEqual(colab_notebook["metadata"]["neodojo"]["source_schema"], "neodojo.gvhmr_gpu_run_request.v1")
-        colab_source = "\n".join(
-            "".join(cell.get("source", [])) for cell in colab_notebook["cells"] if cell.get("cell_type") == "code"
-        )
-        self.assertIn(request_manifest["archive"]["sha256"], colab_source)
-        self.assertIn("RUN_GVHMR = False", colab_source)
-        self.assertIn("Unsafe archive member path", colab_source)
-        self.assertEqual(operator_package.status, "ready_for_external_gpu_operator_package")
-        self.assertEqual(validated_operator_package.status, "ready_for_external_gpu_operator_package")
-        self.assertEqual(operator_package_archive.status, "ready_for_external_gpu_operator_package_archive")
-        self.assertEqual(
-            validated_operator_package_archive.status,
-            "ready_for_external_gpu_operator_package_archive",
-        )
-        self.assertEqual(
-            downloaded_operator_package_archive.status,
-            "ready_for_external_gpu_operator_package_archive",
-        )
-        self.assertIn(operator_package_archive.manifest_path, validated_operator_package_archive.checked_paths)
-        self.assertIn(operator_package_archive.archive_path, validated_operator_package_archive.checked_paths)
-        self.assertIn(root / "operator-package" / "request" / "manifest.json", validated_operator_package.checked_paths)
-        self.assertEqual(operator_package_manifest["schema"], "neodojo.gvhmr_operator_package.v1")
-        self.assertTrue(operator_package_manifest["media_included"])
-        self.assertFalse(operator_package_manifest["policy"]["safe_for_git"])
-        self.assertEqual(
-            operator_package_archive_manifest["schema"],
-            "neodojo.gvhmr_operator_package_archive.v1",
-        )
-        self.assertTrue(operator_package_archive_manifest["media_included"])
-        self.assertFalse(operator_package_archive_manifest["policy"]["safe_for_git"])
-        self.assertIn("manifest.json", operator_package_archive_members)
-        self.assertIn("README.md", operator_package_archive_members)
-        self.assertIn(f"archive/{archive.archive_path.name}", operator_package_archive_members)
-        self.assertIn("request/manifest.json", operator_package_archive_members)
-        self.assertIn("colab/gvhmr-colab-operator.ipynb", operator_package_archive_members)
-        self.assertEqual(
-            operator_package_manifest["expected_return_artifact"]["schema"],
-            "neodojo.gvhmr_smplx_joints.v1",
-        )
-        self.assertTrue(operator_archive_exists)
-        self.assertTrue(operator_request_readme_exists)
-        self.assertTrue(operator_colab_notebook_exists)
-        self.assertIn("GVHMR Operator Package", operator_package_readme)
-        self.assertIn("Expected return fixture flag: `false`", operator_package_readme)
-        self.assertIn("RUN_GVHMR = True", operator_package_readme)
-        self.assertIn("gvhmr_operator_package_path", operator_package_readme)
-        self.assertEqual(acquisition_status.status, "ready_for_external_gpu_operator")
-        self.assertTrue(acquisition_status.blocked)
-        self.assertEqual(acquisition_manifest["schema"], "neodojo.real_gvhmr_artifact_acquisition.v1")
-        self.assertTrue(acquisition_manifest["operator_package_archive"]["ready_for_external_gpu"])
-        self.assertFalse(acquisition_manifest["operator_package_archive"]["safe_for_git"])
-        self.assertFalse(acquisition_manifest["expected_return_artifact"]["fixture_only"])
-        self.assertEqual(
-            acquisition_manifest["real_conversion_audit"]["status"],
-            "external_gpu_artifact_missing",
-        )
-        self.assertIn("GPU-capable machine", acquisition_manifest["next_action"])
-
-    def test_real_conversion_gpu_input_bundle_metadata_only_omits_media(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            trimmed = root / "trimmed-clip.mp4"
-            trimmed.write_bytes(b"fixture trimmed video bytes")
-            materialization = root / "source-materialization.json"
-            materialization.write_text(
-                json.dumps(
-                    {
-                        "schema": "neodojo.real_conversion_source_materialization.v1",
-                        "status": "materialized",
-                        "source_prep": {"source_id": "03-006"},
-                        "trim": {"start_seconds": 0.0, "end_seconds": 12.0, "duration_seconds": 12.0},
-                        "outputs": {
-                            "trimmed_video_path": str(trimmed),
-                            "trimmed_video": {"sha256": sha256_file(trimmed)},
-                        },
-                        "validation": {"gvhmr_input_ready": True},
-                        "gpu_handoff": {"trimmed_video_argument": str(trimmed)},
-                    }
-                ),
-                encoding="utf-8",
-            )
-            handoff = package_gvhmr_gpu_handoff(root / "handoff", source_materialization=materialization)
-            bundle = package_gvhmr_gpu_input_bundle(root / "gpu-input", gpu_handoff=handoff.manifest_path)
-            manifest = json.loads(bundle.manifest_path.read_text(encoding="utf-8"))
-            runner_syntax = subprocess.run(
-                ["bash", "-n", str(bundle.runner_script_path)],
-                capture_output=True,
-                encoding="utf-8",
-                check=False,
-            )
-            archive = package_gvhmr_gpu_input_archive(
-                root / "gpu-input-archive",
-                gpu_input=bundle.manifest_path,
-            )
-            request = write_gvhmr_gpu_run_request(
-                root / "gpu-run-request",
-                gpu_input_archive=archive.manifest_path,
-            )
-            archive_manifest = json.loads(archive.manifest_path.read_text(encoding="utf-8"))
-            request_manifest = json.loads(request.manifest_path.read_text(encoding="utf-8"))
-            colab = write_gvhmr_colab_operator_notebook(
-                root / "colab-operator",
-                gpu_run_request=request.manifest_path,
-            )
-            colab_manifest = json.loads(colab.manifest_path.read_text(encoding="utf-8"))
-            operator_package = write_gvhmr_operator_package(
-                root / "operator-package",
-                gpu_input_archive=archive.manifest_path,
-                gpu_run_request=request.manifest_path,
-                colab_notebook=colab.manifest_path,
-            )
-            validated_operator_package = validate_gvhmr_operator_package(operator_package.manifest_path)
-            operator_package_archive = archive_gvhmr_operator_package(
-                root / "operator-package-archive",
-                operator_package=operator_package.manifest_path,
-            )
-            validated_operator_package_archive = validate_gvhmr_operator_package_archive(
-                operator_package_archive.manifest_path
-            )
-            operator_package_manifest = json.loads(operator_package.manifest_path.read_text(encoding="utf-8"))
-            operator_package_archive_manifest = json.loads(
-                operator_package_archive.manifest_path.read_text(encoding="utf-8")
-            )
-            bad_operator_package_archive_manifest = dict(operator_package_archive_manifest)
-            bad_operator_package_archive_manifest["members"] = [
-                dict(member) for member in operator_package_archive_manifest["members"]
-            ]
-            bad_operator_package_archive_manifest["members"][0]["sha256"] = "0" * 64
-            bad_operator_package_archive_manifest_path = root / "bad-operator-package-archive-manifest.json"
-            bad_operator_package_archive_manifest_path.write_text(
-                json.dumps(bad_operator_package_archive_manifest),
-                encoding="utf-8",
-            )
-            with self.assertRaisesRegex(ValueError, "member checksum mismatch"):
-                validate_gvhmr_operator_package_archive(bad_operator_package_archive_manifest_path)
-            package_colab_manifest_path = root / "operator-package" / "colab" / "manifest.json"
-            package_colab_manifest = json.loads(package_colab_manifest_path.read_text(encoding="utf-8"))
-            package_colab_manifest["notebook"] = dict(package_colab_manifest["notebook"])
-            package_colab_manifest["notebook"]["sha256"] = "0" * 64
-            package_colab_manifest_path.write_text(json.dumps(package_colab_manifest), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "Colab notebook checksum"):
-                validate_gvhmr_operator_package(root / "operator-package")
-            bad_archive_manifest = dict(archive_manifest)
-            bad_archive_manifest["archive"] = dict(archive_manifest["archive"])
-            bad_archive_manifest["archive"]["sha256"] = "0" * 64
-            bad_archive_manifest_path = root / "bad-archive-manifest.json"
-            bad_archive_manifest_path.write_text(json.dumps(bad_archive_manifest), encoding="utf-8")
-            bad_colab_manifest = dict(colab_manifest)
-            bad_colab_manifest["notebook"] = dict(colab_manifest["notebook"])
-            bad_colab_manifest["notebook"]["sha256"] = "0" * 64
-            bad_colab_manifest_path = root / "bad-colab-manifest.json"
-            bad_colab_manifest_path.write_text(json.dumps(bad_colab_manifest), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "checksum"):
-                write_gvhmr_gpu_run_request(
-                    root / "bad-gpu-run-request",
-                    gpu_input_archive=bad_archive_manifest_path,
-                )
-            with self.assertRaisesRegex(ValueError, "Colab notebook checksum"):
-                write_gvhmr_operator_package(
-                    root / "bad-operator-package",
-                    gpu_input_archive=archive.manifest_path,
-                    gpu_run_request=request.manifest_path,
-                    colab_notebook=bad_colab_manifest_path,
-                )
-            with tarfile.open(archive.archive_path, "r:gz") as tar:
-                archive_members = sorted(tar.getnames())
-
-        self.assertEqual(bundle.status, "metadata_only")
-        self.assertFalse(manifest["media_included"])
-        self.assertIsNone(manifest["files"]["trimmed_video"])
-        self.assertEqual(manifest["files"]["runner_script"], "run_gvhmr_neodojo.sh")
-        self.assertEqual(runner_syntax.returncode, 0, runner_syntax.stderr)
-        self.assertFalse((root / "gpu-input" / "source" / "trimmed-clip.mp4").exists())
-        self.assertEqual(archive.status, "metadata_only_archive")
-        self.assertEqual(archive_manifest["schema"], "neodojo.gvhmr_gpu_input_archive.v1")
-        self.assertFalse(archive_manifest["media_included"])
-        self.assertTrue(archive_manifest["policy"]["safe_for_git"])
-        self.assertIn("RUN_ON_GPU.md", archive_members)
-        self.assertIn("run_gvhmr_neodojo.sh", archive_members)
-        self.assertNotIn("source/trimmed-clip.mp4", archive_members)
-        self.assertEqual(request.status, "metadata_only_not_ready_for_gpu")
-        self.assertEqual(request_manifest["schema"], "neodojo.gvhmr_gpu_run_request.v1")
-        self.assertFalse(request_manifest["media_included"])
-        self.assertTrue(request_manifest["archive"]["safe_for_git"])
-        self.assertEqual(colab.status, "metadata_only_not_ready_for_gpu")
-        self.assertEqual(colab_manifest["schema"], "neodojo.gvhmr_colab_operator_notebook.v1")
-        self.assertTrue(colab_manifest["policy"]["safe_for_git"])
-        self.assertEqual(operator_package.status, "metadata_only_not_ready_for_gpu")
-        self.assertEqual(validated_operator_package.status, "metadata_only_not_ready_for_gpu")
-        self.assertEqual(operator_package_archive.status, "metadata_only_not_ready_for_gpu")
-        self.assertEqual(validated_operator_package_archive.status, "metadata_only_not_ready_for_gpu")
-        self.assertEqual(operator_package_manifest["schema"], "neodojo.gvhmr_operator_package.v1")
-        self.assertTrue(operator_package_manifest["policy"]["safe_for_git"])
-        self.assertEqual(
-            operator_package_archive_manifest["schema"],
-            "neodojo.gvhmr_operator_package_archive.v1",
-        )
-        self.assertTrue(operator_package_archive_manifest["policy"]["safe_for_git"])
-
-    def test_gpu_input_archive_rejects_missing_runner(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            trimmed = root / "trimmed-clip.mp4"
-            trimmed.write_bytes(b"fixture trimmed video bytes")
-            materialization = root / "source-materialization.json"
-            materialization.write_text(
-                json.dumps(
-                    {
-                        "schema": "neodojo.real_conversion_source_materialization.v1",
-                        "status": "materialized",
-                        "source_prep": {"source_id": "03-006"},
-                        "trim": {"start_seconds": 0.0, "end_seconds": 12.0, "duration_seconds": 12.0},
-                        "outputs": {
-                            "trimmed_video_path": str(trimmed),
-                            "trimmed_video": {"sha256": sha256_file(trimmed)},
-                        },
-                        "validation": {"gvhmr_input_ready": True},
-                        "gpu_handoff": {"trimmed_video_argument": str(trimmed)},
-                    }
-                ),
-                encoding="utf-8",
-            )
-            handoff = package_gvhmr_gpu_handoff(root / "handoff", source_materialization=materialization)
-            bundle = package_gvhmr_gpu_input_bundle(root / "gpu-input", gpu_handoff=handoff.manifest_path)
-            bundle.runner_script_path.unlink()
-
-            with self.assertRaisesRegex(ValueError, "run_gvhmr_neodojo.sh"):
-                package_gvhmr_gpu_input_archive(
-                    root / "gpu-input-archive",
-                    gpu_input=bundle.manifest_path,
-                )
 
     def test_gpu_handoff_exporter_script_is_dependency_lazy_for_help(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2531,96 +2066,6 @@ class DemoHtmlTests(unittest.TestCase):
 
         self.assertEqual(result.status, "already_neodojo_export")
         self.assertEqual(manifest["status"], "already_neodojo_export")
-
-    def test_gpu_execution_probe_reports_external_blocker_without_runtime(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-
-            result = probe_gpu_execution_environment(
-                root / "probe",
-                env={},
-                command_lookup=lambda _command: None,
-            )
-            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
-
-        self.assertEqual(result.status, "external_gpu_artifact_missing")
-        self.assertEqual(manifest["schema"], "neodojo.gvhmr_gpu_execution_probe.v1")
-        self.assertTrue(manifest["safe_for_git"])
-        self.assertFalse(manifest["secret_values_recorded"])
-        self.assertTrue(manifest["classification"]["blocked_locally"])
-        self.assertEqual(manifest["provider_candidates"], [])
-        self.assertFalse(manifest["local_cuda"]["available"])
-        self.assertFalse(manifest["github_actions"]["enabled"])
-
-    def test_gpu_execution_probe_reports_provider_candidate(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-
-            result = probe_gpu_execution_environment(
-                root / "probe",
-                env={"MODAL_TOKEN_ID": "redacted"},
-                command_lookup=lambda command: "/usr/local/bin/modal" if command == "modal" else None,
-            )
-            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
-
-        self.assertEqual(result.status, "provider_candidate_available")
-        self.assertFalse(manifest["classification"]["blocked_locally"])
-        self.assertEqual(manifest["provider_candidates"], ["modal"])
-        self.assertEqual(manifest["providers"]["modal"]["env_keys_present"], ["MODAL_TOKEN_ID"])
-        self.assertEqual(manifest["providers"]["modal"]["cli_paths"]["modal"], "/usr/local/bin/modal")
-
-    def test_gpu_execution_probe_reports_github_actions_gpu_runner(self) -> None:
-        def command_runner(args: Sequence[str]) -> subprocess.CompletedProcess[str]:
-            endpoint = args[-1]
-            if endpoint.endswith("/actions/runners"):
-                stdout = json.dumps(
-                    {
-                        "total_count": 1,
-                        "runners": [
-                            {
-                                "name": "private-runner-name",
-                                "status": "online",
-                                "labels": [{"name": "self-hosted"}, {"name": "gpu"}, {"name": "linux"}],
-                            }
-                        ],
-                    }
-                )
-            elif endpoint.endswith("/actions/secrets"):
-                stdout = json.dumps(
-                    {
-                        "total_count": 2,
-                        "secrets": [
-                            {"name": "RUNPOD_TOKEN"},
-                            {"name": "UNRELATED_SERVICE"},
-                        ],
-                    }
-                )
-            else:
-                stdout = "{}"
-            return subprocess.CompletedProcess(args=list(args), returncode=0, stdout=stdout, stderr="")
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-
-            result = probe_gpu_execution_environment(
-                root / "probe",
-                env={},
-                command_lookup=lambda command: "/usr/local/bin/gh" if command == "gh" else None,
-                command_runner=command_runner,
-                github_repo="MiaoDX/neodojo",
-            )
-            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
-
-        self.assertEqual(result.status, "github_actions_gpu_runner_available")
-        self.assertFalse(manifest["classification"]["blocked_locally"])
-        github = manifest["github_actions"]
-        self.assertTrue(github["enabled"])
-        self.assertTrue(github["self_hosted_gpu_runner_available"])
-        self.assertEqual(github["runner_count"], 1)
-        self.assertEqual(github["secret_count"], 2)
-        self.assertEqual(github["gpu_related_secret_count"], 1)
-        self.assertFalse(github["secret_names_recorded"])
-        self.assertNotIn("private-runner-name", json.dumps(github))
 
     def test_gvhmr_source_validation_writes_validated_export(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2857,7 +2302,7 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(gvhmr_export["fixture_only"])
         self.assertEqual(gvhmr_export["provenance"]["runtime"], "neodojo fixture smoke")
 
-    def test_real_conversion_audit_reports_external_artifact_missing(self) -> None:
+    def test_real_conversion_audit_reports_local_artifact_missing(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
 
@@ -2866,86 +2311,15 @@ class DemoHtmlTests(unittest.TestCase):
                 source_materialization=root / "missing-source-materialization.json",
                 gvhmr_json=root / "missing-gvhmr-smplx-joints.json",
                 real_demo=root / "real-demo",
-                env={},
-                command_lookup=lambda _command: None,
             )
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(result.status, "external_gpu_artifact_missing")
+        self.assertEqual(result.status, "local_gvhmr_artifact_missing")
         self.assertFalse(result.complete)
         self.assertTrue(manifest["blocked"])
         self.assertEqual(manifest["schema"], "neodojo.real_conversion_audit.v1")
-        self.assertEqual(manifest["gpu_execution_probe"]["status"], "external_gpu_artifact_missing")
-        self.assertFalse(manifest["checks"][0]["passed"])
-
-    def test_real_gvhmr_acquisition_status_is_non_failing_without_archive(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-
-            result = write_real_gvhmr_artifact_acquisition_status(
-                root / "acquisition-status",
-                operator_package_archive=root / "missing-operator-package-archive",
-                source_materialization=root / "missing-source-materialization.json",
-                gvhmr_json=root / "missing-gvhmr-smplx-joints.json",
-                real_demo=root / "real-demo",
-                env={},
-                command_lookup=lambda _command: None,
-            )
-            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
-
-        self.assertEqual(result.status, "operator_package_archive_missing_or_invalid")
-        self.assertTrue(result.blocked)
-        self.assertEqual(manifest["schema"], "neodojo.real_gvhmr_artifact_acquisition.v1")
-        self.assertFalse(manifest["operator_package_archive"]["valid"])
-        self.assertIn("does not exist", manifest["operator_package_archive"]["error"])
-        self.assertEqual(manifest["real_conversion_audit"]["status"], "external_gpu_artifact_missing")
-
-    def test_real_conversion_audit_can_include_github_gpu_probe(self) -> None:
-        def command_runner(args: Sequence[str]) -> subprocess.CompletedProcess[str]:
-            endpoint = args[-1]
-            if endpoint.endswith("/actions/runners"):
-                stdout = json.dumps(
-                    {
-                        "total_count": 1,
-                        "runners": [
-                            {
-                                "name": "private-runner-name",
-                                "status": "online",
-                                "labels": [{"name": "self-hosted"}, {"name": "gpu"}],
-                            }
-                        ],
-                    }
-                )
-            elif endpoint.endswith("/actions/secrets"):
-                stdout = json.dumps({"total_count": 0, "secrets": []})
-            else:
-                stdout = "{}"
-            return subprocess.CompletedProcess(args=list(args), returncode=0, stdout=stdout, stderr="")
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-
-            result = audit_real_conversion_completion(
-                root / "audit",
-                source_materialization=root / "missing-source-materialization.json",
-                gvhmr_json=root / "missing-gvhmr-smplx-joints.json",
-                real_demo=root / "real-demo",
-                env={},
-                command_lookup=lambda command: "/usr/local/bin/gh" if command == "gh" else None,
-                command_runner=command_runner,
-                github_repo="MiaoDX/neodojo",
-            )
-            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
-            probe = json.loads((root / "audit" / "gpu-execution-probe" / "manifest.json").read_text(encoding="utf-8"))
-
-        self.assertEqual(result.status, "real_artifact_missing")
-        self.assertFalse(result.complete)
-        self.assertTrue(manifest["gpu_execution_probe"]["route_visible"])
-        self.assertEqual(manifest["gpu_execution_probe"]["status"], "github_actions_gpu_runner_available")
-        self.assertTrue(probe["github_actions"]["self_hosted_gpu_runner_available"])
-        self.assertFalse(probe["github_actions"]["secret_values_recorded"])
-        self.assertFalse(probe["github_actions"]["secret_names_recorded"])
-        self.assertNotIn("private-runner-name", json.dumps(probe["github_actions"]))
+        self.assertNotIn("gpu_execution_probe", manifest)
+        self.assertFalse(_check_by_name(manifest, "source_materialization_available")["passed"])
 
     def test_real_conversion_audit_cli_require_complete_fails_when_incomplete(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2983,190 +2357,28 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["schema"], "neodojo.real_conversion_audit.v1")
         self.assertFalse(manifest["complete"])
 
-    def test_public_demo_workflow_uploads_github_route_audit_artifact(self) -> None:
+    def test_public_demo_workflow_uses_reduced_local_gpu_surface(self) -> None:
         workflow = Path(".github/workflows/public-demo.yml").read_text(encoding="utf-8")
         makefile = Path("Makefile").read_text(encoding="utf-8")
 
-        self.assertIn("actions: read", workflow)
-        self.assertIn("Real conversion completion audit with GitHub route probe", workflow)
-        self.assertIn("REAL_AUDIT_GITHUB_REPO=${{ github.repository }}", workflow)
-        self.assertIn("GH_TOKEN: ${{ github.token }}", workflow)
-        self.assertIn("neodojo-real-conversion-audit-github", workflow)
-        self.assertIn(
-            "outputs/real-conversion-audit-github/gpu-execution-probe/manifest.json",
-            workflow,
-        )
-        self.assertIn("GVHMR operator package archive smoke and validation", workflow)
-        self.assertIn("neodojo-gvhmr-operator-package-archive-smoke", workflow)
-        self.assertIn(
-            "outputs/gvhmr-operator-package-archive-smoke/neodojo-gvhmr-operator-package.tar.gz",
-            workflow,
-        )
-        self.assertIn("Real GVHMR artifact acquisition status smoke", workflow)
-        self.assertIn("neodojo-real-gvhmr-artifact-acquisition-status", workflow)
-        self.assertIn(
-            "outputs/real-gvhmr-artifact-acquisition-status-smoke/real-conversion-audit/manifest.json",
-            workflow,
-        )
-        self.assertIn("validate-operator-package-archive", makefile)
-        self.assertIn("gvhmr-operator-package-archive-validate-smoke", makefile)
-        self.assertIn("real-gvhmr-acquisition-status-smoke", makefile)
-
-    def test_self_hosted_gpu_workflow_is_manual_and_uploads_only_safe_artifacts(self) -> None:
-        workflow = Path(".github/workflows/gvhmr-self-hosted-gpu.yml").read_text(encoding="utf-8")
-
-        self.assertIn("workflow_dispatch:", workflow)
-        self.assertIn("runs-on: [self-hosted, gpu]", workflow)
-        self.assertNotIn("\n  push:", workflow)
-        self.assertNotIn("\n  pull_request:", workflow)
-        self.assertIn("gpu_input_archive_path", workflow)
-        self.assertIn("gvhmr_operator_package_path", workflow)
-        self.assertIn("GVHMR_OPERATOR_PACKAGE_PATH", workflow)
-        self.assertIn("request/manifest.json", workflow)
-        self.assertIn("colab/gvhmr-colab-operator.ipynb", workflow)
-        self.assertIn("Provide gpu_input_archive_path or gvhmr_operator_package_path", workflow)
-        self.assertIn("command -v python3", workflow)
-        self.assertIn('"$python_bin" -m pip install -e .', workflow)
-        self.assertIn("neodojo.gvhmr_operator_package.v1", workflow)
-        self.assertIn("operator package archive checksum does not match manifest", workflow)
-        self.assertIn("Colab notebook checksum does not match manifest", workflow)
-        self.assertIn("validated GVHMR operator package manifest and checksums", workflow)
-        self.assertIn("SMPLX_MODEL_DIR_INPUT", workflow)
-        self.assertIn("skip_gvhmr", workflow)
-        self.assertIn("upload_neodojo_export", workflow)
-        self.assertIn("upload_real_demo", workflow)
-        self.assertIn("make real-artifact-intake", workflow)
-        self.assertIn("--require-complete", workflow)
-        self.assertIn("outputs/self-hosted-gvhmr-run/gvhmr-smplx-joints.json", workflow)
-        self.assertIn("outputs/self-hosted-real-demo/public-demo/index.html", workflow)
-        upload_paths = []
-        for line in workflow.splitlines():
-            stripped = line.strip()
-            if stripped.startswith("outputs/"):
-                upload_paths.append(stripped)
-        forbidden_fragments = [".mp4", ".mov", ".mkv", ".pt", ".pkl", ".npz", "checkpoints", "SMPLX_MODEL_DIR"]
-        for path in upload_paths:
-            for forbidden in forbidden_fragments:
-                self.assertNotIn(forbidden, path)
-
-    def test_real_demo_pages_promotion_workflow_is_guarded_and_safe(self) -> None:
-        workflow = Path(".github/workflows/promote-real-demo-pages.yml").read_text(encoding="utf-8")
-
-        self.assertIn("workflow_dispatch:", workflow)
-        self.assertNotIn("\n  push:", workflow)
-        self.assertNotIn("\n  pull_request:", workflow)
-        self.assertIn("source_run_id", workflow)
-        self.assertIn("confirm_replace_fixture_pages", workflow)
-        self.assertIn("NEODOJO_DEPLOY_REAL_PAGES", workflow)
-        self.assertIn("actions: read", workflow)
-        self.assertIn("actions/download-artifact@v8", workflow)
-        self.assertIn("neodojo-self-hosted-real-demo", workflow)
-        self.assertIn("real-conversion validate-pages-promotion", workflow)
-        self.assertIn("--download-root outputs/promoted-real-demo-download", workflow)
-        self.assertIn("--source-run-id", workflow)
-        self.assertIn("--artifact-name", workflow)
-        self.assertIn("PYTHONPATH=src python -m neodojo demo smoke", workflow)
-        self.assertIn("actions/upload-pages-artifact@v5", workflow)
-        self.assertIn("actions/deploy-pages@v5", workflow)
-
-        upload_paths = []
-        for line in workflow.splitlines():
-            stripped = line.strip()
-            if stripped.startswith("outputs/"):
-                upload_paths.append(stripped)
-        forbidden_fragments = [".mp4", ".mov", ".mkv", ".pt", ".pkl", ".npz", "checkpoints", "SMPLX_MODEL_DIR"]
-        for path in upload_paths:
-            for forbidden in forbidden_fragments:
-                self.assertNotIn(forbidden, path)
-
-    def test_real_demo_pages_promotion_validator_accepts_verified_real_demo(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            download_root = _write_verified_real_demo_download_fixture(root)
-
-            result = validate_real_demo_pages_promotion(
-                download_root,
-                root / "outputs" / "promoted-real-demo-pages",
-                source_run_id="26000000000",
-                artifact_name="neodojo-self-hosted-real-demo",
-            )
-            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
-            public_demo = json.loads((result.staged_dir / "manifest.json").read_text(encoding="utf-8"))
-            smoke = smoke_check_public_demo(result.staged_dir)
-
-        self.assertEqual(manifest["schema"], "neodojo.real_demo_pages_promotion.v1")
-        self.assertEqual(manifest["source_run_id"], "26000000000")
-        self.assertTrue(manifest["real_gvhmr_artifact_imported"])
-        self.assertFalse(manifest["source_materialization_fixture_only"])
-        self.assertFalse(manifest["gvhmr_export_fixture_only"])
-        self.assertEqual(manifest["scoring_source"], "smplx")
-        self.assertFalse(manifest["g1_scoring_allowed"])
-        self.assertEqual(public_demo["schema"], "neodojo.public_demo.v1")
-        self.assertEqual(public_demo["scoring_source"], "smplx")
-        self.assertGreaterEqual(len(result.checked_paths), len(smoke.checked_paths))
-
-    def test_real_demo_pages_promotion_validator_rejects_fixture_intake(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            smoke_input = write_real_artifact_intake_smoke_input(root / "smoke-input")
-            download_root = root / "download"
-            real_demo_dir = download_root / "outputs" / "self-hosted-real-demo"
-            write_real_conversion_demo(
-                real_demo_dir,
-                source_materialization=smoke_input.source_materialization_path,
-                gvhmr_json=smoke_input.gvhmr_json_path,
-            )
-            audit_real_conversion_completion(
-                download_root / "outputs" / "self-hosted-real-audit",
-                source_materialization=smoke_input.source_materialization_path,
-                gvhmr_json=smoke_input.gvhmr_json_path,
-                real_demo=real_demo_dir,
-                env={},
-                command_lookup=lambda _command: None,
-            )
-
-            with self.assertRaisesRegex(ValueError, "real GVHMR artifact import"):
-                validate_real_demo_pages_promotion(
-                    download_root,
-                    root / "outputs" / "promoted-real-demo-pages",
-                    source_run_id="26000000000",
-                    artifact_name="neodojo-self-hosted-real-demo",
-                )
-
-    def test_real_demo_pages_promotion_cli_stages_verified_demo(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            download_root = _write_verified_real_demo_download_fixture(root)
-            out_dir = root / "outputs" / "promoted-real-demo-pages"
-            env = dict(os.environ)
-            env["PYTHONPATH"] = str(Path.cwd() / "src")
-
-            completed = subprocess.run(
-                [
-                    sys.executable,
-                    "-m",
-                    "neodojo",
-                    "real-conversion",
-                    "validate-pages-promotion",
-                    "--download-root",
-                    str(download_root),
-                    "--source-run-id",
-                    "26000000000",
-                    "--artifact-name",
-                    "neodojo-self-hosted-real-demo",
-                    "--out",
-                    str(out_dir),
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-                env=env,
-            )
-            manifest = json.loads((out_dir / "promotion-manifest.json").read_text(encoding="utf-8"))
-
-        self.assertIn("promotion-manifest.json", completed.stdout)
-        self.assertEqual(manifest["schema"], "neodojo.real_demo_pages_promotion.v1")
-        self.assertTrue(manifest["real_gvhmr_artifact_imported"])
+        self.assertIn("make verify", workflow)
+        self.assertIn("neodojo-local-gpu-prep-smoke", workflow)
+        self.assertIn("outputs/real-gpu-prep-smoke/gpu-run/manifest.json", workflow)
+        self.assertIn("real-gpu-prep", makefile)
+        self.assertIn("prepare-gpu-run", makefile)
+        removed_names = [
+            "real-gpu-colab-notebook",
+            "gvhmr-colab-notebook",
+            "gvhmr-operator-package",
+            "gpu-input-archive",
+            "gpu-execution-probe",
+            "real-demo-pages-promotion",
+            "artifact-acquisition-status",
+            "self-hosted",
+        ]
+        combined = "\n".join([workflow, makefile])
+        for removed_name in removed_names:
+            self.assertNotIn(removed_name, combined)
 
     def test_real_conversion_audit_distinguishes_fixture_intake_smoke(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -3183,8 +2395,6 @@ class DemoHtmlTests(unittest.TestCase):
                 source_materialization=smoke_input.source_materialization_path,
                 gvhmr_json=smoke_input.gvhmr_json_path,
                 real_demo=root / "real-artifact-intake-smoke",
-                env={},
-                command_lookup=lambda _command: None,
             )
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
 
@@ -3258,8 +2468,6 @@ class DemoHtmlTests(unittest.TestCase):
                 source_materialization=relocated_materialization,
                 gvhmr_json=gvhmr,
                 real_demo=root / "real-demo",
-                env={},
-                command_lookup=lambda _command: None,
             )
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
 
@@ -3330,12 +2538,10 @@ class DemoHtmlTests(unittest.TestCase):
                 source_materialization=root / "missing-source-materialization.json",
                 gvhmr_json=root / "missing-gvhmr-smplx-joints.json",
                 real_demo=root / "real-demo",
-                env={},
-                command_lookup=lambda command: "/usr/bin/nvidia-smi" if command == "nvidia-smi" else None,
             )
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(result.status, "real_artifact_missing")
+        self.assertEqual(result.status, "local_gvhmr_artifact_missing")
         self.assertFalse(result.complete)
         self.assertTrue(manifest["blocked"])
         self.assertFalse(_check_by_name(manifest, "source_materialization_available")["passed"])
