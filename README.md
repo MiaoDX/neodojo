@@ -154,7 +154,7 @@ embodied skills.
 
 ## Status
 
-🚧 **Bootstrap phase, with a fixture-only HTML demo.**
+🚧 **Bootstrap phase: fixture public demo, plus a local ignored real GVHMR proof.**
 
 See [`STATUS.md`](STATUS.md) for the current repo state, known constraints,
 and next safe task. There is now a small checked-in Python package, local
@@ -172,11 +172,15 @@ commands. It can also write a dry-run or ffmpeg-backed local source-video
 handoff plus a metadata package, copyable input bundle, executable GPU-side
 runner, ignored transfer archive, collocated operator package, operator-package
 archive, non-failing acquisition-status preflight, optional self-hosted GPU
-workflow, and guarded manual real-demo Pages promotion workflow for a later GPU
-GVHMR run.
+workflow, and guarded manual real-demo Pages promotion workflow for GPU GVHMR
+runs. On this GPU workstation, the ignored local real-conversion lane has
+also produced a non-fixture GVHMR SMPL-X teaching-joints export and passed the
+strict real-demo audit.
 There is still no checked-in local GVHMR/GMR execution environment, completed
 simulator runtime pipeline, built-in official SMPL-X body-model renderer,
-live-client Viser capture, or end-to-end real generated motion artifact.
+live-client Viser capture, committed generated motion artifact, or published
+real demo. The current real proof remains local under ignored `outputs/`, and
+its G1 companion is still fixture-derived unless a real GMR track is supplied.
 
 Fixture-only public demo: [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
 
@@ -384,7 +388,7 @@ validates MVP plan links and minimum plan scaffolding; `make build` writes a
 wheel under ignored `outputs/dist/`.
 
 `neodojo real-conversion prepare` writes source metadata, trim metadata, and
-next-command hints for the later GPU gate. It does not download the source
+next-command hints for a GPU conversion run. It does not download the source
 video or run GVHMR. When `--local-video` is supplied, it records checksum data
 and optional ffprobe duration, resolution, codec, and frame-rate metadata. Use
 `--local-source-id` with `--local-video` for a local/user-supplied source that
@@ -394,7 +398,7 @@ index row.
 local video and writes a source-materialization manifest. With `--dry-run`, it
 records exact ffmpeg trim and reference-frame extraction commands without
 processing media. Without `--dry-run`, it requires ffmpeg and writes ignored
-trimmed-video and reference-frame artifacts for the later GPU GVHMR input.
+trimmed-video and reference-frame artifacts for the GPU GVHMR input.
 `make real-handoff LOCAL_VIDEO=...` runs source prep, dry-run source
 materialization by default, and GPU handoff packaging in one command. Set
 `REAL_LOCAL_SOURCE_ID=...` and optional `REAL_LOCAL_TITLE=...` to preserve
@@ -501,7 +505,12 @@ G1 visual/render, teaching playback, public-demo, Viser preview, and capture
 bundle lane under `outputs/real-demo/`. By default they derive a fixture G1
 visual companion unless `--g1-track` and `--model-descriptor` are supplied to
 the CLI, or `G1_TRACK=... MODEL_DESCRIPTOR=...` are supplied to `make
-demo-real`. They still do not run GVHMR locally.
+demo-real`. They still do not run GVHMR as part of the checked-in neodojo
+package. The current GPU workstation has already run the packaged GVHMR wrapper
+against an ignored Bilibili proof clip, producing
+`outputs/gvhmr-gpu-input-local-bilibili/gvhmr-smplx-joints.json` with
+`fixture_only: false`, 300 frames at 25 fps, then importing it through
+`outputs/real-demo/`.
 `make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=...` is the simpler
 post-return wrapper for the same validated import path. It defaults to
 `outputs/real-conversion-source/source-materialization.json` and
@@ -513,12 +522,13 @@ intake path covered locally and in CI without claiming a real GVHMR run. The
 resulting real-demo manifest sets `gvhmr_artifact_imported: true` for the
 contract import and `real_gvhmr_artifact_imported: false` for fixture smoke.
 `make real-conversion-audit` writes `outputs/real-conversion-audit/manifest.json`,
-classifying whether the real gate is complete or still blocked on an external
+classifying whether the real gate is complete or still blocked on a non-fixture
 GPU artifact. Pass `REAL_AUDIT_GITHUB_REPO=OWNER/REPO` or CLI
 `--github-repo OWNER/REPO` to include the opt-in GitHub runner/secret-count
 probe in that audit. It exits successfully for blocker classification; use
 `make real-conversion-audit-strict` or `make verify-real` when a script should
-fail unless a real non-fixture demo exists. The underlying CLI form is
+fail unless a real non-fixture demo exists. In this workspace, the local
+Bilibili proof audit reports `real_demo_verified`. The underlying CLI form is
 `PYTHONPATH=src python -m neodojo real-conversion audit-completion --require-complete`.
 `make real-demo-pages-promotion-validate PROMOTION_DOWNLOAD_ROOT=...
 PROMOTION_SOURCE_RUN_ID=...` validates and stages a downloaded
@@ -615,12 +625,15 @@ In progress:
 - [x] Reusable operator package archive validation for existing downloaded
       archive artifacts
 - [x] Non-failing `make real-gvhmr-acquisition-status` preflight for operator
-      package handoff readiness and the still-blocked real audit
+      package handoff readiness and real-conversion audit state
 - [x] GPU-side GVHMR-to-neodojo export helper packaged with the handoff
 - [x] Local GVHMR result inspection manifest for returned `.pt` or JSON export
 - [x] Local GVHMR source-validation report and validated JSON import handoff
 - [x] One-command local real-artifact import demo after an external GPU GVHMR
       export is available
+- [x] Local GPU GVHMR proof for an ignored Bilibili Baduanjin clip, producing
+      a non-fixture 300-frame SMPL-X teaching-joints export and passing the
+      strict real-conversion audit
 - [x] Simpler `make real-artifact-intake` wrapper for the standard returned
       GVHMR export path
 - [x] Fixture-backed `make real-artifact-intake-smoke` coverage for the returned

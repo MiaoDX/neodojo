@@ -139,10 +139,28 @@ def _normalize_root_floor(frames: list[dict[str, list[float]]]) -> None:
             point[2] = round(point[2] - first_pelvis[2], 6)
 
 
+def _resolve_smplx_model_path(path: Path, gender: str) -> Path:
+    expected_file = f"SMPLX_{gender.upper()}.npz"
+    if path.is_file():
+        return path
+    if not path.exists():
+        raise SystemExit(f"SMPL-X model path does not exist: {path}")
+    if path.name.lower() == "smplx" and (path / expected_file).exists():
+        return path.parent
+    if (path / "smplx" / expected_file).exists():
+        return path
+    if (path / expected_file).exists():
+        return path / expected_file
+    raise SystemExit(
+        "SMPL-X model path must be the body_models root containing "
+        f"smplx/{expected_file}, the smplx directory, or the model file itself: {path}"
+    )
+
+
 def _smplx_joints_from_params(
     params: dict[str, Any],
     *,
-    smplx_model_dir: Path,
+    smplx_model_path: Path,
     gender: str,
     batch_size: int,
     device: str,
@@ -164,7 +182,7 @@ def _smplx_joints_from_params(
             count = end - start
             if count not in models:
                 model = smplx.create(
-                    str(smplx_model_dir),
+                    str(smplx_model_path),
                     model_type="smplx",
                     gender=gender,
                     use_pca=False,
@@ -186,7 +204,15 @@ def _smplx_joints_from_params(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--hmr4d-results", type=Path, required=True, help="GVHMR hmr4d_results.pt")
-    parser.add_argument("--smplx-model-dir", type=Path, required=True, help="local licensed SMPL-X model directory")
+    parser.add_argument(
+        "--smplx-model-dir",
+        type=Path,
+        required=True,
+        help=(
+            "local licensed SMPL-X body_models root, nested smplx directory, "
+            "or direct SMPLX_NEUTRAL.npz path"
+        ),
+    )
     parser.add_argument("--template", type=Path, required=True, help="gvhmr-smplx-joints.template.json from handoff")
     parser.add_argument(
         "--source-materialization",
@@ -229,10 +255,11 @@ def main() -> int:
     params = payload.get(args.parameter_block)
     if not isinstance(params, dict):
         raise SystemExit(f"hmr4d_results.pt is missing parameter block {args.parameter_block!r}")
+    smplx_model_path = _resolve_smplx_model_path(args.smplx_model_dir, args.gender)
 
     frames, joint_mapping = _smplx_joints_from_params(
         params,
-        smplx_model_dir=args.smplx_model_dir,
+        smplx_model_path=smplx_model_path,
         gender=args.gender,
         batch_size=args.batch_size,
         device=args.device,
@@ -259,6 +286,7 @@ def main() -> int:
             "hmr4d_results": str(args.hmr4d_results),
             "parameter_block": args.parameter_block,
             "smplx_model_dir": str(args.smplx_model_dir),
+            "smplx_model_path": str(smplx_model_path),
             "joint_mapping": {name: int(index) for name, index in joint_mapping.items()},
             "root_floor_normalized": not args.no_root_floor_normalize,
         }

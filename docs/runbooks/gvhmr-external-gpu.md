@@ -186,7 +186,8 @@ it does not run on push or pull requests. It accepts either:
 Its required runtime inputs are:
 
 - `gvhmr_repo`: existing GVHMR checkout or install destination
-- `smplx_model_dir`: licensed local SMPL-X model directory
+- `smplx_model_dir`: licensed local SMPL-X `body_models` root, nested
+  `smplx` directory, or direct `SMPLX_NEUTRAL.npz` path
 
 When `gvhmr_operator_package_path` is provided, the workflow validates the
 package, run-request, and notebook manifest schemas plus the copied archive,
@@ -232,20 +233,25 @@ python -m json.tool manifest.json
 ```
 
 Create or activate the GVHMR environment. Follow upstream GVHMR docs for exact
-provider-specific setup; the durable shape is:
+provider-specific setup. For the local neodojo workspace, prefer `uv sync` over
+ad hoc `pip install`. For an upstream GVHMR checkout that only provides
+`requirements.txt`, prefer a `uv` virtualenv and mirror-friendly `uv pip`
+commands:
 
 ```bash
 git clone https://github.com/zju3dv/GVHMR
 cd GVHMR
-conda create -y -n gvhmr python=3.10
-conda activate gvhmr
-pip install -r requirements.txt
-pip install -e .
+uv venv --python 3.10 .venv
+source .venv/bin/activate
+UV_INDEX_URL=${UV_INDEX_URL:-https://pypi.tuna.tsinghua.edu.cn/simple} uv pip install -r requirements.txt
+UV_INDEX_URL=${UV_INDEX_URL:-https://pypi.tuna.tsinghua.edu.cn/simple} uv pip install -e .
 mkdir -p inputs/checkpoints
 ```
 
 Place licensed body-model files and downloaded checkpoints in the structure
-required by upstream GVHMR. Keep those assets outside git.
+required by upstream GVHMR. In mainland China, use project-appropriate mirrors
+for Python packages and model downloads when direct upstream access is slow.
+Keep those assets outside git.
 
 Return to the unpacked neodojo bundle and run the packaged wrapper:
 
@@ -253,7 +259,7 @@ Return to the unpacked neodojo bundle and run the packaged wrapper:
 cd /path/to/neodojo-gvhmr-run
 chmod +x run_gvhmr_neodojo.sh
 GVHMR_REPO=/path/to/GVHMR \
-SMPLX_MODEL_DIR=/path/to/GVHMR/inputs/checkpoints/body_models/smplx \
+SMPLX_MODEL_DIR=/path/to/GVHMR/inputs/checkpoints/body_models \
 OUTPUT_ROOT=/path/to/gvhmr-output \
 STATIC_CAM=1 \
 ./run_gvhmr_neodojo.sh
@@ -261,11 +267,11 @@ STATIC_CAM=1 \
 
 For a provider where GVHMR is already installed, set `GVHMR_REPO` and omit
 `--install`. For a fresh Python environment where the wrapper should clone and
-install GVHMR with `pip`, run:
+install GVHMR through its bundled upstream install path, run:
 
 ```bash
 GVHMR_REPO=/path/to/GVHMR \
-SMPLX_MODEL_DIR=/path/to/GVHMR/inputs/checkpoints/body_models/smplx \
+SMPLX_MODEL_DIR=/path/to/GVHMR/inputs/checkpoints/body_models \
 ./run_gvhmr_neodojo.sh --install
 ```
 

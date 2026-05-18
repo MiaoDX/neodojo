@@ -3,14 +3,17 @@
 neodojo is intended to turn a single official instructional movement video into
 simulated teaching playback that can be inspected from multiple views.
 
-The architecture is currently a target design, not an implemented runtime. The
-repo contains fixture-first motion contracts, G1 visual-track manifests,
+The architecture is currently a target design, not a fully implemented runtime.
+The tracked repo contains fixture-first motion contracts, G1 visual-track manifests,
 an imported-GMR G1 track boundary, local G1 SVG/HTML render evidence, optional
 MuJoCo mesh render evidence with matching imported-GMR qpos application,
 teaching playback HTML, public-demo artifacts, an optional first Viser local
 runtime, real-conversion prep, and local source-media materialization handoff.
-It does not contain the GVHMR/GMR/simulator runtime pipeline, production
-teaching UI, or a real generated motion artifact.
+This workspace also has a local ignored GPU proof that produced a non-fixture
+GVHMR SMPL-X teaching-joints export and imported it through `outputs/real-demo/`.
+The tracked repo does not contain a checked-in GVHMR/GMR/simulator runtime
+pipeline, production teaching UI, committed generated motion artifact, or
+published real demo.
 
 ## MVP Data Flow
 

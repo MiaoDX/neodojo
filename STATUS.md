@@ -1,6 +1,7 @@
 # Status
 
-neodojo is in bootstrap state with one fixture-only local demo.
+neodojo is in bootstrap state with a fixture-only public demo and a local
+ignored real GVHMR proof.
 
 There is now a minimal checked-in Python package, a `make test` command,
 fixture-backed and external-JSON `motion-record` paths, `robot-model`,
@@ -36,7 +37,7 @@ operator package archives, metadata-only CI GPU
 run-request/notebook/package/package-archive/acquisition-status/probe artifacts, and a
 tracked external-GPU operator runbook, `make gvhmr-inspect` for returned GVHMR
 result inspection, `make demo-real` / `make real-artifact-intake` for a
-validated external GVHMR JSON once a GPU artifact exists, and
+validated external GVHMR JSON, and
 `make real-artifact-intake-smoke` for fixture-backed coverage of that returned
 artifact wrapper, and `make real-conversion-audit` for an executable blocker
 classification of the real GVHMR gate, plus a manual
@@ -48,9 +49,14 @@ confirmation and strict audit validation, plus
 `make real-demo-pages-promotion-validate` for exercising the same promotion
 artifact validator locally, with a verified live fixture-only GitHub Pages demo
 at
-`https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
-prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
-GVHMR run, `real-conversion package-gpu-handoff` can package the handoff
+`https://miaodx.com/neodojo/`. The current GPU workstation has an ignored
+non-fixture GVHMR export at
+`outputs/gvhmr-gpu-input-local-bilibili/gvhmr-smplx-joints.json` and an
+imported local real-demo lane under `outputs/real-demo/`; the strict local
+audit at `outputs/real-conversion-audit-local-bilibili/manifest.json` reports
+`real_demo_verified`. `real-conversion materialize-source` can also prepare a
+dry-run or ffmpeg-backed local source clip handoff for GPU GVHMR runs,
+`real-conversion package-gpu-handoff` can package the handoff
 manifest, export template, GPU-side exporter helper, executable GPU runner, and
 return command for the external GPU operator, `real-conversion
 package-gpu-input` can create an ignored copyable GPU input bundle with the
@@ -61,10 +67,10 @@ can inspect
 returned GVHMR result keys and candidate SMPL-X parameter blocks,
 `real-conversion validate-source` can validate a GVHMR JSON export against that
 handoff before import, and `real-conversion import-demo` can regenerate the
-local demo lane from that validated export. There is
-still no checked-in local GVHMR/GMR execution environment, completed simulator
-runtime pipeline, built-in official SMPL-X body-model renderer, real generated
-motion artifact, or hosted/live-client Viser capture.
+local demo lane from that validated export. There is still no checked-in local
+GVHMR/GMR execution environment, completed simulator runtime pipeline, built-in
+official SMPL-X body-model renderer, committed generated motion artifact,
+published real demo, or hosted/live-client Viser capture.
 
 ## Current Truth
 
@@ -75,6 +81,11 @@ motion artifact, or hosted/live-client Viser capture.
   Viser UI.
 - Teaching feedback should be based on the SMPL-X track. The G1 track is for
   visualization, ecosystem fit, and community-facing demos.
+- A local ignored GPU proof exists for a short Bilibili Baduanjin clip:
+  non-fixture GVHMR SMPL-X JSON, 300 frames at 25 fps, imported into
+  `outputs/real-demo/`, with strict audit status `real_demo_verified`.
+- The live Pages demo remains fixture-only unless a real-demo artifact is
+  explicitly promoted through the guarded promotion workflow.
 - Core non-goals for the MVP: RL policy training, sim2real control,
   text-to-motion generation, and video-diffusion multi-view generation.
 
@@ -82,6 +93,9 @@ motion artifact, or hosted/live-client Viser capture.
 
 - First end-to-end demo for Baduanjin opening form, "Holding Up the Heavens to
   Regulate the Triple Burner".
+- Local real GVHMR proof for a 0-12s Bilibili Baduanjin clip has completed on
+  this GPU workstation; remaining end-to-end work is real GMR/G1 retargeting,
+  real simulator rendering polish, and any explicit real-demo promotion.
 - Pre-GSD implementation phase split in
   `docs/plans/mvp-implementation-phases.md`.
 - Immediate local-first smoke path: fixture motion -> motion record -> SMPL-X
@@ -518,12 +532,12 @@ motion artifact, or hosted/live-client Viser capture.
   GMR joint-angle-to-qpos smoke against matching Unitree G1 joint names.
 - Real-conversion source prep manifest generated under
   `outputs/real-conversion-gate/`, selecting source `03-006` metadata and a
-  short trim window for a later GPU run. When `--local-video` is supplied, the
+  short trim window for GPU conversion. When `--local-video` is supplied, the
   source-media contract records checksum and optional ffprobe metadata.
 - Source materialization handoff generated under
   `outputs/real-conversion-source/` when a local video is supplied, writing
   dry-run ffmpeg commands or ignored trimmed clip/reference-frame artifacts for
-  the later GPU run.
+  GPU input.
 - `make real-handoff` smoke generated
   `outputs/real-handoff-smoke/prep/real-conversion-prep.json`,
   `outputs/real-handoff-smoke/source-materialized/source-materialization.json`,
@@ -578,18 +592,18 @@ motion artifact, or hosted/live-client Viser capture.
   `RUN_GVHMR = False` execution, returned JSON download, and local validation
   commands.
 - The ignored local Bilibili proof-clip request
-  `outputs/gvhmr-gpu-run-request-local-bilibili/manifest.json` can now be handed
-  to the same notebook path. A local generation wrote
+  `outputs/gvhmr-gpu-run-request-local-bilibili/manifest.json` can be handed to
+  the same notebook path. A local generation wrote
   `outputs/gvhmr-colab-operator-local-bilibili/manifest.json` with
   `schema: neodojo.gvhmr_colab_operator_notebook.v1`,
   `status: ready_for_colab_operator`, `media_included: true`, and
-  `safe_for_git: false`, leaving only private GPU execution and returned-export
-  validation.
+  `safe_for_git: false`. On this GPU workstation, the equivalent packaged
+  runner has now completed and returned a non-fixture GVHMR export.
 - `make gpu-execution-probe` writes
   `outputs/gvhmr-gpu-execution-probe/manifest.json` and is included in
-  `make verify`. On the current macOS ARM workspace it reports
-  `external_gpu_artifact_missing`, with no local CUDA runtime, no Docker GPU
-  runtime, and no configured GPU provider candidate detected.
+  `make verify`. The earlier macOS CPU workspace reported
+  `external_gpu_artifact_missing`; the current local real-conversion audit on
+  this GPU workstation records `local_cuda_available`.
 - GVHMR GPU handoff package generated under `outputs/gvhmr-gpu-handoff-smoke/`
   in local smoke, writing `neodojo.gvhmr_gpu_handoff.v1` manifest metadata,
   README instructions, a copyable `source-materialization.json`,
@@ -620,6 +634,14 @@ motion artifact, or hosted/live-client Viser capture.
   validated import-demo path with standard default paths for the returned export
   workflow. It has been smoke-tested against fixture-backed real-demo inputs and
   wrote `outputs/real-artifact-intake-smoke/`.
+- The current GPU workstation has also run the packaged GVHMR wrapper against
+  an ignored Bilibili proof clip and returned
+  `outputs/gvhmr-gpu-input-local-bilibili/gvhmr-smplx-joints.json`. That export
+  is `neodojo.gvhmr_smplx_joints.v1`, `fixture_only: false`, 300 frames at 25
+  fps, and imports into `outputs/real-demo/` with
+  `real_gvhmr_artifact_imported: true`. The generated `outputs/real-demo/`
+  lane still uses fixture components for the G1 visual companion unless an
+  external GMR track/model descriptor is supplied.
 - `make real-artifact-intake-smoke` generates fixture-only source
   materialization and GVHMR JSON inputs, then runs the same
   `make real-artifact-intake` wrapper. It is included in `make verify` and is
@@ -629,26 +651,28 @@ motion artifact, or hosted/live-client Viser capture.
   for fixture smoke, plus explicit source/export fixture flags.
 - `make real-conversion-audit` writes
   `outputs/real-conversion-audit/manifest.json`, a non-failing audit manifest
-  that classifies the real-conversion gate as complete or blocked. In the
-  current local state it reports `external_gpu_artifact_missing`, `complete:
-  false`, and the next action to run GVHMR externally and return a
-  `neodojo.gvhmr_smplx_joints.v1` export. With
+  that classifies the real-conversion gate as complete or blocked. In this
+  workspace, the local Bilibili audit at
+  `outputs/real-conversion-audit-local-bilibili/manifest.json` reports
+  `status: real_demo_verified` and `complete: true`. A fresh checkout or CI lane
+  without a non-fixture returned artifact still reports the expected missing
+  artifact blocker. With
   `REAL_AUDIT_GITHUB_REPO=OWNER/REPO`, it includes the opt-in GitHub
   self-hosted runner and repository secret-count probe in the nested GPU
   execution manifest without recording secret values or secret names.
 - `make real-gvhmr-acquisition-status
   GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive` writes
   `outputs/real-gvhmr-artifact-acquisition-status/manifest.json`, a non-failing
-  operator-facing preflight for the remaining external GVHMR run. It validates
+  operator-facing preflight for GVHMR operator handoff. It validates
   the operator package archive, records `ready_for_external_gpu_operator` for a
   media-containing package archive or `operator_package_archive_not_ready_for_gpu`
   for metadata-only smoke artifacts, embeds the real-conversion audit status,
-  and repeats that the returned `gvhmr-smplx-joints.json` must be
+  and repeats that any returned `gvhmr-smplx-joints.json` must be
   `neodojo.gvhmr_smplx_joints.v1` with `fixture_only: false`. It never runs
   GVHMR or marks the real lane complete without a returned non-fixture export.
 - `make real-conversion-audit-strict` and `make verify-real` run the same
-  audit with `--require-complete`, so they intentionally fail until a real
-  non-fixture GVHMR demo has been imported and regenerated.
+  audit with `--require-complete`, so they pass only after a real non-fixture
+  GVHMR demo has been imported and regenerated.
 - `.github/workflows/gvhmr-self-hosted-gpu.yml` is a manual
   `workflow_dispatch` path for user-managed runners labeled `self-hosted` and
   `gpu`. It can run the packaged GVHMR wrapper from a runner-local archive or
@@ -875,8 +899,8 @@ the headless Chromium public-demo screenshot manifest. When
 recorder evidence. It preserves SMPL-X as the scoring source and records that
 direct roboharness/live-runtime recording remains follow-on.
 
-`neodojo real-conversion prepare` writes ignored source/trim metadata for the
-later GPU run and does not download video or execute GVHMR. When a local video
+`neodojo real-conversion prepare` writes ignored source/trim metadata for a GPU
+conversion run and does not download video or execute GVHMR. When a local video
 is supplied, it records checksum data and optional ffprobe duration,
 resolution, codec, and frame-rate metadata. It can either select an official
 source-index row with `--id` or preserve custom local/user-supplied provenance
@@ -885,7 +909,7 @@ materialize-source` consumes that prep manifest and a local video to write a
 source-materialization manifest. With `--dry-run`, it records the ffmpeg trim
 and reference-frame extraction commands without processing media. Without
 `--dry-run`, it requires ffmpeg and writes ignored trimmed-video and frame
-artifacts for the later GPU GVHMR input handoff. `make real-handoff
+artifacts for the GPU GVHMR input handoff. `make real-handoff
 LOCAL_VIDEO=...` runs prep, dry-run source materialization by default, and GPU
 handoff packaging in one command; set `REAL_LOCAL_SOURCE_ID=...` for custom
 local-source provenance and `REAL_DRY_RUN=0` to actually trim/extract media when
@@ -993,81 +1017,22 @@ artifact path.
 
 ## Next Safe Task
 
-The next default MVP capability remains
-`docs/plans/mvp-real-gvhmr-artifact-acquisition.md`, backed by
-`docs/plans/mvp-real-conversion-gate.md`, for the later GPU artifact import
-path. Do not run GVHMR
-full-video inference on this macOS CPU workspace; use a GPU-capable machine to
-export a GVHMR SMPL-X teaching-joints JSON artifact, then import it through
-`neodojo motion-record create --from-gvhmr-json`.
+The tracked docs/code are now aligned with the local GPU proof, and the local
+verification gates pass. The current local proof uses ignored source media and
+generated artifacts:
 
-The current blocker is external to the local non-GPU pipeline: no GPU-produced
-`neodojo.gvhmr_smplx_joints.v1` export is present in this workspace. A local
-ignored Bilibili Baduanjin source candidate has been materialized under
-`outputs/real-handoff-local-bilibili/`, the default source-materialization path
-exists under `outputs/real-conversion-source/source-materialization.json`, and
-a copyable media-including GPU input bundle exists under
-`outputs/gvhmr-gpu-input-local-bilibili/`, with a
-`run_gvhmr_neodojo.sh` runner, rights marked unconfirmed, and media kept out of
-git. The same media-containing archive can now be regenerated in one command
-with `make real-gpu-archive LOCAL_VIDEO=...`, or regenerated with a matching
-operator request in one command via `make real-gpu-run-request LOCAL_VIDEO=...`.
-For a notebook-based GPU operator, the archive, request, and Colab notebook can
-now be regenerated together with `make real-gpu-colab-notebook LOCAL_VIDEO=...`.
-For a single copyable handoff folder, those files can be collocated with
-`make real-gpu-operator-package LOCAL_VIDEO=...`; for a single transfer file,
-the collocated package can be wrapped with
-`make real-gpu-operator-package-archive LOCAL_VIDEO=...`, then rechecked later
-with `make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`.
-Run `make real-gvhmr-acquisition-status
-GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive` before
-handoff to write an operator-facing status manifest and keep the blocked audit
-attached to the package archive evidence.
-That high-level archive target has been run against the ignored local
-Bilibili proof candidate with isolated outputs under
-`outputs/real-gpu-operator-package-archive-target-smoke/`; it produced a
-`neodojo.gvhmr_operator_package_archive.v1` archive with
-`status: ready_for_external_gpu_operator_package_archive`, `media_included:
-true`, `policy.safe_for_git: false`, and archive checksum
-`39ff72c8390161b16766eb5d6bb19c3918ce2d958e4739506c358a228433deb2`.
-The default ignored package at `outputs/gvhmr-operator-package/` is ready for
-external GPU operator handoff and marked unsafe for git because it contains
-media.
-That operator request can also generate a Colab-ready notebook with
-`make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request` for
-manual GPU execution in a notebook runtime; the current ignored local proof
-notebook lives under `outputs/gvhmr-colab-operator-local-bilibili/`.
-A local ignored transfer archive has also been generated at
-`outputs/gvhmr-gpu-input-archive-local-bilibili/neodojo-gvhmr-gpu-input.tar.gz`;
-its manifest reports `archive_with_media`, `media_included: true`, and
-`safe_for_git: false`, and the extracted archive has been checked to contain
-`run_gvhmr_neodojo.sh`, `RUN_ON_GPU.md`, `export_neodojo_gvhmr.py`,
-`gvhmr-smplx-joints.template.json`, source metadata, and the trimmed clip. The
-archive writer now rejects missing required GPU-operator files, including stale
-bundles that omit the runner script. The tracked operator checklist is
-`docs/runbooks/gvhmr-external-gpu.md`. The optional manual
-`.github/workflows/gvhmr-self-hosted-gpu.yml` workflow can run the same bundle
-or collocated operator package on a user-managed self-hosted GPU runner when
-one exists, then immediately run real-artifact intake and strict completion
-audit in that workflow. The separate
-manual `.github/workflows/promote-real-demo-pages.yml` workflow can publish a
-validated self-hosted real-demo artifact to Pages only after the operator
-selects the source run, confirms replacement, and enables
-`NEODOJO_DEPLOY_REAL_PAGES=true`. A
-local/provider/GitHub execution probe found no CUDA runtime, no configured
-GPU-provider environment variables or provider CLIs, zero self-hosted GitHub
-Actions runners for `MiaoDX/neodojo`, and zero repository secrets; Docker is
-available locally but does not expose a GPU runtime. The next external step is
-therefore to copy the bundle or archive to a GPU-capable machine or
-self-hosted GPU runner, run GVHMR, and return or upload the neodojo export.
-A refreshed local GitHub-route probe still reports the same blocker and the
-optional self-hosted GPU workflow currently has no runs; a local artifact
-search found only fixture/smoke GVHMR JSON files and no returned
-`hmr4d_results.pt` or non-fixture `gvhmr-smplx-joints.json` artifact.
-Until then, `make verify-real` is expected to fail as the strict end-to-end
-completion gate. Once that artifact exists, the remaining task is to validate
-it with `real-conversion import-demo`, then inspect the generated
-`outputs/real-demo/` artifacts.
+- GVHMR export:
+  `outputs/gvhmr-gpu-input-local-bilibili/gvhmr-smplx-joints.json`
+- imported real-demo lane: `outputs/real-demo/`
+- strict audit:
+  `outputs/real-conversion-audit-local-bilibili/manifest.json`
+- audit status: `real_demo_verified`, `complete: true`
+
+The live Pages demo at `https://miaodx.com/neodojo/` remains fixture-only until
+a guarded real-demo promotion is explicitly run. The next product capability is
+either a real GMR Unitree G1 track for the same SMPL-X proof, a real
+simulator-rendered G1/SMPL-X visual layer, or an explicit real-demo publishing
+decision.
 
 ## Background Evidence
 

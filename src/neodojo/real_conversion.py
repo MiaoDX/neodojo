@@ -3034,12 +3034,21 @@ def validate_gvhmr_source(
     expected_duration = _as_float(trim.get("duration_seconds"))
     duration_tolerance = max(0.35, min(1.0, expected_duration * 0.05)) if expected_duration else 0.35
 
+    source_materialization_hash_matches = provenance.get("source_materialization_sha256") == materialization_sha256
+    source_materialization_manifest_check = _comparison(
+        name="source_materialization_manifest",
+        expected=_as_posix(source_materialization),
+        actual=provenance.get("source_materialization_manifest"),
+    )
+    if not source_materialization_manifest_check["passed"] and source_materialization_hash_matches:
+        source_materialization_manifest_check["passed"] = True
+        source_materialization_manifest_check["status"] = "pass"
+        source_materialization_manifest_check["note"] = (
+            "path differs from export provenance, but source_materialization_sha256 matches"
+        )
+
     checks = [
-        _comparison(
-            name="source_materialization_manifest",
-            expected=_as_posix(source_materialization),
-            actual=provenance.get("source_materialization_manifest"),
-        ),
+        source_materialization_manifest_check,
         _comparison(
             name="source_materialization_sha256",
             expected=materialization_sha256,
@@ -3335,7 +3344,14 @@ def audit_real_conversion_completion(
         ),
     )
 
-    complete = real_demo_imported and public_demo_available
+    inputs_verified = (
+        materialization is not None
+        and gvhmr_export is not None
+        and not source_materialization_fixture_only
+        and not gvhmr_export_fixture_only
+        and validation_status == "validated"
+    )
+    complete = inputs_verified and real_demo_imported and public_demo_available
     if complete:
         status = "real_demo_verified"
         next_action = "Inspect outputs/real-demo/public-demo and archive the real conversion evidence outside git."
@@ -3391,7 +3407,7 @@ def audit_real_conversion_completion(
         "notes": (
             "This audit is a blocker classifier. It may pass local verification "
             "while status is not complete, because the remaining GVHMR run is "
-            "external to the local CPU workspace."
+            "external to the checked-in fixture CI lane."
         ),
     }
     _write_json(manifest_path, manifest)
