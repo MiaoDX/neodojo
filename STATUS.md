@@ -425,6 +425,14 @@ motion artifact, or hosted/live-client Viser capture.
   `safe_for_git: false`; the notebook includes the archive checksum, guarded
   `RUN_GVHMR = False` execution, returned JSON download, and local validation
   commands.
+- The ignored local Bilibili proof-clip request
+  `outputs/gvhmr-gpu-run-request-local-bilibili/manifest.json` can now be handed
+  to the same notebook path. A local generation wrote
+  `outputs/gvhmr-colab-operator-local-bilibili/manifest.json` with
+  `schema: neodojo.gvhmr_colab_operator_notebook.v1`,
+  `status: ready_for_colab_operator`, `media_included: true`, and
+  `safe_for_git: false`, leaving only private GPU execution and returned-export
+  validation.
 - `make gpu-execution-probe` writes
   `outputs/gvhmr-gpu-execution-probe/manifest.json` and is included in
   `make verify`. On the current macOS ARM workspace it reports
@@ -791,7 +799,8 @@ with `make real-gpu-archive LOCAL_VIDEO=...`, or regenerated with a matching
 operator request in one command via `make real-gpu-run-request LOCAL_VIDEO=...`.
 That operator request can also generate a Colab-ready notebook with
 `make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request` for
-manual GPU execution in a notebook runtime.
+manual GPU execution in a notebook runtime; the current ignored local proof
+notebook lives under `outputs/gvhmr-colab-operator-local-bilibili/`.
 A local ignored transfer archive has also been generated at
 `outputs/gvhmr-gpu-input-archive-local-bilibili/neodojo-gvhmr-gpu-input.tar.gz`;
 its manifest reports `archive_with_media`, `media_included: true`, and
