@@ -424,7 +424,9 @@ CPU workspace:
 
 - blocker type: GPU artifact missing
 - input status: custom local source handoff candidate exists under ignored
-  `outputs/real-handoff-local-bilibili/`, and a media-including transfer bundle
+  `outputs/real-handoff-local-bilibili/`, the default source-materialization
+  path exists under `outputs/real-conversion-source/source-materialization.json`,
+  and a media-including transfer bundle
   exists under ignored `outputs/gvhmr-gpu-input-local-bilibili/` with
   `run_gvhmr_neodojo.sh`; a media-including ignored transfer archive exists at
   `outputs/gvhmr-gpu-input-archive-local-bilibili/neodojo-gvhmr-gpu-input.tar.gz`
@@ -433,7 +435,10 @@ CPU workspace:
   with `make real-gpu-run-request LOCAL_VIDEO=...`, and the combined archive,
   request, and Colab notebook handoff can be recreated with
   `make real-gpu-colab-notebook LOCAL_VIDEO=...`; a single collocated operator
-  package can be recreated with `make real-gpu-operator-package LOCAL_VIDEO=...`;
+  package can be recreated with `make real-gpu-operator-package LOCAL_VIDEO=...`,
+  and the default ignored `outputs/gvhmr-operator-package/manifest.json`
+  currently reports `ready_for_external_gpu_operator_package`,
+  `media_included: true`, and `safe_for_git: false`;
   official source `03-006` is still an available source-index path if
   rights/source selection change
 - missing runtime: a GPU-capable GVHMR environment such as Colab, RunPod,

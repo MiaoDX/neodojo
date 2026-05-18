@@ -450,7 +450,10 @@ motion artifact, or hosted/live-client Viser capture.
   `outputs/gvhmr-operator-package-smoke/manifest.json` with
   `schema: neodojo.gvhmr_operator_package.v1`,
   `status: metadata_only_not_ready_for_gpu`, `media_included: false`, and
-  `safe_for_git: true`; media-containing operator packages remain ignored.
+  `safe_for_git: true`. The default ignored local Bilibili proof package at
+  `outputs/gvhmr-operator-package/manifest.json` reports
+  `status: ready_for_external_gpu_operator_package`, `media_included: true`,
+  and `safe_for_git: false`; media-containing operator packages remain ignored.
 - `make gvhmr-colab-notebook GVHMR_RUN_REQUEST=...` has been smoke-tested for
   both metadata-only CI handoffs and the ignored media-containing local
   run-request. The media-containing path wrote
@@ -841,8 +844,10 @@ export a GVHMR SMPL-X teaching-joints JSON artifact, then import it through
 The current blocker is external to the local non-GPU pipeline: no GPU-produced
 `neodojo.gvhmr_smplx_joints.v1` export is present in this workspace. A local
 ignored Bilibili Baduanjin source candidate has been materialized under
-`outputs/real-handoff-local-bilibili/` and a copyable media-including GPU input
-bundle exists under `outputs/gvhmr-gpu-input-local-bilibili/`, with a
+`outputs/real-handoff-local-bilibili/`, the default source-materialization path
+exists under `outputs/real-conversion-source/source-materialization.json`, and
+a copyable media-including GPU input bundle exists under
+`outputs/gvhmr-gpu-input-local-bilibili/`, with a
 `run_gvhmr_neodojo.sh` runner, rights marked unconfirmed, and media kept out of
 git. The same media-containing archive can now be regenerated in one command
 with `make real-gpu-archive LOCAL_VIDEO=...`, or regenerated with a matching
@@ -850,7 +855,9 @@ operator request in one command via `make real-gpu-run-request LOCAL_VIDEO=...`.
 For a notebook-based GPU operator, the archive, request, and Colab notebook can
 now be regenerated together with `make real-gpu-colab-notebook LOCAL_VIDEO=...`.
 For a single copyable handoff folder, those files can be collocated with
-`make real-gpu-operator-package LOCAL_VIDEO=...`.
+`make real-gpu-operator-package LOCAL_VIDEO=...`; the default ignored package at
+`outputs/gvhmr-operator-package/` is ready for external GPU operator handoff and
+marked unsafe for git because it contains media.
 That operator request can also generate a Colab-ready notebook with
 `make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request` for
 manual GPU execution in a notebook runtime; the current ignored local proof
