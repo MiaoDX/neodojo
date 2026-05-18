@@ -35,6 +35,7 @@ from .real_conversion import (
     write_real_conversion_prep,
 )
 from .real_demo import write_real_conversion_demo
+from .real_demo_promotion import validate_real_demo_pages_promotion
 from .smplx_surface import (
     register_smplx_asset_descriptor,
     write_smplx_mesh_surface,
@@ -826,6 +827,32 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/real-conversion-audit"),
         help="output directory for the audit manifest",
     )
+    real_pages_promotion = real_subparsers.add_parser(
+        "validate-pages-promotion",
+        help="validate and stage a downloaded real-demo artifact for guarded Pages promotion",
+    )
+    real_pages_promotion.add_argument(
+        "--download-root",
+        type=Path,
+        required=True,
+        help="downloaded neodojo-self-hosted-real-demo artifact directory",
+    )
+    real_pages_promotion.add_argument(
+        "--source-run-id",
+        required=True,
+        help="GitHub Actions run ID that produced the downloaded artifact",
+    )
+    real_pages_promotion.add_argument(
+        "--artifact-name",
+        default="neodojo-self-hosted-real-demo",
+        help="downloaded artifact name",
+    )
+    real_pages_promotion.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/promoted-real-demo-pages"),
+        help="staged public-demo directory for Pages upload",
+    )
     real_inspect_gvhmr = real_subparsers.add_parser(
         "inspect-gvhmr-result",
         help="inspect a returned GVHMR hmr4d_results.pt or JSON summary for export readiness",
@@ -1221,6 +1248,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"complete {str(result.complete).lower()}")
             if args.require_complete and not result.complete:
                 raise ValueError(f"real conversion gate is not complete; status is {result.status}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "validate-pages-promotion":
+            result = validate_real_demo_pages_promotion(
+                args.download_root,
+                args.out,
+                source_run_id=args.source_run_id,
+                artifact_name=args.artifact_name,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"staged {result.staged_dir}")
+            for path in result.checked_paths:
+                print(f"validated {path}")
             return 0
 
         if args.command == "real-conversion" and args.real_command == "package-gpu-handoff":

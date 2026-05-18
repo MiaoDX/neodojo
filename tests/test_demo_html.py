@@ -49,6 +49,7 @@ from neodojo.real_conversion import (
     write_real_conversion_prep,
 )
 from neodojo.real_demo import write_real_conversion_demo
+from neodojo.real_demo_promotion import validate_real_demo_pages_promotion
 from neodojo.smplx_surface import (
     load_smplx_asset_descriptor,
     load_smplx_surface_layer,
@@ -66,6 +67,71 @@ def _free_local_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))
         return int(sock.getsockname()[1])
+
+
+def _write_verified_real_demo_download_fixture(root: Path) -> Path:
+    source = root / "source-materialization.json"
+    source.write_text(
+        json.dumps(
+            {
+                "schema": "neodojo.real_conversion_source_materialization.v1",
+                "source_prep": {"source_id": "03-006"},
+                "trim": {
+                    "start_seconds": 0.25,
+                    "end_seconds": 1.75,
+                    "duration_seconds": 1.5,
+                },
+                "outputs": {
+                    "trimmed_video_path": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                    "trimmed_video": {"sha256": "abc123"},
+                },
+                "gpu_handoff": {
+                    "trimmed_video_argument": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    gvhmr = root / "gvhmr-smplx-joints.json"
+    gvhmr.write_text(
+        json.dumps(
+            {
+                "schema": "neodojo.gvhmr_smplx_joints.v1",
+                "routine": "Baduanjin",
+                "form": "Two Hands Hold Up the Heavens",
+                "fps": 24,
+                "frames": build_smplx_fixture_frames(36),
+                "provenance": {
+                    "source_materialization_manifest": str(source),
+                    "source_materialization_sha256": sha256_file(source),
+                    "source_id": "03-006",
+                    "trim": {
+                        "start_seconds": 0.25,
+                        "end_seconds": 1.75,
+                        "duration_seconds": 1.5,
+                    },
+                    "input_video": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                    "input_video_sha256": "abc123",
+                    "gpu_command": "python tools/demo/demo.py --video trimmed-clip.mp4",
+                    "runtime": "test gpu",
+                    "upstream_version": "gvhmr-test",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    download_root = root / "download"
+    real_demo_dir = download_root / "outputs" / "self-hosted-real-demo"
+    write_real_conversion_demo(real_demo_dir, source_materialization=source, gvhmr_json=gvhmr)
+    audit_real_conversion_completion(
+        download_root / "outputs" / "self-hosted-real-audit",
+        source_materialization=source,
+        gvhmr_json=gvhmr,
+        real_demo=real_demo_dir,
+        env={},
+        command_lookup=lambda _command: None,
+    )
+    return download_root
 
 
 class DemoHtmlTests(unittest.TestCase):
@@ -2593,12 +2659,10 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("actions: read", workflow)
         self.assertIn("actions/download-artifact@v8", workflow)
         self.assertIn("neodojo-self-hosted-real-demo", workflow)
-        self.assertIn("neodojo.real_conversion_demo.v1", workflow)
-        self.assertIn("neodojo.real_conversion_audit.v1", workflow)
-        self.assertIn("real_gvhmr_artifact_imported", workflow)
-        self.assertIn("source_materialization_fixture_only", workflow)
-        self.assertIn("gvhmr_export_fixture_only", workflow)
-        self.assertIn("real_demo_verified", workflow)
+        self.assertIn("real-conversion validate-pages-promotion", workflow)
+        self.assertIn("--download-root outputs/promoted-real-demo-download", workflow)
+        self.assertIn("--source-run-id", workflow)
+        self.assertIn("--artifact-name", workflow)
         self.assertIn("PYTHONPATH=src python -m neodojo demo smoke", workflow)
         self.assertIn("actions/upload-pages-artifact@v5", workflow)
         self.assertIn("actions/deploy-pages@v5", workflow)
@@ -2612,6 +2676,95 @@ class DemoHtmlTests(unittest.TestCase):
         for path in upload_paths:
             for forbidden in forbidden_fragments:
                 self.assertNotIn(forbidden, path)
+
+    def test_real_demo_pages_promotion_validator_accepts_verified_real_demo(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            download_root = _write_verified_real_demo_download_fixture(root)
+
+            result = validate_real_demo_pages_promotion(
+                download_root,
+                root / "outputs" / "promoted-real-demo-pages",
+                source_run_id="26000000000",
+                artifact_name="neodojo-self-hosted-real-demo",
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            public_demo = json.loads((result.staged_dir / "manifest.json").read_text(encoding="utf-8"))
+            smoke = smoke_check_public_demo(result.staged_dir)
+
+        self.assertEqual(manifest["schema"], "neodojo.real_demo_pages_promotion.v1")
+        self.assertEqual(manifest["source_run_id"], "26000000000")
+        self.assertTrue(manifest["real_gvhmr_artifact_imported"])
+        self.assertFalse(manifest["source_materialization_fixture_only"])
+        self.assertFalse(manifest["gvhmr_export_fixture_only"])
+        self.assertEqual(manifest["scoring_source"], "smplx")
+        self.assertFalse(manifest["g1_scoring_allowed"])
+        self.assertEqual(public_demo["schema"], "neodojo.public_demo.v1")
+        self.assertEqual(public_demo["scoring_source"], "smplx")
+        self.assertGreaterEqual(len(result.checked_paths), len(smoke.checked_paths))
+
+    def test_real_demo_pages_promotion_validator_rejects_fixture_intake(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            smoke_input = write_real_artifact_intake_smoke_input(root / "smoke-input")
+            download_root = root / "download"
+            real_demo_dir = download_root / "outputs" / "self-hosted-real-demo"
+            write_real_conversion_demo(
+                real_demo_dir,
+                source_materialization=smoke_input.source_materialization_path,
+                gvhmr_json=smoke_input.gvhmr_json_path,
+            )
+            audit_real_conversion_completion(
+                download_root / "outputs" / "self-hosted-real-audit",
+                source_materialization=smoke_input.source_materialization_path,
+                gvhmr_json=smoke_input.gvhmr_json_path,
+                real_demo=real_demo_dir,
+                env={},
+                command_lookup=lambda _command: None,
+            )
+
+            with self.assertRaisesRegex(ValueError, "real GVHMR artifact import"):
+                validate_real_demo_pages_promotion(
+                    download_root,
+                    root / "outputs" / "promoted-real-demo-pages",
+                    source_run_id="26000000000",
+                    artifact_name="neodojo-self-hosted-real-demo",
+                )
+
+    def test_real_demo_pages_promotion_cli_stages_verified_demo(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            download_root = _write_verified_real_demo_download_fixture(root)
+            out_dir = root / "outputs" / "promoted-real-demo-pages"
+            env = dict(os.environ)
+            env["PYTHONPATH"] = str(Path.cwd() / "src")
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "neodojo",
+                    "real-conversion",
+                    "validate-pages-promotion",
+                    "--download-root",
+                    str(download_root),
+                    "--source-run-id",
+                    "26000000000",
+                    "--artifact-name",
+                    "neodojo-self-hosted-real-demo",
+                    "--out",
+                    str(out_dir),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+            manifest = json.loads((out_dir / "promotion-manifest.json").read_text(encoding="utf-8"))
+
+        self.assertIn("promotion-manifest.json", completed.stdout)
+        self.assertEqual(manifest["schema"], "neodojo.real_demo_pages_promotion.v1")
+        self.assertTrue(manifest["real_gvhmr_artifact_imported"])
 
     def test_real_conversion_audit_distinguishes_fixture_intake_smoke(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

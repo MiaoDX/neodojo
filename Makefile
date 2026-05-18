@@ -1,4 +1,4 @@
-.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict smoke-public
+.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict real-demo-pages-promotion-validate smoke-public
 
 PYTHON ?= python3
 REAL_SOURCE_ID ?= 03-006
@@ -21,6 +21,10 @@ REAL_ARTIFACT_OUT ?= outputs/real-demo
 REAL_ARTIFACT_SMOKE_INPUT_OUT ?= outputs/real-artifact-intake-smoke-input
 REAL_ARTIFACT_SMOKE_OUT ?= outputs/real-artifact-intake-smoke
 REAL_CONVERSION_AUDIT_OUT ?= outputs/real-conversion-audit
+PROMOTION_DOWNLOAD_ROOT ?= outputs/promoted-real-demo-download
+PROMOTION_SOURCE_RUN_ID ?=
+PROMOTION_ARTIFACT_NAME ?= neodojo-self-hosted-real-demo
+PROMOTION_OUT ?= outputs/promoted-real-demo-pages
 REAL_DEMO_ARGS = --source-materialization "$(SOURCE_MATERIALIZATION)" --gvhmr-json "$(GVHMR_JSON)" --out "$(REAL_DEMO_OUT)"
 ifdef G1_TRACK
 REAL_DEMO_ARGS += --g1-track "$(G1_TRACK)"
@@ -187,6 +191,11 @@ real-conversion-audit:
 real-conversion-audit-strict:
 	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion audit-completion --source-materialization "$(REAL_ARTIFACT_SOURCE_MATERIALIZATION)" --gvhmr-json "$(REAL_ARTIFACT_GVHMR_JSON)" --real-demo "$(REAL_ARTIFACT_OUT)" --out "$(REAL_CONVERSION_AUDIT_OUT)" --require-complete
 	test -f "$(REAL_CONVERSION_AUDIT_OUT)/manifest.json"
+
+real-demo-pages-promotion-validate:
+	@test -n "$(PROMOTION_SOURCE_RUN_ID)" || (echo "PROMOTION_SOURCE_RUN_ID=<github-actions-run-id> is required" && exit 2)
+	@test -d "$(PROMOTION_DOWNLOAD_ROOT)" || (echo "PROMOTION_DOWNLOAD_ROOT=path/to/downloaded-real-demo-artifact is required" && exit 2)
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion validate-pages-promotion --download-root "$(PROMOTION_DOWNLOAD_ROOT)" --source-run-id "$(PROMOTION_SOURCE_RUN_ID)" --artifact-name "$(PROMOTION_ARTIFACT_NAME)" --out "$(PROMOTION_OUT)"
 
 smoke-public:
 	PYTHONPATH=src $(PYTHON) -m neodojo demo smoke --public-demo outputs/public-demo

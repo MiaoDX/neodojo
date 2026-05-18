@@ -31,8 +31,10 @@ classification of the real GVHMR gate, plus a manual
 self-hosted GPU runners that also validates/imports the returned export, plus a
 manual `.github/workflows/promote-real-demo-pages.yml` workflow for promoting a
 validated self-hosted real-demo artifact to GitHub Pages only after explicit
-confirmation and strict audit validation, with a verified live fixture-only
-GitHub Pages demo at
+confirmation and strict audit validation, plus
+`make real-demo-pages-promotion-validate` for exercising the same promotion
+artifact validator locally, with a verified live fixture-only GitHub Pages demo
+at
 `https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, `real-conversion package-gpu-handoff` can package the handoff
@@ -430,6 +432,11 @@ motion artifact, or hosted/live-client Viser capture.
   `neodojo demo smoke`, and deploys only the generated public-demo directory
   plus a promotion manifest. It does not run GVHMR and is not triggered by
   push or pull request events.
+- `make real-demo-pages-promotion-validate` and
+  `neodojo real-conversion validate-pages-promotion` expose that promotion
+  validator as a local command, so fixture-only imports, incomplete strict
+  audits, unsafe file paths, non-SMPL-X scoring, and blank public-demo files can
+  be rejected in unit tests before a manual Pages promotion run exists.
 
 ## Blockers And Constraints
 

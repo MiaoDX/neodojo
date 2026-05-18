@@ -43,6 +43,9 @@ until a human explicitly promotes a verified real artifact.
 - `promotion-manifest.json` inside the staged Pages artifact, recording source
   run ID, artifact name, real GVHMR import proof, strict audit proof, and the
   public-demo aggregate fixture flag.
+- `neodojo real-conversion validate-pages-promotion` and
+  `make real-demo-pages-promotion-validate`, so the same validation logic can
+  be exercised locally and by the workflow.
 
 ## Execution Tasks
 
@@ -65,8 +68,13 @@ until a human explicitly promotes a verified real artifact.
 - [x] Re-run `neodojo demo smoke` against the staged public-demo before upload.
 - [x] Reject promotion inputs whose paths include media, checkpoints, SMPL-X
   asset markers, `.pt`, `.pkl`, or `.npz` files.
+- [x] Move the promotion validation logic into repo-owned Python code and call
+  it from the workflow instead of relying on inline workflow-only validation.
+- [x] Add a Make target for local validation of a downloaded real-demo artifact.
 - [x] Add focused tests that the promotion workflow is manual, gated, validates
   real-artifact evidence, and avoids unsafe upload paths.
+- [x] Add unit and CLI tests for accepting a verified synthetic real-demo
+  artifact and rejecting fixture-only intake artifacts.
 - [x] Update STATUS, README, README.zh, the external GPU runbook, and the MVP
   plan index without claiming that a real artifact exists.
 
@@ -77,6 +85,8 @@ until a human explicitly promotes a verified real artifact.
   `NEODOJO_DEPLOY_REAL_PAGES=true` are set.
 - The workflow validates real-demo, public-demo, and strict audit manifests
   before uploading a Pages artifact.
+- The workflow calls `neodojo real-conversion validate-pages-promotion`, so
+  promotion validation has normal unit/CLI coverage.
 - The workflow runs `PYTHONPATH=src python -m neodojo demo smoke` against the
   staged real-demo Pages directory.
 - The workflow upload path is the generated public-demo directory only, with a

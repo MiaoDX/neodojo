@@ -103,7 +103,14 @@ revalidates the real-demo manifest, strict audit manifest, public-demo files,
 SMPL-X scoring boundary, and `neodojo demo smoke`. Use this only after rights
 and artifact provenance have been reviewed; it does not publish media,
 checkpoints, SMPL-X assets, `.pt` files, logs, or full GVHMR result
-directories.
+directories. To run the same promotion validation locally against a downloaded
+artifact directory before dispatching the workflow:
+
+```bash
+make real-demo-pages-promotion-validate \
+  PROMOTION_DOWNLOAD_ROOT=outputs/promoted-real-demo-download \
+  PROMOTION_SOURCE_RUN_ID=<self-hosted-run-id>
+```
 
 ## Run On The GPU Machine
 

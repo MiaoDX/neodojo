@@ -204,6 +204,7 @@ make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
 make real-conversion-audit
+make real-demo-pages-promotion-validate PROMOTION_DOWNLOAD_ROOT=outputs/promoted-real-demo-download PROMOTION_SOURCE_RUN_ID=123456789
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
@@ -453,6 +454,11 @@ GPU artifact. It exits successfully for blocker classification; use
 `make real-conversion-audit-strict` or `make verify-real` when a script should
 fail unless a real non-fixture demo exists. The underlying CLI form is
 `PYTHONPATH=src python -m neodojo real-conversion audit-completion --require-complete`.
+`make real-demo-pages-promotion-validate PROMOTION_DOWNLOAD_ROOT=...
+PROMOTION_SOURCE_RUN_ID=...` validates and stages a downloaded
+`neodojo-self-hosted-real-demo` artifact before the guarded Pages promotion
+workflow uploads it. It rejects fixture-only imports, incomplete strict audits,
+unsafe file paths, non-SMPL-X scoring, and blank public-demo files.
 
 `make demo-html` writes `outputs/html-demo/index.html`, a self-contained
 synthetic fixture demo for the intended teaching UI shape, backed by the local

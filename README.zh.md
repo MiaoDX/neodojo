@@ -171,6 +171,7 @@ make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
 make real-conversion-audit
+make real-demo-pages-promotion-validate PROMOTION_DOWNLOAD_ROOT=outputs/promoted-real-demo-download PROMOTION_SOURCE_RUN_ID=123456789
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=outputs/real-conversion-gate/gvhmr-smplx-joints.json
 make smoke-public
 PYTHONPATH=src python -m neodojo motion-record create --out outputs/motion-contract
@@ -397,6 +398,11 @@ blocked on external GPU artifact。它在 blocker classification 状态下也会
 需要脚本在没有真实 non-fixture demo 时失败时，可使用
 `make real-conversion-audit-strict` 或 `make verify-real`。底层 CLI 形式是
 `PYTHONPATH=src python -m neodojo real-conversion audit-completion --require-complete`。
+`make real-demo-pages-promotion-validate PROMOTION_DOWNLOAD_ROOT=...
+PROMOTION_SOURCE_RUN_ID=...` 会在 guarded Pages promotion workflow 上传之前，
+验证并 stage 已下载的 `neodojo-self-hosted-real-demo` artifact。它会拒绝
+fixture-only import、未完成的 strict audit、不安全文件路径、非 SMPL-X scoring，
+以及空白 public-demo 文件。
 
 `make demo-html` 会写出 `outputs/html-demo/index.html`，这是一个由本地
 motion/track manifest contract 支撑的自包含合成 fixture demo，用来验证目标教学
