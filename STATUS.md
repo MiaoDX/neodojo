@@ -444,6 +444,21 @@ motion artifact, or hosted/live-client Viser capture.
   CI integration token cannot read runner/secret-count endpoints instead of
   inventing counts. The downloaded `neodojo-public-demo` artifact remains
   fixture-only with SMPL-X scoring.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26013198280` verified
+  operator-package archive validation and moved/downloaded archive validation on
+  `main`: lint, plan checks, tests, wheel build, real/GPU smoke artifacts,
+  default audit, GitHub-route audit, browser capture, public-demo artifact
+  upload, capture-bundle upload, Pages artifact upload, and Pages deploy passed.
+  The downloaded `neodojo-gvhmr-operator-package-archive-smoke` artifact was
+  revalidated locally with
+  `neodojo real-conversion validate-operator-package-archive --archive
+  outputs/operator-package-archive-ci-26013198280`; it reports
+  `neodojo.gvhmr_operator_package_archive.v1`, `status:
+  metadata_only_not_ready_for_gpu`, `media_included: false`, and
+  `safe_for_git: true`. The live Pages manifest still reports
+  `neodojo.public_demo.v1`, `fixture_only: true`, `scoring_source: smplx`,
+  SMPL-X scoring enabled, and Unitree G1 scoring disabled.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.

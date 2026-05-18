@@ -127,6 +127,12 @@ provenance, rights, and returned-artifact validation boundaries.
   GitHub Actions run
   `https://github.com/MiaoDX/neodojo/actions/runs/26011378922`. The public-demo
   workflow also uploads `neodojo-gvhmr-operator-package-archive-smoke`.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26013198280` verified the
+  package-archive validation target in CI. The downloaded
+  `neodojo-gvhmr-operator-package-archive-smoke` artifact was also revalidated
+  locally from a moved download directory with
+  `neodojo real-conversion validate-operator-package-archive`.
 
 ## Non-Goals
 

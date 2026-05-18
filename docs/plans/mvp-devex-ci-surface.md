@@ -316,7 +316,8 @@ public-demo artifact passed `neodojo demo smoke`, and Pages deployed.
   with a `neodojo.gvhmr_operator_package_archive.v1` manifest and no source
   media, and the Make target now validates the archive member checksums and
   nested package before upload. The initial archive upload was verified by run
-  `26012652284`.
+  `26012652284`; archive validation and moved/downloaded artifact validation
+  were verified by run `26013198280`.
 - CI uploads the metadata-only GPU execution probe artifact with command/env-key
   readiness evidence and no secret values, verified by run `26005618093`.
 - CI uploads the fixture-only real-artifact intake smoke artifact with
