@@ -361,6 +361,8 @@ artifact path; it defaults to
   this gate.
 - [x] Add `make real-conversion-audit-strict` / `make verify-real` as opt-in
   failing gates that require a real non-fixture demo before reporting success.
+- [x] Add an optional self-hosted GPU workflow-dispatch path that can run the
+  packaged archive on a user-managed runner without changing default CI.
 - [ ] Run GVHMR on a GPU-capable environment.
 - [ ] Export the SMPL-X result directory with enough metadata for reproducibility.
 - [ ] Convert or export the GVHMR result into
@@ -440,6 +442,14 @@ GitHub Actions run
 strict gate change without making the default fixture CI lane fail; the
 downloaded real-conversion audit artifact remains
 `external_gpu_artifact_missing`, `complete: false`, and `blocked: true`.
+
+An optional manual GitHub Actions path now exists at
+`.github/workflows/gvhmr-self-hosted-gpu.yml`. It requires a user-managed
+self-hosted runner labeled `gpu`, a runner-local media-containing archive path,
+GVHMR dependencies/checkpoints, and licensed local SMPL-X assets. It is not
+triggered by push or pull request events, and it only uploads
+`gvhmr-smplx-joints.json` when the operator explicitly enables
+`upload_neodojo_export`.
 
 The returned-artifact import wrapper is now covered by fixture-only local and
 CI smoke evidence: `make real-artifact-intake-smoke` writes fixture source

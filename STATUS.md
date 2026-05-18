@@ -26,8 +26,9 @@ result inspection, `make demo-real` / `make real-artifact-intake` for a
 validated external GVHMR JSON once a GPU artifact exists, and
 `make real-artifact-intake-smoke` for fixture-backed coverage of that returned
 artifact wrapper, and `make real-conversion-audit` for an executable blocker
-classification of the real GVHMR gate, with a verified live fixture-only
-GitHub Pages demo at
+classification of the real GVHMR gate, plus a manual
+`.github/workflows/gvhmr-self-hosted-gpu.yml` workflow for user-managed
+self-hosted GPU runners, with a verified live fixture-only GitHub Pages demo at
 `https://miaodx.com/neodojo/`. `real-conversion materialize-source` can also
 prepare a dry-run or ffmpeg-backed local source clip handoff for a later GPU
 GVHMR run, `real-conversion package-gpu-handoff` can package the handoff
@@ -392,6 +393,12 @@ motion artifact, or hosted/live-client Viser capture.
 - `make real-conversion-audit-strict` and `make verify-real` run the same
   audit with `--require-complete`, so they intentionally fail until a real
   non-fixture GVHMR demo has been imported and regenerated.
+- `.github/workflows/gvhmr-self-hosted-gpu.yml` is a manual
+  `workflow_dispatch` path for user-managed runners labeled `self-hosted` and
+  `gpu`. It can run the packaged GVHMR wrapper from a runner-local archive and
+  optionally upload only `gvhmr-smplx-joints.json`; it is not part of default
+  push/PR CI and does not upload media, checkpoints, SMPL-X assets, or `.pt`
+  result files.
 
 ## Blockers And Constraints
 
@@ -665,12 +672,15 @@ its manifest reports `archive_with_media`, `media_included: true`, and
 `gvhmr-smplx-joints.template.json`, source metadata, and the trimmed clip. The
 archive writer now rejects missing required GPU-operator files, including stale
 bundles that omit the runner script. The tracked operator checklist is
-`docs/runbooks/gvhmr-external-gpu.md`. A local/provider execution probe found
-no CUDA runtime, no configured GPU-provider environment variables or provider
-CLIs, no GitHub repository secrets for a GPU job, and only the existing Pages
-deploy repository variable; Docker is available locally but does not expose a
-GPU runtime. The next external step is therefore to copy the bundle or archive
-to a GPU-capable machine, run GVHMR, and return the neodojo export.
+`docs/runbooks/gvhmr-external-gpu.md`. The optional manual
+`.github/workflows/gvhmr-self-hosted-gpu.yml` workflow can run the same bundle
+on a user-managed self-hosted GPU runner when one exists. A local/provider
+execution probe found no CUDA runtime, no configured GPU-provider environment
+variables or provider CLIs, no GitHub repository secrets for a GPU job, and
+only the existing Pages deploy repository variable; Docker is available locally
+but does not expose a GPU runtime. The next external step is therefore to copy
+the bundle or archive to a GPU-capable machine or self-hosted GPU runner, run
+GVHMR, and return the neodojo export.
 Until then, `make verify-real` is expected to fail as the strict end-to-end
 completion gate. Once that artifact exists, the remaining task is to validate
 it with `real-conversion import-demo`, then inspect the generated

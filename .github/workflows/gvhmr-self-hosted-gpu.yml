@@ -1,0 +1,161 @@
+name: gvhmr-self-hosted-gpu
+
+on:
+  workflow_dispatch:
+    inputs:
+      gpu_input_archive_path:
+        description: "Path on the self-hosted GPU runner to neodojo-gvhmr-gpu-input.tar.gz"
+        required: true
+        type: string
+      gvhmr_repo:
+        description: "Path to an existing GVHMR checkout, or install destination when install_gvhmr is true"
+        required: true
+        default: "/opt/GVHMR"
+        type: string
+      smplx_model_dir:
+        description: "Path to licensed local SMPL-X model assets on the GPU runner"
+        required: true
+        type: string
+      output_root:
+        description: "Optional GVHMR output root on the GPU runner"
+        required: false
+        default: ""
+        type: string
+      hmr4d_results:
+        description: "Existing hmr4d_results.pt path when skip_gvhmr is true"
+        required: false
+        default: ""
+        type: string
+      parameter_block:
+        description: "GVHMR SMPL-X parameter block to export"
+        required: true
+        default: "smpl_params_global"
+        type: choice
+        options:
+          - smpl_params_global
+          - smpl_params_incam
+      install_gvhmr:
+        description: "Clone/install GVHMR into gvhmr_repo before running"
+        required: true
+        default: false
+        type: boolean
+      skip_gvhmr:
+        description: "Skip GVHMR inference and export from an existing hmr4d_results.pt"
+        required: true
+        default: false
+        type: boolean
+      static_cam:
+        description: "Pass static-camera mode to GVHMR"
+        required: true
+        default: true
+        type: boolean
+      use_dpvo:
+        description: "Pass --use_dpvo to GVHMR"
+        required: true
+        default: false
+        type: boolean
+      upload_neodojo_export:
+        description: "Upload only gvhmr-smplx-joints.json as a short-lived GitHub artifact"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  run-gvhmr:
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 360
+    env:
+      GPU_INPUT_ARCHIVE_PATH: ${{ inputs.gpu_input_archive_path }}
+      GVHMR_REPO_INPUT: ${{ inputs.gvhmr_repo }}
+      SMPLX_MODEL_DIR_INPUT: ${{ inputs.smplx_model_dir }}
+      OUTPUT_ROOT_INPUT: ${{ inputs.output_root }}
+      HMR4D_RESULTS_INPUT: ${{ inputs.hmr4d_results }}
+      PARAMETER_BLOCK_INPUT: ${{ inputs.parameter_block }}
+      INSTALL_GVHMR_INPUT: ${{ inputs.install_gvhmr }}
+      SKIP_GVHMR_INPUT: ${{ inputs.skip_gvhmr }}
+      STATIC_CAM_INPUT: ${{ inputs.static_cam }}
+      USE_DPVO_INPUT: ${{ inputs.use_dpvo }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Unpack neodojo GPU input archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$GPU_INPUT_ARCHIVE_PATH"
+          if [[ ! -f "$archive" ]]; then
+            echo "::error::gpu_input_archive_path does not exist on this self-hosted runner: $archive" >&2
+            exit 2
+          fi
+          case "$archive" in
+            *.tar.gz) ;;
+            *)
+              echo "::error::gpu_input_archive_path must point to a .tar.gz archive" >&2
+              exit 2
+              ;;
+          esac
+
+          rm -rf outputs/self-hosted-gvhmr-run
+          mkdir -p outputs/self-hosted-gvhmr-run
+          tar -xzf "$archive" -C outputs/self-hosted-gvhmr-run
+          test -f outputs/self-hosted-gvhmr-run/manifest.json
+          test -f outputs/self-hosted-gvhmr-run/RUN_ON_GPU.md
+          test -f outputs/self-hosted-gvhmr-run/run_gvhmr_neodojo.sh
+          test -f outputs/self-hosted-gvhmr-run/export_neodojo_gvhmr.py
+          test -f outputs/self-hosted-gvhmr-run/gvhmr-smplx-joints.template.json
+          test -f outputs/self-hosted-gvhmr-run/source-materialization.json
+          chmod +x outputs/self-hosted-gvhmr-run/run_gvhmr_neodojo.sh
+
+      - name: Run GVHMR wrapper on self-hosted GPU
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd outputs/self-hosted-gvhmr-run
+
+          export GVHMR_REPO="$GVHMR_REPO_INPUT"
+          export SMPLX_MODEL_DIR="$SMPLX_MODEL_DIR_INPUT"
+          export PARAMETER_BLOCK="$PARAMETER_BLOCK_INPUT"
+          export STATIC_CAM=0
+          export USE_DPVO=0
+          if [[ "$STATIC_CAM_INPUT" == "true" ]]; then
+            export STATIC_CAM=1
+          fi
+          if [[ "$USE_DPVO_INPUT" == "true" ]]; then
+            export USE_DPVO=1
+          fi
+          if [[ -n "$OUTPUT_ROOT_INPUT" ]]; then
+            export OUTPUT_ROOT="$OUTPUT_ROOT_INPUT"
+          fi
+          if [[ "$SKIP_GVHMR_INPUT" == "true" ]]; then
+            if [[ -z "$HMR4D_RESULTS_INPUT" ]]; then
+              echo "::error::hmr4d_results is required when skip_gvhmr is true" >&2
+              exit 2
+            fi
+            export HMR4D_RESULTS="$HMR4D_RESULTS_INPUT"
+          fi
+
+          args=()
+          if [[ "$INSTALL_GVHMR_INPUT" == "true" ]]; then
+            args+=(--install)
+          fi
+          if [[ "$SKIP_GVHMR_INPUT" == "true" ]]; then
+            args+=(--skip-gvhmr)
+          fi
+
+          ./run_gvhmr_neodojo.sh "${args[@]}"
+          test -f gvhmr-smplx-joints.json
+
+      - name: Upload returned neodojo export
+        if: ${{ inputs.upload_neodojo_export }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: neodojo-gvhmr-smplx-joints
+          path: outputs/self-hosted-gvhmr-run/gvhmr-smplx-joints.json
+          if-no-files-found: error
+          retention-days: 7

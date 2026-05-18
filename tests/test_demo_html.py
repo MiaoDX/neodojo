@@ -2555,6 +2555,23 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["schema"], "neodojo.real_conversion_audit.v1")
         self.assertFalse(manifest["complete"])
 
+    def test_self_hosted_gpu_workflow_is_manual_and_uploads_only_return_json(self) -> None:
+        workflow = Path(".github/workflows/gvhmr-self-hosted-gpu.yml").read_text(encoding="utf-8")
+        upload_section = workflow.split("- name: Upload returned neodojo export", 1)[1]
+
+        self.assertIn("workflow_dispatch:", workflow)
+        self.assertIn("runs-on: [self-hosted, gpu]", workflow)
+        self.assertNotIn("\n  push:", workflow)
+        self.assertNotIn("\n  pull_request:", workflow)
+        self.assertIn("gpu_input_archive_path", workflow)
+        self.assertIn("SMPLX_MODEL_DIR_INPUT", workflow)
+        self.assertIn("skip_gvhmr", workflow)
+        self.assertIn("upload_neodojo_export", workflow)
+        self.assertIn("outputs/self-hosted-gvhmr-run/gvhmr-smplx-joints.json", upload_section)
+        self.assertNotIn(".mp4", upload_section)
+        self.assertNotIn(".pt", upload_section)
+        self.assertNotIn("checkpoints", upload_section)
+
     def test_real_conversion_audit_distinguishes_fixture_intake_smoke(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

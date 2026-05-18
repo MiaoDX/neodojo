@@ -68,6 +68,29 @@ make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
 The resulting media-containing archive must remain under ignored outputs and
 must not be committed or uploaded as a public CI artifact.
 
+## Optional Self-Hosted GPU Workflow
+
+If a user-managed GitHub Actions runner with labels `self-hosted` and `gpu`
+has access to the prepared archive, GVHMR dependencies, checkpoints, and
+licensed local SMPL-X assets, use the manual workflow
+`gvhmr-self-hosted-gpu`.
+
+The workflow is defined at
+`.github/workflows/gvhmr-self-hosted-gpu.yml`. It is `workflow_dispatch` only;
+it does not run on push or pull requests. Its required inputs are:
+
+- `gpu_input_archive_path`: path on the self-hosted runner to
+  `neodojo-gvhmr-gpu-input.tar.gz`
+- `gvhmr_repo`: existing GVHMR checkout or install destination
+- `smplx_model_dir`: licensed local SMPL-X model directory
+
+Optional inputs allow installing GVHMR, exporting from an existing
+`hmr4d_results.pt` with `skip_gvhmr`, selecting `smpl_params_global` or
+`smpl_params_incam`, and opting into a short-lived upload of only
+`gvhmr-smplx-joints.json`. Do not use the workflow to upload source videos,
+trimmed clips, checkpoints, SMPL-X assets, `.pt` files, rendered videos, logs,
+or full result directories.
+
 ## Run On The GPU Machine
 
 Copy the archive to the GPU machine, then unpack it:

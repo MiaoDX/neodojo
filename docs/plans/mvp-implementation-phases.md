@@ -27,7 +27,8 @@ workflow with verified fixture-only Pages publication, optional browser-rendered
 public-demo screenshot capture, metadata-only real-handoff smoke artifact
 upload, metadata-only GPU input bundle/archive smoke upload, and a
 real-conversion completion audit artifact, plus an opt-in strict
-`make verify-real` completion gate. It
+`make verify-real` completion gate and an optional manual self-hosted GPU
+workflow for external GVHMR execution. It
 does not yet have a checked-in local GVHMR/GMR execution environment, completed
 simulator runtime pipeline, built-in official SMPL-X body-model renderer,
 hosted/live-client Viser capture, or broad static-analysis/release gates beyond
@@ -97,6 +98,7 @@ of truth for the next waves.
 | [mvp-gvhmr-gpu-transfer-archive.md](mvp-gvhmr-gpu-transfer-archive.md) | implemented CI-safe transfer archive; real artifact still external | Metadata-only and media-including GPU input bundle archives for transfer to the external GPU machine. |
 | [mvp-real-gpu-archive-command.md](mvp-real-gpu-archive-command.md) | implemented one-command media archive prep; real artifact still external | Single local make target that prepares the ignored media-containing GPU transfer archive from a local source video. |
 | [mvp-gvhmr-external-gpu-runbook.md](mvp-gvhmr-external-gpu-runbook.md) | implemented tracked runbook; real artifact still external | Durable operator checklist for unpacking the archive, running GVHMR on a CUDA machine, and validating the returned export locally. |
+| [mvp-gvhmr-self-hosted-gpu-workflow.md](mvp-gvhmr-self-hosted-gpu-workflow.md) | implemented optional workflow; real artifact still external | Manual GitHub Actions workflow for user-managed self-hosted GPU runners that can run the packaged GVHMR wrapper from a prepared archive. |
 | [mvp-quality-release-surface.md](mvp-quality-release-surface.md) | implemented first quality gate | Project-owned static quality check for MVP plan links and scaffolding beyond the minimal lint/build commands. |
 
 The numbered plans are semantically independent execution slices, not
@@ -272,6 +274,8 @@ docs:
   - path: docs/plans/mvp-real-gpu-archive-command.md
     type: SPEC
   - path: docs/plans/mvp-gvhmr-external-gpu-runbook.md
+    type: SPEC
+  - path: docs/plans/mvp-gvhmr-self-hosted-gpu-workflow.md
     type: SPEC
   - path: docs/plans/mvp-quality-release-surface.md
     type: SPEC
