@@ -45,6 +45,7 @@ from neodojo.real_conversion import (
     package_gvhmr_gpu_input_bundle,
     probe_gpu_execution_environment,
     validate_gvhmr_source,
+    write_gvhmr_colab_operator_notebook,
     write_gvhmr_gpu_run_request,
     write_real_artifact_intake_smoke_input,
     write_real_conversion_prep,
@@ -2048,6 +2049,12 @@ class DemoHtmlTests(unittest.TestCase):
             archive_manifest = json.loads(archive.manifest_path.read_text(encoding="utf-8"))
             request_manifest = json.loads(request.manifest_path.read_text(encoding="utf-8"))
             request_readme = request.readme_path.read_text(encoding="utf-8")
+            colab = write_gvhmr_colab_operator_notebook(
+                root / "colab-operator",
+                gpu_run_request=request.manifest_path,
+            )
+            colab_manifest = json.loads(colab.manifest_path.read_text(encoding="utf-8"))
+            colab_notebook = json.loads(colab.notebook_path.read_text(encoding="utf-8"))
             with tarfile.open(archive.archive_path, "r:gz") as tar:
                 archive_members = sorted(tar.getnames())
 
@@ -2084,6 +2091,17 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("GVHMR GPU Run Request", request_readme)
         self.assertIn("SMPLX_MODEL_DIR", request_readme)
         self.assertIn(archive.archive_path, request.checked_paths)
+        self.assertEqual(colab.status, "ready_for_colab_operator")
+        self.assertEqual(colab_manifest["schema"], "neodojo.gvhmr_colab_operator_notebook.v1")
+        self.assertEqual(colab_manifest["expected_return_artifact"]["schema"], "neodojo.gvhmr_smplx_joints.v1")
+        self.assertFalse(colab_manifest["policy"]["safe_for_git"])
+        self.assertEqual(colab_notebook["metadata"]["neodojo"]["source_schema"], "neodojo.gvhmr_gpu_run_request.v1")
+        colab_source = "\n".join(
+            "".join(cell.get("source", [])) for cell in colab_notebook["cells"] if cell.get("cell_type") == "code"
+        )
+        self.assertIn(request_manifest["archive"]["sha256"], colab_source)
+        self.assertIn("RUN_GVHMR = False", colab_source)
+        self.assertIn("Unsafe archive member path", colab_source)
 
     def test_real_conversion_gpu_input_bundle_metadata_only_omits_media(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2127,6 +2145,11 @@ class DemoHtmlTests(unittest.TestCase):
             )
             archive_manifest = json.loads(archive.manifest_path.read_text(encoding="utf-8"))
             request_manifest = json.loads(request.manifest_path.read_text(encoding="utf-8"))
+            colab = write_gvhmr_colab_operator_notebook(
+                root / "colab-operator",
+                gpu_run_request=request.manifest_path,
+            )
+            colab_manifest = json.loads(colab.manifest_path.read_text(encoding="utf-8"))
             bad_archive_manifest = dict(archive_manifest)
             bad_archive_manifest["archive"] = dict(archive_manifest["archive"])
             bad_archive_manifest["archive"]["sha256"] = "0" * 64
@@ -2157,6 +2180,9 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(request_manifest["schema"], "neodojo.gvhmr_gpu_run_request.v1")
         self.assertFalse(request_manifest["media_included"])
         self.assertTrue(request_manifest["archive"]["safe_for_git"])
+        self.assertEqual(colab.status, "metadata_only_not_ready_for_gpu")
+        self.assertEqual(colab_manifest["schema"], "neodojo.gvhmr_colab_operator_notebook.v1")
+        self.assertTrue(colab_manifest["policy"]["safe_for_git"])
 
     def test_gpu_input_archive_rejects_missing_runner(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

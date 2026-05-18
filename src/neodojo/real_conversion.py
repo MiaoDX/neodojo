@@ -34,6 +34,7 @@ GVHMR_GPU_HANDOFF_SCHEMA = "neodojo.gvhmr_gpu_handoff.v1"
 GVHMR_GPU_INPUT_BUNDLE_SCHEMA = "neodojo.gvhmr_gpu_input_bundle.v1"
 GVHMR_GPU_INPUT_ARCHIVE_SCHEMA = "neodojo.gvhmr_gpu_input_archive.v1"
 GVHMR_GPU_RUN_REQUEST_SCHEMA = "neodojo.gvhmr_gpu_run_request.v1"
+GVHMR_COLAB_OPERATOR_NOTEBOOK_SCHEMA = "neodojo.gvhmr_colab_operator_notebook.v1"
 GVHMR_RESULT_INSPECTION_SCHEMA = "neodojo.gvhmr_result_inspection.v1"
 GVHMR_GPU_EXECUTION_PROBE_SCHEMA = "neodojo.gvhmr_gpu_execution_probe.v1"
 REAL_CONVERSION_AUDIT_SCHEMA = "neodojo.real_conversion_audit.v1"
@@ -93,6 +94,14 @@ class GvhmrGpuInputArchiveWriteResult:
 class GvhmrGpuRunRequestWriteResult:
     manifest_path: Path
     readme_path: Path
+    checked_paths: list[Path]
+    status: str
+
+
+@dataclass(frozen=True)
+class GvhmrColabOperatorNotebookWriteResult:
+    manifest_path: Path
+    notebook_path: Path
     checked_paths: list[Path]
     status: str
 
@@ -951,6 +960,13 @@ def _load_gpu_input_archive_manifest(gpu_input_archive: Path) -> tuple[Path, dic
     return manifest_path, manifest
 
 
+def _load_gpu_run_request_manifest(gpu_run_request: Path) -> tuple[Path, dict[str, Any]]:
+    manifest_path = gpu_run_request / "manifest.json" if gpu_run_request.is_dir() else gpu_run_request
+    manifest = _load_json_object(manifest_path, "GVHMR GPU run request manifest")
+    require_schema(manifest, GVHMR_GPU_RUN_REQUEST_SCHEMA, "GVHMR GPU run request manifest")
+    return manifest_path, manifest
+
+
 def _copy_handoff_file(
     *,
     handoff_dir: Path,
@@ -1770,6 +1786,248 @@ def write_gvhmr_gpu_run_request(
     return GvhmrGpuRunRequestWriteResult(
         manifest_path=request_manifest_path,
         readme_path=request_readme_path,
+        checked_paths=checked_paths,
+        status=status,
+    )
+
+
+def _notebook_source(text: str) -> list[str]:
+    return [line if line.endswith("\n") else f"{line}\n" for line in text.strip("\n").splitlines()]
+
+
+def _notebook_cell(cell_type: str, source: str) -> dict[str, Any]:
+    cell: dict[str, Any] = {
+        "cell_type": cell_type,
+        "metadata": {},
+        "source": _notebook_source(source),
+    }
+    if cell_type == "code":
+        cell["execution_count"] = None
+        cell["outputs"] = []
+    return cell
+
+
+def _write_colab_operator_notebook(path: Path, request: dict[str, Any]) -> None:
+    archive = request["archive"]
+    expected_return = request["expected_return_artifact"]
+    commands = request["commands"]
+    archive_filename = str(archive["filename"])
+    notebook = {
+        "cells": [
+            _notebook_cell(
+                "markdown",
+                f"""
+# neodojo GVHMR Colab Operator
+
+Generated from a `{GVHMR_GPU_RUN_REQUEST_SCHEMA}` handoff.
+
+This notebook is for producing `{expected_return["schema"]}` from a prepared
+neodojo GPU input archive. It does not contain source media, SMPL-X assets,
+checkpoints, raw GVHMR results, or returned motion artifacts.
+""",
+            ),
+            _notebook_cell(
+                "markdown",
+                """
+## 1. Provide The Archive And Assets
+
+Upload or mount the prepared `neodojo-gvhmr-gpu-input.tar.gz` archive. Keep
+licensed SMPL-X assets and GVHMR checkpoints in private storage. Do not commit
+or publish media-containing archives, checkpoints, SMPL-X assets, `.pt` files,
+logs, or returned motion artifacts.
+""",
+            ),
+            _notebook_cell(
+                "code",
+                f"""
+from pathlib import Path
+import hashlib
+import os
+import shutil
+import subprocess
+import tarfile
+
+ARCHIVE_FILENAME = {json.dumps(archive_filename)}
+EXPECTED_SHA256 = {json.dumps(str(archive["sha256"]))}
+RUN_DIR = Path("/content/neodojo-gvhmr-run")
+SMPLX_MODEL_DIR = Path("/content/drive/MyDrive/smplx")
+GVHMR_REPO = Path("/content/GVHMR")
+RUN_GVHMR = False
+
+print("Archive:", ARCHIVE_FILENAME)
+print("Expected SHA-256:", EXPECTED_SHA256)
+print("Expected return:", {json.dumps(expected_return["filename"])})
+""",
+            ),
+            _notebook_cell(
+                "code",
+                """
+try:
+    from google.colab import drive, files
+    IN_COLAB = True
+except ModuleNotFoundError:
+    IN_COLAB = False
+    drive = None
+    files = None
+
+if IN_COLAB:
+    print("Optional: drive.mount('/content/drive')")
+    print("Optional: files.upload() to upload the archive into the current directory")
+else:
+    print("Not running inside Google Colab; execute these cells in a GPU notebook runtime.")
+""",
+            ),
+            _notebook_cell(
+                "code",
+                """
+archive_path = Path(ARCHIVE_FILENAME)
+if not archive_path.exists():
+    raise FileNotFoundError(f"Upload or copy the archive to: {archive_path}")
+
+actual_sha256 = hashlib.sha256(archive_path.read_bytes()).hexdigest()
+if actual_sha256 != EXPECTED_SHA256:
+    raise ValueError(f"Archive checksum mismatch: {actual_sha256}")
+
+if RUN_DIR.exists():
+    shutil.rmtree(RUN_DIR)
+RUN_DIR.mkdir(parents=True, exist_ok=True)
+
+with tarfile.open(archive_path, "r:gz") as tar:
+    destination = RUN_DIR.resolve()
+    for member in tar.getmembers():
+        member_path = (destination / member.name).resolve()
+        if member_path != destination and destination not in member_path.parents:
+            raise ValueError(f"Unsafe archive member path: {member.name}")
+    tar.extractall(destination)
+
+print("Unpacked to", RUN_DIR)
+print("\\n".join(sorted(str(path.relative_to(RUN_DIR)) for path in RUN_DIR.rglob("*") if path.is_file())))
+""",
+            ),
+            _notebook_cell(
+                "code",
+                """
+os.chdir(RUN_DIR)
+subprocess.run(["bash", "run_gvhmr_neodojo.sh", "--help"], check=True)
+
+if RUN_GVHMR:
+    env = {
+        **os.environ,
+        "SMPLX_MODEL_DIR": str(SMPLX_MODEL_DIR),
+        "GVHMR_REPO": str(GVHMR_REPO),
+    }
+    subprocess.run(["bash", "run_gvhmr_neodojo.sh", "--install"], env=env, check=True)
+else:
+    print("Set RUN_GVHMR = True only after SMPL-X assets, GVHMR checkpoints, and rights review are ready.")
+""",
+            ),
+            _notebook_cell(
+                "code",
+                """
+result_path = RUN_DIR / "gvhmr-smplx-joints.json"
+if result_path.exists():
+    print("Return this file to the local neodojo workspace:", result_path)
+    if IN_COLAB:
+        files.download(str(result_path))
+else:
+    print("No returned export yet. Run GVHMR first, then re-run this cell.")
+""",
+            ),
+            _notebook_cell(
+                "markdown",
+                f"""
+## 2. Validate Locally After Download
+
+After downloading `{expected_return["filename"]}` to the local neodojo
+workspace, run:
+
+```bash
+{commands["local_real_artifact_intake"]}
+{commands["local_strict_verify"]}
+```
+""",
+            ),
+        ],
+        "metadata": {
+            "kernelspec": {
+                "display_name": "Python 3",
+                "language": "python",
+                "name": "python3",
+            },
+            "language_info": {
+                "name": "python",
+            },
+            "neodojo": {
+                "schema": GVHMR_COLAB_OPERATOR_NOTEBOOK_SCHEMA,
+                "source_schema": GVHMR_GPU_RUN_REQUEST_SCHEMA,
+            },
+        },
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    _write_json(path, notebook)
+
+
+def write_gvhmr_colab_operator_notebook(
+    out_dir: Path,
+    *,
+    gpu_run_request: Path,
+) -> GvhmrColabOperatorNotebookWriteResult:
+    validate_output_dir(out_dir)
+    request_manifest_path, request = _load_gpu_run_request_manifest(gpu_run_request)
+    archive = request.get("archive")
+    if not isinstance(archive, dict):
+        raise ValueError("GVHMR GPU run request manifest is missing archive metadata")
+    expected_return = request.get("expected_return_artifact")
+    if not isinstance(expected_return, dict):
+        raise ValueError("GVHMR GPU run request manifest is missing expected return artifact metadata")
+
+    media_included = bool(request.get("media_included"))
+    status = "ready_for_colab_operator" if media_included else "metadata_only_not_ready_for_gpu"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    notebook_path = out_dir / "gvhmr-colab-operator.ipynb"
+    manifest_path = out_dir / "manifest.json"
+    _write_colab_operator_notebook(notebook_path, request)
+
+    manifest = {
+        "schema": GVHMR_COLAB_OPERATOR_NOTEBOOK_SCHEMA,
+        "status": status,
+        "blocked_locally": True,
+        "media_included": media_included,
+        "gpu_run_request": {
+            "manifest": _as_posix(request_manifest_path),
+            "schema": request.get("schema"),
+            "status": request.get("status"),
+            "sha256": sha256_file(request_manifest_path),
+        },
+        "notebook": {
+            "path": _as_posix(notebook_path),
+            "filename": notebook_path.name,
+            "sha256": sha256_file(notebook_path),
+        },
+        "archive": {
+            "filename": archive.get("filename"),
+            "sha256": archive.get("sha256"),
+            "safe_for_git": archive.get("safe_for_git"),
+        },
+        "expected_return_artifact": expected_return,
+        "policy": {
+            "safe_for_git": not media_included,
+            "notes": (
+                "The notebook is a generated operator handoff. It is safe to commit only when "
+                "the source run request is metadata-only; media-containing archives and returned "
+                "GVHMR artifacts stay ignored."
+            ),
+        },
+        "notes": (
+            "This notebook makes the Colab operator path explicit; it does not run GVHMR locally."
+        ),
+    }
+    _write_json(manifest_path, manifest)
+    checked_paths = [manifest_path, notebook_path, request_manifest_path]
+    return GvhmrColabOperatorNotebookWriteResult(
+        manifest_path=manifest_path,
+        notebook_path=notebook_path,
         checked_paths=checked_paths,
         status=status,
     )

@@ -88,6 +88,16 @@ hash, required GPU assets, expected return artifact, GPU command, and local
 the media-containing archive and returned GVHMR artifacts still stay under
 ignored outputs.
 
+To generate a Colab-ready operator notebook from that request:
+
+```bash
+make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request
+```
+
+The notebook writes checksum verification, archive unpacking, runner help
+validation, guarded GVHMR execution, returned JSON download, and local return
+commands into `outputs/gvhmr-colab-operator/gvhmr-colab-operator.ipynb`.
+
 ## Optional Self-Hosted GPU Workflow
 
 If a user-managed GitHub Actions runner with labels `self-hosted` and `gpu`

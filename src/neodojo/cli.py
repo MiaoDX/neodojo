@@ -31,6 +31,7 @@ from .real_conversion import (
     package_gvhmr_gpu_input_bundle,
     probe_gpu_execution_environment,
     validate_gvhmr_source,
+    write_gvhmr_colab_operator_notebook,
     write_gvhmr_gpu_run_request,
     write_real_artifact_intake_smoke_input,
     write_real_conversion_prep,
@@ -795,6 +796,22 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/gvhmr-gpu-run-request"),
         help="output directory for the GPU run request manifest and README",
     )
+    real_colab_notebook = real_subparsers.add_parser(
+        "write-colab-notebook",
+        help="write a Colab operator notebook from a GPU run request manifest",
+    )
+    real_colab_notebook.add_argument(
+        "--gpu-run-request",
+        type=Path,
+        required=True,
+        help="GVHMR GPU run request manifest path or directory",
+    )
+    real_colab_notebook.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/gvhmr-colab-operator"),
+        help="output directory for the Colab operator notebook and manifest",
+    )
     real_intake_smoke = real_subparsers.add_parser(
         "write-intake-smoke-input",
         help="write fixture-only inputs for smoke-testing returned-artifact intake",
@@ -1254,6 +1271,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(f"wrote {result.manifest_path}")
             print(f"wrote {result.readme_path}")
+            print(f"status {result.status}")
+            for path in result.checked_paths:
+                print(f"checked {path}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "write-colab-notebook":
+            result = write_gvhmr_colab_operator_notebook(
+                args.out,
+                gpu_run_request=args.gpu_run_request,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"wrote {result.notebook_path}")
             print(f"status {result.status}")
             for path in result.checked_paths:
                 print(f"checked {path}")

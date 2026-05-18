@@ -1,4 +1,4 @@
-.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-gpu-run-request real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-run-request gvhmr-run-request-smoke gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict real-demo-pages-promotion-validate smoke-public
+.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-gpu-run-request real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-run-request gvhmr-run-request-smoke gvhmr-colab-notebook gvhmr-colab-notebook-smoke gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict real-demo-pages-promotion-validate smoke-public
 
 PYTHON ?= python3
 REAL_SOURCE_ID ?= 03-006
@@ -14,6 +14,7 @@ GPU_INPUT_ARCHIVE_OUT ?= outputs/gvhmr-gpu-input-archive
 GPU_INPUT_ARCHIVE_NAME ?= neodojo-gvhmr-gpu-input.tar.gz
 GPU_EXECUTION_PROBE_OUT ?= outputs/gvhmr-gpu-execution-probe
 GVHMR_RUN_REQUEST_OUT ?= outputs/gvhmr-gpu-run-request
+GVHMR_COLAB_NOTEBOOK_OUT ?= outputs/gvhmr-colab-operator
 GVHMR_INSPECT_OUT ?= outputs/gvhmr-result-inspection
 REAL_DEMO_OUT ?= outputs/real-demo
 REAL_ARTIFACT_SOURCE_MATERIALIZATION ?= outputs/real-conversion-source/source-materialization.json
@@ -71,7 +72,7 @@ endif
 
 all: verify
 
-verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke gpu-execution-probe gvhmr-run-request-smoke real-artifact-intake-smoke real-conversion-audit
+verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke gpu-execution-probe gvhmr-run-request-smoke gvhmr-colab-notebook-smoke real-artifact-intake-smoke real-conversion-audit
 
 verify-real: real-conversion-audit-strict
 
@@ -179,6 +180,16 @@ gvhmr-run-request-smoke: gpu-input-archive-smoke
 	$(MAKE) gvhmr-run-request GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive-smoke GVHMR_RUN_REQUEST_OUT=outputs/gvhmr-gpu-run-request-smoke
 	test -f outputs/gvhmr-gpu-run-request-smoke/manifest.json
 	test -f outputs/gvhmr-gpu-run-request-smoke/README.md
+
+gvhmr-colab-notebook:
+	@test -n "$(GVHMR_RUN_REQUEST)" || (echo "GVHMR_RUN_REQUEST=path/to/gpu-run-request-manifest-or-dir is required" && exit 2)
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion write-colab-notebook --gpu-run-request "$(GVHMR_RUN_REQUEST)" --out "$(GVHMR_COLAB_NOTEBOOK_OUT)"
+
+gvhmr-colab-notebook-smoke: gvhmr-run-request-smoke
+	rm -rf outputs/gvhmr-colab-operator-smoke
+	$(MAKE) gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request-smoke GVHMR_COLAB_NOTEBOOK_OUT=outputs/gvhmr-colab-operator-smoke
+	test -f outputs/gvhmr-colab-operator-smoke/manifest.json
+	test -f outputs/gvhmr-colab-operator-smoke/gvhmr-colab-operator.ipynb
 
 gvhmr-inspect:
 	@test -n "$(GVHMR_RESULT)" || (echo "GVHMR_RESULT=path/to/hmr4d_results.pt is required" && exit 2)

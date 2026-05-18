@@ -170,6 +170,8 @@ make gpu-input-archive-smoke
 make gpu-execution-probe
 make gvhmr-run-request GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive
 make gvhmr-run-request-smoke
+make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request
+make gvhmr-colab-notebook-smoke
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
@@ -364,8 +366,11 @@ runbook、manifests 和 source metadata。持久化的外部 GPU operator checkl
 [`docs/runbooks/gvhmr-external-gpu.md`](docs/runbooks/gvhmr-external-gpu.md)。
 `make gvhmr-run-request GPU_INPUT_ARCHIVE=...` 会把已有 archive manifest 转成简洁的
 operator request manifest 和 README，包含 archive hash、必需 GPU assets、手动运行命令
-和本地 return commands。`make gvhmr-run-request-smoke` 会在 `make verify` 中覆盖
-metadata-only request path。
+和本地 return commands。`make gvhmr-colab-notebook GVHMR_RUN_REQUEST=...` 会从这个
+request 生成 Colab operator notebook，包含 checksum verification、guarded GVHMR
+execution、returned JSON download 和本地 validation commands。`make
+gvhmr-run-request-smoke` 会在 `make verify` 中覆盖 metadata-only request path；
+`make gvhmr-colab-notebook-smoke` 会覆盖 generated notebook path。
 如果使用用户自己管理的 GitHub Actions GPU 硬件，手动触发的
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow 可以在带 `gpu` label 的
 self-hosted runner 上解压 runner-local media archive，运行同一个 packaged wrapper，
@@ -475,6 +480,7 @@ capture 或真实 Unitree G1 retargeting 已经完成。
 - [x] ignored copyable GPU input bundle，可显式包含 trimmed media
 - [x] ignored GPU input transfer archive，用于上传到选定的 GPU machine
 - [x] 从 transfer archive 生成 external GPU run-request manifest 与 README
+- [x] 从 GPU run-request manifest 生成 Colab operator notebook
 - [x] 随 handoff 打包的 GPU-side GVHMR-to-neodojo export helper
 - [x] 本地 GVHMR result inspection manifest，用于返回的 `.pt` 或 JSON export
 - [x] 本地 GVHMR source-validation report 与 validated JSON import handoff
