@@ -583,6 +583,12 @@ false`, nested audit status `external_gpu_artifact_missing`, and expected
 return `fixture_only: false`. The downloaded operator-package archive
 revalidates as `metadata_only_not_ready_for_gpu`, the downloaded public-demo
 artifact passes `neodojo demo smoke`, and Pages deployed.
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26015918309` verified the
+current head `ba8e36f` in the default public-demo workflow. The downloaded
+`neodojo-public-demo` artifact passed `neodojo demo smoke` and contained the
+CI-generated `index.html`, `scene.json`, `neodojo-demo.rrd`, and
+`screenshot.svg` fixture-demo artifacts.
 
 The local high-level media-containing
 `make real-gpu-operator-package-archive LOCAL_VIDEO=...` target was run against
@@ -593,6 +599,13 @@ ready_for_external_gpu_operator_package_archive`, `media_included: true`,
 `policy.safe_for_git: false`, and archive checksum
 `39ff72c8390161b16766eb5d6bb19c3918ce2d958e4739506c358a228433deb2`, leaving
 only the external GVHMR execution and returned export as the blocker.
+A refreshed local GitHub-route GPU execution probe still reports
+`external_gpu_artifact_missing`: no local CUDA runtime, no configured GPU
+provider CLI/environment, zero self-hosted GitHub Actions runners, zero
+repository secrets, no secret names or values, and no self-hosted GPU workflow
+runs. A local artifact search found only fixture/smoke
+`neodojo.gvhmr_smplx_joints.v1` JSON files and no returned `hmr4d_results.pt`
+or non-fixture `gvhmr-smplx-joints.json` artifact.
 
 An optional manual GitHub Actions path now exists at
 `.github/workflows/gvhmr-self-hosted-gpu.yml`. It requires a user-managed

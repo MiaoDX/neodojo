@@ -103,8 +103,12 @@ GVHMR result.
 
 ## Current Evidence
 
-- Latest verified CI run: `https://github.com/MiaoDX/neodojo/actions/runs/26014982804`.
-- The downloaded latest CI public-demo artifact passes `neodojo demo smoke`.
+- Latest verified CI run for current head `ba8e36f`:
+  `https://github.com/MiaoDX/neodojo/actions/runs/26015918309`.
+- The downloaded latest CI public-demo artifact passes `neodojo demo smoke`
+  and contains `index.html`, `scene.json`, `neodojo-demo.rrd`,
+  `screenshot.svg`, and the expected SMPL-X teacher / Unitree G1 visual
+  tracks.
 - The downloaded latest CI GPU input template records `fixture_only: false`.
 - The downloaded latest CI run-request and operator-package READMEs require a
   GPU-generated returned export with `fixture_only: false`.
@@ -120,6 +124,15 @@ GVHMR result.
   return `fixture_only: false`.
 - The downloaded latest CI real-conversion audit still reports
   `external_gpu_artifact_missing`, `complete: false`, and `blocked: true`.
+- A refreshed local `make gpu-execution-probe
+  GPU_PROBE_GITHUB_REPO=MiaoDX/neodojo` check still reports
+  `external_gpu_artifact_missing`: no local CUDA runtime, no configured GPU
+  provider CLI/environment, zero self-hosted GitHub Actions runners, zero
+  repository secrets, no secret names or values, and no self-hosted GPU
+  workflow runs.
+- A local search found only fixture/smoke
+  `neodojo.gvhmr_smplx_joints.v1` JSON files and no returned
+  `hmr4d_results.pt` or non-fixture `gvhmr-smplx-joints.json` artifact.
 - Local `make verify-real` still fails with `external_gpu_artifact_missing`.
 
 ## Non-Goals

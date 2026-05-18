@@ -396,6 +396,13 @@ motion artifact, or hosted/live-client Viser capture.
   revalidates as `metadata_only_not_ready_for_gpu`, and the downloaded
   public-demo artifact passes `neodojo demo smoke`.
 - GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26015918309` verified the
+  current head `ba8e36f` in the default public-demo workflow and deployed
+  Pages. The downloaded `neodojo-public-demo` artifact passes
+  `neodojo demo smoke` and contains the CI-generated `index.html`,
+  `scene.json`, `neodojo-demo.rrd`, and `screenshot.svg` fixture-demo
+  artifacts.
+- GitHub Actions run
   `https://github.com/MiaoDX/neodojo/actions/runs/26009044473` verified the
   generated Colab operator notebook handoff on `main`: lint, plan checks,
   tests, wheel build, real-handoff smoke, GPU input bundle smoke, GPU input
@@ -1053,6 +1060,10 @@ Actions runners for `MiaoDX/neodojo`, and zero repository secrets; Docker is
 available locally but does not expose a GPU runtime. The next external step is
 therefore to copy the bundle or archive to a GPU-capable machine or
 self-hosted GPU runner, run GVHMR, and return or upload the neodojo export.
+A refreshed local GitHub-route probe still reports the same blocker and the
+optional self-hosted GPU workflow currently has no runs; a local artifact
+search found only fixture/smoke GVHMR JSON files and no returned
+`hmr4d_results.pt` or non-fixture `gvhmr-smplx-joints.json` artifact.
 Until then, `make verify-real` is expected to fail as the strict end-to-end
 completion gate. Once that artifact exists, the remaining task is to validate
 it with `real-conversion import-demo`, then inspect the generated
