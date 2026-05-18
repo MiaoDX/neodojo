@@ -140,6 +140,14 @@ the source-validation report passed with 36 frames at 24 fps, the real-demo
 manifest records `real_gvhmr_artifact_imported: false` for fixture smoke, and
 the artifact contains no source media or checkpoint/model files.
 
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26006485103` verified the
+real-conversion completion audit artifact on `main`: `make
+real-conversion-audit` passed, the `neodojo-real-conversion-audit` artifact
+uploaded only `neodojo.real_conversion_audit.v1` and nested
+`neodojo.gvhmr_gpu_execution_probe.v1` manifests, and the audit classified the
+gate as `external_gpu_artifact_missing` with `complete: false`.
+
 ## Inputs
 
 - Existing fixture generation commands.
@@ -266,8 +274,8 @@ the artifact contains no source media or checkpoint/model files.
 - CI uploads the fixture-only real-artifact intake smoke artifact with
   source-validation, public-demo, and capture manifests but no media, verified
   by run `26006210299`.
-- CI is configured to upload the real-conversion completion audit artifact with
-  blocker status and no media.
+- CI uploads the real-conversion completion audit artifact with blocker status
+  and no media, verified by run `26006485103`.
 - The visual smoke check proves the generated pages are nonblank and include
   expected tracks/labels.
 - GitHub Pages publishes only safe static demo assets once repository Pages is

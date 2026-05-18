@@ -427,6 +427,11 @@ checks, `complete: false`, and the next action while the real artifact is
 missing. This target exits successfully for blocker classification; use
 `neodojo real-conversion audit-completion --require-complete` when automation
 should fail unless a real non-fixture demo has been generated.
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26006485103` uploaded the
+`neodojo-real-conversion-audit` artifact and verified the CI state is still
+`external_gpu_artifact_missing` with no media/checkpoint files and no recorded
+secret values.
 
 The returned-artifact import wrapper is now covered by fixture-only local and
 CI smoke evidence: `make real-artifact-intake-smoke` writes fixture source

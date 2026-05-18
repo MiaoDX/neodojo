@@ -290,6 +290,15 @@ motion artifact, or hosted/live-client Viser capture.
   real-demo manifest records `gvhmr_artifact_imported: true`,
   `real_gvhmr_artifact_imported: false`, and both source/export fixture flags
   as true, and the artifact includes no `.mp4`, `.pt`, `.pkl`, or `.npz` files.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26006485103` verified the
+  real-conversion completion audit artifact on `main`: `make
+  real-conversion-audit` passed, the `neodojo-real-conversion-audit` artifact
+  contains only the audit manifest and nested GPU execution probe manifest, and
+  the audit records `status: external_gpu_artifact_missing`, `complete: false`,
+  `blocked: true`, and the next action to run GVHMR on a GPU-capable machine.
+  The nested probe remains `safe_for_git: true` with `secret_values_recorded:
+  false`, and no `.mp4`, `.pt`, `.pkl`, or `.npz` files are present.
 - Fixture-only teaching playback HTML generated under `outputs/teaching-demo/`,
   proving that the SMPL-X and G1 manifests can be consumed together while
   preserving the SMPL-X scoring boundary.
