@@ -543,6 +543,18 @@ public-demo artifact passes `neodojo demo smoke`, the downloaded metadata-only
 operator package archive revalidates successfully, and the downloaded
 real-conversion audit still reports `external_gpu_artifact_missing`,
 `complete: false`, and `blocked: true`.
+GitHub Actions run
+`https://github.com/MiaoDX/neodojo/actions/runs/26014431712` verified the
+latest default CI lane after clarifying the returned GVHMR export fixture flag:
+the downloaded public-demo artifact passes `neodojo demo smoke`, the downloaded
+GPU input template records `fixture_only: false`, the downloaded GPU
+run-request README and nested operator-package request README explicitly require
+the returned `gvhmr-smplx-joints.json` to be the GPU-generated
+`neodojo.gvhmr_smplx_joints.v1` export with `fixture_only: false`, the
+downloaded operator-package README and archived README record the expected
+return fixture flag as `false`, and the downloaded real-conversion audit still
+reports `external_gpu_artifact_missing`, `complete: false`, and
+`blocked: true`.
 
 The local high-level media-containing
 `make real-gpu-operator-package-archive LOCAL_VIDEO=...` target was run against

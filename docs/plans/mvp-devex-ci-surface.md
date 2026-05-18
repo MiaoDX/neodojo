@@ -319,6 +319,12 @@ public-demo artifact passed `neodojo demo smoke`, and Pages deployed.
   `26012652284`; archive validation and moved/downloaded artifact validation
   were verified by run `26013198280`, and the current command-surface-aligned
   CI lane plus Pages deploy was verified by run `26013871155`.
+- CI verifies that generated GPU handoff/operator docs ask for a returned
+  non-fixture GVHMR export: run `26014431712` uploaded a GPU input template
+  with `fixture_only: false`, GPU run-request and nested operator-package
+  request READMEs requiring a GPU-generated `neodojo.gvhmr_smplx_joints.v1`
+  export with `fixture_only: false`, and an operator-package archive whose
+  README records the expected return fixture flag as `false`.
 - CI uploads the metadata-only GPU execution probe artifact with command/env-key
   readiness evidence and no secret values, verified by run `26005618093`.
 - CI uploads the fixture-only real-artifact intake smoke artifact with

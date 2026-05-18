@@ -141,6 +141,15 @@ provenance, rights, and returned-artifact validation boundaries.
   `neodojo.gvhmr_operator_package_archive.v1`, `status:
   metadata_only_not_ready_for_gpu`, `media_included: false`, and
   `policy.safe_for_git: true`.
+- GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26014431712` verified the
+  package and package-archive README evidence after the returned GVHMR export
+  fixture flag was made explicit: the package README records expected return
+  fixture flag `false`, step 5 requires a GPU-generated
+  `gvhmr-smplx-joints.json` containing `fixture_only: false`, the nested
+  request README requires the GPU-generated `neodojo.gvhmr_smplx_joints.v1`
+  export with `fixture_only: false`, and the downloaded archive contains the
+  same README wording.
 - The high-level `make real-gpu-operator-package-archive LOCAL_VIDEO=...`
   target was also run against an ignored local Bilibili proof candidate with
   isolated outputs under

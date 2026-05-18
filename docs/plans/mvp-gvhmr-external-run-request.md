@@ -77,10 +77,16 @@ option, and local return commands. It still does not run GVHMR locally.
   and preserve `safe_for_git: true`.
 - The request manifest records `expected_return_artifact.schema:
   neodojo.gvhmr_smplx_joints.v1`.
+- The generated README tells the operator that the returned
+  `gvhmr-smplx-joints.json` must be the GPU-generated
+  `neodojo.gvhmr_smplx_joints.v1` export with `fixture_only: false`, not the
+  template or fixture smoke JSON.
 - `make real-gpu-run-request LOCAL_VIDEO=...` writes both a media-containing
   archive and a matching request manifest/README under ignored outputs.
 - `make verify` includes the run-request smoke target.
-- The public-demo workflow uploads `neodojo-gpu-run-request-smoke`.
+- The public-demo workflow uploads `neodojo-gpu-run-request-smoke`; the
+  downloaded artifact from run `26014431712` verified the non-fixture return
+  wording.
 
 ## Non-Goals
 

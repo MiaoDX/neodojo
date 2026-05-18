@@ -369,6 +369,20 @@ motion artifact, or hosted/live-client Viser capture.
   `neodojo demo smoke` and the audit still reports
   `external_gpu_artifact_missing`, `complete: false`, `blocked: true`.
 - GitHub Actions run
+  `https://github.com/MiaoDX/neodojo/actions/runs/26014431712` verified the
+  latest generated GPU run-request and GVHMR operator-package artifacts on
+  `main` after the return-artifact fixture flag was made explicit. The
+  downloaded `neodojo-gpu-run-request-smoke` README and nested operator-package
+  request README require the returned `gvhmr-smplx-joints.json` to be the
+  GPU-generated `neodojo.gvhmr_smplx_joints.v1` export with
+  `fixture_only: false`, not the template or fixture smoke JSON. The downloaded
+  `neodojo-gvhmr-operator-package-smoke` README records the expected return
+  fixture flag as `false`, the downloaded operator-package archive contains
+  the same README wording, the downloaded GPU input template has
+  `fixture_only: false`, the downloaded public-demo artifact passes
+  `neodojo demo smoke`, and the real-conversion audit still reports
+  `external_gpu_artifact_missing`, `complete: false`, and `blocked: true`.
+- GitHub Actions run
   `https://github.com/MiaoDX/neodojo/actions/runs/26009044473` verified the
   generated Colab operator notebook handoff on `main`: lint, plan checks,
   tests, wheel build, real-handoff smoke, GPU input bundle smoke, GPU input
