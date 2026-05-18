@@ -410,9 +410,10 @@ needed by the GPU operator. The durable external-GPU operator checklist is
 For user-managed GitHub Actions GPU hardware, the manual
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow can unpack a
 runner-local media archive on a self-hosted runner labeled `gpu`, run the same
-packaged wrapper, and optionally upload only `gvhmr-smplx-joints.json`. It is
-not triggered by push or pull request events and does not make the default CI
-lane run GVHMR.
+packaged wrapper, run `make real-artifact-intake` plus the strict
+real-conversion audit, and optionally upload only `gvhmr-smplx-joints.json` or
+generated real-demo/public-demo evidence. It is not triggered by push or pull
+request events and does not make the default CI lane run GVHMR.
 `neodojo real-conversion probe-gpu-execution` and `make gpu-execution-probe`
 write a safe local/provider readiness manifest with command presence and
 environment-variable names only. It does not record secret values or run GVHMR;

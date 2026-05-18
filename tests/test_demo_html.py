@@ -2555,9 +2555,8 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["schema"], "neodojo.real_conversion_audit.v1")
         self.assertFalse(manifest["complete"])
 
-    def test_self_hosted_gpu_workflow_is_manual_and_uploads_only_return_json(self) -> None:
+    def test_self_hosted_gpu_workflow_is_manual_and_uploads_only_safe_artifacts(self) -> None:
         workflow = Path(".github/workflows/gvhmr-self-hosted-gpu.yml").read_text(encoding="utf-8")
-        upload_section = workflow.split("- name: Upload returned neodojo export", 1)[1]
 
         self.assertIn("workflow_dispatch:", workflow)
         self.assertIn("runs-on: [self-hosted, gpu]", workflow)
@@ -2567,10 +2566,20 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("SMPLX_MODEL_DIR_INPUT", workflow)
         self.assertIn("skip_gvhmr", workflow)
         self.assertIn("upload_neodojo_export", workflow)
-        self.assertIn("outputs/self-hosted-gvhmr-run/gvhmr-smplx-joints.json", upload_section)
-        self.assertNotIn(".mp4", upload_section)
-        self.assertNotIn(".pt", upload_section)
-        self.assertNotIn("checkpoints", upload_section)
+        self.assertIn("upload_real_demo", workflow)
+        self.assertIn("make real-artifact-intake", workflow)
+        self.assertIn("--require-complete", workflow)
+        self.assertIn("outputs/self-hosted-gvhmr-run/gvhmr-smplx-joints.json", workflow)
+        self.assertIn("outputs/self-hosted-real-demo/public-demo/index.html", workflow)
+        upload_paths = []
+        for line in workflow.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("outputs/"):
+                upload_paths.append(stripped)
+        forbidden_fragments = [".mp4", ".mov", ".mkv", ".pt", ".pkl", ".npz", "checkpoints", "SMPLX_MODEL_DIR"]
+        for path in upload_paths:
+            for forbidden in forbidden_fragments:
+                self.assertNotIn(forbidden, path)
 
     def test_real_conversion_audit_distinguishes_fixture_intake_smoke(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

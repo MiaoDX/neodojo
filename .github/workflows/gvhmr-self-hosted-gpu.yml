@@ -59,6 +59,11 @@ on:
         required: true
         default: false
         type: boolean
+      upload_real_demo:
+        description: "Upload generated real-demo manifests/public-demo/capture artifacts after intake"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -151,11 +156,45 @@ jobs:
           ./run_gvhmr_neodojo.sh "${args[@]}"
           test -f gvhmr-smplx-joints.json
 
+      - name: Validate returned artifact through neodojo
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -e .
+          make real-artifact-intake \
+            REAL_ARTIFACT_SOURCE_MATERIALIZATION=outputs/self-hosted-gvhmr-run/source-materialization.json \
+            REAL_ARTIFACT_GVHMR_JSON=outputs/self-hosted-gvhmr-run/gvhmr-smplx-joints.json \
+            REAL_ARTIFACT_OUT=outputs/self-hosted-real-demo
+          PYTHONPATH=src python -m neodojo real-conversion audit-completion \
+            --source-materialization outputs/self-hosted-gvhmr-run/source-materialization.json \
+            --gvhmr-json outputs/self-hosted-gvhmr-run/gvhmr-smplx-joints.json \
+            --real-demo outputs/self-hosted-real-demo \
+            --out outputs/self-hosted-real-audit \
+            --require-complete
+
       - name: Upload returned neodojo export
         if: ${{ inputs.upload_neodojo_export }}
         uses: actions/upload-artifact@v7
         with:
           name: neodojo-gvhmr-smplx-joints
           path: outputs/self-hosted-gvhmr-run/gvhmr-smplx-joints.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload validated real-demo artifacts
+        if: ${{ inputs.upload_real_demo }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: neodojo-self-hosted-real-demo
+          path: |
+            outputs/self-hosted-real-demo/manifest.json
+            outputs/self-hosted-real-demo/real-conversion-validation/source-validation.json
+            outputs/self-hosted-real-demo/public-demo/manifest.json
+            outputs/self-hosted-real-demo/public-demo/index.html
+            outputs/self-hosted-real-demo/public-demo/scene.json
+            outputs/self-hosted-real-demo/public-demo/neodojo-demo.rrd
+            outputs/self-hosted-real-demo/public-demo/screenshot.svg
+            outputs/self-hosted-real-demo/capture/manifest.json
+            outputs/self-hosted-real-audit/manifest.json
           if-no-files-found: error
           retention-days: 7

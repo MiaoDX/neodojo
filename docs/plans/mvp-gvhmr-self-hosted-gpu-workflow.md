@@ -11,7 +11,9 @@ This does not make the default GitHub-hosted CI lane run GVHMR. It adds a
 manual `workflow_dispatch` path that can unpack a prepared neodojo GPU input
 archive on a runner labeled `self-hosted` and `gpu`, run the packaged
 `run_gvhmr_neodojo.sh` wrapper, and optionally upload only the returned
-`gvhmr-smplx-joints.json` export.
+`gvhmr-smplx-joints.json` export. A follow-on intake step now validates and
+imports the returned export in the same workflow before any optional artifact
+upload.
 
 ## Dependencies
 
@@ -40,6 +42,8 @@ archive on a runner labeled `self-hosted` and `gpu`, run the packaged
   pull request events.
 - Optional short-lived `neodojo-gvhmr-smplx-joints` artifact containing only
   `gvhmr-smplx-joints.json`.
+- Generated self-hosted real-demo outputs under `outputs/self-hosted-real-demo`
+  when the returned export validates.
 - README, README.zh, STATUS, runbook, and implementation-index updates.
 
 ## Execution Tasks
@@ -53,6 +57,8 @@ archive on a runner labeled `self-hosted` and `gpu`, run the packaged
   `hmr4d_results.pt` with `skip_gvhmr`.
 - [x] Upload only `gvhmr-smplx-joints.json` when the operator explicitly opts
   into `upload_neodojo_export`.
+- [x] Run neodojo returned-artifact intake and strict real-conversion audit
+  before the workflow can report success.
 - [x] Add focused tests/smoke checks that the workflow is manual, self-hosted,
   and does not upload media or checkpoint/model files.
 - [x] Update README.md, README.zh.md, STATUS.md, the runbook, and the plan
@@ -65,8 +71,12 @@ archive on a runner labeled `self-hosted` and `gpu`, run the packaged
 - The workflow validates the archive, runner script, exporter, template, and
   source materialization before executing the wrapper.
 - The only uploaded path in the workflow is
-  `outputs/self-hosted-gvhmr-run/gvhmr-smplx-joints.json`, and upload is
-  controlled by `upload_neodojo_export`.
+  `outputs/self-hosted-gvhmr-run/gvhmr-smplx-joints.json` unless
+  `upload_real_demo` is explicitly enabled for generated public-demo/capture
+  evidence.
+- The workflow runs `make real-artifact-intake` and
+  `real-conversion audit-completion --require-complete` before optional
+  uploads.
 - `make test` covers the workflow shape and upload boundary.
 - `make check` includes this plan through the MVP index.
 

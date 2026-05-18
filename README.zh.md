@@ -357,8 +357,9 @@ runbook、manifests 和 source metadata。持久化的外部 GPU operator checkl
 如果使用用户自己管理的 GitHub Actions GPU 硬件，手动触发的
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow 可以在带 `gpu` label 的
 self-hosted runner 上解压 runner-local media archive，运行同一个 packaged wrapper，
-并可选地只上传 `gvhmr-smplx-joints.json`。它不会由 push 或 pull request 触发，也不会让
-默认 CI lane 运行 GVHMR。
+接着运行 `make real-artifact-intake` 和 strict real-conversion audit，并可选地只上传
+`gvhmr-smplx-joints.json` 或 generated real-demo/public-demo evidence。它不会由 push
+或 pull request 触发，也不会让默认 CI lane 运行 GVHMR。
 `neodojo real-conversion probe-gpu-execution` 和 `make gpu-execution-probe`
 会写出安全的本地/provider readiness manifest，只记录命令是否存在和环境变量名，不记录
 secret value，也不会运行 GVHMR；它已接入 `make verify`，用于让 blocker

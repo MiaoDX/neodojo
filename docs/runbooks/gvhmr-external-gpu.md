@@ -86,10 +86,13 @@ it does not run on push or pull requests. Its required inputs are:
 
 Optional inputs allow installing GVHMR, exporting from an existing
 `hmr4d_results.pt` with `skip_gvhmr`, selecting `smpl_params_global` or
-`smpl_params_incam`, and opting into a short-lived upload of only
-`gvhmr-smplx-joints.json`. Do not use the workflow to upload source videos,
-trimmed clips, checkpoints, SMPL-X assets, `.pt` files, rendered videos, logs,
-or full result directories.
+`smpl_params_incam`, opting into a short-lived upload of only
+`gvhmr-smplx-joints.json`, and opting into generated real-demo artifact upload.
+After GVHMR export, the workflow runs `make real-artifact-intake` and
+`real-conversion audit-completion --require-complete` against the returned JSON
+and bundled `source-materialization.json`. Do not use the workflow to upload
+source videos, trimmed clips, checkpoints, SMPL-X assets, `.pt` files, rendered
+videos, logs, or full result directories.
 
 ## Run On The GPU Machine
 

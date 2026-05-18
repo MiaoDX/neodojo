@@ -363,6 +363,8 @@ artifact path; it defaults to
   failing gates that require a real non-fixture demo before reporting success.
 - [x] Add an optional self-hosted GPU workflow-dispatch path that can run the
   packaged archive on a user-managed runner without changing default CI.
+- [x] Have that self-hosted workflow run returned-artifact intake and strict
+  audit after the GPU wrapper produces `gvhmr-smplx-joints.json`.
 - [ ] Run GVHMR on a GPU-capable environment.
 - [ ] Export the SMPL-X result directory with enough metadata for reproducibility.
 - [ ] Convert or export the GVHMR result into
@@ -447,9 +449,11 @@ An optional manual GitHub Actions path now exists at
 `.github/workflows/gvhmr-self-hosted-gpu.yml`. It requires a user-managed
 self-hosted runner labeled `gpu`, a runner-local media-containing archive path,
 GVHMR dependencies/checkpoints, and licensed local SMPL-X assets. It is not
-triggered by push or pull request events, and it only uploads
-`gvhmr-smplx-joints.json` when the operator explicitly enables
-`upload_neodojo_export`.
+triggered by push or pull request events. After the wrapper writes
+`gvhmr-smplx-joints.json`, it runs `make real-artifact-intake` and
+`real-conversion audit-completion --require-complete` against the returned
+artifact. It only uploads returned JSON or generated real-demo/public-demo
+artifacts when the operator explicitly enables the relevant upload input.
 
 The returned-artifact import wrapper is now covered by fixture-only local and
 CI smoke evidence: `make real-artifact-intake-smoke` writes fixture source
