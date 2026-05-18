@@ -219,8 +219,9 @@ motion artifact, or hosted/live-client Viser capture.
   the metadata-only real-handoff smoke artifact, metadata-only GPU input bundle
   smoke artifact, metadata-only GPU input archive smoke artifact, metadata-only
   GPU run-request smoke artifact, metadata-only Colab operator notebook smoke
-  artifact, metadata-only GPU execution probe artifact, fixture-only
-  real-artifact intake smoke
+  artifact, metadata-only GVHMR operator package smoke artifact,
+  metadata-only GVHMR operator package archive smoke artifact, metadata-only
+  GPU execution probe artifact, fixture-only real-artifact intake smoke
   artifact, default real-conversion audit artifact, opt-in GitHub-route
   real-conversion audit artifact, standalone public-demo artifact,
   browser-capture artifact, and capture-bundle artifact containing the capture
@@ -925,9 +926,11 @@ operator request in one command via `make real-gpu-run-request LOCAL_VIDEO=...`.
 For a notebook-based GPU operator, the archive, request, and Colab notebook can
 now be regenerated together with `make real-gpu-colab-notebook LOCAL_VIDEO=...`.
 For a single copyable handoff folder, those files can be collocated with
-`make real-gpu-operator-package LOCAL_VIDEO=...`; the default ignored package at
-`outputs/gvhmr-operator-package/` is ready for external GPU operator handoff and
-marked unsafe for git because it contains media.
+`make real-gpu-operator-package LOCAL_VIDEO=...`; for a single transfer file,
+the collocated package can be wrapped with
+`make real-gpu-operator-package-archive LOCAL_VIDEO=...`. The default ignored
+package at `outputs/gvhmr-operator-package/` is ready for external GPU operator
+handoff and marked unsafe for git because it contains media.
 That operator request can also generate a Colab-ready notebook with
 `make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request` for
 manual GPU execution in a notebook runtime; the current ignored local proof

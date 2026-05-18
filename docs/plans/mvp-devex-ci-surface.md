@@ -74,7 +74,9 @@ metadata-only `neodojo-real-handoff-smoke` artifact from that smoke, runs
 artifacts, writes a Colab operator notebook from that run request, uploads
 `neodojo-gvhmr-colab-operator-smoke`, collocates the archive, request, and
 notebook into a metadata-only operator package, uploads
-`neodojo-gvhmr-operator-package-smoke`, runs `make gpu-execution-probe`,
+`neodojo-gvhmr-operator-package-smoke`, wraps the package as a metadata-only
+operator package archive, uploads
+`neodojo-gvhmr-operator-package-archive-smoke`, runs `make gpu-execution-probe`,
 uploads a metadata-only `neodojo-gpu-execution-probe` artifact, runs
 `make real-artifact-intake-smoke`, uploads a fixture-only
 `neodojo-real-artifact-intake-smoke` artifact, runs
@@ -256,6 +258,8 @@ public-demo artifact passed `neodojo demo smoke`, and Pages deployed.
      media.
    - [x] Upload the metadata-only GVHMR operator package smoke artifact with no
      media.
+   - [x] Upload the metadata-only GVHMR operator package archive smoke artifact
+     with no media.
    - [x] Upload the metadata-only GPU execution probe artifact with no secret
      values.
    - [x] Upload the fixture-only real-artifact intake smoke artifact with no
@@ -308,6 +312,9 @@ public-demo artifact passed `neodojo demo smoke`, and Pages deployed.
 - CI uploads the metadata-only GVHMR operator package smoke artifact with copied
   archive, request, notebook, package manifest, and package README, and no
   source media, verified by run `26009913491`.
+- CI uploads the metadata-only GVHMR operator package archive smoke artifact
+  with a `neodojo.gvhmr_operator_package_archive.v1` manifest and no source
+  media, verified by run `26012652284`.
 - CI uploads the metadata-only GPU execution probe artifact with command/env-key
   readiness evidence and no secret values, verified by run `26005618093`.
 - CI uploads the fixture-only real-artifact intake smoke artifact with
