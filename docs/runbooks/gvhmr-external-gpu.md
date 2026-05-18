@@ -73,10 +73,16 @@ To record whether this local workspace has any configured GPU execution route:
 ```bash
 make gpu-execution-probe
 python -m json.tool outputs/gvhmr-gpu-execution-probe/manifest.json
+
+make gpu-execution-probe GPU_PROBE_GITHUB_REPO=MiaoDX/neodojo
+python -m json.tool outputs/gvhmr-gpu-execution-probe/manifest.json
 ```
 
 This probe records command presence and environment-variable names only. It
-does not record secret values and does not run GVHMR.
+does not record secret values and does not run GVHMR. When
+`GPU_PROBE_GITHUB_REPO` or CLI `--github-repo` is supplied, it also checks
+self-hosted GitHub GPU runner visibility and repository secret counts through
+`gh` without recording secret values or secret names.
 
 The expanded form is:
 

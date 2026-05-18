@@ -10,7 +10,7 @@ import tarfile
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Sequence
 
 from .contracts import local_file_metadata, require_schema, sha256_file
 from .fixtures import (
@@ -175,6 +175,23 @@ _GPU_PROVIDER_CLIS: dict[str, tuple[str, ...]] = {
     "kaggle": ("kaggle",),
 }
 
+_GITHUB_GPU_SECRET_KEYWORDS = (
+    "GPU",
+    "CUDA",
+    "GVHMR",
+    "SMPL",
+    "RUNPOD",
+    "MODAL",
+    "HF_",
+    "HUGGINGFACE",
+    "AWS",
+    "GCP",
+    "GOOGLE",
+    "REPLICATE",
+    "VAST",
+    "KAGGLE",
+)
+
 
 def _env_keys_for_prefixes(env: Mapping[str, str], prefixes: tuple[str, ...]) -> list[str]:
     return sorted(key for key in env if any(key.startswith(prefix) for prefix in prefixes))
@@ -221,11 +238,109 @@ def _probe_docker_gpu_runtime(docker_path: str | None) -> dict[str, Any]:
     }
 
 
+def _run_probe_command(args: Sequence[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        list(args),
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+
+def _probe_github_actions_gpu_route(
+    *,
+    github_repo: str | None,
+    gh_path: str | None,
+    command_runner: Callable[[Sequence[str]], subprocess.CompletedProcess[str]],
+) -> dict[str, Any]:
+    probe: dict[str, Any] = {
+        "enabled": bool(github_repo),
+        "repo": github_repo,
+        "gh_cli_path": gh_path,
+        "safe_for_git": True,
+        "secret_values_recorded": False,
+        "secret_names_recorded": False,
+        "api_errors": [],
+        "runner_count": None,
+        "runner_summaries": [],
+        "self_hosted_gpu_runner_available": False,
+        "secret_count": None,
+        "gpu_related_secret_count": None,
+        "configured": False,
+    }
+    if not github_repo:
+        return probe
+    if gh_path is None:
+        probe["api_errors"].append("gh CLI was not found")
+        return probe
+
+    def run_api(endpoint: str) -> dict[str, Any] | None:
+        try:
+            completed = command_runner([gh_path, "api", endpoint])
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            probe["api_errors"].append(str(exc))
+            return None
+        if completed.returncode != 0:
+            message = completed.stderr.strip() or completed.stdout.strip() or f"gh api {endpoint} failed"
+            probe["api_errors"].append(message)
+            return None
+        try:
+            payload = json.loads(completed.stdout)
+        except json.JSONDecodeError as exc:
+            probe["api_errors"].append(f"gh api {endpoint} returned invalid JSON: {exc}")
+            return None
+        if not isinstance(payload, dict):
+            probe["api_errors"].append(f"gh api {endpoint} returned non-object JSON")
+            return None
+        return payload
+
+    runners_payload = run_api(f"repos/{github_repo}/actions/runners")
+    if runners_payload is not None:
+        runners = runners_payload.get("runners", [])
+        if isinstance(runners, list):
+            probe["runner_count"] = int(runners_payload.get("total_count", len(runners)) or 0)
+            summaries: list[dict[str, Any]] = []
+            for runner in runners:
+                if not isinstance(runner, dict):
+                    continue
+                labels = runner.get("labels", [])
+                label_names = sorted(
+                    str(label.get("name"))
+                    for label in labels
+                    if isinstance(label, dict) and label.get("name") is not None
+                )
+                status = str(runner.get("status", "unknown"))
+                summaries.append({"status": status, "labels": label_names})
+                if status == "online" and {"self-hosted", "gpu"}.issubset(set(label_names)):
+                    probe["self_hosted_gpu_runner_available"] = True
+            probe["runner_summaries"] = summaries
+
+    secrets_payload = run_api(f"repos/{github_repo}/actions/secrets")
+    if secrets_payload is not None:
+        secrets = secrets_payload.get("secrets", [])
+        if isinstance(secrets, list):
+            probe["secret_count"] = int(secrets_payload.get("total_count", len(secrets)) or 0)
+            gpu_related_count = 0
+            for secret in secrets:
+                if not isinstance(secret, dict):
+                    continue
+                name = str(secret.get("name", "")).upper()
+                if any(keyword in name for keyword in _GITHUB_GPU_SECRET_KEYWORDS):
+                    gpu_related_count += 1
+            probe["gpu_related_secret_count"] = gpu_related_count
+
+    probe["configured"] = bool(probe["self_hosted_gpu_runner_available"])
+    return probe
+
+
 def probe_gpu_execution_environment(
     out_dir: Path,
     *,
     env: Mapping[str, str] | None = None,
     command_lookup: Callable[[str], str | None] | None = None,
+    command_runner: Callable[[Sequence[str]], subprocess.CompletedProcess[str]] | None = None,
+    github_repo: str | None = None,
 ) -> GvhmrGpuExecutionProbeWriteResult:
     """Write a safe local/provider GPU execution readiness probe.
 
@@ -238,6 +353,7 @@ def probe_gpu_execution_environment(
     lookup = shutil.which if command_lookup is None else command_lookup
     nvidia_smi = lookup("nvidia-smi")
     docker_path = lookup("docker")
+    gh_path = lookup("gh")
     providers: dict[str, Any] = {}
     for provider, prefixes in _GPU_PROVIDER_ENV_PREFIXES.items():
         command_paths = _command_paths(lookup, _GPU_PROVIDER_CLIS[provider])
@@ -252,14 +368,23 @@ def probe_gpu_execution_environment(
     provider_candidates = [name for name, data in providers.items() if data["configured"]]
     docker_probe = _probe_docker_gpu_runtime(docker_path)
     docker_gpu_runtime = bool(docker_probe["gpu_runtime_detected"])
+    github_actions_probe = _probe_github_actions_gpu_route(
+        github_repo=github_repo,
+        gh_path=gh_path,
+        command_runner=_run_probe_command if command_runner is None else command_runner,
+    )
+    github_actions_gpu_runner = bool(github_actions_probe["self_hosted_gpu_runner_available"])
     if local_cuda_available:
         status = "local_cuda_available"
     elif provider_candidates:
         status = "provider_candidate_available"
     elif docker_gpu_runtime:
         status = "docker_gpu_runtime_available"
+    elif github_actions_gpu_runner:
+        status = "github_actions_gpu_runner_available"
     else:
         status = "external_gpu_artifact_missing"
+    route_visible = status != "external_gpu_artifact_missing"
 
     manifest_path = out_dir / "manifest.json"
     manifest = {
@@ -279,11 +404,13 @@ def probe_gpu_execution_environment(
         "docker": docker_probe,
         "providers": providers,
         "provider_candidates": provider_candidates,
+        "github_actions": github_actions_probe,
         "classification": {
-            "blocked_locally": status == "external_gpu_artifact_missing",
+            "blocked_locally": not route_visible,
             "reason": (
-                "No local CUDA runtime, Docker GPU runtime, or configured GPU provider was detected."
-                if status == "external_gpu_artifact_missing"
+                "No local CUDA runtime, Docker GPU runtime, configured GPU provider, "
+                "or optional GitHub self-hosted GPU runner was detected."
+                if not route_visible
                 else "A possible GPU execution route is visible; validate it before running GVHMR."
             ),
             "next_action": (

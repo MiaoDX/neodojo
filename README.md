@@ -203,6 +203,7 @@ make gpu-input-bundle-smoke
 make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
 make gpu-input-archive-smoke
 make gpu-execution-probe
+make gpu-execution-probe GPU_PROBE_GITHUB_REPO=MiaoDX/neodojo
 make gvhmr-run-request GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive
 make gvhmr-run-request-smoke
 make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request
@@ -245,6 +246,7 @@ PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff --source-ma
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-input --gpu-handoff outputs/gvhmr-gpu-handoff --include-media --out outputs/gvhmr-gpu-input
 PYTHONPATH=src python -m neodojo real-conversion archive-gpu-input --gpu-input outputs/gvhmr-gpu-input --out outputs/gvhmr-gpu-input-archive
 PYTHONPATH=src python -m neodojo real-conversion probe-gpu-execution --out outputs/gvhmr-gpu-execution-probe
+PYTHONPATH=src python -m neodojo real-conversion probe-gpu-execution --github-repo MiaoDX/neodojo --out outputs/gvhmr-gpu-execution-probe
 PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result --source outputs/real-conversion-gate/hmr4d_results.pt --out outputs/gvhmr-result-inspection
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
 PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
@@ -457,6 +459,9 @@ request events and does not make the default CI lane run GVHMR.
 write a safe local/provider readiness manifest with command presence and
 environment-variable names only. It does not record secret values or run GVHMR;
 it is included in `make verify` to keep the blocker classification executable.
+Pass `GPU_PROBE_GITHUB_REPO=OWNER/REPO` or CLI `--github-repo OWNER/REPO` to
+also record self-hosted GitHub GPU runner availability and repository secret
+counts through `gh` without recording secret values or secret names.
 `neodojo real-conversion inspect-gvhmr-result` and `make gvhmr-inspect
 GVHMR_RESULT=...` inspect a returned `hmr4d_results.pt` when the optional
 `torch` dependency is available in the GVHMR/GPU environment, or a JSON summary

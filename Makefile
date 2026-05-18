@@ -13,6 +13,10 @@ GPU_INPUT_INCLUDE_MEDIA ?= 0
 GPU_INPUT_ARCHIVE_OUT ?= outputs/gvhmr-gpu-input-archive
 GPU_INPUT_ARCHIVE_NAME ?= neodojo-gvhmr-gpu-input.tar.gz
 GPU_EXECUTION_PROBE_OUT ?= outputs/gvhmr-gpu-execution-probe
+GPU_EXECUTION_PROBE_ARGS = --out "$(GPU_EXECUTION_PROBE_OUT)"
+ifdef GPU_PROBE_GITHUB_REPO
+GPU_EXECUTION_PROBE_ARGS += --github-repo "$(GPU_PROBE_GITHUB_REPO)"
+endif
 GVHMR_RUN_REQUEST_OUT ?= outputs/gvhmr-gpu-run-request
 GVHMR_COLAB_NOTEBOOK_OUT ?= outputs/gvhmr-colab-operator
 GVHMR_OPERATOR_PACKAGE_OUT ?= outputs/gvhmr-operator-package
@@ -184,7 +188,7 @@ gpu-input-archive-smoke: gpu-input-bundle-smoke
 	$(PYTHON) -m tarfile -l outputs/gvhmr-gpu-input-archive-smoke/neodojo-gvhmr-gpu-input.tar.gz
 
 gpu-execution-probe:
-	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion probe-gpu-execution --out "$(GPU_EXECUTION_PROBE_OUT)"
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion probe-gpu-execution $(GPU_EXECUTION_PROBE_ARGS)
 	test -f "$(GPU_EXECUTION_PROBE_OUT)/manifest.json"
 
 gvhmr-run-request:

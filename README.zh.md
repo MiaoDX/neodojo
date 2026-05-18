@@ -170,6 +170,7 @@ make gpu-input-bundle-smoke
 make gpu-input-archive GPU_INPUT=outputs/gvhmr-gpu-input
 make gpu-input-archive-smoke
 make gpu-execution-probe
+make gpu-execution-probe GPU_PROBE_GITHUB_REPO=MiaoDX/neodojo
 make gvhmr-run-request GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive
 make gvhmr-run-request-smoke
 make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request
@@ -212,6 +213,7 @@ PYTHONPATH=src python -m neodojo real-conversion package-gpu-handoff --source-ma
 PYTHONPATH=src python -m neodojo real-conversion package-gpu-input --gpu-handoff outputs/gvhmr-gpu-handoff --include-media --out outputs/gvhmr-gpu-input
 PYTHONPATH=src python -m neodojo real-conversion archive-gpu-input --gpu-input outputs/gvhmr-gpu-input --out outputs/gvhmr-gpu-input-archive
 PYTHONPATH=src python -m neodojo real-conversion probe-gpu-execution --out outputs/gvhmr-gpu-execution-probe
+PYTHONPATH=src python -m neodojo real-conversion probe-gpu-execution --github-repo MiaoDX/neodojo --out outputs/gvhmr-gpu-execution-probe
 PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result --source outputs/real-conversion-gate/hmr4d_results.pt --out outputs/gvhmr-result-inspection
 PYTHONPATH=src python -m neodojo real-conversion validate-source --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-conversion-validation
 PYTHONPATH=src python -m neodojo real-conversion import-demo --source-materialization outputs/real-conversion-source/source-materialization.json --gvhmr-json outputs/real-conversion-gate/gvhmr-smplx-joints.json --out outputs/real-demo
@@ -394,7 +396,9 @@ lane 运行 GVHMR。
 `neodojo real-conversion probe-gpu-execution` 和 `make gpu-execution-probe`
 会写出安全的本地/provider readiness manifest，只记录命令是否存在和环境变量名，不记录
 secret value，也不会运行 GVHMR；它已接入 `make verify`，用于让 blocker
-classification 可复现。
+classification 可复现。传入 `GPU_PROBE_GITHUB_REPO=OWNER/REPO`，或在 CLI 使用
+`--github-repo OWNER/REPO`，还可以通过 `gh` 记录 self-hosted GitHub GPU
+runner 是否可用以及 repository secret 数量；不会记录 secret value 或 secret name。
 `neodojo real-conversion inspect-gvhmr-result` 和
 `make gvhmr-inspect GVHMR_RESULT=...` 会在 GVHMR/GPU 环境安装了 optional `torch`
 时检查返回的 `hmr4d_results.pt`，或者在默认本地环境检查 JSON summary。inspection

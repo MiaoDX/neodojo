@@ -11,6 +11,7 @@ import tarfile
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Sequence
 from unittest.mock import patch
 
 from neodojo.annotations import detect_opening_form_keyframe, write_detected_annotations
@@ -2436,6 +2437,7 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(manifest["classification"]["blocked_locally"])
         self.assertEqual(manifest["provider_candidates"], [])
         self.assertFalse(manifest["local_cuda"]["available"])
+        self.assertFalse(manifest["github_actions"]["enabled"])
 
     def test_gpu_execution_probe_reports_provider_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2453,6 +2455,59 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["provider_candidates"], ["modal"])
         self.assertEqual(manifest["providers"]["modal"]["env_keys_present"], ["MODAL_TOKEN_ID"])
         self.assertEqual(manifest["providers"]["modal"]["cli_paths"]["modal"], "/usr/local/bin/modal")
+
+    def test_gpu_execution_probe_reports_github_actions_gpu_runner(self) -> None:
+        def command_runner(args: Sequence[str]) -> subprocess.CompletedProcess[str]:
+            endpoint = args[-1]
+            if endpoint.endswith("/actions/runners"):
+                stdout = json.dumps(
+                    {
+                        "total_count": 1,
+                        "runners": [
+                            {
+                                "name": "private-runner-name",
+                                "status": "online",
+                                "labels": [{"name": "self-hosted"}, {"name": "gpu"}, {"name": "linux"}],
+                            }
+                        ],
+                    }
+                )
+            elif endpoint.endswith("/actions/secrets"):
+                stdout = json.dumps(
+                    {
+                        "total_count": 2,
+                        "secrets": [
+                            {"name": "RUNPOD_TOKEN"},
+                            {"name": "UNRELATED_SERVICE"},
+                        ],
+                    }
+                )
+            else:
+                stdout = "{}"
+            return subprocess.CompletedProcess(args=list(args), returncode=0, stdout=stdout, stderr="")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            result = probe_gpu_execution_environment(
+                root / "probe",
+                env={},
+                command_lookup=lambda command: "/usr/local/bin/gh" if command == "gh" else None,
+                command_runner=command_runner,
+                github_repo="MiaoDX/neodojo",
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "github_actions_gpu_runner_available")
+        self.assertFalse(manifest["classification"]["blocked_locally"])
+        github = manifest["github_actions"]
+        self.assertTrue(github["enabled"])
+        self.assertTrue(github["self_hosted_gpu_runner_available"])
+        self.assertEqual(github["runner_count"], 1)
+        self.assertEqual(github["secret_count"], 2)
+        self.assertEqual(github["gpu_related_secret_count"], 1)
+        self.assertFalse(github["secret_names_recorded"])
+        self.assertNotIn("private-runner-name", json.dumps(github))
 
     def test_gvhmr_source_validation_writes_validated_export(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

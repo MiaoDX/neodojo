@@ -272,6 +272,8 @@ PYTHONPATH=src python -m neodojo real-conversion probe-gpu-execution \
 
 make gpu-execution-probe
 
+make gpu-execution-probe GPU_PROBE_GITHUB_REPO=MiaoDX/neodojo
+
 PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result \
   --source outputs/real-conversion-gate/hmr4d_results.pt \
   --out outputs/gvhmr-result-inspection
@@ -281,8 +283,9 @@ make gvhmr-inspect \
 ```
 
 The GPU execution probe writes a safe readiness manifest with local CUDA,
-Docker GPU runtime, provider CLI, and provider environment-variable-name
-evidence only; it does not record secret values or run GVHMR. Native `.pt`
+Docker GPU runtime, provider CLI, provider environment-variable-name, and
+optional GitHub self-hosted GPU runner evidence only; it does not record secret
+values, secret names, or run GVHMR. Native `.pt`
 inspection requires `torch` and should normally run in the GVHMR/GPU
 environment. The command can inspect JSON summaries or existing
 `neodojo.gvhmr_smplx_joints.v1` exports in the default local environment. It
@@ -379,6 +382,9 @@ artifact path; it defaults to
 - [x] Add a safe `real-conversion probe-gpu-execution` / `make
   gpu-execution-probe` command that records local CUDA/provider readiness
   without running GVHMR or exposing secret values.
+- [x] Extend the probe with an opt-in GitHub Actions check for self-hosted GPU
+  runner availability and repository secret counts without recording secret
+  values or secret names.
 - [x] Add `real-conversion audit-completion` / `make real-conversion-audit`
   so local and CI runs write a non-failing blocker classification manifest for
   this gate.
@@ -455,8 +461,8 @@ Latest local execution probe, now reproducible with `make gpu-execution-probe`:
   credentials are exposed through the local environment
 - no matching provider CLI is installed, except Docker, which does not expose a
   GPU runtime here
-- GitHub repository configuration exposes only the Pages deploy variable and no
-  repository secrets for a GPU job
+- an opt-in GitHub probe for `MiaoDX/neodojo` reports zero self-hosted Actions
+  runners, zero repository secrets, no secret values, and no secret names
 
 That probe keeps the blocker classified as external artifact acquisition rather
 than an unimplemented local command or contract gap.

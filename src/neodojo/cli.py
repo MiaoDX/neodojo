@@ -782,6 +782,10 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/gvhmr-gpu-execution-probe"),
         help="output directory for the GPU execution probe manifest",
     )
+    real_gpu_probe.add_argument(
+        "--github-repo",
+        help="optional OWNER/REPO to probe for self-hosted GitHub GPU runners via gh",
+    )
     real_gpu_request = real_subparsers.add_parser(
         "write-gpu-run-request",
         help="write a concise external-GPU operator request from a GPU input archive manifest",
@@ -1299,7 +1303,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
 
         if args.command == "real-conversion" and args.real_command == "probe-gpu-execution":
-            result = probe_gpu_execution_environment(args.out)
+            result = probe_gpu_execution_environment(args.out, github_repo=args.github_repo)
             print(f"wrote {result.manifest_path}")
             print(f"status {result.status}")
             return 0

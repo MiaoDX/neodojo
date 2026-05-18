@@ -805,7 +805,11 @@ write `outputs/gvhmr-gpu-execution-probe/manifest.json`, a
 `neodojo.gvhmr_gpu_execution_probe.v1` manifest that records local CUDA command
 presence, Docker GPU runtime visibility, provider CLI presence, and
 provider-related environment variable names without recording secret values or
-running GVHMR. It is included in `make verify`.
+running GVHMR. When invoked with `--github-repo OWNER/REPO`, or through
+`make gpu-execution-probe GPU_PROBE_GITHUB_REPO=OWNER/REPO`, it also records
+self-hosted GitHub GPU runner availability and repository secret counts through
+`gh` without recording secret values or secret names. The default
+`make verify` path does not call the GitHub API.
 `neodojo real-conversion package-gpu-input` and `make gpu-input-bundle
 GPU_HANDOFF=... GPU_INPUT_INCLUDE_MEDIA=1` create an ignored copyable GPU input
 bundle with `RUN_ON_GPU.md`, handoff metadata, `run_gvhmr_neodojo.sh`, exporter
@@ -919,9 +923,9 @@ manual `.github/workflows/promote-real-demo-pages.yml` workflow can publish a
 validated self-hosted real-demo artifact to Pages only after the operator
 selects the source run, confirms replacement, and enables
 `NEODOJO_DEPLOY_REAL_PAGES=true`. A
-local/provider execution probe found no CUDA runtime, no configured GPU-provider
-environment variables or provider CLIs, no GitHub repository secrets for a GPU
-job, and only the existing fixture Pages deploy repository variable; Docker is
+local/provider/GitHub execution probe found no CUDA runtime, no configured
+GPU-provider environment variables or provider CLIs, zero self-hosted GitHub
+Actions runners for `MiaoDX/neodojo`, and zero repository secrets; Docker is
 available locally but does not expose a GPU runtime. The next external step is
 therefore to copy the bundle or archive to a GPU-capable machine or
 self-hosted GPU runner, run GVHMR, and return or upload the neodojo export.
