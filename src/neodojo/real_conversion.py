@@ -1867,7 +1867,9 @@ def _write_gpu_run_request_readme(path: Path, manifest: dict[str, Any]) -> None:
         _markdown_command(commands["unpack_archive"]),
         _markdown_command(commands["run_gvhmr_wrapper"]),
         "",
-        "Return `gvhmr-smplx-joints.json` to the local neodojo workspace, then run:",
+        "Return `gvhmr-smplx-joints.json` to the local neodojo workspace. It must be the "
+        "GPU-generated `neodojo.gvhmr_smplx_joints.v1` export with `fixture_only: false`, "
+        "not the template or fixture smoke JSON. Then run:",
         "",
         _markdown_command(commands["local_real_artifact_intake"]),
         _markdown_command(commands["local_strict_verify"]),
@@ -2279,6 +2281,7 @@ def _write_operator_package_readme(path: Path, manifest: dict[str, Any]) -> None
         f"- Media included: `{str(manifest['media_included']).lower()}`",
         f"- Safe for git: `{str(manifest['policy']['safe_for_git']).lower()}`",
         f"- Expected return schema: `{manifest['expected_return_artifact']['schema']}`",
+        "- Expected return fixture flag: `false`",
         "",
         "## Operator Steps",
         "",
@@ -2286,7 +2289,8 @@ def _write_operator_package_readme(path: Path, manifest: dict[str, Any]) -> None
         "2. Keep GVHMR checkpoints and licensed SMPL-X assets in private storage.",
         "3. Verify the archive checksum in the notebook before unpacking.",
         "4. Set `RUN_GVHMR = True` only after assets, checkpoints, and rights review are ready.",
-        "5. Return `gvhmr-smplx-joints.json` to this local neodojo workspace.",
+        "5. Return the GPU-generated `gvhmr-smplx-joints.json` to this local neodojo "
+        "workspace. It must contain `fixture_only: false`.",
         "",
         "For a user-managed self-hosted GitHub Actions GPU runner, dispatch",
         "`.github/workflows/gvhmr-self-hosted-gpu.yml` with",

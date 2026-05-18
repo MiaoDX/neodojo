@@ -2135,6 +2135,7 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("make verify-real", request_manifest["commands"]["local_strict_verify"])
         self.assertIn("GVHMR GPU Run Request", request_readme)
         self.assertIn("SMPLX_MODEL_DIR", request_readme)
+        self.assertIn("fixture_only: false", request_readme)
         self.assertIn(archive.archive_path, request.checked_paths)
         self.assertEqual(colab.status, "ready_for_colab_operator")
         self.assertEqual(colab_manifest["schema"], "neodojo.gvhmr_colab_operator_notebook.v1")
@@ -2183,6 +2184,7 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(operator_request_readme_exists)
         self.assertTrue(operator_colab_notebook_exists)
         self.assertIn("GVHMR Operator Package", operator_package_readme)
+        self.assertIn("Expected return fixture flag: `false`", operator_package_readme)
         self.assertIn("RUN_GVHMR = True", operator_package_readme)
         self.assertIn("gvhmr_operator_package_path", operator_package_readme)
 
