@@ -31,6 +31,9 @@ Hugging Face demo, and the demo entrypoint
 `python tools/demo/demo.py --video=... -s` for static-camera inference.
 The install notes also require separately downloaded SMPL/SMPL-X model assets
 and GVHMR/HMR2/ViTPose/YOLO checkpoints under `inputs/checkpoints/`.
+Upstream now defaults away from DPVO for faster inference through SimpleVO;
+install DPVO only when the selected GPU run genuinely needs that optional visual
+odometry path.
 
 ## Prepare The Local Archive
 
