@@ -22,6 +22,9 @@ checksum, runner, exporter, and returned-artifact validation boundaries.
   explains the external GPU operator handoff.
 - [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) owns returned
   artifact validation and the strict completion gate.
+- [mvp-gvhmr-operator-package.md](mvp-gvhmr-operator-package.md) extends this
+  handoff by collocating the archive, request, and notebook into one copyable
+  ignored operator package.
 
 ## Inputs
 

@@ -35,6 +35,7 @@ GVHMR_GPU_INPUT_BUNDLE_SCHEMA = "neodojo.gvhmr_gpu_input_bundle.v1"
 GVHMR_GPU_INPUT_ARCHIVE_SCHEMA = "neodojo.gvhmr_gpu_input_archive.v1"
 GVHMR_GPU_RUN_REQUEST_SCHEMA = "neodojo.gvhmr_gpu_run_request.v1"
 GVHMR_COLAB_OPERATOR_NOTEBOOK_SCHEMA = "neodojo.gvhmr_colab_operator_notebook.v1"
+GVHMR_OPERATOR_PACKAGE_SCHEMA = "neodojo.gvhmr_operator_package.v1"
 GVHMR_RESULT_INSPECTION_SCHEMA = "neodojo.gvhmr_result_inspection.v1"
 GVHMR_GPU_EXECUTION_PROBE_SCHEMA = "neodojo.gvhmr_gpu_execution_probe.v1"
 REAL_CONVERSION_AUDIT_SCHEMA = "neodojo.real_conversion_audit.v1"
@@ -102,6 +103,14 @@ class GvhmrGpuRunRequestWriteResult:
 class GvhmrColabOperatorNotebookWriteResult:
     manifest_path: Path
     notebook_path: Path
+    checked_paths: list[Path]
+    status: str
+
+
+@dataclass(frozen=True)
+class GvhmrOperatorPackageWriteResult:
+    manifest_path: Path
+    readme_path: Path
     checked_paths: list[Path]
     status: str
 
@@ -964,6 +973,13 @@ def _load_gpu_run_request_manifest(gpu_run_request: Path) -> tuple[Path, dict[st
     manifest_path = gpu_run_request / "manifest.json" if gpu_run_request.is_dir() else gpu_run_request
     manifest = _load_json_object(manifest_path, "GVHMR GPU run request manifest")
     require_schema(manifest, GVHMR_GPU_RUN_REQUEST_SCHEMA, "GVHMR GPU run request manifest")
+    return manifest_path, manifest
+
+
+def _load_colab_operator_notebook_manifest(colab_notebook: Path) -> tuple[Path, dict[str, Any]]:
+    manifest_path = colab_notebook / "manifest.json" if colab_notebook.is_dir() else colab_notebook
+    manifest = _load_json_object(manifest_path, "GVHMR Colab operator notebook manifest")
+    require_schema(manifest, GVHMR_COLAB_OPERATOR_NOTEBOOK_SCHEMA, "GVHMR Colab operator notebook manifest")
     return manifest_path, manifest
 
 
@@ -2028,6 +2044,194 @@ def write_gvhmr_colab_operator_notebook(
     return GvhmrColabOperatorNotebookWriteResult(
         manifest_path=manifest_path,
         notebook_path=notebook_path,
+        checked_paths=checked_paths,
+        status=status,
+    )
+
+
+def _copy_operator_package_file(source: Path, destination_dir: Path, *, filename: str | None = None) -> Path:
+    if not source.exists():
+        raise ValueError(f"GVHMR operator package source file does not exist: {source}")
+    destination_dir.mkdir(parents=True, exist_ok=True)
+    destination = destination_dir / (filename or source.name)
+    if source.resolve() != destination.resolve():
+        shutil.copy2(source, destination)
+    return destination
+
+
+def _colab_notebook_path_from_manifest(manifest_path: Path, manifest: dict[str, Any]) -> Path:
+    notebook = manifest.get("notebook")
+    if not isinstance(notebook, dict):
+        raise ValueError("GVHMR Colab operator notebook manifest is missing notebook metadata")
+    raw_path = notebook.get("path")
+    if isinstance(raw_path, str) and raw_path:
+        candidate = Path(raw_path)
+        if candidate.exists():
+            return candidate
+    filename = notebook.get("filename")
+    if isinstance(filename, str) and filename:
+        candidate = manifest_path.parent / filename
+        if candidate.exists():
+            return candidate
+    raise ValueError("GVHMR Colab operator notebook file does not exist")
+
+
+def _write_operator_package_readme(path: Path, manifest: dict[str, Any]) -> None:
+    archive = manifest["archive"]
+    request = manifest["run_request"]
+    notebook = manifest["colab_notebook"]
+    lines = [
+        "# neodojo GVHMR Operator Package",
+        "",
+        "This generated package collocates the files needed by an external GPU operator.",
+        "It does not run GVHMR locally and does not include SMPL-X assets, checkpoints, raw GVHMR results, or returned motion artifacts.",
+        "",
+        "## Package Contents",
+        "",
+        f"- Archive: `{archive['package_path']}`",
+        f"- Run request: `{request['package_manifest']}`",
+        f"- Run request README: `{request['package_readme']}`",
+        f"- Colab notebook: `{notebook['package_notebook']}`",
+        f"- Colab manifest: `{notebook['package_manifest']}`",
+        "",
+        "## Status",
+        "",
+        f"- Status: `{manifest['status']}`",
+        f"- Media included: `{str(manifest['media_included']).lower()}`",
+        f"- Safe for git: `{str(manifest['policy']['safe_for_git']).lower()}`",
+        f"- Expected return schema: `{manifest['expected_return_artifact']['schema']}`",
+        "",
+        "## Operator Steps",
+        "",
+        "1. Upload the archive and notebook to a private GPU notebook/runtime.",
+        "2. Keep GVHMR checkpoints and licensed SMPL-X assets in private storage.",
+        "3. Verify the archive checksum in the notebook before unpacking.",
+        "4. Set `RUN_GVHMR = True` only after assets, checkpoints, and rights review are ready.",
+        "5. Return `gvhmr-smplx-joints.json` to this local neodojo workspace.",
+        "",
+        "After the returned JSON exists locally, run:",
+        "",
+        _markdown_command(manifest["commands"]["local_real_artifact_intake"]),
+        _markdown_command(manifest["commands"]["local_strict_verify"]),
+        "",
+        "Media-containing operator packages are generated under ignored outputs and must not be committed or published.",
+        "",
+    ]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_gvhmr_operator_package(
+    out_dir: Path,
+    *,
+    gpu_input_archive: Path,
+    gpu_run_request: Path,
+    colab_notebook: Path,
+) -> GvhmrOperatorPackageWriteResult:
+    validate_output_dir(out_dir)
+    archive_manifest_path, archive_manifest = _load_gpu_input_archive_manifest(gpu_input_archive)
+    request_manifest_path, request_manifest = _load_gpu_run_request_manifest(gpu_run_request)
+    colab_manifest_path, colab_manifest = _load_colab_operator_notebook_manifest(colab_notebook)
+
+    archive_path = _archive_path_from_manifest(archive_manifest_path, archive_manifest)
+    archive_sha = sha256_file(archive_path)
+    expected_archive_sha = archive_manifest.get("archive", {}).get("sha256")
+    if expected_archive_sha != archive_sha:
+        raise ValueError("GVHMR GPU input archive checksum does not match its manifest")
+    if request_manifest.get("archive", {}).get("sha256") != archive_sha:
+        raise ValueError("GVHMR run request does not match the GPU input archive checksum")
+    if colab_manifest.get("archive", {}).get("sha256") != archive_sha:
+        raise ValueError("GVHMR Colab notebook does not match the GPU input archive checksum")
+    if colab_manifest.get("gpu_run_request", {}).get("sha256") != sha256_file(request_manifest_path):
+        raise ValueError("GVHMR Colab notebook does not match the GPU run request checksum")
+
+    media_included = bool(archive_manifest.get("media_included"))
+    if bool(request_manifest.get("media_included")) != media_included:
+        raise ValueError("GVHMR run request media flag does not match the archive")
+    if bool(colab_manifest.get("media_included")) != media_included:
+        raise ValueError("GVHMR Colab notebook media flag does not match the archive")
+
+    request_readme_path = request_manifest_path.parent / "README.md"
+    if not request_readme_path.exists():
+        raise ValueError(f"GVHMR run request README does not exist: {request_readme_path}")
+    notebook_path = _colab_notebook_path_from_manifest(colab_manifest_path, colab_manifest)
+    if colab_manifest.get("notebook", {}).get("sha256") != sha256_file(notebook_path):
+        raise ValueError("GVHMR Colab notebook checksum does not match its manifest")
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    archive_copy = _copy_operator_package_file(archive_path, out_dir / "archive")
+    request_manifest_copy = _copy_operator_package_file(request_manifest_path, out_dir / "request")
+    request_readme_copy = _copy_operator_package_file(request_readme_path, out_dir / "request")
+    colab_manifest_copy = _copy_operator_package_file(colab_manifest_path, out_dir / "colab")
+    colab_notebook_copy = _copy_operator_package_file(notebook_path, out_dir / "colab")
+    manifest_path = out_dir / "manifest.json"
+    readme_path = out_dir / "README.md"
+
+    status = "ready_for_external_gpu_operator_package" if media_included else "metadata_only_not_ready_for_gpu"
+    manifest = {
+        "schema": GVHMR_OPERATOR_PACKAGE_SCHEMA,
+        "status": status,
+        "blocked_locally": True,
+        "media_included": media_included,
+        "source": archive_manifest.get("source"),
+        "trim": archive_manifest.get("trim"),
+        "archive": {
+            "source_manifest": _as_posix(archive_manifest_path),
+            "source_path": _as_posix(archive_path),
+            "package_path": _as_posix(archive_copy),
+            "filename": archive_copy.name,
+            "sha256": sha256_file(archive_copy),
+            "size_bytes": archive_copy.stat().st_size,
+            "safe_for_git": archive_manifest.get("policy", {}).get("safe_for_git"),
+        },
+        "run_request": {
+            "source_manifest": _as_posix(request_manifest_path),
+            "package_manifest": _as_posix(request_manifest_copy),
+            "package_readme": _as_posix(request_readme_copy),
+            "schema": request_manifest.get("schema"),
+            "status": request_manifest.get("status"),
+            "sha256": sha256_file(request_manifest_copy),
+        },
+        "colab_notebook": {
+            "source_manifest": _as_posix(colab_manifest_path),
+            "source_notebook": _as_posix(notebook_path),
+            "package_manifest": _as_posix(colab_manifest_copy),
+            "package_notebook": _as_posix(colab_notebook_copy),
+            "schema": colab_manifest.get("schema"),
+            "status": colab_manifest.get("status"),
+            "sha256": sha256_file(colab_notebook_copy),
+        },
+        "expected_return_artifact": request_manifest.get("expected_return_artifact"),
+        "commands": request_manifest.get("commands"),
+        "policy": {
+            "safe_for_git": not media_included,
+            "notes": (
+                "This package is safe to commit only when media_included is false. "
+                "Media-containing archives, notebooks derived from them, checkpoints, "
+                "SMPL-X assets, logs, and returned GVHMR artifacts stay ignored."
+            ),
+        },
+        "notes": (
+            "This package collocates the external GPU archive, run request, and Colab notebook; "
+            "it does not run GVHMR locally."
+        ),
+    }
+    _write_json(manifest_path, manifest)
+    _write_operator_package_readme(readme_path, manifest)
+    checked_paths = [
+        manifest_path,
+        readme_path,
+        archive_copy,
+        request_manifest_copy,
+        request_readme_copy,
+        colab_manifest_copy,
+        colab_notebook_copy,
+        archive_manifest_path,
+        request_manifest_path,
+        colab_manifest_path,
+    ]
+    return GvhmrOperatorPackageWriteResult(
+        manifest_path=manifest_path,
+        readme_path=readme_path,
         checked_paths=checked_paths,
         status=status,
     )

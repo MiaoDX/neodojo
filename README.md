@@ -193,6 +193,7 @@ make demo-public-browser
 make real-gpu-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-gpu-run-request LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-gpu-colab-notebook LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
+make real-gpu-operator-package LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin REAL_LOCAL_TITLE="Local Baduanjin proof clip"
 make real-handoff-smoke
@@ -395,6 +396,8 @@ also writing the GPU operator request manifest and README from the generated
 archive.
 `make real-gpu-colab-notebook LOCAL_VIDEO=...` extends it one step further by
 also writing the Colab-ready operator notebook from that request.
+`make real-gpu-operator-package LOCAL_VIDEO=...` collocates the archive,
+request, and notebook into one ignored operator package directory for transfer.
 `neodojo real-conversion package-gpu-handoff` and `make gpu-handoff
 SOURCE_MATERIALIZATION=...` consume a source-materialization manifest and write
 `outputs/gvhmr-gpu-handoff/manifest.json`, a README, and a
@@ -428,9 +431,12 @@ required GPU assets, manual run commands, and local return commands.
 `make gvhmr-colab-notebook GVHMR_RUN_REQUEST=...` turns that request into a
 Colab-ready operator notebook with checksum verification, guarded GVHMR
 execution, returned JSON download, and local validation commands.
+`make gvhmr-operator-package GPU_INPUT_ARCHIVE=... GVHMR_RUN_REQUEST=...
+GVHMR_COLAB_NOTEBOOK=...` collocates those generated handoff files into one
+package with a package manifest and README.
 `make gvhmr-run-request-smoke` covers the metadata-only request path in
 `make verify`; `make gvhmr-colab-notebook-smoke` covers the generated notebook
-path.
+path; `make gvhmr-operator-package-smoke` covers the collocated package path.
 For user-managed GitHub Actions GPU hardware, the manual
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow can unpack a
 runner-local media archive on a self-hosted runner labeled `gpu`, run the same
@@ -555,12 +561,16 @@ In progress:
       request preparation
 - [x] One-command `make real-gpu-colab-notebook` local archive, operator
       request, and Colab notebook preparation
+- [x] One-command `make real-gpu-operator-package` collocated archive, request,
+      notebook, and package manifest preparation
 - [x] Local GVHMR GPU handoff package with export template and return command
 - [x] Ignored copyable GPU input bundle with optional trimmed media inclusion
 - [x] Ignored GPU input transfer archive for upload to the selected GPU machine
 - [x] Generated external GPU run-request manifest and README from a transfer
       archive
 - [x] Generated Colab operator notebook from a GPU run-request manifest
+- [x] Generated collocated operator package from archive, run request, and
+      notebook manifests
 - [x] GPU-side GVHMR-to-neodojo export helper packaged with the handoff
 - [x] Local GVHMR result inspection manifest for returned `.pt` or JSON export
 - [x] Local GVHMR source-validation report and validated JSON import handoff

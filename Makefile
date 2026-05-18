@@ -1,4 +1,4 @@
-.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-gpu-run-request real-gpu-colab-notebook real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-run-request gvhmr-run-request-smoke gvhmr-colab-notebook gvhmr-colab-notebook-smoke gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict real-demo-pages-promotion-validate smoke-public
+.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-gpu-run-request real-gpu-colab-notebook real-gpu-operator-package real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-run-request gvhmr-run-request-smoke gvhmr-colab-notebook gvhmr-colab-notebook-smoke gvhmr-operator-package gvhmr-operator-package-smoke gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict real-demo-pages-promotion-validate smoke-public
 
 PYTHON ?= python3
 REAL_SOURCE_ID ?= 03-006
@@ -15,6 +15,7 @@ GPU_INPUT_ARCHIVE_NAME ?= neodojo-gvhmr-gpu-input.tar.gz
 GPU_EXECUTION_PROBE_OUT ?= outputs/gvhmr-gpu-execution-probe
 GVHMR_RUN_REQUEST_OUT ?= outputs/gvhmr-gpu-run-request
 GVHMR_COLAB_NOTEBOOK_OUT ?= outputs/gvhmr-colab-operator
+GVHMR_OPERATOR_PACKAGE_OUT ?= outputs/gvhmr-operator-package
 GVHMR_INSPECT_OUT ?= outputs/gvhmr-result-inspection
 REAL_DEMO_OUT ?= outputs/real-demo
 REAL_ARTIFACT_SOURCE_MATERIALIZATION ?= outputs/real-conversion-source/source-materialization.json
@@ -72,7 +73,7 @@ endif
 
 all: verify
 
-verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke gpu-execution-probe gvhmr-run-request-smoke gvhmr-colab-notebook-smoke real-artifact-intake-smoke real-conversion-audit
+verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke gpu-execution-probe gvhmr-run-request-smoke gvhmr-colab-notebook-smoke gvhmr-operator-package-smoke real-artifact-intake-smoke real-conversion-audit
 
 verify-real: real-conversion-audit-strict
 
@@ -136,6 +137,13 @@ real-gpu-colab-notebook:
 	test -f "$(GVHMR_COLAB_NOTEBOOK_OUT)/manifest.json"
 	test -f "$(GVHMR_COLAB_NOTEBOOK_OUT)/gvhmr-colab-operator.ipynb"
 
+real-gpu-operator-package:
+	@test -n "$(LOCAL_VIDEO)" || (echo "LOCAL_VIDEO=path/to/local-source.mp4 is required" && exit 2)
+	$(MAKE) real-gpu-colab-notebook LOCAL_VIDEO="$(LOCAL_VIDEO)" REAL_PREP_OUT="$(REAL_PREP_OUT)" REAL_SOURCE_OUT="$(REAL_SOURCE_OUT)" GPU_HANDOFF_OUT="$(GPU_HANDOFF_OUT)" GPU_INPUT_OUT="$(GPU_INPUT_OUT)" GPU_INPUT_ARCHIVE_OUT="$(GPU_INPUT_ARCHIVE_OUT)" GPU_INPUT_ARCHIVE_NAME="$(GPU_INPUT_ARCHIVE_NAME)" GVHMR_RUN_REQUEST_OUT="$(GVHMR_RUN_REQUEST_OUT)" GVHMR_COLAB_NOTEBOOK_OUT="$(GVHMR_COLAB_NOTEBOOK_OUT)"
+	$(MAKE) gvhmr-operator-package GPU_INPUT_ARCHIVE="$(GPU_INPUT_ARCHIVE_OUT)" GVHMR_RUN_REQUEST="$(GVHMR_RUN_REQUEST_OUT)" GVHMR_COLAB_NOTEBOOK="$(GVHMR_COLAB_NOTEBOOK_OUT)" GVHMR_OPERATOR_PACKAGE_OUT="$(GVHMR_OPERATOR_PACKAGE_OUT)"
+	test -f "$(GVHMR_OPERATOR_PACKAGE_OUT)/manifest.json"
+	test -f "$(GVHMR_OPERATOR_PACKAGE_OUT)/README.md"
+
 real-handoff-smoke:
 	rm -rf outputs/real-handoff-smoke
 	mkdir -p outputs/real-handoff-smoke
@@ -197,6 +205,18 @@ gvhmr-colab-notebook-smoke: gvhmr-run-request-smoke
 	$(MAKE) gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request-smoke GVHMR_COLAB_NOTEBOOK_OUT=outputs/gvhmr-colab-operator-smoke
 	test -f outputs/gvhmr-colab-operator-smoke/manifest.json
 	test -f outputs/gvhmr-colab-operator-smoke/gvhmr-colab-operator.ipynb
+
+gvhmr-operator-package:
+	@test -n "$(GPU_INPUT_ARCHIVE)" || (echo "GPU_INPUT_ARCHIVE=path/to/gpu-input-archive-manifest-or-dir is required" && exit 2)
+	@test -n "$(GVHMR_RUN_REQUEST)" || (echo "GVHMR_RUN_REQUEST=path/to/gpu-run-request-manifest-or-dir is required" && exit 2)
+	@test -n "$(GVHMR_COLAB_NOTEBOOK)" || (echo "GVHMR_COLAB_NOTEBOOK=path/to/colab-notebook-manifest-or-dir is required" && exit 2)
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion package-operator --gpu-input-archive "$(GPU_INPUT_ARCHIVE)" --gpu-run-request "$(GVHMR_RUN_REQUEST)" --colab-notebook "$(GVHMR_COLAB_NOTEBOOK)" --out "$(GVHMR_OPERATOR_PACKAGE_OUT)"
+
+gvhmr-operator-package-smoke: gvhmr-colab-notebook-smoke
+	rm -rf outputs/gvhmr-operator-package-smoke
+	$(MAKE) gvhmr-operator-package GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive-smoke GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request-smoke GVHMR_COLAB_NOTEBOOK=outputs/gvhmr-colab-operator-smoke GVHMR_OPERATOR_PACKAGE_OUT=outputs/gvhmr-operator-package-smoke
+	test -f outputs/gvhmr-operator-package-smoke/manifest.json
+	test -f outputs/gvhmr-operator-package-smoke/README.md
 
 gvhmr-inspect:
 	@test -n "$(GVHMR_RESULT)" || (echo "GVHMR_RESULT=path/to/hmr4d_results.pt is required" && exit 2)

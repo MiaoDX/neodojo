@@ -53,7 +53,8 @@ quality checks, tests, wheel build, `make demo-public`,
 `make real-handoff-smoke`, `make gpu-input-bundle-smoke`,
 `make gpu-input-archive-smoke`, `make gvhmr-run-request-smoke`,
 `make gvhmr-colab-notebook-smoke`, `make gpu-execution-probe`,
-`make real-artifact-intake-smoke`, and `make real-conversion-audit`.
+`make gvhmr-operator-package-smoke`, `make real-artifact-intake-smoke`, and
+`make real-conversion-audit`.
 `make demo-public-browser` adds the optional Playwright-backed Chromium
 screenshot capture and refreshes the capture bundle with browser evidence.
 `make real-artifact-intake-smoke` writes fixture-only source materialization
@@ -71,7 +72,9 @@ metadata-only `neodojo-real-handoff-smoke` artifact from that smoke, runs
 `make gvhmr-run-request-smoke`, uploads metadata-only
 `neodojo-gpu-input-archive-smoke` and `neodojo-gpu-run-request-smoke`
 artifacts, writes a Colab operator notebook from that run request, uploads
-`neodojo-gvhmr-colab-operator-smoke`, runs `make gpu-execution-probe`,
+`neodojo-gvhmr-colab-operator-smoke`, collocates the archive, request, and
+notebook into a metadata-only operator package, uploads
+`neodojo-gvhmr-operator-package-smoke`, runs `make gpu-execution-probe`,
 uploads a metadata-only `neodojo-gpu-execution-probe` artifact, runs
 `make real-artifact-intake-smoke`, uploads a fixture-only
 `neodojo-real-artifact-intake-smoke` artifact, runs
@@ -242,6 +245,8 @@ labels, and the downloaded real-conversion audit artifact remained
    - [x] Upload the metadata-only GPU run-request smoke artifact with no media.
    - [x] Upload the metadata-only Colab operator notebook smoke artifact with no
      media.
+   - [x] Upload the metadata-only GVHMR operator package smoke artifact with no
+     media.
    - [x] Upload the metadata-only GPU execution probe artifact with no secret
      values.
    - [x] Upload the fixture-only real-artifact intake smoke artifact with no
@@ -291,6 +296,9 @@ labels, and the downloaded real-conversion audit artifact remained
 - CI uploads the metadata-only GPU run-request and Colab operator notebook
   smoke artifacts with no source media; the Colab notebook artifact upload was
   verified by run `26009044473`.
+- CI uploads the metadata-only GVHMR operator package smoke artifact with copied
+  archive, request, notebook, package manifest, and package README, and no
+  source media.
 - CI uploads the metadata-only GPU execution probe artifact with command/env-key
   readiness evidence and no secret values, verified by run `26005618093`.
 - CI uploads the fixture-only real-artifact intake smoke artifact with

@@ -59,6 +59,12 @@ To regenerate the archive, operator request, and Colab notebook together:
 make real-gpu-colab-notebook LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 ```
 
+To regenerate those files and collocate them into one operator package folder:
+
+```bash
+make real-gpu-operator-package LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
+```
+
 To record whether this local workspace has any configured GPU execution route:
 
 ```bash
@@ -103,6 +109,19 @@ make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request
 The notebook writes checksum verification, archive unpacking, runner help
 validation, guarded GVHMR execution, returned JSON download, and local return
 commands into `outputs/gvhmr-colab-operator/gvhmr-colab-operator.ipynb`.
+
+To collocate an existing archive, request, and notebook into one package:
+
+```bash
+make gvhmr-operator-package \
+  GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive \
+  GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request \
+  GVHMR_COLAB_NOTEBOOK=outputs/gvhmr-colab-operator
+```
+
+The package writes `outputs/gvhmr-operator-package/manifest.json`, `README.md`,
+`archive/`, `request/`, and `colab/`. Media-containing packages remain ignored
+and must not be committed or uploaded as public CI artifacts.
 
 ## Optional Self-Hosted GPU Workflow
 

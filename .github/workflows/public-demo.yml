@@ -96,6 +96,21 @@ jobs:
             outputs/gvhmr-colab-operator-smoke/manifest.json
             outputs/gvhmr-colab-operator-smoke/gvhmr-colab-operator.ipynb
           if-no-files-found: error
+      - name: GVHMR operator package smoke
+        run: make gvhmr-operator-package-smoke
+      - name: Upload GVHMR operator package smoke artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neodojo-gvhmr-operator-package-smoke
+          path: |
+            outputs/gvhmr-operator-package-smoke/manifest.json
+            outputs/gvhmr-operator-package-smoke/README.md
+            outputs/gvhmr-operator-package-smoke/archive/neodojo-gvhmr-gpu-input.tar.gz
+            outputs/gvhmr-operator-package-smoke/request/manifest.json
+            outputs/gvhmr-operator-package-smoke/request/README.md
+            outputs/gvhmr-operator-package-smoke/colab/manifest.json
+            outputs/gvhmr-operator-package-smoke/colab/gvhmr-colab-operator.ipynb
+          if-no-files-found: error
       - name: GPU execution probe
         run: make gpu-execution-probe
       - name: Upload GPU execution probe artifact

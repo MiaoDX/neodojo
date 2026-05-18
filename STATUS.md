@@ -18,15 +18,16 @@ capture bundle, and metadata-only real-handoff smoke artifact,
 `make real-handoff`, `make gpu-handoff`, `make gpu-input-bundle`,
 `make gpu-input-bundle-smoke`, `make gpu-input-archive`, `make
 real-gpu-archive`, `make real-gpu-run-request`,
-`make real-gpu-colab-notebook`,
+`make real-gpu-colab-notebook`, `make real-gpu-operator-package`,
 `make gpu-input-archive-smoke`, and
 `make gpu-execution-probe`, `make gvhmr-run-request`, and
-`make gvhmr-run-request-smoke`, `make gvhmr-colab-notebook`, and
-`make gvhmr-colab-notebook-smoke` for external GVHMR run metadata, transfer
+`make gvhmr-run-request-smoke`, `make gvhmr-colab-notebook`,
+`make gvhmr-colab-notebook-smoke`, `make gvhmr-operator-package`, and
+`make gvhmr-operator-package-smoke` for external GVHMR run metadata, transfer
 bundles/archives, CI-safe GPU runner packaging, reproducible GPU/provider
-readiness classification, generated GPU-operator run requests and Colab
-operator notebooks, metadata-only CI GPU run-request/notebook/probe artifacts,
-and a
+readiness classification, generated GPU-operator run requests, Colab operator
+notebooks, and collocated operator packages, metadata-only CI GPU
+run-request/notebook/package/probe artifacts, and a
 tracked external-GPU operator runbook, `make gvhmr-inspect` for returned GVHMR
 result inspection, `make demo-real` / `make real-artifact-intake` for a
 validated external GVHMR JSON once a GPU artifact exists, and
@@ -425,6 +426,14 @@ motion artifact, or hosted/live-client Viser capture.
   `schema: neodojo.gvhmr_colab_operator_notebook.v1`,
   `status: ready_for_colab_operator`, `media_included: true`, and
   `safe_for_git: false`.
+- `make real-gpu-operator-package LOCAL_VIDEO=...` chains the media
+  materialization, transfer archive, generated run request, Colab operator
+  notebook, and collocated operator package. The lower-level
+  `make gvhmr-operator-package-smoke` is included in `make verify` and writes
+  `outputs/gvhmr-operator-package-smoke/manifest.json` with
+  `schema: neodojo.gvhmr_operator_package.v1`,
+  `status: metadata_only_not_ready_for_gpu`, `media_included: false`, and
+  `safe_for_git: true`; media-containing operator packages remain ignored.
 - `make gvhmr-colab-notebook GVHMR_RUN_REQUEST=...` has been smoke-tested for
   both metadata-only CI handoffs and the ignored media-containing local
   run-request. The media-containing path wrote
@@ -546,6 +555,7 @@ make demo-public-browser
 make real-gpu-archive LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-gpu-run-request LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-gpu-colab-notebook LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
+make real-gpu-operator-package LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin
 make real-handoff LOCAL_VIDEO=path/to/local-source.mp4
 make real-handoff-smoke
 make gpu-handoff SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json
@@ -558,6 +568,8 @@ make gvhmr-run-request GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive
 make gvhmr-run-request-smoke
 make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request
 make gvhmr-colab-notebook-smoke
+make gvhmr-operator-package GPU_INPUT_ARCHIVE=outputs/gvhmr-gpu-input-archive GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request GVHMR_COLAB_NOTEBOOK=outputs/gvhmr-colab-operator
+make gvhmr-operator-package-smoke
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
@@ -758,6 +770,9 @@ return checks. `make gvhmr-run-request-smoke` covers the metadata-only path in
 `make real-gpu-colab-notebook LOCAL_VIDEO=...` chains the local archive,
 operator request, and Colab notebook handoff into one command for operators who
 will run GVHMR from a notebook runtime.
+`make real-gpu-operator-package LOCAL_VIDEO=...` continues that chain by
+collocating the archive, request, notebook, and package README/manifest into
+one ignored operator package directory.
 `neodojo real-conversion write-colab-notebook` and `make gvhmr-colab-notebook
 GVHMR_RUN_REQUEST=...` turn that request manifest into a Colab-ready operator
 notebook plus `neodojo.gvhmr_colab_operator_notebook.v1` sidecar manifest. The
@@ -767,6 +782,11 @@ the local `make real-artifact-intake` / `make verify-real` return commands.
 `make gvhmr-colab-notebook-smoke` covers the metadata-only path in
 `make verify`; media-containing notebooks stay ignored with their source
 archive/request.
+`neodojo real-conversion package-operator` and `make gvhmr-operator-package`
+validate matching archive, request, and notebook checksums, then copy them into
+one `neodojo.gvhmr_operator_package.v1` handoff directory. `make
+gvhmr-operator-package-smoke` covers the metadata-only package path in
+`make verify`; media-containing operator packages stay ignored.
 `neodojo real-conversion
 inspect-gvhmr-result` writes a result
 inspection manifest for a returned `hmr4d_results.pt` when `torch` is available
@@ -812,6 +832,8 @@ with `make real-gpu-archive LOCAL_VIDEO=...`, or regenerated with a matching
 operator request in one command via `make real-gpu-run-request LOCAL_VIDEO=...`.
 For a notebook-based GPU operator, the archive, request, and Colab notebook can
 now be regenerated together with `make real-gpu-colab-notebook LOCAL_VIDEO=...`.
+For a single copyable handoff folder, those files can be collocated with
+`make real-gpu-operator-package LOCAL_VIDEO=...`.
 That operator request can also generate a Colab-ready notebook with
 `make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request` for
 manual GPU execution in a notebook runtime; the current ignored local proof
