@@ -78,6 +78,7 @@ local/user-supplied source video
 | 12 | [mvp-source-media-materialization.md](mvp-source-media-materialization.md) | implemented local handoff, materialized local candidate, and GPU input bundle | Turn source prep plus a local video into a dry-run or ffmpeg-backed trimmed-clip/reference-frame handoff. | A source-materialization manifest records source validation, commands, generated outputs when available, and the GVHMR input handoff path without committing media; an ignored local Bilibili candidate handoff reports `ready_for_gpu`, and a transfer bundle reports `ready_for_gpu_with_media`. |
 | 13 | [mvp-roboharness-capture-boundary.md](mvp-roboharness-capture-boundary.md) | implemented generated bundle and browser public-demo capture; CI verified | Collect public-demo, browser capture, Viser preview, G1 render, and optional recorder artifacts into one roboharness-style multi-camera evidence manifest. | `make demo-public` writes a validated generated capture bundle, and `make demo-public-browser` adds optional real browser screenshot evidence without claiming direct roboharness integration. |
 | 14 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local prep/materialization/custom-source handoff/gpu-input/gpu-runner/transfer-archive/run-request/Colab-notebook/operator-package/operator-package-archive validation/gpu-execution-probe/export-helper/result-inspection/validation/import-demo/intake-smoke/audit ready; later GPU gate | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | Local prep writes source/trim metadata, source materialization can prepare the trimmed input, `make real-handoff` can build the local GPU handoff in one command for official-index or custom local sources, `make gpu-handoff` can repackage existing materialization with the GPU-side exporter helper and runner, `make gpu-input-bundle` and `make gpu-input-archive` can package transfer files plus media when explicit, `make real-gpu-run-request` can prepare both the ignored transfer archive and operator request from a local video, `make real-gpu-colab-notebook` can prepare the archive/request/notebook handoff together, `make real-gpu-operator-package` can collocate the archive/request/notebook into one operator package, `make gvhmr-operator-package-archive-validate` can recheck a wrapped package archive, `make gpu-execution-probe` can classify local/provider GPU readiness without running GVHMR, `make gvhmr-inspect` can inspect returned result structure, `make demo-real` / `make real-artifact-intake` can validate/import a returned export, `make real-artifact-intake-smoke` covers that wrapper with fixture-only inputs, `make real-conversion-audit` records the incomplete external-artifact blocker, and `make verify-real` fails until the real non-fixture demo exists; final stop condition still requires a real GVHMR artifact from a GPU run. |
+| 15 | [mvp-real-gvhmr-artifact-acquisition.md](mvp-real-gvhmr-artifact-acquisition.md) | blocked on external GPU operator | Execute the already-packaged external GPU handoff, return the first non-fixture GVHMR export, and make the strict real gate pass. | A GPU-generated `neodojo.gvhmr_smplx_joints.v1` export with `fixture_only: false` validates against the materialized source, `make real-artifact-intake` regenerates the real-demo lane, and `make verify-real` exits zero without tracking generated outputs. |
 
 ## Future Gap Plans
 
@@ -129,12 +130,14 @@ necessarily separate GSD phases. The grouping boundary is:
 13. generated multi-camera capture bundle plus optional browser public-demo
     capture
 14. later real conversion gate
+15. external real GVHMR artifact acquisition
 
 The current local-first order intentionally puts real G1 model rendering before
 the GPU conversion gate, so the right-side robot view can become real while the
 source-video pipeline still waits for a GVHMR artifact. The non-GPU hardening,
-public-demo, and CI slices also stay before the GPU conversion gate so the real
-artifact has stable contracts and a publish lane when it arrives.
+public-demo, and CI slices also stay before the GPU conversion gate and
+external artifact acquisition so the real artifact has stable contracts and a
+publish lane when it arrives.
 
 ## Shared Decisions
 

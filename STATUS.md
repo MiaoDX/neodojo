@@ -963,7 +963,8 @@ artifact path.
 ## Next Safe Task
 
 The next default MVP capability remains
-`docs/plans/mvp-real-conversion-gate.md` for the later GPU artifact import
+`docs/plans/mvp-real-gvhmr-artifact-acquisition.md`, backed by
+`docs/plans/mvp-real-conversion-gate.md`, for the later GPU artifact import
 path. Do not run GVHMR
 full-video inference on this macOS CPU workspace; use a GPU-capable machine to
 export a GVHMR SMPL-X teaching-joints JSON artifact, then import it through
