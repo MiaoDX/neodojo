@@ -170,8 +170,10 @@ browser-rendered public-demo screenshot capture, optional MuJoCo simulator
 recorder-capture integration, and minimal lint/build/quality-check
 commands. It can also write a dry-run or ffmpeg-backed local source-video
 handoff plus a metadata package, copyable input bundle, executable GPU-side
-runner, ignored transfer archive, optional self-hosted GPU workflow, and
-guarded manual real-demo Pages promotion workflow for a later GPU GVHMR run.
+runner, ignored transfer archive, collocated operator package, operator-package
+archive, non-failing acquisition-status preflight, optional self-hosted GPU
+workflow, and guarded manual real-demo Pages promotion workflow for a later GPU
+GVHMR run.
 There is still no checked-in local GVHMR/GMR execution environment, completed
 simulator runtime pipeline, built-in official SMPL-X body-model renderer,
 live-client Viser capture, or end-to-end real generated motion artifact.
@@ -214,6 +216,7 @@ make gvhmr-operator-package-smoke
 make gvhmr-operator-package-validate GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
 make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package
 make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive
+make real-gvhmr-acquisition-status GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive
 make gvhmr-inspect GVHMR_RESULT=outputs/real-conversion-gate/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make real-artifact-intake-smoke
@@ -352,8 +355,9 @@ Direct roboharness and live-runtime recording remain follow-on work.
 `make verify` runs lint, MVP plan quality checks, tests, wheel build, the
 public-demo plus capture-bundle smoke lane, the dry-run real-handoff smoke
 lane, metadata-only GPU input bundle/archive smoke lanes, GPU execution probe,
-metadata-only GPU run-request smoke, fixture-only real-artifact intake smoke
-lane, and real-conversion completion audit.
+metadata-only GPU run-request, Colab notebook, operator package,
+operator-package archive, and acquisition-status smoke lanes, fixture-only
+real-artifact intake smoke lane, and real-conversion completion audit.
 `make demo-public` regenerates the fixture motion contract, detected
 annotations, SMPL-X surface proxy, G1 visual track, G1 render evidence,
 teaching playback, Viser runtime preview, public-demo artifact, generated
@@ -368,9 +372,10 @@ validates an existing
 `.github/workflows/public-demo.yml` runs the fixture lane with browser capture,
 also runs the metadata-only real/GPU smoke lanes, uploads the real-handoff,
 GPU input bundle, GPU input archive, GPU run-request, Colab notebook, operator
-package, operator package archive, GPU execution probe, and real-artifact
-intake smoke artifacts, uploads both the default real-conversion audit and
-opt-in GitHub-route audit artifacts plus the standalone public-demo,
+package, operator package archive, real GVHMR acquisition-status preflight, GPU
+execution probe, and real-artifact intake smoke artifacts, uploads both the
+default real-conversion audit and opt-in GitHub-route audit artifacts plus the
+standalone public-demo,
 browser-capture, and capture-bundle artifacts, and publishes the fixture-only
 public demo to GitHub Pages when `NEODOJO_DEPLOY_PAGES=true` is set as a
 repository variable.
@@ -458,6 +463,12 @@ GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`.
 path; `make gvhmr-operator-package-smoke` covers the collocated package path
 and package validation; `make gvhmr-operator-package-archive-smoke` covers the
 single-file operator package archive path and archive validation.
+`make real-gvhmr-acquisition-status GVHMR_OPERATOR_PACKAGE_ARCHIVE=...` writes
+a non-failing acquisition status manifest that validates the operator archive,
+records whether it is ready for external GPU handoff, embeds the existing
+real-conversion audit status, and repeats the required non-fixture return
+artifact contract. The smoke variant is included in `make verify` without
+uploading media.
 For user-managed GitHub Actions GPU hardware, the manual
 `.github/workflows/gvhmr-self-hosted-gpu.yml` workflow can unpack a
 runner-local media archive or collocated operator package on a self-hosted
@@ -603,6 +614,8 @@ In progress:
 - [x] Generated operator package archive from a validated collocated package
 - [x] Reusable operator package archive validation for existing downloaded
       archive artifacts
+- [x] Non-failing `make real-gvhmr-acquisition-status` preflight for operator
+      package handoff readiness and the still-blocked real audit
 - [x] GPU-side GVHMR-to-neodojo export helper packaged with the handoff
 - [x] Local GVHMR result inspection manifest for returned `.pt` or JSON export
 - [x] Local GVHMR source-validation report and validated JSON import handoff

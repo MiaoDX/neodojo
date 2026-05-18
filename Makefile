@@ -1,4 +1,4 @@
-.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-gpu-run-request real-gpu-colab-notebook real-gpu-operator-package real-gpu-operator-package-archive real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-run-request gvhmr-run-request-smoke gvhmr-colab-notebook gvhmr-colab-notebook-smoke gvhmr-operator-package gvhmr-operator-package-smoke gvhmr-operator-package-validate gvhmr-operator-package-validate-smoke gvhmr-operator-package-archive gvhmr-operator-package-archive-smoke gvhmr-operator-package-archive-validate gvhmr-operator-package-archive-validate-smoke gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict real-demo-pages-promotion-validate smoke-public
+.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-handoff real-gpu-archive real-gpu-run-request real-gpu-colab-notebook real-gpu-operator-package real-gpu-operator-package-archive real-handoff-smoke gpu-handoff gpu-input-bundle gpu-input-bundle-smoke gpu-input-archive gpu-input-archive-smoke gpu-execution-probe gvhmr-run-request gvhmr-run-request-smoke gvhmr-colab-notebook gvhmr-colab-notebook-smoke gvhmr-operator-package gvhmr-operator-package-smoke gvhmr-operator-package-validate gvhmr-operator-package-validate-smoke gvhmr-operator-package-archive gvhmr-operator-package-archive-smoke gvhmr-operator-package-archive-validate gvhmr-operator-package-archive-validate-smoke real-gvhmr-acquisition-status real-gvhmr-acquisition-status-smoke gvhmr-inspect demo-real real-artifact-intake real-artifact-intake-smoke real-conversion-audit real-conversion-audit-strict real-demo-pages-promotion-validate smoke-public
 
 PYTHON ?= python3
 REAL_SOURCE_ID ?= 03-006
@@ -24,6 +24,7 @@ GVHMR_OPERATOR_PACKAGE ?= outputs/gvhmr-operator-package
 GVHMR_OPERATOR_PACKAGE_ARCHIVE_OUT ?= outputs/gvhmr-operator-package-archive
 GVHMR_OPERATOR_PACKAGE_ARCHIVE ?= outputs/gvhmr-operator-package-archive
 GVHMR_OPERATOR_PACKAGE_ARCHIVE_NAME ?= neodojo-gvhmr-operator-package.tar.gz
+REAL_GVHMR_ACQUISITION_STATUS_OUT ?= outputs/real-gvhmr-artifact-acquisition-status
 GVHMR_INSPECT_OUT ?= outputs/gvhmr-result-inspection
 REAL_DEMO_OUT ?= outputs/real-demo
 REAL_ARTIFACT_SOURCE_MATERIALIZATION ?= outputs/real-conversion-source/source-materialization.json
@@ -89,7 +90,7 @@ endif
 
 all: verify
 
-verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke gpu-execution-probe gvhmr-run-request-smoke gvhmr-colab-notebook-smoke gvhmr-operator-package-smoke gvhmr-operator-package-validate-smoke gvhmr-operator-package-archive-validate-smoke real-artifact-intake-smoke real-conversion-audit
+verify: lint check test build demo-public real-handoff-smoke gpu-input-bundle-smoke gpu-execution-probe gvhmr-run-request-smoke gvhmr-colab-notebook-smoke gvhmr-operator-package-smoke gvhmr-operator-package-validate-smoke gvhmr-operator-package-archive-validate-smoke real-gvhmr-acquisition-status-smoke real-artifact-intake-smoke real-conversion-audit
 
 verify-real: real-conversion-audit-strict
 
@@ -267,6 +268,14 @@ gvhmr-operator-package-archive-validate:
 
 gvhmr-operator-package-archive-validate-smoke: gvhmr-operator-package-archive-smoke
 	$(MAKE) gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive-smoke
+
+real-gvhmr-acquisition-status:
+	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion artifact-acquisition-status --operator-package-archive "$(GVHMR_OPERATOR_PACKAGE_ARCHIVE)" --source-materialization "$(REAL_ARTIFACT_SOURCE_MATERIALIZATION)" --gvhmr-json "$(REAL_ARTIFACT_GVHMR_JSON)" --real-demo "$(REAL_ARTIFACT_OUT)" --out "$(REAL_GVHMR_ACQUISITION_STATUS_OUT)"
+	test -f "$(REAL_GVHMR_ACQUISITION_STATUS_OUT)/manifest.json"
+
+real-gvhmr-acquisition-status-smoke: gvhmr-operator-package-archive-validate-smoke
+	rm -rf outputs/real-gvhmr-artifact-acquisition-status-smoke
+	$(MAKE) real-gvhmr-acquisition-status GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive-smoke REAL_ARTIFACT_SOURCE_MATERIALIZATION=outputs/real-handoff-smoke/source-materialized/source-materialization.json REAL_GVHMR_ACQUISITION_STATUS_OUT=outputs/real-gvhmr-artifact-acquisition-status-smoke
 
 gvhmr-inspect:
 	@test -n "$(GVHMR_RESULT)" || (echo "GVHMR_RESULT=path/to/hmr4d_results.pt is required" && exit 2)

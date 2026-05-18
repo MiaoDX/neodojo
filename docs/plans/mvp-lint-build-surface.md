@@ -39,9 +39,9 @@ analysis or release pipeline.
 - `make build`, using `python -m pip wheel . --wheel-dir outputs/dist`.
 - `make verify`, running lint, plan quality checks, tests, wheel build,
   public-demo generation, real-handoff smoke, GPU
-  bundle/archive/run-request/Colab-notebook/operator-package/probe smoke,
-  fixture-only real-artifact intake smoke, and real-conversion completion
-  audit.
+  bundle/archive/run-request/Colab-notebook/operator-package/operator-package
+  archive/acquisition-status/probe smoke, fixture-only real-artifact intake
+  smoke, and real-conversion completion audit.
 - CI steps that run lint, plan quality checks, tests, wheel build, and
   public-demo generation.
 - README/README.zh/STATUS/AGENTS updates that describe the limited scope.

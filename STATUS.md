@@ -26,13 +26,14 @@ real-gpu-archive`, `make real-gpu-run-request`,
 `make gvhmr-operator-package-smoke`, plus
 `make gvhmr-operator-package-archive`,
 `make gvhmr-operator-package-archive-validate`, and
-`make gvhmr-operator-package-archive-smoke` for external GVHMR run metadata,
-transfer bundles/archives, CI-safe GPU runner packaging and package-archive
-validation, reproducible
+`make gvhmr-operator-package-archive-smoke`, plus
+`make real-gvhmr-acquisition-status` for external GVHMR run metadata,
+transfer bundles/archives, CI-safe GPU runner packaging, package-archive
+validation, and acquisition-status preflight, reproducible
 GPU/provider readiness classification, generated GPU-operator run requests,
 Colab operator notebooks, collocated operator packages, and single-file
 operator package archives, metadata-only CI GPU
-run-request/notebook/package/package-archive/probe artifacts, and a
+run-request/notebook/package/package-archive/acquisition-status/probe artifacts, and a
 tracked external-GPU operator runbook, `make gvhmr-inspect` for returned GVHMR
 result inspection, `make demo-real` / `make real-artifact-intake` for a
 validated external GVHMR JSON once a GPU artifact exists, and
@@ -224,8 +225,9 @@ motion artifact, or hosted/live-client Viser capture.
   smoke artifact, metadata-only GPU input archive smoke artifact, metadata-only
   GPU run-request smoke artifact, metadata-only Colab operator notebook smoke
   artifact, metadata-only GVHMR operator package smoke artifact,
-  metadata-only GVHMR operator package archive smoke/validation artifact, metadata-only
-  GPU execution probe artifact, fixture-only real-artifact intake smoke
+  metadata-only GVHMR operator package archive smoke/validation artifact,
+  metadata-only real GVHMR artifact acquisition-status artifact,
+  metadata-only GPU execution probe artifact, fixture-only real-artifact intake smoke
   artifact, default real-conversion audit artifact, opt-in GitHub-route
   real-conversion audit artifact, standalone public-demo artifact,
   browser-capture artifact, and capture-bundle artifact containing the capture
@@ -616,6 +618,16 @@ motion artifact, or hosted/live-client Viser capture.
   `REAL_AUDIT_GITHUB_REPO=OWNER/REPO`, it includes the opt-in GitHub
   self-hosted runner and repository secret-count probe in the nested GPU
   execution manifest without recording secret values or secret names.
+- `make real-gvhmr-acquisition-status
+  GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive` writes
+  `outputs/real-gvhmr-artifact-acquisition-status/manifest.json`, a non-failing
+  operator-facing preflight for the remaining external GVHMR run. It validates
+  the operator package archive, records `ready_for_external_gpu_operator` for a
+  media-containing package archive or `operator_package_archive_not_ready_for_gpu`
+  for metadata-only smoke artifacts, embeds the real-conversion audit status,
+  and repeats that the returned `gvhmr-smplx-joints.json` must be
+  `neodojo.gvhmr_smplx_joints.v1` with `fixture_only: false`. It never runs
+  GVHMR or marks the real lane complete without a returned non-fixture export.
 - `make real-conversion-audit-strict` and `make verify-real` run the same
   audit with `--require-complete`, so they intentionally fail until a real
   non-fixture GVHMR demo has been imported and regenerated.
@@ -742,8 +754,9 @@ make demo-html
 public-demo plus capture-bundle smoke lane, the dry-run real-handoff smoke
 lane, metadata-only GPU input bundle/archive smoke lanes, GPU execution probe,
 metadata-only GPU run-request smoke, Colab notebook smoke, operator package
-smoke and package-archive validation smoke, fixture-only real-artifact intake
-smoke lane, and real-conversion completion audit.
+smoke, package-archive validation smoke, acquisition-status smoke,
+fixture-only real-artifact intake smoke lane, and real-conversion completion
+audit.
 `make lint` runs a minimal syntax/import bytecode compile check over `src/` and
 `tests/`. `make check` validates MVP plan links and minimum plan scaffolding.
 `make test` runs the focused Python unit tests for the fixture demo generator
@@ -988,6 +1001,10 @@ For a single copyable handoff folder, those files can be collocated with
 the collocated package can be wrapped with
 `make real-gpu-operator-package-archive LOCAL_VIDEO=...`, then rechecked later
 with `make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`.
+Run `make real-gvhmr-acquisition-status
+GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive` before
+handoff to write an operator-facing status manifest and keep the blocked audit
+attached to the package archive evidence.
 That high-level archive target has been run against the ignored local
 Bilibili proof candidate with isolated outputs under
 `outputs/real-gpu-operator-package-archive-target-smoke/`; it produced a

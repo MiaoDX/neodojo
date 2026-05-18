@@ -42,6 +42,7 @@ GVHMR_OPERATOR_PACKAGE_ARCHIVE_SCHEMA = "neodojo.gvhmr_operator_package_archive.
 GVHMR_RESULT_INSPECTION_SCHEMA = "neodojo.gvhmr_result_inspection.v1"
 GVHMR_GPU_EXECUTION_PROBE_SCHEMA = "neodojo.gvhmr_gpu_execution_probe.v1"
 REAL_CONVERSION_AUDIT_SCHEMA = "neodojo.real_conversion_audit.v1"
+REAL_GVHMR_ARTIFACT_ACQUISITION_SCHEMA = "neodojo.real_gvhmr_artifact_acquisition.v1"
 DEFAULT_SOURCE_INDEX = Path("video/original_videos.csv")
 DEFAULT_SOURCE_ID = "03-006"
 
@@ -165,6 +166,14 @@ class RealConversionCompletionAuditWriteResult:
     manifest_path: Path
     status: str
     complete: bool
+    checked_paths: list[Path]
+
+
+@dataclass(frozen=True)
+class RealGvhmrArtifactAcquisitionStatusWriteResult:
+    manifest_path: Path
+    status: str
+    blocked: bool
     checked_paths: list[Path]
 
 
@@ -2973,7 +2982,7 @@ def _comparison(
     }
 
 
-def _nested(payload: dict[str, Any], *keys: str) -> Any:
+def _nested(payload: Mapping[str, Any] | None, *keys: str) -> Any:
     value: Any = payload
     for key in keys:
         if not isinstance(value, dict):
@@ -3391,6 +3400,207 @@ def audit_real_conversion_completion(
         manifest_path=manifest_path,
         status=status,
         complete=complete,
+        checked_paths=list(dict.fromkeys(checked_paths)),
+    )
+
+
+def write_real_gvhmr_artifact_acquisition_status(
+    out_dir: Path,
+    *,
+    operator_package_archive: Path = Path("outputs/gvhmr-operator-package-archive"),
+    source_materialization: Path = Path("outputs/real-conversion-source/source-materialization.json"),
+    gvhmr_json: Path = Path("outputs/real-conversion-gate/gvhmr-smplx-joints.json"),
+    real_demo: Path = Path("outputs/real-demo"),
+    env: Mapping[str, str] | None = None,
+    command_lookup: Callable[[str], str | None] | None = None,
+    command_runner: Callable[[Sequence[str]], subprocess.CompletedProcess[str]] | None = None,
+    github_repo: str | None = None,
+) -> RealGvhmrArtifactAcquisitionStatusWriteResult:
+    """Write a non-failing status manifest for the external GVHMR artifact handoff.
+
+    This is an operator-facing preflight. It validates the existing package
+    archive when available and reuses the strict real-conversion audit, but it
+    never runs GVHMR or marks the real lane complete without a returned
+    non-fixture export.
+    """
+
+    validate_output_dir(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = out_dir / "manifest.json"
+    checked_paths: list[Path] = []
+
+    archive_valid = False
+    archive_error = None
+    archive_status = None
+    archive_manifest_payload: dict[str, Any] | None = None
+    archive_manifest_path: Path | None = None
+    archive_path: Path | None = None
+    try:
+        archive_validation = validate_gvhmr_operator_package_archive(operator_package_archive)
+        archive_valid = True
+        archive_status = archive_validation.status
+        archive_manifest_path = archive_validation.manifest_path
+        archive_path = archive_validation.archive_path
+        checked_paths.extend(archive_validation.checked_paths)
+        archive_manifest_payload = _load_json_object(
+            archive_validation.manifest_path,
+            "GVHMR operator package archive manifest",
+        )
+    except (ValueError, OSError, tarfile.TarError) as exc:
+        archive_error = str(exc)
+
+    archive_media_included = bool(
+        archive_manifest_payload.get("media_included") if archive_manifest_payload is not None else False
+    )
+    archive_safe_for_git = bool(
+        _nested(archive_manifest_payload, "policy", "safe_for_git")
+        if archive_manifest_payload is not None
+        else False
+    )
+    archive_sha256 = (
+        _nested(archive_manifest_payload, "archive", "sha256")
+        if archive_manifest_payload is not None
+        else None
+    )
+    expected_return_schema = (
+        _nested(archive_manifest_payload, "expected_return_artifact", "schema")
+        if archive_manifest_payload is not None
+        else GVHMR_JOINT_EXPORT_SCHEMA
+    )
+    ready_for_external_gpu = bool(
+        archive_valid
+        and archive_status == "ready_for_external_gpu_operator_package_archive"
+        and archive_media_included
+        and not archive_safe_for_git
+    )
+
+    audit = audit_real_conversion_completion(
+        out_dir / "real-conversion-audit",
+        source_materialization=source_materialization,
+        gvhmr_json=gvhmr_json,
+        real_demo=real_demo,
+        env=env,
+        command_lookup=command_lookup,
+        command_runner=command_runner,
+        github_repo=github_repo,
+    )
+    checked_paths.extend(audit.checked_paths)
+    audit_payload = _load_json_object(audit.manifest_path, "real conversion audit manifest")
+
+    if audit.complete:
+        status = "real_artifact_verified"
+        blocked = False
+        next_action = "Inspect outputs/real-demo/public-demo and archive the real conversion evidence outside git."
+    elif ready_for_external_gpu:
+        status = "ready_for_external_gpu_operator"
+        blocked = True
+        next_action = (
+            "Copy the GVHMR operator package archive to a GPU-capable machine, "
+            "run GVHMR, and return a non-fixture neodojo.gvhmr_smplx_joints.v1 export."
+        )
+    elif archive_valid:
+        status = "operator_package_archive_not_ready_for_gpu"
+        blocked = True
+        next_action = (
+            "Regenerate the operator package archive with explicit media inclusion "
+            "from a local source video before handing it to the GPU operator."
+        )
+    else:
+        status = "operator_package_archive_missing_or_invalid"
+        blocked = True
+        next_action = (
+            "Run make real-gpu-operator-package-archive LOCAL_VIDEO=... "
+            "REAL_LOCAL_SOURCE_ID=... and validate the resulting archive."
+        )
+
+    checks = [
+        {
+            "name": "operator_package_archive_valid",
+            "passed": archive_valid,
+            "required": True,
+            "path": _as_posix(archive_manifest_path) if archive_manifest_path is not None else _as_posix(operator_package_archive),
+            "message": "Operator package archive validates." if archive_valid else archive_error,
+        },
+        {
+            "name": "operator_package_archive_ready_for_external_gpu",
+            "passed": ready_for_external_gpu,
+            "required": True,
+            "path": _as_posix(archive_manifest_path) if archive_manifest_path is not None else None,
+            "message": (
+                "Media-containing operator package archive is ready for external GPU handoff."
+                if ready_for_external_gpu
+                else "No media-containing operator package archive is ready for external GPU handoff."
+            ),
+        },
+        {
+            "name": "real_conversion_audit_complete",
+            "passed": audit.complete,
+            "required": False,
+            "path": _as_posix(audit.manifest_path),
+            "message": f"Real conversion audit status is {audit.status}.",
+        },
+    ]
+
+    manifest = {
+        "schema": REAL_GVHMR_ARTIFACT_ACQUISITION_SCHEMA,
+        "status": status,
+        "blocked": blocked,
+        "complete": audit.complete,
+        "operator_package_archive": {
+            "input": _as_posix(operator_package_archive),
+            "valid": archive_valid,
+            "error": archive_error,
+            "manifest": _as_posix(archive_manifest_path) if archive_manifest_path is not None else None,
+            "archive": _as_posix(archive_path) if archive_path is not None else None,
+            "status": archive_status,
+            "media_included": archive_media_included,
+            "safe_for_git": archive_safe_for_git,
+            "sha256": archive_sha256,
+            "ready_for_external_gpu": ready_for_external_gpu,
+        },
+        "expected_return_artifact": {
+            "schema": expected_return_schema,
+            "fixture_only": False,
+            "filename": "gvhmr-smplx-joints.json",
+            "must_not_commit": True,
+        },
+        "real_conversion_audit": {
+            "manifest": _relative_to_out_dir(audit.manifest_path, out_dir),
+            "status": audit.status,
+            "complete": audit.complete,
+            "blocked": bool(audit_payload.get("blocked")),
+            "next_action": audit_payload.get("next_action"),
+        },
+        "commands": {
+            "prepare_operator_package_archive": (
+                "make real-gpu-operator-package-archive LOCAL_VIDEO=path/to/local-source.mp4 "
+                "REAL_LOCAL_SOURCE_ID=local-baduanjin"
+            ),
+            "validate_operator_package_archive": (
+                "make gvhmr-operator-package-archive-validate "
+                "GVHMR_OPERATOR_PACKAGE_ARCHIVE=outputs/gvhmr-operator-package-archive"
+            ),
+            "local_real_artifact_intake": (
+                "make real-artifact-intake "
+                "REAL_ARTIFACT_SOURCE_MATERIALIZATION=outputs/gvhmr-gpu-input/source-materialization.json "
+                "REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json"
+            ),
+            "local_strict_verify": "make verify-real",
+        },
+        "checks": checks,
+        "next_action": next_action,
+        "notes": (
+            "This status manifest is safe to write in local and CI contexts. It "
+            "does not run GVHMR and does not make the real lane complete without "
+            "a returned non-fixture export."
+        ),
+    }
+    _write_json(manifest_path, manifest)
+    checked_paths.append(manifest_path)
+    return RealGvhmrArtifactAcquisitionStatusWriteResult(
+        manifest_path=manifest_path,
+        status=status,
+        blocked=blocked,
         checked_paths=list(dict.fromkeys(checked_paths)),
     )
 

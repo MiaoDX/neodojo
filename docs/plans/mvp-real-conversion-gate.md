@@ -1,6 +1,6 @@
 # MVP Real Conversion Gate Plan
 
-Status: LOCAL PREP, SOURCE MATERIALIZATION, GPU HANDOFF, GPU INPUT BUNDLE, GPU RUNNER, TRANSFER ARCHIVE, RUN REQUEST, COLAB NOTEBOOK, OPERATOR PACKAGE, OPERATOR PACKAGE ARCHIVE VALIDATION, GPU EXECUTION PROBE, EXPORT HELPER, RESULT INSPECTION, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
+Status: LOCAL PREP, SOURCE MATERIALIZATION, GPU HANDOFF, GPU INPUT BUNDLE, GPU RUNNER, TRANSFER ARCHIVE, RUN REQUEST, COLAB NOTEBOOK, OPERATOR PACKAGE, OPERATOR PACKAGE ARCHIVE VALIDATION, ACQUISITION-STATUS PREFLIGHT, GPU EXECUTION PROBE, EXPORT HELPER, RESULT INSPECTION, VALIDATION, AND IMPORT-DEMO READY; LATER GPU GATE
 
 ## Goal
 
@@ -203,6 +203,11 @@ Use `make real-gpu-operator-package-archive LOCAL_VIDEO=...` when the external
 operator should receive that validated package as one transfer `.tar.gz`; use
 `make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`
 to recheck an existing package archive artifact before handoff.
+Use `make real-gvhmr-acquisition-status GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`
+after archive validation to write a non-failing operator-facing preflight. That
+manifest records whether the archive is media-containing and ready for external
+GPU handoff, embeds the current real-conversion audit status, and repeats the
+required non-fixture return-artifact contract without running GVHMR.
 
 Package the materialized source metadata for the external GPU operator:
 
@@ -365,6 +370,10 @@ artifact path; it defaults to
   validated collocated package as one transfer `.tar.gz`.
 - [x] Add `make gvhmr-operator-package-archive-validate
   GVHMR_OPERATOR_PACKAGE_ARCHIVE=...` to revalidate existing package archives.
+- [x] Add `make real-gvhmr-acquisition-status
+  GVHMR_OPERATOR_PACKAGE_ARCHIVE=...` to write a non-failing preflight that
+  validates the operator package archive, embeds the blocked real-conversion
+  audit, and repeats the non-fixture return contract.
 - [x] Add `make real-handoff LOCAL_VIDEO=...` to run local prep,
   materialization, and GPU handoff packaging as one command without running
   GVHMR locally.
@@ -455,7 +464,9 @@ CPU workspace:
   currently reports `ready_for_external_gpu_operator_package`,
   `media_included: true`, and `safe_for_git: false`;
   the package archive can be revalidated after transfer or CI download with
-  `make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`;
+  `make gvhmr-operator-package-archive-validate GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`,
+  and handoff readiness can be recorded with
+  `make real-gvhmr-acquisition-status GVHMR_OPERATOR_PACKAGE_ARCHIVE=...`;
   official source `03-006` is still an available source-index path if
   rights/source selection change
 - missing runtime: a GPU-capable GVHMR environment such as Colab, RunPod,
@@ -491,6 +502,13 @@ target exits successfully for blocker classification. Use
 should fail unless a real non-fixture demo has been generated.
 The default public-demo workflow uploads both the default audit artifact and a
 separate opt-in GitHub-route audit artifact for CI evidence.
+The operator-facing acquisition preflight is executable with
+`make real-gvhmr-acquisition-status`. For a media-containing package archive it
+reports `ready_for_external_gpu_operator` while keeping `blocked: true` until a
+returned export exists; for metadata-only CI smoke artifacts it reports
+`operator_package_archive_not_ready_for_gpu`. The default public-demo workflow
+also uploads the metadata-only acquisition-status artifact with the nested audit
+manifest.
 GitHub Actions run
 `https://github.com/MiaoDX/neodojo/actions/runs/26006485103` uploaded the
 `neodojo-real-conversion-audit` artifact and verified the CI state is still

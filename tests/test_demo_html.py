@@ -52,6 +52,7 @@ from neodojo.real_conversion import (
     write_gvhmr_colab_operator_notebook,
     write_gvhmr_gpu_run_request,
     write_gvhmr_operator_package,
+    write_real_gvhmr_artifact_acquisition_status,
     write_real_artifact_intake_smoke_input,
     write_real_conversion_prep,
 )
@@ -2102,6 +2103,16 @@ class DemoHtmlTests(unittest.TestCase):
             downloaded_operator_package_archive = validate_gvhmr_operator_package_archive(
                 downloaded_operator_package_archive_dir
             )
+            acquisition_status = write_real_gvhmr_artifact_acquisition_status(
+                root / "artifact-acquisition-status",
+                operator_package_archive=downloaded_operator_package_archive_dir,
+                source_materialization=materialization,
+                gvhmr_json=root / "missing-gvhmr-smplx-joints.json",
+                real_demo=root / "real-demo",
+                env={},
+                command_lookup=lambda _command: None,
+            )
+            acquisition_manifest = json.loads(acquisition_status.manifest_path.read_text(encoding="utf-8"))
 
         self.assertEqual(bundle.status, "ready_for_gpu_with_media")
         self.assertEqual(manifest["schema"], "neodojo.gvhmr_gpu_input_bundle.v1")
@@ -2187,6 +2198,17 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("Expected return fixture flag: `false`", operator_package_readme)
         self.assertIn("RUN_GVHMR = True", operator_package_readme)
         self.assertIn("gvhmr_operator_package_path", operator_package_readme)
+        self.assertEqual(acquisition_status.status, "ready_for_external_gpu_operator")
+        self.assertTrue(acquisition_status.blocked)
+        self.assertEqual(acquisition_manifest["schema"], "neodojo.real_gvhmr_artifact_acquisition.v1")
+        self.assertTrue(acquisition_manifest["operator_package_archive"]["ready_for_external_gpu"])
+        self.assertFalse(acquisition_manifest["operator_package_archive"]["safe_for_git"])
+        self.assertFalse(acquisition_manifest["expected_return_artifact"]["fixture_only"])
+        self.assertEqual(
+            acquisition_manifest["real_conversion_audit"]["status"],
+            "external_gpu_artifact_missing",
+        )
+        self.assertIn("GPU-capable machine", acquisition_manifest["next_action"])
 
     def test_real_conversion_gpu_input_bundle_metadata_only_omits_media(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2846,6 +2868,28 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["gpu_execution_probe"]["status"], "external_gpu_artifact_missing")
         self.assertFalse(manifest["checks"][0]["passed"])
 
+    def test_real_gvhmr_acquisition_status_is_non_failing_without_archive(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            result = write_real_gvhmr_artifact_acquisition_status(
+                root / "acquisition-status",
+                operator_package_archive=root / "missing-operator-package-archive",
+                source_materialization=root / "missing-source-materialization.json",
+                gvhmr_json=root / "missing-gvhmr-smplx-joints.json",
+                real_demo=root / "real-demo",
+                env={},
+                command_lookup=lambda _command: None,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "operator_package_archive_missing_or_invalid")
+        self.assertTrue(result.blocked)
+        self.assertEqual(manifest["schema"], "neodojo.real_gvhmr_artifact_acquisition.v1")
+        self.assertFalse(manifest["operator_package_archive"]["valid"])
+        self.assertIn("does not exist", manifest["operator_package_archive"]["error"])
+        self.assertEqual(manifest["real_conversion_audit"]["status"], "external_gpu_artifact_missing")
+
     def test_real_conversion_audit_can_include_github_gpu_probe(self) -> None:
         def command_runner(args: Sequence[str]) -> subprocess.CompletedProcess[str]:
             endpoint = args[-1]
@@ -2948,8 +2992,15 @@ class DemoHtmlTests(unittest.TestCase):
             "outputs/gvhmr-operator-package-archive-smoke/neodojo-gvhmr-operator-package.tar.gz",
             workflow,
         )
+        self.assertIn("Real GVHMR artifact acquisition status smoke", workflow)
+        self.assertIn("neodojo-real-gvhmr-artifact-acquisition-status", workflow)
+        self.assertIn(
+            "outputs/real-gvhmr-artifact-acquisition-status-smoke/real-conversion-audit/manifest.json",
+            workflow,
+        )
         self.assertIn("validate-operator-package-archive", makefile)
         self.assertIn("gvhmr-operator-package-archive-validate-smoke", makefile)
+        self.assertIn("real-gvhmr-acquisition-status-smoke", makefile)
 
     def test_self_hosted_gpu_workflow_is_manual_and_uploads_only_safe_artifacts(self) -> None:
         workflow = Path(".github/workflows/gvhmr-self-hosted-gpu.yml").read_text(encoding="utf-8")

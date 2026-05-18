@@ -1,6 +1,6 @@
 # MVP DevEx And CI Surface Plan
 
-Status: IMPLEMENTED WITH BROWSER CAPTURE, REAL-HANDOFF, GPU-INPUT, GPU-ARCHIVE, GPU-EXECUTION-PROBE, AND REAL-ARTIFACT-INTAKE SMOKE ARTIFACT CI VERIFIED
+Status: IMPLEMENTED WITH BROWSER CAPTURE, REAL-HANDOFF, GPU-INPUT, GPU-ARCHIVE, OPERATOR-PACKAGE, GPU-EXECUTION-PROBE, AND REAL-ARTIFACT-INTAKE SMOKE ARTIFACT CI VERIFIED; ACQUISITION-STATUS CI WIRED
 
 ## Goal
 
@@ -52,9 +52,10 @@ against `outputs/public-demo` and `neodojo capture bundle` to write
 quality checks, tests, wheel build, `make demo-public`,
 `make real-handoff-smoke`, `make gpu-input-bundle-smoke`,
 `make gpu-input-archive-smoke`, `make gvhmr-run-request-smoke`,
-`make gvhmr-colab-notebook-smoke`, `make gpu-execution-probe`,
-`make gvhmr-operator-package-smoke`, `make real-artifact-intake-smoke`, and
-`make real-conversion-audit`.
+`make gvhmr-colab-notebook-smoke`, `make gvhmr-operator-package-smoke`,
+`make gvhmr-operator-package-archive-validate-smoke`,
+`make real-gvhmr-acquisition-status-smoke`, `make gpu-execution-probe`,
+`make real-artifact-intake-smoke`, and `make real-conversion-audit`.
 `make demo-public-browser` adds the optional Playwright-backed Chromium
 screenshot capture and refreshes the capture bundle with browser evidence.
 `make real-artifact-intake-smoke` writes fixture-only source materialization
@@ -76,8 +77,11 @@ artifacts, writes a Colab operator notebook from that run request, uploads
 notebook into a metadata-only operator package, uploads
 `neodojo-gvhmr-operator-package-smoke`, wraps the package as a metadata-only
 operator package archive, validates that archive, uploads
-`neodojo-gvhmr-operator-package-archive-smoke`, runs `make gpu-execution-probe`,
-uploads a metadata-only `neodojo-gpu-execution-probe` artifact, runs
+`neodojo-gvhmr-operator-package-archive-smoke`, runs
+`make real-gvhmr-acquisition-status-smoke`, uploads a metadata-only
+`neodojo-real-gvhmr-artifact-acquisition-status` artifact with the nested audit,
+runs `make gpu-execution-probe`, uploads a metadata-only
+`neodojo-gpu-execution-probe` artifact, runs
 `make real-artifact-intake-smoke`, uploads a fixture-only
 `neodojo-real-artifact-intake-smoke` artifact, runs
 `make real-conversion-audit`, uploads a metadata-only
@@ -260,6 +264,8 @@ public-demo artifact passed `neodojo demo smoke`, and Pages deployed.
      media.
    - [x] Upload the metadata-only GVHMR operator package archive smoke artifact
      after archive validation and with no media.
+   - [x] Upload the metadata-only real GVHMR artifact acquisition-status
+     artifact with the nested real-conversion audit and no media.
    - [x] Upload the metadata-only GPU execution probe artifact with no secret
      values.
    - [x] Upload the fixture-only real-artifact intake smoke artifact with no
@@ -319,6 +325,11 @@ public-demo artifact passed `neodojo demo smoke`, and Pages deployed.
   `26012652284`; archive validation and moved/downloaded artifact validation
   were verified by run `26013198280`, and the current command-surface-aligned
   CI lane plus Pages deploy was verified by run `26013871155`.
+- CI uploads the metadata-only real GVHMR artifact acquisition-status smoke
+  artifact with a `neodojo.real_gvhmr_artifact_acquisition.v1` manifest and
+  nested real-conversion audit. It is a non-failing preflight that records the
+  metadata-only archive is not ready for GPU handoff while preserving the
+  `fixture_only: false` return-artifact contract.
 - CI verifies that generated GPU handoff/operator docs ask for a returned
   non-fixture GVHMR export: run `26014431712` uploaded a GPU input template
   with `fixture_only: false`, GPU run-request and nested operator-package

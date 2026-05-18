@@ -37,6 +37,7 @@ from .real_conversion import (
     write_gvhmr_colab_operator_notebook,
     write_gvhmr_gpu_run_request,
     write_gvhmr_operator_package,
+    write_real_gvhmr_artifact_acquisition_status,
     write_real_artifact_intake_smoke_input,
     write_real_conversion_prep,
 )
@@ -889,6 +890,44 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="GVHMR operator package archive directory, manifest.json, or tar.gz with sibling manifest.json",
     )
+    real_artifact_acquisition_status = real_subparsers.add_parser(
+        "artifact-acquisition-status",
+        help="write a non-failing status manifest for the external GVHMR artifact handoff",
+    )
+    real_artifact_acquisition_status.add_argument(
+        "--operator-package-archive",
+        type=Path,
+        default=Path("outputs/gvhmr-operator-package-archive"),
+        help="GVHMR operator package archive directory, manifest.json, or tar.gz",
+    )
+    real_artifact_acquisition_status.add_argument(
+        "--source-materialization",
+        type=Path,
+        default=Path("outputs/real-conversion-source/source-materialization.json"),
+        help="source-materialization.json expected to match the returned GVHMR export",
+    )
+    real_artifact_acquisition_status.add_argument(
+        "--gvhmr-json",
+        type=Path,
+        default=Path("outputs/real-conversion-gate/gvhmr-smplx-joints.json"),
+        help="returned neodojo.gvhmr_smplx_joints.v1 JSON export to audit",
+    )
+    real_artifact_acquisition_status.add_argument(
+        "--real-demo",
+        type=Path,
+        default=Path("outputs/real-demo"),
+        help="real-demo output directory or manifest to verify",
+    )
+    real_artifact_acquisition_status.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/real-gvhmr-artifact-acquisition-status"),
+        help="output directory for the acquisition status manifest",
+    )
+    real_artifact_acquisition_status.add_argument(
+        "--github-repo",
+        help="optional OWNER/REPO to probe for self-hosted GitHub GPU runners via gh",
+    )
     real_intake_smoke = real_subparsers.add_parser(
         "write-intake-smoke-input",
         help="write fixture-only inputs for smoke-testing returned-artifact intake",
@@ -1409,6 +1448,22 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"validated {result.manifest_path}")
             print(f"validated {result.archive_path}")
             print(f"status {result.status}")
+            for path in result.checked_paths:
+                print(f"checked {path}")
+            return 0
+
+        if args.command == "real-conversion" and args.real_command == "artifact-acquisition-status":
+            result = write_real_gvhmr_artifact_acquisition_status(
+                args.out,
+                operator_package_archive=args.operator_package_archive,
+                source_materialization=args.source_materialization,
+                gvhmr_json=args.gvhmr_json,
+                real_demo=args.real_demo,
+                github_repo=args.github_repo,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"status {result.status}")
+            print(f"blocked {str(result.blocked).lower()}")
             for path in result.checked_paths:
                 print(f"checked {path}")
             return 0
