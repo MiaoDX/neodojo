@@ -134,6 +134,7 @@ def write_real_conversion_demo(
         recording_path=out_dir / "public-demo" / "neodojo-demo.rrd",
         use_rerun_sdk=use_rerun_sdk,
     )
+    public_manifest_payload = _load_json_object(public.manifest_path, "public-demo manifest")
     public_smoke = smoke_check_public_demo(public.manifest_path)
     viser = write_viser_runtime_contract(
         out_dir / "viser-runtime",
@@ -190,6 +191,7 @@ def write_real_conversion_demo(
         "g1_render": _relative_path(render.manifest_path, manifest_path.parent),
         "teaching_playback": _relative_path(playback.manifest_path, manifest_path.parent),
         "public_demo": _relative_path(public.manifest_path, manifest_path.parent),
+        "teaching_html": public_manifest_payload.get("teaching_html"),
         "viser_runtime": _relative_path(viser.manifest_path, manifest_path.parent),
         "capture_bundle": _relative_path(capture.manifest_path, manifest_path.parent),
         "reference_video_sync_available": reference_video is not None,

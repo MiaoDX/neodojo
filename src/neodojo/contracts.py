@@ -9,6 +9,7 @@ ANNOTATION_SCHEMA = "neodojo.annotation.v1"
 HTML_DEMO_SCHEMA = "neodojo.html_demo.v1"
 PLAYBACK_SCHEMA = "neodojo.playback_manifest.v1"
 PUBLIC_DEMO_SCHEMA = "neodojo.public_demo.v1"
+TWO_PANEL_TEACHING_HTML_PROFILE = "neodojo.two_panel_teaching_replay.v1"
 
 
 def require_schema(payload: dict[str, Any], expected_schema: str, label: str) -> None:
