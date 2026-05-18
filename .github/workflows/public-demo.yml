@@ -8,7 +8,6 @@ on:
   workflow_dispatch:
 
 permissions:
-  actions: read
   contents: read
   pages: write
   id-token: write
@@ -30,119 +29,22 @@ jobs:
           python-version: "3.11"
       - name: Install package
         run: python -m pip install -e '.[browser]'
-      - name: Syntax lint
-        run: make lint
-      - name: Project quality checks
-        run: make check
-      - name: Unit tests
-        run: make test
-      - name: Build wheel
-        run: make build
-      - name: Real conversion handoff smoke
-        run: make real-handoff-smoke
-      - name: Upload real handoff smoke artifact
+      - name: Verify fixture and local real-conversion surface
+        run: make verify
+      - name: Upload local GPU prep smoke artifact
         uses: actions/upload-artifact@v7
         with:
-          name: neodojo-real-handoff-smoke
+          name: neodojo-local-gpu-prep-smoke
           path: |
-            outputs/real-handoff-smoke/prep/real-conversion-prep.json
-            outputs/real-handoff-smoke/source-materialized/source-materialization.json
-            outputs/real-handoff-smoke/gpu-handoff/manifest.json
-            outputs/real-handoff-smoke/gpu-handoff/README.md
-            outputs/real-handoff-smoke/gpu-handoff/source-materialization.json
-            outputs/real-handoff-smoke/gpu-handoff/gvhmr-smplx-joints.template.json
-            outputs/real-handoff-smoke/gpu-handoff/export_neodojo_gvhmr.py
-            outputs/real-handoff-smoke/gpu-handoff/run_gvhmr_neodojo.sh
+            outputs/real-gpu-prep-smoke/prep/real-conversion-prep.json
+            outputs/real-gpu-prep-smoke/source-materialized/source-materialization.json
+            outputs/real-gpu-prep-smoke/gpu-run/manifest.json
+            outputs/real-gpu-prep-smoke/gpu-run/README.md
+            outputs/real-gpu-prep-smoke/gpu-run/source-materialization.json
+            outputs/real-gpu-prep-smoke/gpu-run/gvhmr-smplx-joints.template.json
+            outputs/real-gpu-prep-smoke/gpu-run/export_neodojo_gvhmr.py
+            outputs/real-gpu-prep-smoke/gpu-run/run_gvhmr_neodojo.sh
           if-no-files-found: error
-      - name: GPU input bundle smoke
-        run: make gpu-input-bundle-smoke
-      - name: Upload GPU input bundle smoke artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: neodojo-gpu-input-bundle-smoke
-          path: |
-            outputs/gvhmr-gpu-input-smoke/manifest.json
-            outputs/gvhmr-gpu-input-smoke/RUN_ON_GPU.md
-            outputs/gvhmr-gpu-input-smoke/gpu-handoff-manifest.json
-            outputs/gvhmr-gpu-input-smoke/source-materialization.json
-            outputs/gvhmr-gpu-input-smoke/gvhmr-smplx-joints.template.json
-            outputs/gvhmr-gpu-input-smoke/export_neodojo_gvhmr.py
-            outputs/gvhmr-gpu-input-smoke/run_gvhmr_neodojo.sh
-          if-no-files-found: error
-      - name: GPU input archive and run request smoke
-        run: make gvhmr-run-request-smoke
-      - name: Upload GPU input archive smoke artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: neodojo-gpu-input-archive-smoke
-          path: |
-            outputs/gvhmr-gpu-input-archive-smoke/manifest.json
-            outputs/gvhmr-gpu-input-archive-smoke/neodojo-gvhmr-gpu-input.tar.gz
-          if-no-files-found: error
-      - name: Upload GPU run request smoke artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: neodojo-gpu-run-request-smoke
-          path: |
-            outputs/gvhmr-gpu-run-request-smoke/manifest.json
-            outputs/gvhmr-gpu-run-request-smoke/README.md
-          if-no-files-found: error
-      - name: GVHMR Colab operator notebook smoke
-        run: make gvhmr-colab-notebook GVHMR_RUN_REQUEST=outputs/gvhmr-gpu-run-request-smoke GVHMR_COLAB_NOTEBOOK_OUT=outputs/gvhmr-colab-operator-smoke
-      - name: Upload GVHMR Colab operator notebook smoke artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: neodojo-gvhmr-colab-operator-smoke
-          path: |
-            outputs/gvhmr-colab-operator-smoke/manifest.json
-            outputs/gvhmr-colab-operator-smoke/gvhmr-colab-operator.ipynb
-          if-no-files-found: error
-      - name: GVHMR operator package smoke and validation
-        run: make gvhmr-operator-package-validate-smoke
-      - name: Upload GVHMR operator package smoke artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: neodojo-gvhmr-operator-package-smoke
-          path: |
-            outputs/gvhmr-operator-package-smoke/manifest.json
-            outputs/gvhmr-operator-package-smoke/README.md
-            outputs/gvhmr-operator-package-smoke/archive/neodojo-gvhmr-gpu-input.tar.gz
-            outputs/gvhmr-operator-package-smoke/request/manifest.json
-            outputs/gvhmr-operator-package-smoke/request/README.md
-            outputs/gvhmr-operator-package-smoke/colab/manifest.json
-            outputs/gvhmr-operator-package-smoke/colab/gvhmr-colab-operator.ipynb
-          if-no-files-found: error
-      - name: GVHMR operator package archive smoke and validation
-        run: make gvhmr-operator-package-archive GVHMR_OPERATOR_PACKAGE=outputs/gvhmr-operator-package-smoke GVHMR_OPERATOR_PACKAGE_ARCHIVE_OUT=outputs/gvhmr-operator-package-archive-smoke
-      - name: Upload GVHMR operator package archive smoke artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: neodojo-gvhmr-operator-package-archive-smoke
-          path: |
-            outputs/gvhmr-operator-package-archive-smoke/manifest.json
-            outputs/gvhmr-operator-package-archive-smoke/neodojo-gvhmr-operator-package.tar.gz
-          if-no-files-found: error
-      - name: Real GVHMR artifact acquisition status smoke
-        run: make real-gvhmr-acquisition-status-smoke
-      - name: Upload real GVHMR artifact acquisition status artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: neodojo-real-gvhmr-artifact-acquisition-status
-          path: |
-            outputs/real-gvhmr-artifact-acquisition-status-smoke/manifest.json
-            outputs/real-gvhmr-artifact-acquisition-status-smoke/real-conversion-audit/manifest.json
-            outputs/real-gvhmr-artifact-acquisition-status-smoke/real-conversion-audit/gpu-execution-probe/manifest.json
-          if-no-files-found: error
-      - name: GPU execution probe
-        run: make gpu-execution-probe
-      - name: Upload GPU execution probe artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: neodojo-gpu-execution-probe
-          path: outputs/gvhmr-gpu-execution-probe/manifest.json
-          if-no-files-found: error
-      - name: Real artifact intake smoke
-        run: make real-artifact-intake-smoke
       - name: Upload real artifact intake smoke artifact
         uses: actions/upload-artifact@v7
         with:
@@ -155,27 +57,11 @@ jobs:
             outputs/real-artifact-intake-smoke/public-demo/manifest.json
             outputs/real-artifact-intake-smoke/capture/manifest.json
           if-no-files-found: error
-      - name: Real conversion completion audit
-        run: make real-conversion-audit
       - name: Upload real conversion audit artifact
         uses: actions/upload-artifact@v7
         with:
           name: neodojo-real-conversion-audit
-          path: |
-            outputs/real-conversion-audit/manifest.json
-            outputs/real-conversion-audit/gpu-execution-probe/manifest.json
-          if-no-files-found: error
-      - name: Real conversion completion audit with GitHub route probe
-        run: make real-conversion-audit REAL_CONVERSION_AUDIT_OUT=outputs/real-conversion-audit-github REAL_AUDIT_GITHUB_REPO=${{ github.repository }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-      - name: Upload real conversion GitHub audit artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: neodojo-real-conversion-audit-github
-          path: |
-            outputs/real-conversion-audit-github/manifest.json
-            outputs/real-conversion-audit-github/gpu-execution-probe/manifest.json
+          path: outputs/real-conversion-audit/manifest.json
           if-no-files-found: error
       - name: Install browser runtime
         run: python -m playwright install --with-deps chromium

@@ -23,26 +23,15 @@ from .recorder_capture import write_simulator_recorder_capture
 from .real_conversion import (
     DEFAULT_SOURCE_ID,
     DEFAULT_SOURCE_INDEX,
-    archive_gvhmr_operator_package,
     audit_real_conversion_completion,
     inspect_gvhmr_result,
     materialize_real_conversion_source,
     package_gvhmr_gpu_handoff,
-    package_gvhmr_gpu_input_archive,
-    package_gvhmr_gpu_input_bundle,
-    probe_gpu_execution_environment,
-    validate_gvhmr_operator_package_archive,
-    validate_gvhmr_operator_package,
     validate_gvhmr_source,
-    write_gvhmr_colab_operator_notebook,
-    write_gvhmr_gpu_run_request,
-    write_gvhmr_operator_package,
-    write_real_gvhmr_artifact_acquisition_status,
     write_real_artifact_intake_smoke_input,
     write_real_conversion_prep,
 )
 from .real_demo import write_real_conversion_demo
-from .real_demo_promotion import validate_real_demo_pages_promotion
 from .smplx_surface import (
     register_smplx_asset_descriptor,
     write_smplx_mesh_surface,
@@ -692,7 +681,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     real_validate = real_subparsers.add_parser(
         "validate-source",
-        help="validate a GVHMR SMPL-X export against the materialized source handoff",
+        help="validate a returned GVHMR SMPL-X export against the materialized local source",
     )
     real_validate.add_argument(
         "--source-materialization",
@@ -704,7 +693,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--gvhmr-json",
         type=Path,
         required=True,
-        help="external neodojo.gvhmr_smplx_joints.v1 JSON export",
+        help="returned neodojo.gvhmr_smplx_joints.v1 JSON export",
     )
     real_validate.add_argument(
         "--out",
@@ -712,221 +701,26 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/real-conversion-validation"),
         help="output directory for source validation report and validated export copy",
     )
-    real_gpu_handoff = real_subparsers.add_parser(
-        "package-gpu-handoff",
-        help="write a metadata bundle for running GVHMR on an external GPU machine",
+    real_gpu_run = real_subparsers.add_parser(
+        "prepare-gpu-run",
+        help="write a local GPU run workspace for GVHMR plus the neodojo export adapter",
     )
-    real_gpu_handoff.add_argument(
+    real_gpu_run.add_argument(
         "--source-materialization",
         type=Path,
         required=True,
         help="source-materialization.json from real-conversion materialize-source",
     )
-    real_gpu_handoff.add_argument(
+    real_gpu_run.add_argument(
         "--expected-export-json",
         type=Path,
         help="expected returned neodojo.gvhmr_smplx_joints.v1 export path",
     )
-    real_gpu_handoff.add_argument(
+    real_gpu_run.add_argument(
         "--out",
         type=Path,
-        default=Path("outputs/gvhmr-gpu-handoff"),
-        help="output directory for the GPU handoff manifest and README",
-    )
-    real_gpu_input = real_subparsers.add_parser(
-        "package-gpu-input",
-        help="write a copyable GPU input bundle from a GPU handoff, optionally including media",
-    )
-    real_gpu_input.add_argument(
-        "--gpu-handoff",
-        type=Path,
-        required=True,
-        help="GVHMR GPU handoff manifest path or directory",
-    )
-    real_gpu_input.add_argument(
-        "--include-media",
-        action="store_true",
-        help="copy the materialized trimmed clip into the ignored bundle for transfer",
-    )
-    real_gpu_input.add_argument(
-        "--out",
-        type=Path,
-        default=Path("outputs/gvhmr-gpu-input"),
-        help="output directory for the copyable GPU input bundle",
-    )
-    real_gpu_archive = real_subparsers.add_parser(
-        "archive-gpu-input",
-        help="write a tar.gz archive from a GPU input bundle for transfer",
-    )
-    real_gpu_archive.add_argument(
-        "--gpu-input",
-        type=Path,
-        required=True,
-        help="GVHMR GPU input bundle manifest path or directory",
-    )
-    real_gpu_archive.add_argument(
-        "--archive-name",
-        default="neodojo-gvhmr-gpu-input.tar.gz",
-        help="archive filename ending in .tar.gz or .tgz",
-    )
-    real_gpu_archive.add_argument(
-        "--out",
-        type=Path,
-        default=Path("outputs/gvhmr-gpu-input-archive"),
-        help="output directory for the transfer archive and archive manifest",
-    )
-    real_gpu_probe = real_subparsers.add_parser(
-        "probe-gpu-execution",
-        help="write a safe local/provider GPU execution readiness probe without running GVHMR",
-    )
-    real_gpu_probe.add_argument(
-        "--out",
-        type=Path,
-        default=Path("outputs/gvhmr-gpu-execution-probe"),
-        help="output directory for the GPU execution probe manifest",
-    )
-    real_gpu_probe.add_argument(
-        "--github-repo",
-        help="optional OWNER/REPO to probe for self-hosted GitHub GPU runners via gh",
-    )
-    real_gpu_request = real_subparsers.add_parser(
-        "write-gpu-run-request",
-        help="write a concise external-GPU operator request from a GPU input archive manifest",
-    )
-    real_gpu_request.add_argument(
-        "--gpu-input-archive",
-        type=Path,
-        required=True,
-        help="GVHMR GPU input archive manifest path or directory",
-    )
-    real_gpu_request.add_argument(
-        "--out",
-        type=Path,
-        default=Path("outputs/gvhmr-gpu-run-request"),
-        help="output directory for the GPU run request manifest and README",
-    )
-    real_colab_notebook = real_subparsers.add_parser(
-        "write-colab-notebook",
-        help="write a Colab operator notebook from a GPU run request manifest",
-    )
-    real_colab_notebook.add_argument(
-        "--gpu-run-request",
-        type=Path,
-        required=True,
-        help="GVHMR GPU run request manifest path or directory",
-    )
-    real_colab_notebook.add_argument(
-        "--out",
-        type=Path,
-        default=Path("outputs/gvhmr-colab-operator"),
-        help="output directory for the Colab operator notebook and manifest",
-    )
-    real_operator_package = real_subparsers.add_parser(
-        "package-operator",
-        help="collocate a GPU archive, run request, and Colab notebook for an external operator",
-    )
-    real_operator_package.add_argument(
-        "--gpu-input-archive",
-        type=Path,
-        required=True,
-        help="GVHMR GPU input archive manifest path or directory",
-    )
-    real_operator_package.add_argument(
-        "--gpu-run-request",
-        type=Path,
-        required=True,
-        help="GVHMR GPU run request manifest path or directory",
-    )
-    real_operator_package.add_argument(
-        "--colab-notebook",
-        type=Path,
-        required=True,
-        help="GVHMR Colab operator notebook manifest path or directory",
-    )
-    real_operator_package.add_argument(
-        "--out",
-        type=Path,
-        default=Path("outputs/gvhmr-operator-package"),
-        help="output directory for the collocated operator package",
-    )
-    real_operator_validate = real_subparsers.add_parser(
-        "validate-operator-package",
-        help="validate a collocated GVHMR operator package before external GPU transfer",
-    )
-    real_operator_validate.add_argument(
-        "--package",
-        type=Path,
-        required=True,
-        help="GVHMR operator package directory or manifest.json",
-    )
-    real_operator_archive = real_subparsers.add_parser(
-        "archive-operator-package",
-        help="archive a validated GVHMR operator package directory as one transfer file",
-    )
-    real_operator_archive.add_argument(
-        "--package",
-        type=Path,
-        required=True,
-        help="GVHMR operator package directory or manifest.json",
-    )
-    real_operator_archive.add_argument(
-        "--archive-name",
-        default="neodojo-gvhmr-operator-package.tar.gz",
-        help="archive filename ending in .tar.gz or .tgz",
-    )
-    real_operator_archive.add_argument(
-        "--out",
-        type=Path,
-        default=Path("outputs/gvhmr-operator-package-archive"),
-        help="output directory for the package archive and manifest",
-    )
-    real_operator_archive_validate = real_subparsers.add_parser(
-        "validate-operator-package-archive",
-        help="validate a GVHMR operator package archive and its nested package checksums",
-    )
-    real_operator_archive_validate.add_argument(
-        "--archive",
-        type=Path,
-        required=True,
-        help="GVHMR operator package archive directory, manifest.json, or tar.gz with sibling manifest.json",
-    )
-    real_artifact_acquisition_status = real_subparsers.add_parser(
-        "artifact-acquisition-status",
-        help="write a non-failing status manifest for the external GVHMR artifact handoff",
-    )
-    real_artifact_acquisition_status.add_argument(
-        "--operator-package-archive",
-        type=Path,
-        default=Path("outputs/gvhmr-operator-package-archive"),
-        help="GVHMR operator package archive directory, manifest.json, or tar.gz",
-    )
-    real_artifact_acquisition_status.add_argument(
-        "--source-materialization",
-        type=Path,
-        default=Path("outputs/real-conversion-source/source-materialization.json"),
-        help="source-materialization.json expected to match the returned GVHMR export",
-    )
-    real_artifact_acquisition_status.add_argument(
-        "--gvhmr-json",
-        type=Path,
-        default=Path("outputs/real-conversion-gate/gvhmr-smplx-joints.json"),
-        help="returned neodojo.gvhmr_smplx_joints.v1 JSON export to audit",
-    )
-    real_artifact_acquisition_status.add_argument(
-        "--real-demo",
-        type=Path,
-        default=Path("outputs/real-demo"),
-        help="real-demo output directory or manifest to verify",
-    )
-    real_artifact_acquisition_status.add_argument(
-        "--out",
-        type=Path,
-        default=Path("outputs/real-gvhmr-artifact-acquisition-status"),
-        help="output directory for the acquisition status manifest",
-    )
-    real_artifact_acquisition_status.add_argument(
-        "--github-repo",
-        help="optional OWNER/REPO to probe for self-hosted GitHub GPU runners via gh",
+        default=Path("outputs/gvhmr-local-gpu-run"),
+        help="output directory for the local GPU run manifest, adapter, and runner",
     )
     real_intake_smoke = real_subparsers.add_parser(
         "write-intake-smoke-input",
@@ -972,40 +766,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="exit with an error unless the audit proves a real non-fixture demo exists",
     )
     real_audit.add_argument(
-        "--github-repo",
-        help="optional OWNER/REPO to include self-hosted GitHub GPU runner evidence via gh",
-    )
-    real_audit.add_argument(
         "--out",
         type=Path,
         default=Path("outputs/real-conversion-audit"),
         help="output directory for the audit manifest",
-    )
-    real_pages_promotion = real_subparsers.add_parser(
-        "validate-pages-promotion",
-        help="validate and stage a downloaded real-demo artifact for guarded Pages promotion",
-    )
-    real_pages_promotion.add_argument(
-        "--download-root",
-        type=Path,
-        required=True,
-        help="downloaded neodojo-self-hosted-real-demo artifact directory",
-    )
-    real_pages_promotion.add_argument(
-        "--source-run-id",
-        required=True,
-        help="GitHub Actions run ID that produced the downloaded artifact",
-    )
-    real_pages_promotion.add_argument(
-        "--artifact-name",
-        default="neodojo-self-hosted-real-demo",
-        help="downloaded artifact name",
-    )
-    real_pages_promotion.add_argument(
-        "--out",
-        type=Path,
-        default=Path("outputs/promoted-real-demo-pages"),
-        help="staged public-demo directory for Pages upload",
     )
     real_inspect_gvhmr = real_subparsers.add_parser(
         "inspect-gvhmr-result",
@@ -1025,7 +789,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     real_import_demo = real_subparsers.add_parser(
         "import-demo",
-        help="validate an external GVHMR export and regenerate the local demo lane",
+        help="validate a returned GVHMR export and regenerate the local demo lane",
     )
     real_import_demo.add_argument(
         "--source-materialization",
@@ -1037,7 +801,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--gvhmr-json",
         type=Path,
         required=True,
-        help="external neodojo.gvhmr_smplx_joints.v1 JSON export",
+        help="returned neodojo.gvhmr_smplx_joints.v1 JSON export",
     )
     real_import_demo.add_argument(
         "--g1-track",
@@ -1352,122 +1116,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 raise ValueError(f"GVHMR source validation status is {result.status}; see {result.report_path}")
             return 0
 
-        if args.command == "real-conversion" and args.real_command == "package-gpu-input":
-            result = package_gvhmr_gpu_input_bundle(
-                args.out,
-                gpu_handoff=args.gpu_handoff,
-                include_media=args.include_media,
-            )
-            print(f"wrote {result.manifest_path}")
-            print(f"wrote {result.runbook_path}")
-            print(f"status {result.status}")
-            for path in result.checked_paths:
-                print(f"checked {path}")
-            return 0
-
-        if args.command == "real-conversion" and args.real_command == "archive-gpu-input":
-            result = package_gvhmr_gpu_input_archive(
-                args.out,
-                gpu_input=args.gpu_input,
-                archive_name=args.archive_name,
-            )
-            print(f"wrote {result.manifest_path}")
-            print(f"wrote {result.archive_path}")
-            print(f"status {result.status}")
-            for path in result.checked_paths:
-                print(f"checked {path}")
-            return 0
-
-        if args.command == "real-conversion" and args.real_command == "probe-gpu-execution":
-            result = probe_gpu_execution_environment(args.out, github_repo=args.github_repo)
-            print(f"wrote {result.manifest_path}")
-            print(f"status {result.status}")
-            return 0
-
-        if args.command == "real-conversion" and args.real_command == "write-gpu-run-request":
-            result = write_gvhmr_gpu_run_request(
-                args.out,
-                gpu_input_archive=args.gpu_input_archive,
-            )
-            print(f"wrote {result.manifest_path}")
-            print(f"wrote {result.readme_path}")
-            print(f"status {result.status}")
-            for path in result.checked_paths:
-                print(f"checked {path}")
-            return 0
-
-        if args.command == "real-conversion" and args.real_command == "write-colab-notebook":
-            result = write_gvhmr_colab_operator_notebook(
-                args.out,
-                gpu_run_request=args.gpu_run_request,
-            )
-            print(f"wrote {result.manifest_path}")
-            print(f"wrote {result.notebook_path}")
-            print(f"status {result.status}")
-            for path in result.checked_paths:
-                print(f"checked {path}")
-            return 0
-
-        if args.command == "real-conversion" and args.real_command == "package-operator":
-            result = write_gvhmr_operator_package(
-                args.out,
-                gpu_input_archive=args.gpu_input_archive,
-                gpu_run_request=args.gpu_run_request,
-                colab_notebook=args.colab_notebook,
-            )
-            print(f"wrote {result.manifest_path}")
-            print(f"wrote {result.readme_path}")
-            print(f"status {result.status}")
-            for path in result.checked_paths:
-                print(f"checked {path}")
-            return 0
-
-        if args.command == "real-conversion" and args.real_command == "validate-operator-package":
-            result = validate_gvhmr_operator_package(args.package)
-            print(f"validated {result.manifest_path}")
-            print(f"status {result.status}")
-            for path in result.checked_paths:
-                print(f"checked {path}")
-            return 0
-
-        if args.command == "real-conversion" and args.real_command == "archive-operator-package":
-            result = archive_gvhmr_operator_package(
-                args.out,
-                operator_package=args.package,
-                archive_name=args.archive_name,
-            )
-            print(f"wrote {result.manifest_path}")
-            print(f"wrote {result.archive_path}")
-            print(f"status {result.status}")
-            for path in result.checked_paths:
-                print(f"checked {path}")
-            return 0
-
-        if args.command == "real-conversion" and args.real_command == "validate-operator-package-archive":
-            result = validate_gvhmr_operator_package_archive(args.archive)
-            print(f"validated {result.manifest_path}")
-            print(f"validated {result.archive_path}")
-            print(f"status {result.status}")
-            for path in result.checked_paths:
-                print(f"checked {path}")
-            return 0
-
-        if args.command == "real-conversion" and args.real_command == "artifact-acquisition-status":
-            result = write_real_gvhmr_artifact_acquisition_status(
-                args.out,
-                operator_package_archive=args.operator_package_archive,
-                source_materialization=args.source_materialization,
-                gvhmr_json=args.gvhmr_json,
-                real_demo=args.real_demo,
-                github_repo=args.github_repo,
-            )
-            print(f"wrote {result.manifest_path}")
-            print(f"status {result.status}")
-            print(f"blocked {str(result.blocked).lower()}")
-            for path in result.checked_paths:
-                print(f"checked {path}")
-            return 0
-
         if args.command == "real-conversion" and args.real_command == "write-intake-smoke-input":
             result = write_real_artifact_intake_smoke_input(args.out, frame_count=args.frames)
             print(f"wrote {result.source_materialization_path}")
@@ -1480,7 +1128,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 source_materialization=args.source_materialization,
                 gvhmr_json=args.gvhmr_json,
                 real_demo=args.real_demo,
-                github_repo=args.github_repo,
             )
             print(f"wrote {result.manifest_path}")
             print(f"status {result.status}")
@@ -1489,20 +1136,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 raise ValueError(f"real conversion gate is not complete; status is {result.status}")
             return 0
 
-        if args.command == "real-conversion" and args.real_command == "validate-pages-promotion":
-            result = validate_real_demo_pages_promotion(
-                args.download_root,
-                args.out,
-                source_run_id=args.source_run_id,
-                artifact_name=args.artifact_name,
-            )
-            print(f"wrote {result.manifest_path}")
-            print(f"staged {result.staged_dir}")
-            for path in result.checked_paths:
-                print(f"validated {path}")
-            return 0
-
-        if args.command == "real-conversion" and args.real_command == "package-gpu-handoff":
+        if args.command == "real-conversion" and args.real_command == "prepare-gpu-run":
             result = package_gvhmr_gpu_handoff(
                 args.out,
                 source_materialization=args.source_materialization,

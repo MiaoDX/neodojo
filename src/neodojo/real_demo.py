@@ -154,8 +154,8 @@ def write_real_conversion_demo(
     if generated_g1_track is not None:
         fixture_components.append("derived_g1_visual_track")
     notes = (
-        "This command consumes an externally generated GVHMR JSON export. It "
-        "does not run GVHMR locally or commit source video, motion outputs, "
+        "This command consumes a returned GVHMR JSON export. It does not run "
+        "GVHMR inside the import step or commit source video, motion outputs, "
         "rendered media, or model assets."
         if real_gvhmr_artifact_imported
         else (

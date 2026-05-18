@@ -13,31 +13,19 @@ The current repo is still in bootstrap state. It has a fixture-only HTML demo
 generator, `make test`, `make demo-html`, `make demo-public`, versioned local
 artifact contracts, a normalized imported-GMR G1 track boundary, native GMR
 pickle normalization, an SMPL-X surface proxy, G1 SVG/HTML render evidence,
-optional MuJoCo render evidence, optional true Rerun SDK `.rrd` export,
-an optional first Viser local runtime, optional source-media probing with
-custom local-source provenance, local source-media materialization handoff, a
-copyable ignored GPU input bundle with explicit media inclusion, a CI-safe
-GPU-side runner script for external GVHMR execution, a metadata-only GPU input
-transfer archive smoke, a one-command local media archive prep target, a
-reproducible local/provider GPU execution probe, a
-tracked external-GPU operator runbook, a fixture-only static public-demo
-fallback artifact, a generated roboharness-style capture bundle boundary,
-optional MuJoCo simulator recorder-capture integration, and a GitHub Actions
-workflow with verified fixture-only Pages publication, optional browser-rendered
-public-demo screenshot capture, metadata-only real-handoff smoke artifact
-upload, metadata-only GPU input bundle/archive smoke upload, and a
-real-conversion completion audit artifact, plus an opt-in strict
-`make verify-real` completion gate and an optional manual self-hosted GPU
-workflow for external GVHMR execution plus returned-artifact intake, and an
-optional guarded manual workflow for promoting a validated real-demo artifact to
-GitHub Pages, plus generated external GPU run-request and Colab operator
-notebook artifacts, plus validated GVHMR operator package and package-archive
-handoff artifacts, and a local real GVHMR artifact-acquisition status preflight.
-It
-does not yet have a checked-in local GVHMR/GMR execution environment, completed
-simulator runtime pipeline, built-in official SMPL-X body-model renderer,
-hosted/live-client Viser capture, or broad static-analysis/release gates beyond
-the minimal `make lint` and `make build` surface.
+optional MuJoCo render evidence, optional true Rerun SDK `.rrd` export, an
+optional first Viser local runtime, local source-media preparation, a local GPU
+run workspace generator, returned GVHMR result inspection/import, a fixture-only
+static public-demo fallback artifact, generated capture-bundle evidence,
+optional browser-rendered public-demo screenshot capture, and a GitHub Actions
+workflow with verified fixture-only Pages publication. The command surface is
+local-machine GPU only; Colab, hosted GPU provider, self-hosted Actions,
+operator-package, and real-demo Pages-promotion surfaces were removed from the
+current public Makefile/CLI/CI path. It does not yet have a checked-in local
+GVHMR/GMR execution environment, completed simulator runtime pipeline, built-in
+official SMPL-X body-model renderer, hosted/live-client Viser capture, or broad
+static-analysis/release gates beyond the minimal `make lint` and `make build`
+surface.
 
 ## Shared Goal
 
@@ -73,13 +61,13 @@ local/user-supplied source video
 | 6 | [mvp-g1-real-model-rendering.md](mvp-g1-real-model-rendering.md) | implemented local SVG evidence; simulator mesh rendering remains follow-on | Load a user-supplied real Unitree G1 URDF/MJCF and render robot evidence instead of the current canvas skeleton. | A local render manifest and front/side/top SVG frame evidence prove the registered descriptor path remains non-scoring. |
 | 7 | [mvp-pipeline-contract-hardening.md](mvp-pipeline-contract-hardening.md) | implemented | Version and validate source, motion, teaching, G1, render, playback, annotation, and public-demo contracts before broader orchestration. | Existing fixture paths and future import paths pass through explicit versioned manifest boundaries with source-media provenance and local video-sync metadata. |
 | 8 | [mvp-visualization-and-public-demo.md](mvp-visualization-and-public-demo.md) | implemented with static fallback | Define one internal scene/timeline contract and make a fixture-only public demo artifact. | A fixture-only `.rrd` fallback artifact, static viewer page, public-demo manifest, and SVG screenshot can be generated and visually smoke-tested. |
-| 9 | [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) | implemented with browser capture and real/GPU smoke artifact CI verified | Add one-command public-demo orchestration and CI artifact/Page publishing for the fixture lane. | A clean checkout can regenerate, validate, browser-smoke, upload, and publish the non-GPU fixture demo, plus upload metadata-only real-handoff/GPU input/GPU run-request/operator-package/acquisition-status/GPU probe artifacts, fixture-only real-artifact intake smoke outputs, and real-conversion audit status without tracking generated outputs. |
-| 10 | [mvp-lint-build-surface.md](mvp-lint-build-surface.md) | implemented | Add the minimal lint/build command surface and all-in-one local verification target. | `make verify` runs lint, plan quality checks, tests, wheel build, public-demo generation, dry-run real-handoff smoke, GPU bundle/archive/run-request/Colab-notebook/operator-package/operator-package-archive/acquisition-status/probe smoke, fixture-only real-artifact intake smoke, and real-conversion completion audit without tracking generated artifacts. |
+| 9 | [mvp-devex-ci-surface.md](mvp-devex-ci-surface.md) | implemented with browser capture and reduced local GPU prep smoke | Add one-command public-demo orchestration and CI artifact/Page publishing for the fixture lane. | A clean checkout can regenerate, validate, browser-smoke, upload, and publish the non-GPU fixture demo, plus upload local GPU prep smoke, fixture-only real-artifact intake smoke, and real-conversion audit artifacts without tracking generated outputs. |
+| 10 | [mvp-lint-build-surface.md](mvp-lint-build-surface.md) | implemented; command surface reduced | Add the minimal lint/build command surface and all-in-one local verification target. | `make verify` runs lint, plan quality checks, tests, wheel build, public-demo generation, local GPU prep smoke, fixture-only real-artifact intake smoke, and real-conversion completion audit without tracking generated artifacts. |
 | 11 | [mvp-source-media-probing.md](mvp-source-media-probing.md) | implemented metadata probe and custom local-source prep | Record optional ffprobe metadata for local source videos without copying media. | Source prep records probe success/failure, duration, resolution, codec, and frame-rate metadata when available, and custom local sources can derive source duration/resolution without an official source-index row. |
-| 12 | [mvp-source-media-materialization.md](mvp-source-media-materialization.md) | implemented local handoff, materialized local candidate, and GPU input bundle | Turn source prep plus a local video into a dry-run or ffmpeg-backed trimmed-clip/reference-frame handoff. | A source-materialization manifest records source validation, commands, generated outputs when available, and the GVHMR input handoff path without committing media; an ignored local Bilibili candidate handoff reports `ready_for_gpu`, and a transfer bundle reports `ready_for_gpu_with_media`. |
+| 12 | [mvp-source-media-materialization.md](mvp-source-media-materialization.md) | implemented local materialization and local GPU run prep | Turn source prep plus a local video into a dry-run or ffmpeg-backed trimmed-clip/reference-frame handoff. | A source-materialization manifest records source validation, commands, generated outputs when available, and the local GVHMR input path without committing media; an ignored local Bilibili candidate handoff reports `ready_for_gpu`. |
 | 13 | [mvp-roboharness-capture-boundary.md](mvp-roboharness-capture-boundary.md) | implemented generated bundle and browser public-demo capture; CI verified | Collect public-demo, browser capture, Viser preview, G1 render, and optional recorder artifacts into one roboharness-style multi-camera evidence manifest. | `make demo-public` writes a validated generated capture bundle, and `make demo-public-browser` adds optional real browser screenshot evidence without claiming direct roboharness integration. |
 | 14 | [mvp-real-conversion-gate.md](mvp-real-conversion-gate.md) | local GPU proof complete; strict audit passed | Produce the first real GVHMR artifact for a short local Baduanjin clip on a GPU-capable machine. | The local GPU workstation produced a non-fixture `neodojo.gvhmr_smplx_joints.v1` export for the Bilibili proof clip, imported it through `make real-artifact-intake`, regenerated `outputs/real-demo/`, and `make verify-real` exits zero without tracking generated outputs. |
-| 15 | [mvp-real-gvhmr-artifact-acquisition.md](mvp-real-gvhmr-artifact-acquisition.md) | local real GVHMR artifact acquired; strict audit passed | Execute the already-packaged external GPU handoff, return the first non-fixture GVHMR export, and make the strict real gate pass. | `outputs/real-conversion-audit/manifest.json` records `real_demo_verified`, `complete: true`, `blocked: false`, 300 frames, and validated non-fixture source/GVHMR inputs; live Pages remains fixture-only until explicit guarded promotion. |
+| 15 | [mvp-real-gvhmr-artifact-acquisition.md](mvp-real-gvhmr-artifact-acquisition.md) | local real GVHMR artifact acquired; strict audit passed | Run GVHMR on the local GPU workstation, return the first non-fixture GVHMR export, and make the strict real gate pass. | `outputs/real-conversion-audit/manifest.json` records `real_demo_verified`, `complete: true`, `blocked: false`, 300 frames, and validated non-fixture source/GVHMR inputs; live Pages remains fixture-only. |
 
 ## Future Gap Plans
 
@@ -101,16 +89,16 @@ of truth for the next waves.
 | [mvp-gvhmr-source-validation.md](mvp-gvhmr-source-validation.md) | implemented validator; local real export validated | Validation that imported GVHMR artifacts match the materialized source clip and trim. |
 | [mvp-gvhmr-export-adapter.md](mvp-gvhmr-export-adapter.md) | implemented GPU-side export helper; local real artifact verified | Standalone GPU-side helper packaged with the handoff to convert GVHMR `hmr4d_results.pt` plus licensed SMPL-X assets into the neodojo import schema. |
 | [mvp-gvhmr-gpu-runner-surface.md](mvp-gvhmr-gpu-runner-surface.md) | implemented CI-safe GPU runner packaging; local real artifact verified | Executable GPU-side runner script packaged with handoff/input bundles and smoke-tested without media or GVHMR execution. |
-| [mvp-gvhmr-gpu-transfer-archive.md](mvp-gvhmr-gpu-transfer-archive.md) | implemented CI-safe transfer archive; local real artifact verified | Metadata-only and media-including GPU input bundle archives for transfer to a GPU machine. |
-| [mvp-real-gpu-archive-command.md](mvp-real-gpu-archive-command.md) | implemented one-command media archive/request prep; local real artifact verified | Single local make target that prepares the ignored media-containing GPU transfer archive from a local source video, plus a wrapper that also writes the generated operator request. |
-| [mvp-real-gpu-colab-command.md](mvp-real-gpu-colab-command.md) | implemented one-command archive/request/Colab prep; local real artifact verified | Single local make target that prepares the ignored transfer archive, generated operator request, and Colab operator notebook from a local source video. |
-| [mvp-gvhmr-external-gpu-runbook.md](mvp-gvhmr-external-gpu-runbook.md) | implemented tracked runbook; local real artifact verified | Durable operator checklist for unpacking the archive, running GVHMR on a CUDA machine, and validating the returned export locally. |
-| [mvp-gvhmr-external-run-request.md](mvp-gvhmr-external-run-request.md) | implemented generated run request; local real artifact verified | Concise generated operator request manifest/README from an existing GPU input archive, with archive hash, required GPU assets, return commands, a one-command archive/request wrapper, and smoke coverage. |
-| [mvp-gvhmr-colab-operator-notebook.md](mvp-gvhmr-colab-operator-notebook.md) | implemented generated notebook; local real artifact verified | Colab-ready operator notebook generated from a run-request manifest, with checksum verification, guarded GVHMR execution, returned JSON download, and smoke coverage. |
-| [mvp-gvhmr-operator-package.md](mvp-gvhmr-operator-package.md) | implemented collocated package and package archive; local real artifact verified | Validated package directory and single-file transfer archive that collocate the archive, run request, Colab notebook, and package README/manifest for the GPU operator. |
-| [mvp-gvhmr-self-hosted-gpu-workflow.md](mvp-gvhmr-self-hosted-gpu-workflow.md) | implemented optional workflow; local real artifact verified | Manual GitHub Actions workflow for user-managed self-hosted GPU runners that can run the packaged GVHMR wrapper from a prepared archive or collocated operator package. |
-| [mvp-gvhmr-self-hosted-real-demo-intake.md](mvp-gvhmr-self-hosted-real-demo-intake.md) | implemented optional workflow intake; local real artifact verified | Same manual self-hosted workflow validates/imports the returned export, runs the strict audit, and can upload generated real-demo evidence. |
-| [mvp-real-demo-pages-promotion.md](mvp-real-demo-pages-promotion.md) | implemented guarded manual promotion; local real artifact verified; live Pages still fixture-only | Manual GitHub Pages replacement workflow that downloads a validated self-hosted real-demo artifact, revalidates real GVHMR and strict audit evidence, smoke-checks the staged public demo, and deploys only when explicitly confirmed. |
+| [mvp-gvhmr-gpu-transfer-archive.md](mvp-gvhmr-gpu-transfer-archive.md) | parked; removed from current public surface | Historical transfer-archive work. Current support is local GPU workspace prep only. |
+| [mvp-real-gpu-archive-command.md](mvp-real-gpu-archive-command.md) | parked; removed from current public surface | Historical media archive/request prep. Current support is `make real-gpu-prep`. |
+| [mvp-real-gpu-colab-command.md](mvp-real-gpu-colab-command.md) | parked; removed from current public surface | Historical Colab command work. Colab is not supported by the current command surface. |
+| [mvp-gvhmr-external-gpu-runbook.md](mvp-gvhmr-external-gpu-runbook.md) | superseded by local GPU runbook | Historical external runbook. Current durable runbook is `docs/runbooks/gvhmr-local-gpu.md`. |
+| [mvp-gvhmr-external-run-request.md](mvp-gvhmr-external-run-request.md) | parked; removed from current public surface | Historical operator request work. Current support is local GPU workspace prep only. |
+| [mvp-gvhmr-colab-operator-notebook.md](mvp-gvhmr-colab-operator-notebook.md) | parked; removed from current public surface | Historical Colab notebook work. Colab is not supported by the current command surface. |
+| [mvp-gvhmr-operator-package.md](mvp-gvhmr-operator-package.md) | parked; removed from current public surface | Historical operator-package work. Operator packages are not supported by the current command surface. |
+| [mvp-gvhmr-self-hosted-gpu-workflow.md](mvp-gvhmr-self-hosted-gpu-workflow.md) | parked; removed from current public surface | Historical self-hosted workflow work. Self-hosted Actions GPU execution is not supported by the current command surface. |
+| [mvp-gvhmr-self-hosted-real-demo-intake.md](mvp-gvhmr-self-hosted-real-demo-intake.md) | parked; removed from current public surface | Historical self-hosted intake work. Current support is local returned-artifact import. |
+| [mvp-real-demo-pages-promotion.md](mvp-real-demo-pages-promotion.md) | parked; removed from current public surface | Historical real-demo promotion work. Live Pages remains fixture-only. |
 | [mvp-quality-release-surface.md](mvp-quality-release-surface.md) | implemented first quality gate | Project-owned static quality check for MVP plan links and scaffolding beyond the minimal lint/build commands. |
 
 The numbered plans are semantically independent execution slices, not
@@ -199,7 +187,7 @@ Use two lanes throughout the MVP:
 | Lane | Purpose | Artifact Source | Acceptance Role |
 | --- | --- | --- | --- |
 | Bootstrap fixture lane | Unblock schemas, manifests, retargeting, playback, and feedback without requiring a GPU artifact. | Synthetic JSON fixtures, PBHC sample motion references, or other explicitly external sample artifacts. | Validates interfaces and playback behavior only. It cannot prove qigong correctness. |
-| Real conversion lane | Prove neodojo can convert a local instructional clip into the canonical SMPL-X teaching record. | GVHMR run on this GPU workstation, Colab, RunPod, Modal, Hugging Face Jobs, or another GPU machine. | Locally satisfied for the short Bilibili proof clip; broader real GMR/render/live-client work remains follow-on. |
+| Real conversion lane | Prove neodojo can convert a local instructional clip into the canonical SMPL-X teaching record. | GVHMR run on this local GPU workstation. | Locally satisfied for the short Bilibili proof clip; broader real GMR/render/live-client work remains follow-on. |
 
 PBHC fixtures may be useful bootstrap data, but only as externally referenced
 development samples. Do not commit copied `.pkl` or `.npz` files. Record source
@@ -213,13 +201,12 @@ until an explicit guarded real-demo promotion replaces it.
 ## Shared Compute Notes
 
 GPU work is deliberately later than the local motion contract, G1 visual-track
-contract, first playback contract, and G1 render-evidence proof. For the
-first real artifact, prefer GVHMR's upstream Colab or a short-lived
-RunPod/PyTorch pod and manually export the result directory. For repeatable
-development, create a project-owned Modal function, RunPod worker, or Hugging
-Face Job that writes the exact import artifact shape. Treat production-style
-APIs such as Replicate, RunPod Serverless, or Hugging Face Inference Endpoints
-as later packaging decisions after the artifact contract is stable.
+contract, first playback contract, and G1 render-evidence proof. The current
+supported path is local-machine GPU execution only: prepare the ignored local
+workspace with `make real-gpu-prep`, run GVHMR locally, export
+`neodojo.gvhmr_smplx_joints.v1`, then import it with `make real-artifact-intake`.
+Hosted GPU providers, Colab, and self-hosted Actions workflows are parked until
+the project explicitly reopens that surface.
 
 ## GSD Handoff
 
