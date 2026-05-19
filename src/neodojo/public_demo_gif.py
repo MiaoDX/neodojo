@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import base64
 import io
 import json
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -72,9 +74,68 @@ def _resize_frame(image: Any, *, image_module: Any, scale_width: int | None) -> 
     return image.resize((scale_width, height), resampling)
 
 
-def _seek_public_demo_frame(page: Any, frame_index: int, seconds: float) -> None:
+def _reference_video_path(scene: dict[str, Any], public_demo_dir: Path) -> Path | None:
+    reference_video = scene.get("reference_video")
+    if not isinstance(reference_video, dict) or reference_video.get("available") is not True:
+        return None
+    reference = reference_video.get("path")
+    if not isinstance(reference, str) or not reference:
+        return None
+    path = Path(reference)
+    if not path.is_absolute():
+        path = public_demo_dir / path
+    if not path.exists() or not path.is_file():
+        return None
+    return path
+
+
+def _reference_video_offset_seconds(scene: dict[str, Any]) -> float:
+    reference_video = scene.get("reference_video")
+    if not isinstance(reference_video, dict):
+        return 0.0
+    try:
+        return float(reference_video.get("playback_offset_seconds") or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _decode_reference_video_png_data_uri(video_path: Path, seconds: float) -> str:
+    command = [
+        "ffmpeg",
+        "-v",
+        "error",
+        "-ss",
+        f"{max(0.0, seconds):.3f}",
+        "-i",
+        str(video_path),
+        "-frames:v",
+        "1",
+        "-f",
+        "image2pipe",
+        "-vcodec",
+        "png",
+        "-",
+    ]
+    try:
+        result = subprocess.run(command, check=False, capture_output=True)
+    except FileNotFoundError as exc:
+        raise ValueError("GIF rendering with a reference-video panel requires ffmpeg on PATH") from exc
+    if result.returncode != 0 or not result.stdout:
+        error = result.stderr.decode("utf-8", errors="replace").strip()
+        raise ValueError(f"failed to decode reference video frame at {seconds:.3f}s: {error}")
+    encoded = base64.b64encode(result.stdout).decode("ascii")
+    return f"data:image/png;base64,{encoded}"
+
+
+def _seek_public_demo_frame(
+    page: Any,
+    frame_index: int,
+    *,
+    seconds: float,
+    source_frame_data_uri: str | None = None,
+) -> None:
     page.evaluate(
-        """async ({frameIndex, seconds}) => {
+        """async ({frameIndex, seconds, sourceFrameDataUri}) => {
             const playButton = document.getElementById("playButton");
             if (playButton && playButton.textContent.trim() === "Pause") {
                 playButton.click();
@@ -84,6 +145,24 @@ def _seek_public_demo_frame(page: Any, frame_index: int, seconds: float) -> None
             timeline.value = String(frameIndex);
             timeline.dispatchEvent(new Event("input", {bubbles: true}));
             await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            if (sourceFrameDataUri) {
+                const video = document.getElementById("referenceVideo");
+                if (!video) return;
+                let still = document.getElementById("referenceVideoStill");
+                if (!still) {
+                    still = document.createElement("img");
+                    still.id = "referenceVideoStill";
+                    still.className = video.className;
+                    still.alt = video.getAttribute("aria-label") || "Original source video";
+                    video.insertAdjacentElement("afterend", still);
+                }
+                video.style.display = "none";
+                await new Promise((resolve) => {
+                    still.onload = () => requestAnimationFrame(() => requestAnimationFrame(resolve));
+                    still.src = sourceFrameDataUri;
+                });
+                return;
+            }
             const video = document.getElementById("referenceVideo");
             if (!video) return;
             video.pause();
@@ -92,8 +171,7 @@ def _seek_public_demo_frame(page: Any, frame_index: int, seconds: float) -> None
                     video.addEventListener("loadedmetadata", resolve, {once: true});
                 });
             }
-            const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : seconds;
-            const target = Math.max(0, Math.min(seconds, Math.max(0, duration - 0.04)));
+            const target = Math.max(0, Math.min(seconds, Math.max(0, video.duration - 0.04)));
             await new Promise((resolve) => {
                 let settled = false;
                 const done = () => {
@@ -132,7 +210,7 @@ def _seek_public_demo_frame(page: Any, frame_index: int, seconds: float) -> None
                 still.src = scratch.toDataURL("image/png");
             });
         }""",
-        {"frameIndex": frame_index, "seconds": seconds},
+        {"frameIndex": frame_index, "seconds": seconds, "sourceFrameDataUri": source_frame_data_uri},
     )
 
 
@@ -199,8 +277,22 @@ def write_public_demo_gif(
                     }""",
                     timeout=timeout_ms,
                 )
+                reference_video_path = _reference_video_path(scene, public_manifest_path.parent)
+                reference_offset_seconds = _reference_video_offset_seconds(scene)
                 for frame_index in frame_indices:
-                    _seek_public_demo_frame(page, frame_index, frame_index / fps)
+                    seconds = reference_offset_seconds + frame_index / fps
+                    source_frame_data_uri = None
+                    if reference_video_path is not None:
+                        source_frame_data_uri = _decode_reference_video_png_data_uri(
+                            reference_video_path,
+                            seconds,
+                        )
+                    _seek_public_demo_frame(
+                        page,
+                        frame_index,
+                        seconds=seconds,
+                        source_frame_data_uri=source_frame_data_uri,
+                    )
                     png = page.screenshot(full_page=False)
                     image = Image.open(io.BytesIO(png)).convert("RGB")
                     captured_frames.append(_resize_frame(image, image_module=Image, scale_width=scale_width))
