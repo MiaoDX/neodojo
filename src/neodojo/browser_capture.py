@@ -94,7 +94,7 @@ def write_public_demo_browser_capture(
             browser = playwright.chromium.launch()
             try:
                 page = browser.new_page(viewport={"width": width, "height": height})
-                page.goto(url, wait_until="networkidle", timeout=timeout_ms)
+                page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
                 page.locator("body").wait_for(state="visible", timeout=timeout_ms)
                 body_text = page.locator("body").inner_text(timeout=timeout_ms)
                 missing = [label for label in required_labels if label not in body_text]
@@ -104,9 +104,7 @@ def write_public_demo_browser_capture(
                     "() => document.querySelectorAll('canvas').length >= 2",
                     timeout=timeout_ms,
                 )
-                page.wait_for_timeout(250)
-                replay_state = page.evaluate(
-                    """() => {
+                replay_state_script = """() => {
                         const canvases = Array.from(document.querySelectorAll('canvas'));
                         const panels = Array.from(document.querySelectorAll('[data-panel]')).map((panel) => panel.dataset.panel);
                         const states = canvases.map((canvas) => {
@@ -123,6 +121,8 @@ def write_public_demo_browser_capture(
                                 if (nonBackgroundPixels > 128) break;
                             }
                             return {
+                                id: canvas.id,
+                                hidden: canvas.hidden,
                                 width: box.width,
                                 height: box.height,
                                 pixelWidth: canvas.width,
@@ -130,19 +130,53 @@ def write_public_demo_browser_capture(
                                 nonBackgroundPixels,
                             };
                         });
+                        const isNonblankCanvas = (state) => state
+                            && state.width > 0
+                            && state.height > 0
+                            && state.pixelWidth > 0
+                            && state.pixelHeight > 0
+                            && state.nonBackgroundPixels > 128;
+                        const smplxState = states.find((state) => state.id === 'smplxCanvas');
+                        const g1CanvasState = states.find((state) => state.id === 'g1Canvas');
+                        const g1ReplayImage = document.getElementById('g1ReplayImage');
+                        const imageBox = g1ReplayImage ? g1ReplayImage.getBoundingClientRect() : {width: 0, height: 0};
+                        const imageState = {
+                            present: Boolean(g1ReplayImage),
+                            hidden: g1ReplayImage ? g1ReplayImage.hidden : true,
+                            complete: g1ReplayImage ? g1ReplayImage.complete : false,
+                            width: imageBox.width,
+                            height: imageBox.height,
+                            naturalWidth: g1ReplayImage ? g1ReplayImage.naturalWidth : 0,
+                            naturalHeight: g1ReplayImage ? g1ReplayImage.naturalHeight : 0,
+                        };
+                        const g1ReplayImageRendered = imageState.present
+                            && !imageState.hidden
+                            && imageState.complete
+                            && imageState.width > 0
+                            && imageState.height > 0
+                            && imageState.naturalWidth > 0
+                            && imageState.naturalHeight > 0;
                         return {
                             ok: panels.includes('smplx')
                                 && panels.includes('g1')
                                 && canvases.length >= 2
-                                && states.every((state) => state.width > 0 && state.height > 0 && state.nonBackgroundPixels > 128),
+                                && isNonblankCanvas(smplxState)
+                                && (isNonblankCanvas(g1CanvasState) || g1ReplayImageRendered),
                             panels,
                             canvasCount: canvases.length,
+                            g1ReplayImageRendered,
+                            imageState,
                             states,
                         };
                     }"""
+                page.wait_for_function(
+                    f"() => ({replay_state_script})().ok === true",
+                    timeout=timeout_ms,
                 )
+                page.wait_for_timeout(250)
+                replay_state = page.evaluate(replay_state_script)
                 if not isinstance(replay_state, dict) or not replay_state.get("ok"):
-                    raise ValueError(f"browser-rendered public demo replay canvases did not render: {replay_state}")
+                    raise ValueError(f"browser-rendered public demo replay did not render: {replay_state}")
                 page.screenshot(path=str(screenshot_path), full_page=True)
             finally:
                 browser.close()
@@ -167,7 +201,9 @@ def write_public_demo_browser_capture(
         "checks": {
             "required_labels": required_labels,
             "browser_body_labels_present": True,
-            "two_panel_canvas_replay_rendered": True,
+            "two_panel_visual_replay_rendered": True,
+            "smplx_canvas_rendered": True,
+            "g1_visual_rendered": True,
             "screenshot_size_bytes": screenshot_size,
         },
         "scoring_source": "smplx",

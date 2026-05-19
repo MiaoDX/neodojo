@@ -30,8 +30,11 @@ non-fixture imported GMR joint-angle track 和 MuJoCo PNG frame sequence 时，
 同一个 workflow 也会运行 `make ci-real-demo`，并把
 `outputs/real-demo/public-demo/index.html` 上传为
 `neodojo-real-demo-public-demo` artifact。默认这个 CI real-demo artifact 使用
-fixture-shaped returned JSON inputs，所以它证明的是 real-demo HTML packaging
-和 browser smoke 路径，不是真实 Baduanjin GVHMR/GMR run。
+[`samples/baduanjin-03-006-two-hands-80-92`](samples/baduanjin-03-006-two-hands-80-92)
+里提交的派生 JSON sample：source provenance、返回的 GVHMR SMPL-X joints、
+normalized GMR Unitree G1 joint angles。CI 会从这些 JSON 重新生成 G1 model
+descriptor、MuJoCo frames 和 public HTML；raw source video 和 rendered outputs
+仍然不进 git。
 
 - 在线 fixture-only demo: [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
 - 生成文件：`index.html`、`manifest.json`、`scene.json`、`screenshot.svg`、
@@ -54,15 +57,16 @@ normalization、roboharness G1 descriptor registration、返回 GVHMR export
 检查/导入，real-demo audit 命令，以及 public two-panel teaching HTML profile。
 
 它还没有提交到仓库的本地 GVHMR/GMR execution environment、完整 simulator runtime
-pipeline、默认真实 GMR-derived G1 replay、已提交 generated motion artifact、
-production Viser UI，或已发布 real demo。本机 ignored `outputs/` 下的 Baduanjin
-`80s-92s` 可见动作片段 proof 现在已经通过 `make verify-real`：它包含
+pipeline、production Viser UI，或已发布 real demo。仓库现在包含一个用于 CI 的
+小型 Baduanjin derived JSON sample；raw video、native checkpoints、pickles、
+rendered PNGs 和大 generated outputs 仍然 ignored。本机 ignored `outputs/` 下的
+Baduanjin `80s-92s` 可见动作片段 proof 现在已经通过 `make verify-real`：它包含
 imported/native GMR Unitree G1 joint angles、non-fixture
 roboharness/robot_descriptions MJCF descriptor、nonblank/changing MuJoCo PNG
 frame sequence，并且 public HTML 会消费这些 replay frames。当前命令面不再支持
 Colab、hosted GPU provider、self-hosted Actions GPU、operator-package，或
-real-demo Pages-promotion workflows。CI 现在会从 fixture-shaped returned JSON
-inputs 上传一个 smoke real-demo public HTML artifact。本机 real-demo audit 也会检查
+real-demo Pages-promotion workflows。CI 现在会从 committed derived JSON 上传一个
+sample-backed real-demo public HTML artifact。本机和 CI real-demo audit 也会检查
 返回的 GVHMR 帧是否有可见动作，因此静止的片头裁剪不会被当成完成的教学回放。
 
 ## 运行
@@ -74,9 +78,7 @@ make ci-real-demo
 make ci-real-demo \
   CI_REAL_SOURCE_MATERIALIZATION=path/to/source-materialization.json \
   CI_REAL_GVHMR_JSON=path/to/gvhmr-smplx-joints.json \
-  CI_REAL_G1_TRACK=path/to/g1-track/manifest.json \
-  CI_REAL_MODEL_DESCRIPTOR=path/to/g1-model/manifest.json \
-  CI_REAL_RENDER_MUJOCO=1 \
+  CI_REAL_GMR_G1_JSON=path/to/gmr-unitree-g1.json \
   CI_REAL_VERIFY_STRICT=1
 make real-gpu-prep LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin REAL_DRY_RUN=0
 make gvhmr-inspect GVHMR_RESULT=path/to/hmr4d_results.pt

@@ -31,11 +31,11 @@ jobs:
         run: python -m pip install -e '.[browser]'
       - name: Verify fixture and local real-conversion surface
         run: make verify
-      - name: Install MuJoCo CI render runtime
+      - name: Install real G1 replay render runtime
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb libgl1 libglx-mesa0 libgl1-mesa-dri
-          python -m pip install -e '.[sim]'
+          python -m pip install -e '.[real-g1-replay]'
       - name: Verify CI MuJoCo G1 render backend
         run: |
           xvfb-run -a env MUJOCO_GL=glfw PYTHONPATH=src python -m unittest \
