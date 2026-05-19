@@ -5,10 +5,12 @@ import importlib.util
 import os
 import py_compile
 import socket
+import struct
 import subprocess
 import sys
 import tempfile
 import unittest
+import zlib
 from pathlib import Path
 from unittest.mock import patch
 
@@ -69,6 +71,35 @@ def _check_by_name(manifest: dict, name: str) -> dict:
         if check.get("name") == name:
             return check
     raise AssertionError(f"missing audit check {name}")
+
+
+def _png_rgb_pixel(path: Path, x: int, y: int) -> tuple[int, int, int]:
+    payload = path.read_bytes()
+    if not payload.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise AssertionError(f"not a PNG file: {path}")
+    offset = 8
+    width = height = None
+    compressed = b""
+    while offset < len(payload):
+        length = struct.unpack(">I", payload[offset : offset + 4])[0]
+        chunk_type = payload[offset + 4 : offset + 8]
+        chunk = payload[offset + 8 : offset + 8 + length]
+        offset += 12 + length
+        if chunk_type == b"IHDR":
+            width, height = struct.unpack(">II", chunk[:8])
+        elif chunk_type == b"IDAT":
+            compressed += chunk
+        elif chunk_type == b"IEND":
+            break
+    if width is None or height is None:
+        raise AssertionError(f"PNG is missing IHDR: {path}")
+    raw = zlib.decompress(compressed)
+    stride = 1 + width * 3
+    row = raw[y * stride : (y + 1) * stride]
+    if row[0] != 0:
+        raise AssertionError("test PNG reader only supports filter type 0")
+    start = 1 + x * 3
+    return tuple(row[start : start + 3])
 
 
 def _write_actual_g1_render_manifest(
@@ -641,12 +672,16 @@ class DemoHtmlTests(unittest.TestCase):
             )
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
             front_png = result.frame_paths["front"].read_bytes()
+            front_corner = _png_rgb_pixel(result.frame_paths["front"], 0, 0)
 
         self.assertEqual(manifest["renderer"]["backend"], "mujoco_python_offscreen.v1")
+        self.assertEqual(manifest["renderer"]["background"], "white")
+        self.assertEqual(manifest["camera_definitions"]["front"]["azimuth"], 180)
         self.assertTrue(manifest["mesh_loaded"])
         self.assertTrue(manifest["nonblank_pixel_check"])
         self.assertEqual(set(result.frame_paths), {"front", "side", "top"})
         self.assertTrue(front_png.startswith(b"\x89PNG"))
+        self.assertEqual(front_corner, (255, 255, 255))
 
     @unittest.skipUnless(importlib.util.find_spec("mujoco"), "mujoco optional dependency is not installed")
     def test_write_mujoco_render_applies_imported_gmr_joint_angles(self) -> None:
