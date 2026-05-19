@@ -23,6 +23,7 @@ G1_RENDER_SCHEMA = "neodojo.g1_render.v1"
 G1_RENDER_BACKEND = "neodojo_svg_schematic.v1"
 G1_MUJOCO_RENDER_BACKEND = "mujoco_python_offscreen.v1"
 G1_MUJOCO_BACKEND_COMPARISON_SCHEMA = "neodojo.g1_mujoco_backend_comparison.v1"
+G1_MUJOCO_BACKEND_BENCHMARK_SCHEMA = "neodojo.g1_mujoco_backend_benchmark.v1"
 
 
 @dataclass(frozen=True)
@@ -37,6 +38,13 @@ class G1MujocoBackendComparisonResult:
     html_path: Path
     manifest_path: Path
     backend_results: list[dict[str, Any]]
+
+
+@dataclass(frozen=True)
+class G1MujocoBackendBenchmarkResult:
+    markdown_path: Path
+    manifest_path: Path
+    backend_summaries: list[dict[str, Any]]
 
 
 def _load_model_descriptor(path: Path, *, allow_fixture_model: bool) -> dict[str, Any]:
@@ -260,6 +268,107 @@ def _xvfb_prefix_for_backend(backend: str, mode: str, env: dict[str, str]) -> li
         return []
     xvfb = shutil.which("xvfb-run")
     return [xvfb, "-a"] if xvfb else []
+
+
+def _safe_mujoco_backend_name(backend: str) -> str:
+    backend_name = backend.strip()
+    if not backend_name:
+        raise ValueError("backend names must be non-empty")
+    if "/" in backend_name or "\\" in backend_name or backend_name in {".", ".."}:
+        raise ValueError(f"backend name is not safe for an output directory: {backend_name}")
+    return backend_name
+
+
+def _run_mujoco_backend_render(
+    *,
+    backend_name: str,
+    out_dir: Path,
+    relative_start: Path,
+    model_descriptor_path: Path,
+    g1_track: Path,
+    allow_fixture_model: bool,
+    width: int,
+    height: int,
+    xvfb_glfw: str,
+    timeout_seconds: int,
+) -> dict[str, Any]:
+    env = os.environ.copy()
+    env["MUJOCO_GL"] = backend_name
+    if backend_name == "osmesa":
+        env.setdefault("PYOPENGL_PLATFORM", "osmesa")
+    command = [
+        sys.executable,
+        "-m",
+        "neodojo",
+        "render",
+        "mujoco-g1",
+        "--model-descriptor",
+        str(model_descriptor_path),
+        "--g1-track",
+        str(g1_track),
+        "--width",
+        str(width),
+        "--height",
+        str(height),
+        "--out",
+        str(out_dir),
+    ]
+    if allow_fixture_model:
+        command.append("--allow-fixture-model")
+    command_prefix = _xvfb_prefix_for_backend(backend_name, xvfb_glfw, env)
+    run_command = [*command_prefix, *command]
+    started = time.perf_counter()
+    try:
+        completed = subprocess.run(
+            run_command,
+            check=False,
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=timeout_seconds,
+        )
+        returncode = completed.returncode
+        stdout = completed.stdout
+        stderr = completed.stderr
+    except subprocess.TimeoutExpired as exc:
+        returncode = -1
+        stdout = exc.stdout if isinstance(exc.stdout, str) else ""
+        stderr = exc.stderr if isinstance(exc.stderr, str) else ""
+        stderr = f"timed out after {timeout_seconds}s\n{stderr}"
+    elapsed = time.perf_counter() - started
+    render_manifest_path = out_dir / "manifest.json"
+    item: dict[str, Any] = {
+        "backend": backend_name,
+        "status": "rendered" if returncode == 0 and render_manifest_path.exists() else "failed",
+        "elapsed_seconds": round(elapsed, 3),
+        "returncode": returncode,
+        "command": run_command,
+        "env": {
+            "MUJOCO_GL": env.get("MUJOCO_GL"),
+            "PYOPENGL_PLATFORM": env.get("PYOPENGL_PLATFORM"),
+            "DISPLAY": env.get("DISPLAY"),
+        },
+        "stdout_tail": _truncate_text(stdout),
+        "stderr_tail": _truncate_text(stderr),
+    }
+    if item["status"] == "rendered":
+        render_manifest = json.loads(render_manifest_path.read_text(encoding="utf-8"))
+        frame_paths = {}
+        for view, relative in render_manifest.get("frame_paths", {}).items():
+            if isinstance(relative, str):
+                frame_paths[view] = _relative_path(render_manifest_path.parent / relative, relative_start)
+        item.update(
+            {
+                "manifest": _relative_path(render_manifest_path, relative_start),
+                "html": _relative_path(out_dir / "index.html", relative_start),
+                "renderer": render_manifest.get("renderer"),
+                "pose_application": render_manifest.get("pose_application"),
+                "nonblank_views": render_manifest.get("nonblank_views"),
+                "actual_g1_model_replay": bool(render_manifest.get("actual_g1_model_replay")),
+                "frame_paths": frame_paths,
+            }
+        )
+    return item
 
 
 def _render_backend_comparison_html(manifest: dict[str, Any]) -> str:
@@ -903,89 +1012,22 @@ def write_g1_mujoco_backend_comparison(
 
     backend_results: list[dict[str, Any]] = []
     for backend in backends:
-        backend_name = backend.strip()
-        if not backend_name:
-            raise ValueError("backend names must be non-empty")
-        if "/" in backend_name or "\\" in backend_name or backend_name in {".", ".."}:
-            raise ValueError(f"backend name is not safe for an output directory: {backend_name}")
+        backend_name = _safe_mujoco_backend_name(backend)
         backend_out_dir = out_dir / backend_name
-        env = os.environ.copy()
-        env["MUJOCO_GL"] = backend_name
-        if backend_name == "osmesa":
-            env.setdefault("PYOPENGL_PLATFORM", "osmesa")
-        command = [
-            sys.executable,
-            "-m",
-            "neodojo",
-            "render",
-            "mujoco-g1",
-            "--model-descriptor",
-            str(model_descriptor_path),
-            "--g1-track",
-            str(g1_track),
-            "--width",
-            str(width),
-            "--height",
-            str(height),
-            "--out",
-            str(backend_out_dir),
-        ]
-        if allow_fixture_model:
-            command.append("--allow-fixture-model")
-        command_prefix = _xvfb_prefix_for_backend(backend_name, xvfb_glfw, env)
-        run_command = [*command_prefix, *command]
-        started = time.perf_counter()
-        try:
-            completed = subprocess.run(
-                run_command,
-                check=False,
-                capture_output=True,
-                text=True,
-                env=env,
-                timeout=timeout_seconds,
+        backend_results.append(
+            _run_mujoco_backend_render(
+                backend_name=backend_name,
+                out_dir=backend_out_dir,
+                relative_start=out_dir,
+                model_descriptor_path=model_descriptor_path,
+                g1_track=g1_track,
+                allow_fixture_model=allow_fixture_model,
+                width=width,
+                height=height,
+                xvfb_glfw=xvfb_glfw,
+                timeout_seconds=timeout_seconds,
             )
-            returncode = completed.returncode
-            stdout = completed.stdout
-            stderr = completed.stderr
-        except subprocess.TimeoutExpired as exc:
-            returncode = -1
-            stdout = exc.stdout if isinstance(exc.stdout, str) else ""
-            stderr = exc.stderr if isinstance(exc.stderr, str) else ""
-            stderr = f"timed out after {timeout_seconds}s\n{stderr}"
-        elapsed = time.perf_counter() - started
-        render_manifest_path = backend_out_dir / "manifest.json"
-        item: dict[str, Any] = {
-            "backend": backend_name,
-            "status": "rendered" if returncode == 0 and render_manifest_path.exists() else "failed",
-            "elapsed_seconds": round(elapsed, 3),
-            "returncode": returncode,
-            "command": run_command,
-            "env": {
-                "MUJOCO_GL": env.get("MUJOCO_GL"),
-                "PYOPENGL_PLATFORM": env.get("PYOPENGL_PLATFORM"),
-                "DISPLAY": env.get("DISPLAY"),
-            },
-            "stdout_tail": _truncate_text(stdout),
-            "stderr_tail": _truncate_text(stderr),
-        }
-        if item["status"] == "rendered":
-            render_manifest = json.loads(render_manifest_path.read_text(encoding="utf-8"))
-            frame_paths = {}
-            for view, relative in render_manifest.get("frame_paths", {}).items():
-                if isinstance(relative, str):
-                    frame_paths[view] = _relative_path(render_manifest_path.parent / relative, out_dir)
-            item.update(
-                {
-                    "manifest": _relative_path(render_manifest_path, out_dir),
-                    "html": _relative_path(backend_out_dir / "index.html", out_dir),
-                    "renderer": render_manifest.get("renderer"),
-                    "pose_application": render_manifest.get("pose_application"),
-                    "nonblank_views": render_manifest.get("nonblank_views"),
-                    "actual_g1_model_replay": bool(render_manifest.get("actual_g1_model_replay")),
-                    "frame_paths": frame_paths,
-                }
-            )
-        backend_results.append(item)
+        )
 
     manifest_path = out_dir / "manifest.json"
     html_path = out_dir / "index.html"
@@ -1009,4 +1051,171 @@ def write_g1_mujoco_backend_comparison(
         html_path=html_path,
         manifest_path=manifest_path,
         backend_results=backend_results,
+    )
+
+
+def _time_stats(values: list[float]) -> dict[str, float | None]:
+    if not values:
+        return {
+            "min_seconds": None,
+            "mean_seconds": None,
+            "median_seconds": None,
+            "max_seconds": None,
+        }
+    ordered = sorted(values)
+    midpoint = len(ordered) // 2
+    median = ordered[midpoint] if len(ordered) % 2 else (ordered[midpoint - 1] + ordered[midpoint]) / 2
+    return {
+        "min_seconds": round(ordered[0], 3),
+        "mean_seconds": round(sum(ordered) / len(ordered), 3),
+        "median_seconds": round(median, 3),
+        "max_seconds": round(ordered[-1], 3),
+    }
+
+
+def _format_seconds(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.3f}"
+
+
+def _render_backend_benchmark_markdown(manifest: dict[str, Any]) -> str:
+    lines = [
+        "# MuJoCo GL Backend Benchmark",
+        "",
+        (
+            f"Resolution: `{manifest['width']}x{manifest['height']}`. "
+            f"Measured runs per backend: `{manifest['runs']}`. "
+            f"Warmup runs: `{manifest['warmup_runs']}`."
+        ),
+        "",
+        "| Backend | Status | Success | Min s | Mean s | Median s | Max s |",
+        "|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    for item in manifest["backend_summaries"]:
+        stats = item["stats"]
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    str(item["backend"]),
+                    str(item["status"]),
+                    f"{item['successful_runs']}/{item['measured_runs']}",
+                    _format_seconds(stats["min_seconds"]),
+                    _format_seconds(stats["mean_seconds"]),
+                    _format_seconds(stats["median_seconds"]),
+                    _format_seconds(stats["max_seconds"]),
+                ]
+            )
+            + " |"
+        )
+    lines.extend(
+        [
+            "",
+            "Notes:",
+            "- Timings include MuJoCo import/context setup, model load, selected front/side/top PNGs, and replay PNG sequence generation.",
+            "- Exact PNG hashes are not expected to match across GL drivers; use this for performance picking.",
+            "- Full per-run stdout/stderr and command details are in `manifest.json`.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def write_g1_mujoco_backend_benchmark(
+    out_dir: Path,
+    *,
+    model_descriptor_path: Path,
+    g1_track: Path,
+    backends: list[str],
+    allow_fixture_model: bool = False,
+    width: int = 640,
+    height: int = 480,
+    runs: int = 3,
+    warmup_runs: int = 0,
+    xvfb_glfw: str = "auto",
+    timeout_seconds: int = 180,
+) -> G1MujocoBackendBenchmarkResult:
+    if width <= 0 or height <= 0:
+        raise ValueError("MuJoCo render width and height must be positive")
+    if runs <= 0:
+        raise ValueError("benchmark runs must be positive")
+    if warmup_runs < 0:
+        raise ValueError("warmup runs must be non-negative")
+    if not backends:
+        raise ValueError("at least one MuJoCo GL backend is required")
+    validate_output_dir(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    backend_summaries: list[dict[str, Any]] = []
+    for backend in backends:
+        backend_name = _safe_mujoco_backend_name(backend)
+        run_results: list[dict[str, Any]] = []
+        total_runs = warmup_runs + runs
+        for index in range(total_runs):
+            is_warmup = index < warmup_runs
+            measured_index = index - warmup_runs
+            run_label = f"warmup-{index + 1:02d}" if is_warmup else f"run-{measured_index + 1:02d}"
+            run_out_dir = out_dir / backend_name / run_label
+            item = _run_mujoco_backend_render(
+                backend_name=backend_name,
+                out_dir=run_out_dir,
+                relative_start=out_dir,
+                model_descriptor_path=model_descriptor_path,
+                g1_track=g1_track,
+                allow_fixture_model=allow_fixture_model,
+                width=width,
+                height=height,
+                xvfb_glfw=xvfb_glfw,
+                timeout_seconds=timeout_seconds,
+            )
+            item["run_label"] = run_label
+            item["run_kind"] = "warmup" if is_warmup else "measured"
+            item["run_index"] = index + 1
+            run_results.append(item)
+
+        measured = [item for item in run_results if item["run_kind"] == "measured"]
+        successful = [float(item["elapsed_seconds"]) for item in measured if item["status"] == "rendered"]
+        failed = [item for item in measured if item["status"] != "rendered"]
+        if len(successful) == runs:
+            status = "complete"
+        elif successful:
+            status = "partial"
+        else:
+            status = "failed"
+        backend_summaries.append(
+            {
+                "backend": backend_name,
+                "status": status,
+                "measured_runs": runs,
+                "warmup_runs": warmup_runs,
+                "successful_runs": len(successful),
+                "failed_runs": len(failed),
+                "stats": _time_stats(successful),
+                "run_results": run_results,
+            }
+        )
+
+    manifest_path = out_dir / "manifest.json"
+    markdown_path = out_dir / "benchmark.md"
+    manifest = {
+        "schema": G1_MUJOCO_BACKEND_BENCHMARK_SCHEMA,
+        "status": "generated",
+        "model_descriptor": _relative_path(model_descriptor_path, manifest_path.parent),
+        "g1_track": _relative_path(g1_track, manifest_path.parent),
+        "width": width,
+        "height": height,
+        "runs": runs,
+        "warmup_runs": warmup_runs,
+        "xvfb_glfw": xvfb_glfw,
+        "backend_summaries": backend_summaries,
+        "notes": (
+            "Benchmark renders each backend in isolated subprocesses because "
+            "MUJOCO_GL is selected at import time."
+        ),
+    }
+    _write_json(manifest_path, manifest)
+    markdown_path.write_text(_render_backend_benchmark_markdown(manifest), encoding="utf-8")
+    return G1MujocoBackendBenchmarkResult(
+        markdown_path=markdown_path,
+        manifest_path=manifest_path,
+        backend_summaries=backend_summaries,
     )

@@ -111,3 +111,16 @@ This writes `outputs/g1-mujoco-backend-comparison/index.html`. The command runs
 each backend in a subprocess because `MUJOCO_GL` is selected when MuJoCo is
 imported. `glfw` is wrapped with `xvfb-run -a` automatically when no `DISPLAY`
 is present and `xvfb-run` is available.
+
+For repeated timing stats:
+
+```bash
+make mujoco-backend-benchmark \
+  MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json \
+  G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json \
+  MUJOCO_BENCHMARK_RUNS=2
+```
+
+This writes `outputs/g1-mujoco-backend-benchmark/benchmark.md` and a full
+`manifest.json`. Timings include MuJoCo import/context setup, model load,
+selected front/side/top PNGs, and replay PNG sequence generation.

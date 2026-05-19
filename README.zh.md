@@ -87,6 +87,14 @@ make mujoco-backend-compare MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unit
 ```
 
 它会写出 `outputs/g1-mujoco-backend-comparison/index.html`。
+如果要做重复计时 benchmark，可以运行：
+
+```bash
+make mujoco-backend-benchmark MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
+```
+
+它会写出 `outputs/g1-mujoco-backend-benchmark/benchmark.md` 和完整
+`manifest.json`。
 
 完整命令列表、blockers 和下一步安全任务见 [`STATUS.md`](STATUS.md)。
 
