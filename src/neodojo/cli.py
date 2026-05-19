@@ -12,9 +12,10 @@ from .g1_visual import (
     build_g1_visual_track,
     import_gmr_json_track,
     register_g1_model,
+    register_roboharness_g1_model,
     write_fixture_g1_model_descriptor,
 )
-from .gmr_native import normalize_gmr_pickle
+from .gmr_native import normalize_gmr_pickle, run_local_gmr_unitree_g1
 from .g1_render import write_g1_mujoco_render, write_g1_render
 from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
 from .public_demo import smoke_check_public_demo, write_public_demo
@@ -229,6 +230,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/g1-visual"),
         help="output directory for the G1 model descriptor",
     )
+    robot_register_roboharness = robot_subparsers.add_parser(
+        "register-roboharness-g1",
+        help="write a non-fixture Unitree G1 MJCF descriptor from roboharness[demo]",
+    )
+    robot_register_roboharness.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/g1-visual"),
+        help="output directory for the G1 model descriptor",
+    )
 
     tracks = subparsers.add_parser(
         "tracks",
@@ -309,6 +320,51 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("outputs/gmr-native"),
         help="output directory for normalized GMR JSON and adapter report",
+    )
+    tracks_run_gmr = tracks_subparsers.add_parser(
+        "run-gmr-g1",
+        help="prepare or execute local GMR GVHMR-to-Unitree-G1 retargeting",
+    )
+    tracks_run_gmr.add_argument(
+        "--motion-record",
+        type=Path,
+        required=True,
+        help="source motion-record root directory or manifest path for normalization validation",
+    )
+    tracks_run_gmr.add_argument(
+        "--gvhmr-result",
+        type=Path,
+        required=True,
+        help="native GVHMR result path expected by GMR scripts/gvhmr_to_robot.py",
+    )
+    tracks_run_gmr.add_argument(
+        "--gmr-repo",
+        type=Path,
+        help="local GMR checkout; defaults to GMR_REPO when set",
+    )
+    tracks_run_gmr.add_argument(
+        "--body-models",
+        type=Path,
+        help="SMPL-X body-model root; defaults to SMPLX_BODY_MODELS or <GMR_REPO>/assets/body_models",
+    )
+    tracks_run_gmr.add_argument(
+        "--python-executable",
+        help="Python executable for the local GMR environment; defaults to the current interpreter",
+    )
+    tracks_run_gmr.add_argument(
+        "--execute",
+        action="store_true",
+        help="run local GMR and normalize the returned native pickle; default only writes the run manifest",
+    )
+    tracks_run_gmr.add_argument(
+        "--joint-names",
+        help="optional comma-separated joint names for normalizing non-standard native GMR output",
+    )
+    tracks_run_gmr.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/gmr-native-run"),
+        help="output directory for the local GMR run manifest and normalized output",
     )
 
     demo = subparsers.add_parser(
@@ -814,6 +870,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="optional existing Unitree G1 model descriptor for G1 visual rendering",
     )
     real_import_demo.add_argument(
+        "--g1-render",
+        type=Path,
+        help="optional existing G1 render manifest; use for a pre-rendered MuJoCo frame-sequence replay",
+    )
+    real_import_demo.add_argument(
+        "--render-mujoco",
+        action="store_true",
+        help="render the provided imported GMR track with MuJoCo instead of writing schematic evidence",
+    )
+    real_import_demo.add_argument(
         "--use-rerun-sdk",
         action="store_true",
         help="write a true Rerun SDK .rrd instead of the JSON fallback artifact",
@@ -904,6 +970,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"wrote {result.descriptor_path}")
             return 0
 
+        if args.command == "robot-model" and args.robot_command == "register-roboharness-g1":
+            result = register_roboharness_g1_model(args.out)
+            print(f"wrote {result.descriptor_path}")
+            return 0
+
         if args.command == "tracks" and args.tracks_command == "build":
             result = build_g1_visual_track(
                 args.motion_record,
@@ -938,6 +1009,29 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(f"wrote {result.normalized_export_path}")
             print(f"wrote {result.report_path}")
+            return 0
+
+        if args.command == "tracks" and args.tracks_command == "run-gmr-g1":
+            joint_names = None
+            if args.joint_names:
+                joint_names = [name.strip() for name in args.joint_names.split(",") if name.strip()]
+            result = run_local_gmr_unitree_g1(
+                args.out,
+                motion_record=args.motion_record,
+                gvhmr_result=args.gvhmr_result,
+                gmr_repo=args.gmr_repo,
+                body_models=args.body_models,
+                python_executable=args.python_executable,
+                execute=args.execute,
+                joint_names=joint_names,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"prepared {result.native_artifact_path}")
+            print(f"status {result.status}")
+            if result.normalized_export_path is not None:
+                print(f"wrote {result.normalized_export_path}")
+            if result.report_path is not None:
+                print(f"wrote {result.report_path}")
             return 0
 
         if args.command == "demo" and args.demo_command == "play":
@@ -1167,6 +1261,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 gvhmr_json=args.gvhmr_json,
                 g1_track=args.g1_track,
                 model_descriptor=args.model_descriptor,
+                g1_render=args.g1_render,
+                render_mujoco=args.render_mujoco,
                 use_rerun_sdk=args.use_rerun_sdk,
             )
             print(f"wrote {result.manifest_path}")

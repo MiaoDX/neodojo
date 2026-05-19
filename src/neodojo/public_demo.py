@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -48,6 +49,24 @@ def _load_optional_render_manifest(path: Path | None) -> dict[str, Any] | None:
     payload = _load_json(path)
     require_schema(payload, G1_RENDER_SCHEMA, "G1 render manifest")
     return payload
+
+
+def _actual_g1_replay_available(render_manifest: dict[str, Any] | None) -> bool:
+    if not render_manifest:
+        return False
+    replay = render_manifest.get("replay_frames")
+    renderer = render_manifest.get("renderer")
+    return bool(
+        isinstance(replay, dict)
+        and replay.get("actual_g1_model_replay") is True
+        and replay.get("available") is True
+        and replay.get("nonblank_pixel_check") is True
+        and replay.get("changed_frame_check") is True
+        and isinstance(renderer, dict)
+        and renderer.get("backend") == "mujoco_python_offscreen.v1"
+        and render_manifest.get("model_fixture_only") is False
+        and render_manifest.get("track_fixture_only") is False
+    )
 
 
 def _load_rerun_sdk() -> Any:
@@ -117,6 +136,13 @@ def build_scene_timeline(
             break
 
     render_manifest = _load_optional_render_manifest(g1_render_manifest_path)
+    actual_g1_replay = _actual_g1_replay_available(render_manifest)
+    g1_panel_label = "Unitree G1 MuJoCo model replay" if actual_g1_replay else "Unitree G1 schematic evidence"
+    g1_visual_style = (
+        "mujoco-png-frame-sequence.v1"
+        if actual_g1_replay
+        else "robot-body-schematic.v1"
+    )
     fixture_only = bool(playback.get("fixture_only") or g1_manifest.get("fixture_only"))
     key_frame = int(playback.get("key_frame", len(smplx_frames) - 1))
     annotations = playback.get("annotation_manifest")
@@ -160,7 +186,7 @@ def build_scene_timeline(
                 "frames": smplx_frames,
             },
             "g1": {
-                "label": "Unitree G1 visual",
+                "label": g1_panel_label,
                 "role": g1_manifest["role"],
                 "scoring_allowed": False,
                 "frames": g1_frames,
@@ -180,6 +206,7 @@ def build_scene_timeline(
                 "derivation": g1_manifest.get("derivation"),
                 "model_descriptor": g1_manifest.get("model_descriptor"),
                 "source_motion_record": g1_manifest.get("source_motion_record"),
+                "pose_stream": g1_manifest.get("pose_stream"),
                 "frame_count": len(g1_frames),
                 "fps": g1_manifest.get("fps"),
                 "scoring_allowed": False,
@@ -192,10 +219,17 @@ def build_scene_timeline(
         "reference_video_sync": playback.get("reference_video_sync"),
         "feedback": playback.get("feedback"),
         "render_evidence": render_manifest,
+        "g1_render_frame_sequence": {
+            "available": False,
+            "actual_g1_model_replay": actual_g1_replay,
+            "visual_style": g1_visual_style,
+            "paths": [],
+            "frame_count": 0,
+        },
         "public_labels": [
             "fixture-only" if fixture_only else "real-artifact",
             "SMPL-X teacher",
-            "Unitree G1 visual",
+            g1_panel_label,
             "G1 non-scoring",
             "Routine feedback",
             *([surface_proxy["label"]] if surface_proxy else []),
@@ -357,6 +391,7 @@ def _render_screenshot_svg(scene: dict[str, Any]) -> str:
     anchor_text = ", ".join(anchors[:3]) if anchors else "none"
     surface_layer = scene.get("surface_proxy")
     surface_text = surface_layer.get("label") if surface_layer else "off"
+    g1_label = scene.get("tracks", {}).get("g1", {}).get("label", "Unitree G1 schematic evidence")
     return "\n".join(
         [
             '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img">',
@@ -364,12 +399,12 @@ def _render_screenshot_svg(scene: dict[str, Any]) -> str:
             '<rect width="1280" height="720" fill="#eef2f6"/>',
             '<rect x="32" y="28" width="1216" height="86" rx="8" fill="#ffffff" stroke="#d8e0e8"/>',
             '<text x="56" y="68" class="title">neodojo public fixture demo</text>',
-            f'<text x="56" y="94" class="muted">SMPL-X teacher + Unitree G1 visual - frame {key_frame + 1}</text>',
+            f'<text x="56" y="94" class="muted">SMPL-X teacher + {g1_label} - frame {key_frame + 1}</text>',
             f'<text x="1080" y="66" class="badge">{fixture_label}</text>',
             '<rect x="48" y="144" width="560" height="500" rx="8" fill="#ffffff" stroke="#d8e0e8"/>',
             '<rect x="672" y="144" width="560" height="500" rx="8" fill="#ffffff" stroke="#d8e0e8"/>',
             '<text x="72" y="184" class="title">SMPL-X teacher</text>',
-            '<text x="696" y="184" class="title">Unitree G1 visual</text>',
+            f'<text x="696" y="184" class="title">{g1_label}</text>',
             f'<g transform="translate(80 210)">{surface}{smplx}</g>',
             f'<g transform="translate(704 210)">{g1}</g>',
             f'<text x="56" y="684" class="muted">Scoring source: SMPL-X. G1 scoring allowed: false. Feedback passed: {feedback.get("passed")}</text>',
@@ -396,6 +431,19 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
     render_evidence = scene.get("render_evidence") or {}
     renderer = render_evidence.get("renderer") if isinstance(render_evidence, dict) else {}
     renderer_backend = renderer.get("backend") if isinstance(renderer, dict) else "none"
+    g1_sequence = scene.get("g1_render_frame_sequence") or {}
+    actual_g1_replay = bool(g1_sequence.get("actual_g1_model_replay"))
+    g1_panel_label = (
+        "Unitree G1 MuJoCo model replay"
+        if actual_g1_replay
+        else "Unitree G1 schematic evidence"
+    )
+    g1_panel_role = "actual MuJoCo frame replay" if actual_g1_replay else "schematic evidence"
+    g1_visual_style = (
+        "mujoco-png-frame-sequence.v1"
+        if actual_g1_replay
+        else "robot-body-schematic.v1"
+    )
     g1_track_source = "fixture-derived track" if g1_meta.get("fixture_only") else "imported GMR track"
     g1_model_source = (
         "fixture model descriptor"
@@ -426,6 +474,8 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
     h2 {{ font-size: 17px; }}
     .panel-head span {{ color: var(--muted); font-size: 12px; font-weight: 800; text-align: right; }}
     canvas {{ width: 100%; min-height: 420px; aspect-ratio: 1 / 1; display: block; background: #fbfcfe; border: 1px solid var(--line); border-radius: 8px; }}
+    .g1-frame {{ width: 100%; min-height: 420px; aspect-ratio: 1 / 1; display: block; object-fit: contain; background: #fbfcfe; border: 1px solid var(--line); border-radius: 8px; }}
+    [hidden] {{ display: none !important; }}
     .meta {{ display: grid; gap: 7px; color: var(--muted); font-size: 13px; }}
     .metric {{ display: flex; justify-content: space-between; gap: 12px; padding-top: 7px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }}
     .metric strong {{ color: var(--ink); text-align: right; }}
@@ -463,10 +513,11 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
     </section>
     <section class="panel" data-panel="g1">
       <div class="panel-head">
-        <h2>Unitree G1 robot model replay</h2>
-        <span>visual companion</span>
+        <h2>{g1_panel_label}</h2>
+        <span>{g1_panel_role}</span>
       </div>
-      <canvas id="g1Canvas" width="720" height="720" aria-label="Unitree G1 robot model replay" data-g1-render-style="robot-body-schematic.v1"></canvas>
+      <img id="g1ReplayImage" class="g1-frame" alt="Unitree G1 MuJoCo model replay frame" hidden>
+      <canvas id="g1Canvas" width="720" height="720" aria-label="{g1_panel_label}" data-g1-render-style="{g1_visual_style}"></canvas>
       <div class="meta">
         <div class="metric"><span>Track source</span><strong>{g1_track_source}</strong></div>
         <div class="metric"><span>Model source</span><strong>{g1_model_source}</strong></div>
@@ -485,9 +536,11 @@ const SCENE = {payload};
 const BONES = SCENE.bones || [];
 const smplxCanvas = document.getElementById("smplxCanvas");
 const g1Canvas = document.getElementById("g1Canvas");
+const g1ReplayImage = document.getElementById("g1ReplayImage");
 const playButton = document.getElementById("playButton");
 const timeline = document.getElementById("timeline");
 const frameReadout = document.getElementById("frameReadout");
+const g1Sequence = SCENE.g1_render_frame_sequence || {{}};
 const frameCount = SCENE.tracks.smplx.frames.length;
 const fps = Number((SCENE.timing && SCENE.timing.fps) || (SCENE.track_metadata.smplx && SCENE.track_metadata.smplx.fps) || 25);
 let frame = 0;
@@ -696,7 +749,16 @@ function drawPanel(canvas, trackId) {{
 
 function render() {{
   drawPanel(smplxCanvas, "smplx");
-  drawPanel(g1Canvas, "g1");
+  if (g1Sequence.available && Array.isArray(g1Sequence.paths) && g1Sequence.paths.length > 0) {{
+    g1Canvas.hidden = true;
+    g1ReplayImage.hidden = false;
+    const index = Math.min(frame, g1Sequence.paths.length - 1);
+    g1ReplayImage.src = g1Sequence.paths[index];
+  }} else {{
+    g1ReplayImage.hidden = true;
+    g1Canvas.hidden = false;
+    drawPanel(g1Canvas, "g1");
+  }}
   timeline.value = String(frame);
   frameReadout.textContent = `Frame ${{frame + 1}} / ${{frameCount}}`;
 }}
@@ -731,6 +793,57 @@ window.requestAnimationFrame(tick);
 """
 
 
+def _attach_public_g1_replay_frames(
+    scene: dict[str, Any],
+    *,
+    g1_render_manifest_path: Path | None,
+    out_dir: Path,
+) -> None:
+    render_manifest = scene.get("render_evidence")
+    if not isinstance(render_manifest, dict) or not _actual_g1_replay_available(render_manifest):
+        scene["g1_render_frame_sequence"] = {
+            "available": False,
+            "actual_g1_model_replay": False,
+            "visual_style": "robot-body-schematic.v1",
+            "paths": [],
+            "frame_count": 0,
+        }
+        return
+    if g1_render_manifest_path is None:
+        raise ValueError("actual G1 replay render evidence requires a render manifest path")
+
+    replay = render_manifest["replay_frames"]
+    source_paths = replay.get("paths")
+    if not isinstance(source_paths, list) or not source_paths:
+        raise ValueError("actual G1 replay render manifest is missing replay frame paths")
+
+    frame_dir = out_dir / "g1-replay-frames"
+    copied_paths: list[str] = []
+    frame_dir.mkdir(parents=True, exist_ok=True)
+    for index, reference in enumerate(source_paths):
+        if not isinstance(reference, str) or not reference:
+            raise ValueError("actual G1 replay frame paths must be non-empty strings")
+        source = (g1_render_manifest_path.parent / reference).resolve()
+        if not source.exists() or not source.read_bytes():
+            raise ValueError(f"actual G1 replay frame is missing or blank: {source}")
+        destination = frame_dir / f"front-{index:06d}.png"
+        shutil.copyfile(source, destination)
+        copied_paths.append(_relative_path(destination, out_dir))
+
+    scene["g1_render_frame_sequence"] = {
+        "available": True,
+        "actual_g1_model_replay": True,
+        "visual_style": "mujoco-png-frame-sequence.v1",
+        "view": replay.get("view", "front"),
+        "paths": copied_paths,
+        "frame_count": len(copied_paths),
+        "source_render_manifest": scene.get("source_manifests", {}).get("g1_render"),
+        "nonblank_pixel_check": replay.get("nonblank_pixel_check"),
+        "changed_frame_check": replay.get("changed_frame_check"),
+        "applied_joint_count_min": replay.get("applied_joint_count_min"),
+    }
+
+
 def write_public_demo(
     *,
     playback_manifest_path: Path,
@@ -751,6 +864,11 @@ def write_public_demo(
     html_path = out_dir / "index.html"
     manifest_path = out_dir / "manifest.json"
 
+    _attach_public_g1_replay_frames(
+        scene,
+        g1_render_manifest_path=g1_render_manifest_path,
+        out_dir=out_dir,
+    )
     _write_json(scene_path, scene)
     if use_rerun_sdk:
         recording = _write_rerun_recording(scene, recording_path)
@@ -768,6 +886,18 @@ def write_public_demo(
     surface_key = _surface_layer_key(scene.get("surface_proxy"))
     g1_meta = scene.get("track_metadata", {}).get("g1", {})
     render_evidence = scene.get("render_evidence") or {}
+    g1_sequence = scene.get("g1_render_frame_sequence") or {}
+    actual_g1_replay = bool(g1_sequence.get("actual_g1_model_replay"))
+    g1_panel_label = (
+        "Unitree G1 MuJoCo model replay"
+        if actual_g1_replay
+        else "Unitree G1 schematic evidence"
+    )
+    g1_visual_style = (
+        "mujoco-png-frame-sequence.v1"
+        if actual_g1_replay
+        else "robot-body-schematic.v1"
+    )
     fixture_label = "fixture-only" if scene["fixture_only"] else "real-artifact"
     manifest = {
         "schema": PUBLIC_DEMO_SCHEMA,
@@ -780,7 +910,7 @@ def write_public_demo(
         "scoring_source": "smplx",
         "tracks": {
             "smplx": {"label": "SMPL-X teacher", "scoring_allowed": True},
-            "g1": {"label": "Unitree G1 visual", "scoring_allowed": False},
+            "g1": {"label": g1_panel_label, "scoring_allowed": False},
         },
         "teaching_html": {
             "profile": TWO_PANEL_TEACHING_HTML_PROFILE,
@@ -796,7 +926,7 @@ def write_public_demo(
                 },
                 "right": {
                     "track": "g1",
-                    "label": "Unitree G1 robot model replay",
+                    "label": g1_panel_label,
                     "scoring_allowed": False,
                 },
             },
@@ -804,11 +934,15 @@ def write_public_demo(
                 "robot": g1_meta.get("robot"),
                 "track_fixture_only": bool(g1_meta.get("fixture_only")),
                 "track_derivation": g1_meta.get("derivation"),
+                "pose_stream": g1_meta.get("pose_stream"),
                 "model_fixture_only": render_evidence.get("model_fixture_only"),
                 "renderer_backend": (render_evidence.get("renderer") or {}).get("backend")
                 if isinstance(render_evidence.get("renderer"), dict)
                 else None,
-                "visual_style": "robot-body-schematic.v1",
+                "visual_style": g1_visual_style,
+                "actual_g1_model_replay": actual_g1_replay,
+                "rendered_frame_count": g1_sequence.get("frame_count", 0),
+                "rendered_frame_paths": g1_sequence.get("paths", []),
             },
         },
         "routine_feedback": {
@@ -840,7 +974,7 @@ def write_public_demo(
         "visual_smoke_expectations": {
             "required_labels": [
                 "SMPL-X skeleton teaching track",
-                "Unitree G1 robot model replay",
+                g1_panel_label,
                 "Synchronized timeline",
                 fixture_label,
                 "Routine feedback",
@@ -901,6 +1035,17 @@ def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
         raise ValueError("public demo teaching_html layout must split SMPL-X left and G1 right")
     if teaching_html.get("interactive") is not True or teaching_html.get("synchronized_replay") is not True:
         raise ValueError("public demo teaching_html must be interactive and synchronized")
+    g1_replay = teaching_html.get("g1_replay")
+    if not isinstance(g1_replay, dict):
+        raise ValueError("public demo teaching_html must define g1_replay metadata")
+    actual_g1_replay = bool(g1_replay.get("actual_g1_model_replay"))
+    if actual_g1_replay:
+        if g1_replay.get("visual_style") != "mujoco-png-frame-sequence.v1":
+            raise ValueError("actual G1 replay must use the MuJoCo PNG frame-sequence visual style")
+        if not isinstance(g1_replay.get("rendered_frame_paths"), list) or not g1_replay["rendered_frame_paths"]:
+            raise ValueError("actual G1 replay must expose rendered frame paths")
+    elif teaching_html.get("panels", {}).get("right", {}).get("label") != "Unitree G1 schematic evidence":
+        raise ValueError("non-actual G1 public demo must label the right panel as schematic evidence")
 
     required_labels = manifest.get("visual_smoke_expectations", {}).get("required_labels", [])
     if not required_labels:
@@ -913,6 +1058,19 @@ def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
     html = _require_nonblank(html_path)
     scene = _load_json(scene_path)
     require_schema(scene, SCENE_TIMELINE_SCHEMA, "scene/timeline manifest")
+    checked_extra_paths: list[Path] = []
+    if actual_g1_replay:
+        sequence = scene.get("g1_render_frame_sequence")
+        if not isinstance(sequence, dict) or sequence.get("actual_g1_model_replay") is not True:
+            raise ValueError("scene must expose the actual G1 replay frame sequence")
+        if sequence.get("frame_count") != len(g1_replay["rendered_frame_paths"]):
+            raise ValueError("actual G1 replay frame counts differ between scene and public manifest")
+        for reference in g1_replay["rendered_frame_paths"]:
+            if not isinstance(reference, str) or not reference:
+                raise ValueError("actual G1 replay rendered frame paths must be non-empty strings")
+            frame_path = manifest_path.parent / reference
+            _require_nonblank_bytes(frame_path)
+            checked_extra_paths.append(frame_path)
     if manifest.get("rerun", {}).get("actual_rrd"):
         recording_bytes = _require_nonblank_bytes(recording_path)
         if recording_bytes.startswith(b"{"):
@@ -939,5 +1097,5 @@ def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
 
     return PublicDemoSmokeResult(
         manifest_path=manifest_path,
-        checked_paths=[html_path, scene_path, recording_path, screenshot_path],
+        checked_paths=[html_path, scene_path, recording_path, screenshot_path, *checked_extra_paths],
     )

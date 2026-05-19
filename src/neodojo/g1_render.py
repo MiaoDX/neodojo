@@ -224,6 +224,132 @@ def _render_image_html(manifest: dict[str, Any], frame_paths: dict[str, Path]) -
 """
 
 
+def _mujoco_pose_application_for_frame(
+    mujoco: Any,
+    model: Any,
+    data: Any,
+    *,
+    joint_angle_frames: list[dict[str, float]],
+    joint_angle_names: list[str],
+    frame_index: int,
+) -> dict[str, Any]:
+    data.qpos[:] = model.qpos0
+    if not joint_angle_frames:
+        mujoco.mj_forward(model, data)
+        return {
+            "source": "neutral_qpos",
+            "selected_frame": frame_index,
+            "joint_angle_count": 0,
+            "applied_joint_count": 0,
+            "missing_joint_count": 0,
+            "skipped_joint_count": 0,
+            "clipped_joint_count": 0,
+            "notes": "No imported GMR joint-angle stream was found; rendered the model neutral qpos.",
+        }
+
+    application = _apply_mujoco_joint_angles(
+        mujoco,
+        model,
+        data,
+        joint_angle_frames[frame_index],
+    )
+    mujoco.mj_forward(model, data)
+    return {
+        "source": "imported_gmr_joint_angles",
+        "selected_frame": frame_index,
+        "joint_angle_count": len(joint_angle_names),
+        "notes": "Applied matching imported GMR joint angles to MuJoCo qpos; unmatched or unsupported joints remain at model defaults.",
+        **application,
+    }
+
+
+def _render_mujoco_replay_sequence(
+    *,
+    mujoco: Any,
+    model: Any,
+    data: Any,
+    renderer: Any,
+    frame_dir: Path,
+    joint_angle_frames: list[dict[str, float]],
+    joint_angle_names: list[str],
+) -> dict[str, Any]:
+    if not joint_angle_frames:
+        return {
+            "available": False,
+            "actual_g1_model_replay": False,
+            "view": "front",
+            "frame_count": 0,
+            "paths": [],
+            "nonblank_frame_count": 0,
+            "nonblank_pixel_check": False,
+            "changed_frame_pair_count": 0,
+            "changed_frame_check": False,
+            "pose_source": "neutral_qpos",
+            "applied_joint_count_min": 0,
+            "missing_joint_count_max": 0,
+            "skipped_joint_count_max": 0,
+        }
+
+    camera = _camera_for_view(mujoco, model, "front")
+    replay_dir = frame_dir / "replay"
+    paths: list[Path] = []
+    nonblank_checks: list[bool] = []
+    changed_checks: list[bool] = []
+    applied_counts: list[int] = []
+    missing_counts: list[int] = []
+    skipped_counts: list[int] = []
+    previous_pixels: bytes | None = None
+
+    for frame_index in range(len(joint_angle_frames)):
+        application = _mujoco_pose_application_for_frame(
+            mujoco,
+            model,
+            data,
+            joint_angle_frames=joint_angle_frames,
+            joint_angle_names=joint_angle_names,
+            frame_index=frame_index,
+        )
+        renderer.update_scene(data, camera=camera)
+        pixels = renderer.render()
+        rgb = pixels[..., :3]
+        signature = rgb.tobytes()
+        if previous_pixels is not None:
+            changed_checks.append(signature != previous_pixels)
+        previous_pixels = signature
+        nonblank_checks.append(bool(rgb.max() > rgb.min()))
+        applied_counts.append(int(application.get("applied_joint_count", 0)))
+        missing_counts.append(int(application.get("missing_joint_count", 0)))
+        skipped_counts.append(int(application.get("skipped_joint_count", 0)))
+        path = replay_dir / f"front-{frame_index:06d}.png"
+        _write_rgb_png(path, pixels)
+        paths.append(path)
+
+    return {
+        "available": True,
+        "actual_g1_model_replay": bool(
+            len(paths) == len(joint_angle_frames)
+            and all(nonblank_checks)
+            and any(changed_checks)
+            and bool(applied_counts)
+            and min(applied_counts) > 0
+        ),
+        "view": "front",
+        "visual_style": "mujoco-png-frame-sequence.v1",
+        "frame_count": len(paths),
+        "paths": paths,
+        "nonblank_frame_count": sum(1 for check in nonblank_checks if check),
+        "nonblank_pixel_check": all(nonblank_checks),
+        "changed_frame_pair_count": sum(1 for check in changed_checks if check),
+        "changed_frame_check": any(changed_checks),
+        "pose_source": "imported_gmr_joint_angles",
+        "joint_angle_count": len(joint_angle_names),
+        "applied_joint_count_min": min(applied_counts) if applied_counts else 0,
+        "applied_joint_count_max": max(applied_counts) if applied_counts else 0,
+        "missing_joint_count_max": max(missing_counts) if missing_counts else 0,
+        "skipped_joint_count_max": max(skipped_counts) if skipped_counts else 0,
+    }
+
+
 def _png_chunk(kind: bytes, data: bytes) -> bytes:
     return (
         struct.pack(">I", len(data))
@@ -490,32 +616,14 @@ def write_g1_mujoco_render(
     except Exception as exc:
         raise ValueError(f"failed to load model with MuJoCo: {exc}") from exc
     data = mujoco.MjData(model)
-    data.qpos[:] = model.qpos0
-    pose_application: dict[str, Any] = {
-        "source": "neutral_qpos",
-        "selected_frame": selected_frame,
-        "joint_angle_count": 0,
-        "applied_joint_count": 0,
-        "missing_joint_count": 0,
-        "skipped_joint_count": 0,
-        "clipped_joint_count": 0,
-        "notes": "No imported GMR joint-angle stream was found; rendered the model neutral qpos.",
-    }
-    if joint_angle_frames:
-        application = _apply_mujoco_joint_angles(
-            mujoco,
-            model,
-            data,
-            joint_angle_frames[selected_frame],
-        )
-        pose_application = {
-            "source": "imported_gmr_joint_angles",
-            "selected_frame": selected_frame,
-            "joint_angle_count": len(joint_angle_names),
-            "notes": "Applied matching imported GMR joint angles to MuJoCo qpos; unmatched or unsupported joints remain at model defaults.",
-            **application,
-        }
-    mujoco.mj_forward(model, data)
+    pose_application = _mujoco_pose_application_for_frame(
+        mujoco,
+        model,
+        data,
+        joint_angle_frames=joint_angle_frames,
+        joint_angle_names=joint_angle_names,
+        frame_index=selected_frame,
+    )
 
     frame_dir = out_dir / "frames"
     frame_paths = {
@@ -524,26 +632,55 @@ def write_g1_mujoco_render(
     }
     renderer = mujoco.Renderer(model, height=height, width=width)
     nonblank_checks: dict[str, bool] = {}
+    replay_sequence: dict[str, Any]
     try:
         for view, path in frame_paths.items():
             camera = _camera_for_view(mujoco, model, view)
+            _mujoco_pose_application_for_frame(
+                mujoco,
+                model,
+                data,
+                joint_angle_frames=joint_angle_frames,
+                joint_angle_names=joint_angle_names,
+                frame_index=selected_frame,
+            )
             renderer.update_scene(data, camera=camera)
             pixels = renderer.render()
             nonblank_checks[view] = bool(pixels.max() > pixels.min())
             _write_rgb_png(path, pixels)
+        replay_sequence = _render_mujoco_replay_sequence(
+            mujoco=mujoco,
+            model=model,
+            data=data,
+            renderer=renderer,
+            frame_dir=frame_dir,
+            joint_angle_frames=joint_angle_frames,
+            joint_angle_names=joint_angle_names,
+        )
     finally:
         renderer.close()
     if not all(nonblank_checks.values()):
         raise ValueError(f"MuJoCo rendered blank views: {nonblank_checks}")
+
+    actual_replay = bool(
+        replay_sequence.get("actual_g1_model_replay")
+        and not g1_manifest.get("fixture_only")
+        and pose_application.get("source") == "imported_gmr_joint_angles"
+    )
 
     manifest_path = out_dir / "manifest.json"
     html_path = out_dir / "index.html"
     manifest = {
         "schema": G1_RENDER_SCHEMA,
         "fixture_only": bool(g1_manifest.get("fixture_only")),
+        "actual_g1_model_replay": actual_replay,
         "renderer": {
             "backend": G1_MUJOCO_RENDER_BACKEND,
-            "role": "MuJoCo offscreen neutral-pose mesh render evidence",
+            "role": (
+                "MuJoCo offscreen G1 model frame-sequence replay"
+                if actual_replay
+                else "MuJoCo offscreen neutral/static mesh render evidence"
+            ),
             "mujoco_version": getattr(mujoco, "__version__", None),
             "resolution": {"width": width, "height": height},
         },
@@ -570,6 +707,17 @@ def write_g1_mujoco_render(
         "frame_paths": {
             view: _relative_path(path, manifest_path.parent)
             for view, path in frame_paths.items()
+        },
+        "replay_frames": {
+            **{
+                key: value
+                for key, value in replay_sequence.items()
+                if key != "paths"
+            },
+            "paths": [
+                _relative_path(path, manifest_path.parent)
+                for path in replay_sequence.get("paths", [])
+            ],
         },
         "html": _relative_path(html_path, manifest_path.parent),
         "scoring_source": "smplx",

@@ -1,18 +1,18 @@
 ---
 refactor_scope: real-g1-model-replay
-status: CONTINUE
+status: DONE
 accepted_severities:
   - P0
   - P1
   - P2
-last_verified: null
+last_verified: 2026-05-19
 ---
 
 # Refactor Scope: Real G1 Model Replay
 
 ## Status
 
-CONTINUE
+DONE
 
 ## Target
 
@@ -144,3 +144,19 @@ The refactor is done when the local Baduanjin proof clip can regenerate
   `render mujoco-g1`, GMR import boundaries, and the local
   `/home/mi/ws/gogo/roboharness` package. User selected local GMR execution and
   a Git-source roboharness dependency instead of PyPI.
+- 2026-05-19: Implemented the fail-closed command/contract surface: pinned
+  optional `real-g1-replay` dependency, `register-roboharness-g1`, local GMR
+  run wrapper, MuJoCo replay-frame manifest fields, public HTML schematic-vs-
+  actual labels with PNG frame consumption, `real-conversion import-demo`
+  support for supplied G1 render artifacts, and stricter actual-replay audit
+  checks. This checkpoint still awaited a local Baduanjin run with real GMR
+  output, a non-fixture MJCF descriptor, and a nonblank/changing MuJoCo frame
+  sequence under ignored `outputs/`.
+- 2026-05-19: Completed the local ignored Baduanjin `80s-92s` proof. Fixed MJCF
+  `compiler meshdir` asset resolution for the roboharness/robot_descriptions G1
+  descriptor, added a headless local GMR execution path that saves all native
+  retargeted frames without opening MuJoCo's viewer, imported the resulting 300
+  Unitree G1 joint-angle frames, rendered a 300-frame nonblank/changing MuJoCo
+  PNG replay sequence, regenerated `outputs/real-demo/public-demo/index.html`
+  with actual G1 replay frames, and verified the strict audit with
+  `make verify-real REAL_ARTIFACT_SOURCE_MATERIALIZATION=outputs/real-conversion-motion-80-92/source-materialized/source-materialization.json REAL_ARTIFACT_GVHMR_JSON=outputs/real-conversion-motion-80-92/gpu-run/gvhmr-smplx-joints.json REAL_ARTIFACT_OUT=outputs/real-demo`.

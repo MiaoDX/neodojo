@@ -5,12 +5,15 @@ import pickle
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from neodojo.g1_visual import import_gmr_json_track
 from neodojo.gmr_native import (
+    GMR_LOCAL_RUN_SCHEMA,
     GMR_NATIVE_ADAPTER_REPORT_SCHEMA,
     UNITREE_G1_29DOF_JOINT_NAMES,
     normalize_gmr_pickle,
+    run_local_gmr_unitree_g1,
 )
 from neodojo.motion_contract import write_fixture_motion_contract
 
@@ -94,6 +97,61 @@ class GMRNativeTests(unittest.TestCase):
             list(normalized["frames"][0]["joint_angles"]),
             ["left_test_joint", "right_test_joint"],
         )
+
+    def test_run_local_gmr_unitree_g1_writes_prepared_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            gvhmr_result = root / "hmr4d_results.pt"
+            gvhmr_result.write_bytes(b"native GVHMR placeholder")
+
+            result = run_local_gmr_unitree_g1(
+                root / "gmr-run",
+                motion_record=motion.out_dir,
+                gvhmr_result=gvhmr_result,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "prepared_missing_gmr_repo")
+        self.assertEqual(manifest["schema"], GMR_LOCAL_RUN_SCHEMA)
+        self.assertFalse(manifest["execute"])
+        self.assertIn("gvhmr_to_robot.py", " ".join(manifest["command"]))
+        self.assertIn("tracks import-gmr-json", manifest["next_commands"]["import_gmr_json"])
+        self.assertIsNone(manifest["normalized_export"])
+
+    def test_run_local_gmr_unitree_g1_execute_uses_headless_runner(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            gvhmr_result = root / "hmr4d_results.pt"
+            gvhmr_result.write_bytes(b"native GVHMR placeholder")
+            body_models = root / "body-models"
+            body_models.mkdir()
+
+            def fake_headless_runner(**kwargs):
+                _write_native_gmr_pickle(kwargs["native_artifact_path"], frame_count=10, fps=30)
+                return {
+                    "runner": "neodojo_headless_gmr_library.v1",
+                    "frame_count": 10,
+                    "fps": 30,
+                    "opened_viewer": False,
+                }
+
+            with patch("neodojo.gmr_native._run_headless_gmr_unitree_g1", side_effect=fake_headless_runner):
+                result = run_local_gmr_unitree_g1(
+                    root / "gmr-run",
+                    motion_record=motion.out_dir,
+                    gvhmr_result=gvhmr_result,
+                    body_models=body_models,
+                    execute=True,
+                )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "normalized")
+        self.assertEqual(manifest["runner"], "neodojo_headless_gmr_library.v1")
+        self.assertFalse(manifest["completed_process"]["opened_viewer"])
+        self.assertIsNotNone(manifest["normalized_export"])
+        self.assertIsNotNone(result.normalized_export_path)
 
 
 if __name__ == "__main__":

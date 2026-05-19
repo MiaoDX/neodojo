@@ -6,14 +6,18 @@ simulated teaching playback that can be inspected from multiple views.
 The architecture is currently a target design, not a fully implemented runtime.
 The tracked repo contains fixture-first motion contracts, G1 visual-track manifests,
 an imported-GMR G1 track boundary, local G1 SVG/HTML render evidence, optional
-MuJoCo mesh render evidence with matching imported-GMR qpos application,
-teaching playback HTML, public-demo artifacts, an optional first Viser local
+MuJoCo mesh render evidence with matching imported-GMR qpos application and
+frame-sequence replay metadata, teaching playback HTML, public-demo artifacts
+with fail-closed schematic-vs-actual G1 labels, an optional first Viser local
 runtime, real-conversion prep, and local source-media materialization handoff.
-This workspace also has a local ignored GPU proof that produced a non-fixture
-GVHMR SMPL-X teaching-joints export and imported it through `outputs/real-demo/`.
-The tracked repo does not contain a checked-in GVHMR/GMR/simulator runtime
-pipeline, production teaching UI, committed generated motion artifact, or
-published real demo.
+This workspace also has a local ignored Baduanjin `80s-92s` proof that produced
+a non-fixture GVHMR SMPL-X teaching-joints export, headless native GMR Unitree
+G1 joint angles, a roboharness/robot_descriptions G1 MJCF descriptor, and a
+nonblank/changing MuJoCo PNG replay sequence consumed by
+`outputs/real-demo/public-demo/index.html`. The tracked repo does not contain a
+checked-in GVHMR/GMR/simulator runtime pipeline, CI/default actual G1 replay,
+production teaching UI, committed generated motion artifact, or published real
+demo.
 
 ## MVP Data Flow
 
@@ -47,13 +51,16 @@ renderer.
 
 Humanoid visual track owns retargeting from SMPL-X to Unitree G1 through GMR and
 rendering the robot as a visual companion. The current repo can import a
-normalized external GMR Unitree G1 JSON export, but does not run GMR locally.
-When MuJoCo assets are supplied, matching imported GMR joint angles can be
-applied to robot `qpos` for render evidence. This path may lose motion detail
-and must not be used as the scoring source.
+normalized external GMR Unitree G1 JSON export and can run a headless local GMR
+wrapper when a local GMR checkout or installed GMR environment plus local
+SMPL-X body-model assets are supplied, but it does not vendor a GMR runtime.
+When MuJoCo assets are supplied, matching imported/native GMR joint angles can
+be applied to robot `qpos` for selected-view evidence and a synchronized PNG
+frame sequence. This path may lose motion detail and must not be used as the
+scoring source.
 
 Rendering owns MuJoCo/Genesis scene setup, synchronized cameras, offscreen frame
-capture, and trajectory overlays.
+capture, frame-sequence replay artifacts, and trajectory overlays.
 
 Web playback owns the Viser UI: synchronized views, timeline control, overlays,
 and later user-practice comparison. The current optional Viser slice consumes
@@ -61,6 +68,9 @@ the public-demo scene contract and proves synchronized SMPL-X/G1 tracks with a
 frame slider, camera preset controls, annotation-anchor navigation, and
 generated front/side/top preview screenshots; richer production teaching polish
 remains follow-on work.
+The static public HTML consumes MuJoCo G1 PNG replay frames only when the render
+manifest proves a non-fixture, nonblank, changing frame sequence; otherwise it
+labels the right panel as schematic evidence.
 
 ## Core Contracts
 

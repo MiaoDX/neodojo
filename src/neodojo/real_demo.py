@@ -7,8 +7,8 @@ from typing import Any
 
 from .annotations import write_detected_annotations
 from .capture_bundle import write_capture_bundle
-from .g1_render import write_g1_render
-from .g1_visual import build_g1_visual_track, write_fixture_g1_model_descriptor
+from .g1_render import write_g1_mujoco_render, write_g1_render
+from .g1_visual import build_g1_visual_track, resolve_g1_track_manifest, write_fixture_g1_model_descriptor
 from .motion_contract import _relative_path, _write_json, validate_output_dir, write_gvhmr_json_motion_contract
 from .public_demo import smoke_check_public_demo, write_public_demo
 from .real_conversion import SOURCE_MATERIALIZATION_SCHEMA, validate_gvhmr_source
@@ -57,6 +57,15 @@ def _materialized_reference_video(source_materialization: Path) -> tuple[Path | 
     return trimmed, start
 
 
+def _model_descriptor_from_track(g1_track: Path) -> Path | None:
+    track_manifest_path = resolve_g1_track_manifest(g1_track)
+    track = _load_json_object(track_manifest_path, "G1 track manifest")
+    reference = track.get("model_descriptor")
+    if not isinstance(reference, str) or not reference:
+        return None
+    return (track_manifest_path.parent / reference).resolve()
+
+
 def write_real_conversion_demo(
     out_dir: Path,
     *,
@@ -64,6 +73,8 @@ def write_real_conversion_demo(
     gvhmr_json: Path,
     g1_track: Path | None = None,
     model_descriptor: Path | None = None,
+    g1_render: Path | None = None,
+    render_mujoco: bool = False,
     use_rerun_sdk: bool = False,
 ) -> RealConversionDemoWriteResult:
     validate_output_dir(out_dir)
@@ -108,16 +119,36 @@ def write_real_conversion_demo(
         g1_track_path = generated_g1_track.track_manifest_path
     else:
         g1_track_path = g1_track
+        if model_descriptor_path is None:
+            model_descriptor_path = _model_descriptor_from_track(g1_track_path)
 
-    if model_descriptor_path is None:
+    if model_descriptor_path is None and g1_render is None:
         raise ValueError("real conversion demo rendering requires a G1 model descriptor")
 
-    render = write_g1_render(
-        out_dir / "g1-render",
-        model_descriptor_path=model_descriptor_path,
-        g1_track=g1_track_path,
-        allow_fixture_model=True,
-    )
+    if g1_render is not None:
+        render_manifest_path = g1_render
+        render_checked_paths = [g1_render]
+    elif render_mujoco:
+        if model_descriptor_path is None:
+            raise ValueError("MuJoCo G1 replay rendering requires a G1 model descriptor")
+        render = write_g1_mujoco_render(
+            out_dir / "g1-mujoco-render",
+            model_descriptor_path=model_descriptor_path,
+            g1_track=g1_track_path,
+        )
+        render_manifest_path = render.manifest_path
+        render_checked_paths = [render.manifest_path, *render.frame_paths.values()]
+    else:
+        if model_descriptor_path is None:
+            raise ValueError("G1 schematic rendering requires a G1 model descriptor")
+        render = write_g1_render(
+            out_dir / "g1-render",
+            model_descriptor_path=model_descriptor_path,
+            g1_track=g1_track_path,
+            allow_fixture_model=True,
+        )
+        render_manifest_path = render.manifest_path
+        render_checked_paths = [render.manifest_path, *render.frame_paths.values()]
     reference_video, reference_trim_start = _materialized_reference_video(source_materialization)
     playback = write_teaching_playback_demo(
         out_dir / "teaching-demo",
@@ -130,7 +161,7 @@ def write_real_conversion_demo(
     )
     public = write_public_demo(
         playback_manifest_path=playback.manifest_path,
-        g1_render_manifest_path=render.manifest_path,
+        g1_render_manifest_path=render_manifest_path,
         recording_path=out_dir / "public-demo" / "neodojo-demo.rrd",
         use_rerun_sdk=use_rerun_sdk,
     )
@@ -139,13 +170,13 @@ def write_real_conversion_demo(
     viser = write_viser_runtime_contract(
         out_dir / "viser-runtime",
         playback_manifest_path=playback.manifest_path,
-        g1_render_manifest_path=render.manifest_path,
+        g1_render_manifest_path=render_manifest_path,
     )
     capture = write_capture_bundle(
         out_dir / "capture",
         public_demo=public.manifest_path,
         viser_runtime=viser.manifest_path,
-        g1_render=render.manifest_path,
+        g1_render=render_manifest_path,
     )
 
     manifest_path = out_dir / "manifest.json"
@@ -154,6 +185,8 @@ def write_real_conversion_demo(
         fixture_components.append("g1_model_descriptor")
     if generated_g1_track is not None:
         fixture_components.append("derived_g1_visual_track")
+    render_manifest_payload = _load_json_object(render_manifest_path, "G1 render manifest")
+    actual_g1_model_replay = bool(render_manifest_payload.get("actual_g1_model_replay"))
     notes = (
         "This command consumes a returned GVHMR JSON export. It does not run "
         "GVHMR inside the import step or commit source video, motion outputs, "
@@ -187,8 +220,14 @@ def write_real_conversion_demo(
         "annotations": _relative_path(annotations.manifest_path, manifest_path.parent),
         "g1_track": _relative_path(g1_track_path, manifest_path.parent),
         "g1_track_generated_from_smplx": generated_g1_track is not None,
-        "g1_model_descriptor": _relative_path(model_descriptor_path, manifest_path.parent),
-        "g1_render": _relative_path(render.manifest_path, manifest_path.parent),
+        "g1_model_descriptor": _relative_path(model_descriptor_path, manifest_path.parent)
+        if model_descriptor_path is not None
+        else None,
+        "g1_render": _relative_path(render_manifest_path, manifest_path.parent),
+        "g1_render_supplied": g1_render is not None,
+        "g1_render_mujoco_requested": render_mujoco,
+        "actual_g1_model_replay": actual_g1_model_replay,
+        "g1_replay_claim": "actual_mujoco_frame_sequence" if actual_g1_model_replay else "schematic_or_incomplete_evidence",
         "teaching_playback": _relative_path(playback.manifest_path, manifest_path.parent),
         "public_demo": _relative_path(public.manifest_path, manifest_path.parent),
         "teaching_html": public_manifest_payload.get("teaching_html"),
@@ -206,7 +245,7 @@ def write_real_conversion_demo(
         surface.manifest_path,
         annotations.manifest_path,
         g1_track_path,
-        render.manifest_path,
+        *render_checked_paths,
         playback.manifest_path,
         public.manifest_path,
         viser.manifest_path,

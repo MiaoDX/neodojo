@@ -28,6 +28,12 @@ endif
 ifdef MODEL_DESCRIPTOR
 REAL_DEMO_ARGS += --model-descriptor "$(MODEL_DESCRIPTOR)"
 endif
+ifdef G1_RENDER
+REAL_DEMO_ARGS += --g1-render "$(G1_RENDER)"
+endif
+ifdef RENDER_MUJOCO
+REAL_DEMO_ARGS += --render-mujoco
+endif
 ifdef USE_RERUN_SDK
 REAL_DEMO_ARGS += --use-rerun-sdk
 endif
