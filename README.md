@@ -8,80 +8,74 @@
 
 **English** · [中文](README.zh.md)
 
-<img src="docs/assets/neodojo-hero.webp" alt="neodojo SMPL-X and Unitree G1 teaching replay hero" width="100%">
+<img src="docs/assets/neodojo-code-dojo.webp" alt="green-code dojo with a robot and motion skeleton training together" width="100%">
 
-neodojo turns official or user-supplied instructional movement videos into
-simulated multi-view teaching playback. The teaching source is SMPL-X motion;
-Unitree G1 is a synchronized visual companion, never the scoring source.
+> "This is the Construct. It's our loading program. We can load anything, from clothing, to equipment, weapons, training simulations..."
+>
+> — Morpheus, *The Matrix* (1999)
 
-## Why It Exists
+**I know kung fu.**
 
-Instructional videos are easy to watch and hard to inspect. neodojo preserves
-the motion as a teaching track, retargets it to a humanoid visual track, and
-packages both into reviewable HTML artifacts that can run locally or in CI.
+Twenty-seven years later, we can build a real Construct.
 
-<img src="docs/assets/neodojo-sample.gif" alt="sample Unitree G1 MuJoCo replay from the Baduanjin derived JSON sample" width="420">
+Not for loading weapons. Not for loading combat programs. This Construct loads
+Baduanjin, Wu Qin Xi, Yi Jin Jing, and eventually any human movement practice
+that benefits from seeing the standard form.
 
-## Current Proof
+neodojo is a simulation training dojo for kung fu in its broadest sense:
+qigong, taichi, traditional martial arts, daoyin, rehabilitation drills, and
+beyond. It converts instructional videos into motion tracks, retargets them to
+a humanoid in simulation, and renders the result from multiple angles with
+joint paths and synchronized playback.
 
-- Fixture public demo: [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
-- CI real-demo artifact: `neodojo-real-demo-public-demo` from the
-  [`public-demo` workflow](https://github.com/MiaoDX/neodojo/actions/workflows/public-demo.yml)
-- Local real-demo HTML: `outputs/real-demo/public-demo/index.html` after
-  `make ci-real-demo`
-- Sample input:
-  [`samples/baduanjin-03-006-two-hands-80-92`](samples/baduanjin-03-006-two-hands-80-92)
+You see the standard shadow of a move, then load that shadow into your own
+training loop.
 
-The committed sample contains derived JSON only: source provenance, returned
-GVHMR SMPL-X joints, and normalized GMR Unitree G1 joint angles. CI regenerates
-the G1 model descriptor, MuJoCo frames, browser smoke capture, and public HTML
-from those JSON artifacts. Raw video, checkpoints, pickles, and rendered frame
-outputs stay out of git.
+<img src="docs/assets/neodojo-sample.gif" alt="Baduanjin sample preview with SMPL-X skeleton and MuJoCo G1 replay panels" width="100%">
+
+## What You Can Open
+
+| Artifact | Link |
+| --- | --- |
+| Live fixture demo | [`miaodx.com/neodojo`](https://miaodx.com/neodojo/) |
+| CI fixture HTML | `neodojo-public-demo` in the [`public-demo` workflow](https://github.com/MiaoDX/neodojo/actions/workflows/public-demo.yml) |
+| CI sample-backed real HTML | `neodojo-real-demo-public-demo` in the same workflow |
+| Local sample-backed real HTML | `outputs/real-demo/public-demo/index.html` after `make ci-real-demo` |
+
+The committed Baduanjin sample contains derived JSON only: source provenance,
+returned GVHMR SMPL-X joints, and normalized GMR Unitree G1 joint angles. Raw
+video, checkpoints, pickles, and rendered frame outputs stay out of git.
 
 ## Pipeline
 
 ![neodojo architecture](docs/assets/neodojo-architecture.svg)
 
-```text
-source video -> GVHMR SMPL-X -> GMR Unitree G1 -> MuJoCo/Genesis -> teaching UI
-```
+`source video -> GVHMR SMPL-X -> GMR Unitree G1 -> MuJoCo/Genesis -> teaching UI`
 
-## Run
+SMPL-X is the teaching and scoring source. Unitree G1 is the visual companion,
+not the judge.
 
-```bash
-make verify
-make demo-public-browser
-make ci-real-demo
-make ci-real-demo \
-  CI_REAL_SOURCE_MATERIALIZATION=path/to/source-materialization.json \
-  CI_REAL_GVHMR_JSON=path/to/gvhmr-smplx-joints.json \
-  CI_REAL_GMR_G1_JSON=path/to/gmr-unitree-g1.json
-```
+## Try It
 
-MuJoCo CI/local parity uses `MUJOCO_GL=glfw` under `xvfb-run -a`. `osmesa` is
-the CPU headless fallback when system libraries are installed; `egl` is for
-GPU/self-hosted runners with working EGL.
+Use `make ci-real-demo` for the sample-backed real HTML and `make verify` for
+the bootstrap verification surface. Full command details live in
+[`STATUS.md`](STATUS.md).
 
-## HTML Links
+## Contributing
 
-| Target | How to open it |
-| --- | --- |
-| Live fixture HTML | [`miaodx.com/neodojo`](https://miaodx.com/neodojo/) |
-| CI fixture artifact | `neodojo-public-demo` in the [`public-demo` workflow](https://github.com/MiaoDX/neodojo/actions/workflows/public-demo.yml) |
-| CI sample-backed real HTML | `neodojo-real-demo-public-demo` in the [`public-demo` workflow](https://github.com/MiaoDX/neodojo/actions/workflows/public-demo.yml) |
-| Local fixture HTML | `outputs/public-demo/index.html` after `make demo-public-browser` |
-| Local sample-backed real HTML | `outputs/real-demo/public-demo/index.html` after `make ci-real-demo` |
+The dojo is not the place. The dojo is the practice.
 
-## Status
+Issues, PRs, ideas, and field notes are welcome. At this stage, every piece of
+feedback can shape the project.
 
-This repo is still bootstrap-stage. It has fixture motion contracts, a
-sample-backed Baduanjin real-demo CI lane, roboharness-style G1 MuJoCo replay,
-browser smoke, capture bundles, and local GVHMR/GMR handoff boundaries. It does
-not yet ship a checked-in GVHMR/GMR runtime environment, production Viser UI,
-published real-demo Pages site, or full simulator runtime pipeline.
+- Practitioners: the details your teacher can say but a flat video cannot show
+  are exactly what this project needs.
+- HMR and humanoid researchers: review the roadmap and suggest better
+  reconstruction, retargeting, rendering, or evaluation approaches.
+- roboharness and AI-coding-agent builders: this is an open experiment in
+  agent-assisted simulation tooling.
 
-Source provenance for the Baduanjin proof is public index item `03-006` in
-[`video/original_videos.md`](video/original_videos.md), trim `80s-92s`.
+**Show me.**
 
 ## Docs
 
