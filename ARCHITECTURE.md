@@ -14,10 +14,11 @@ This workspace also has a local ignored Baduanjin `80s-92s` proof that produced
 a non-fixture GVHMR SMPL-X teaching-joints export, headless native GMR Unitree
 G1 joint angles, a roboharness/robot_descriptions G1 MJCF descriptor, and a
 nonblank/changing MuJoCo PNG replay sequence consumed by
-`outputs/real-demo/public-demo/index.html`. The tracked repo does not contain a
-checked-in GVHMR/GMR/simulator runtime pipeline, CI/default actual G1 replay,
-production teaching UI, committed generated motion artifact, or published real
-demo.
+`outputs/real-demo/public-demo/index.html`. The tracked repo also contains a
+small derived Baduanjin JSON sample that lets CI regenerate the same shape of
+actual G1 MuJoCo replay without committing raw video, checkpoints, pickles, or
+rendered frame outputs. It does not contain a checked-in GVHMR/GMR/simulator
+runtime pipeline, production teaching UI, or published real demo.
 
 ## MVP Data Flow
 
