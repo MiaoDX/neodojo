@@ -31,7 +31,7 @@ joint paths and synchronized playback.
 You see the standard shadow of a move, then load that shadow into your own
 training loop.
 
-<img src="docs/assets/neodojo-sample.gif" alt="Baduanjin sample preview with SMPL-X skeleton and MuJoCo G1 replay panels" width="100%">
+<img src="docs/assets/neodojo-sample.gif" alt="Baduanjin preview with original video, SMPL-X skeleton, and MuJoCo G1 replay panels" width="100%">
 
 ## What You Can Open
 

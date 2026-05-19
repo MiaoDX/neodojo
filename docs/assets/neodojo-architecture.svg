@@ -1,82 +1,111 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
-  <title id="title">neodojo architecture</title>
-  <desc id="desc">Source video becomes SMPL-X motion, GMR Unitree G1 motion, MuJoCo or Genesis rendering, and synchronized teaching HTML.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 540" role="img" aria-labelledby="title desc">
+  <title id="title">neodojo layered architecture</title>
+  <desc id="desc">Video is reconstructed into SMPL-X motion, retargeted to G1, rendered, and reviewed in a teaching UI.</desc>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f7fbff"/>
-      <stop offset="0.5" stop-color="#ecfdf5"/>
-      <stop offset="1" stop-color="#f8fafc"/>
+    <radialGradient id="glow" cx="50%" cy="22%" r="75%">
+      <stop offset="0" stop-color="#1fffc7" stop-opacity="0.28"/>
+      <stop offset="0.52" stop-color="#0f766e" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#020617" stop-opacity="1"/>
+    </radialGradient>
+    <linearGradient id="laneA" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ecfeff"/>
+      <stop offset="1" stop-color="#ccfbf1"/>
     </linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#0f766e"/>
-      <stop offset="1" stop-color="#2563eb"/>
+    <linearGradient id="laneB" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eef2ff"/>
+      <stop offset="1" stop-color="#ddd6fe"/>
     </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.12"/>
+    <linearGradient id="laneC" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0f9ff"/>
+      <stop offset="1" stop-color="#bae6fd"/>
+    </linearGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="0.5" stop-color="#a7f3d0"/>
+      <stop offset="1" stop-color="#60a5fa"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#000" flood-opacity="0.28"/>
     </filter>
-    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#99f6e4"/>
     </marker>
   </defs>
-  <rect width="1200" height="420" rx="28" fill="url(#bg)"/>
-  <path d="M120 310 C300 220 440 345 600 250 C760 155 910 230 1080 120" fill="none" stroke="#99f6e4" stroke-width="26" opacity="0.38"/>
-  <path d="M120 310 C300 220 440 345 600 250 C760 155 910 230 1080 120" fill="none" stroke="url(#accent)" stroke-width="4" stroke-dasharray="10 14" opacity="0.75"/>
+
+  <rect width="1200" height="540" rx="30" fill="#020617"/>
+  <rect width="1200" height="540" rx="30" fill="url(#glow)"/>
+  <g opacity="0.18" stroke="#22c55e" stroke-width="1">
+    <path d="M0 448 H1200 M0 384 H1200 M0 320 H1200 M0 256 H1200"/>
+    <path d="M80 540 L255 188 M220 540 L355 188 M360 540 L455 188 M500 540 L555 188 M640 540 L655 188 M780 540 L755 188 M920 540 L855 188 M1060 540 L955 188"/>
+  </g>
 
   <g font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">
-    <text x="60" y="72" font-size="34" font-weight="800" fill="#0f172a">neodojo data flow</text>
-    <text x="60" y="104" font-size="17" fill="#475569">SMPL-X teaches. Unitree G1 visualizes. HTML makes the proof reviewable.</text>
+    <text x="64" y="72" fill="#ecfeff" font-size="36" font-weight="850">neodojo architecture</text>
+    <text x="64" y="106" fill="#99f6e4" font-size="18">video -> motion -> humanoid -> simulation -> teaching loop</text>
   </g>
 
-  <g filter="url(#shadow)" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
-    <g transform="translate(58 158)">
-      <rect width="178" height="132" rx="18" fill="#ffffff" stroke="#cbd5e1"/>
-      <circle cx="52" cy="52" r="24" fill="#dbeafe"/>
-      <path d="M38 70 L66 70 M42 46 L62 58 L42 70 Z" fill="#2563eb"/>
-      <text x="24" y="104" font-size="17" font-weight="800" fill="#0f172a">Source video</text>
-      <text x="24" y="124" font-size="12" fill="#64748b">local or official</text>
+  <g filter="url(#shadow)" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">
+    <g transform="translate(64 188)">
+      <rect width="180" height="180" rx="24" fill="#f8fafc" stroke="#a7f3d0"/>
+      <rect x="26" y="34" width="128" height="82" rx="14" fill="#dbeafe" stroke="#38bdf8" stroke-width="3"/>
+      <circle cx="90" cy="75" r="22" fill="#0f172a" opacity="0.1"/>
+      <path d="M76 97 L110 75 L76 53 Z" fill="#0284c7"/>
+      <text x="28" y="148" fill="#0f172a" font-size="22" font-weight="850">Video</text>
+      <text x="28" y="169" fill="#64748b" font-size="14">source form</text>
     </g>
-    <g transform="translate(280 158)">
-      <rect width="178" height="132" rx="18" fill="#ffffff" stroke="#cbd5e1"/>
-      <circle cx="89" cy="42" r="18" fill="#ccfbf1" stroke="#0f766e" stroke-width="3"/>
-      <path d="M89 60 V92 M56 82 H122 M66 118 L89 92 L112 118" fill="none" stroke="#0f766e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="28" y="104" font-size="17" font-weight="800" fill="#0f172a">GVHMR</text>
-      <text x="28" y="124" font-size="12" fill="#64748b">SMPL-X motion</text>
+
+    <g transform="translate(330 128)">
+      <rect width="224" height="130" rx="24" fill="url(#laneA)" stroke="#5eead4"/>
+      <circle cx="56" cy="48" r="18" fill="#ccfbf1" stroke="#0f766e" stroke-width="4"/>
+      <path d="M56 66 V98 M26 86 H86 M38 118 L56 98 L76 118" fill="none" stroke="#0f766e" stroke-width="6" stroke-linecap="round"/>
+      <text x="108" y="58" fill="#0f172a" font-size="23" font-weight="850">SMPL-X</text>
+      <text x="108" y="84" fill="#0f766e" font-size="15" font-weight="700">teacher</text>
     </g>
-    <g transform="translate(502 158)">
-      <rect width="178" height="132" rx="18" fill="#ffffff" stroke="#cbd5e1"/>
-      <path d="M58 42 H120 M72 42 V82 M106 42 V82 M72 82 L54 112 M106 82 L124 112" fill="none" stroke="#7c3aed" stroke-width="8" stroke-linecap="round"/>
-      <circle cx="58" cy="42" r="9" fill="#ede9fe" stroke="#7c3aed" stroke-width="4"/>
-      <circle cx="120" cy="42" r="9" fill="#ede9fe" stroke="#7c3aed" stroke-width="4"/>
-      <text x="38" y="104" font-size="17" font-weight="800" fill="#0f172a">GMR</text>
-      <text x="38" y="124" font-size="12" fill="#64748b">Unitree G1 track</text>
+
+    <g transform="translate(330 302)">
+      <rect width="224" height="130" rx="24" fill="url(#laneB)" stroke="#c4b5fd"/>
+      <path d="M42 36 H88 M54 36 V76 M78 36 V76 M54 76 L40 106 M78 76 L94 106" fill="none" stroke="#7c3aed" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="42" cy="36" r="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="4"/>
+      <circle cx="88" cy="36" r="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="4"/>
+      <text x="108" y="58" fill="#0f172a" font-size="23" font-weight="850">G1</text>
+      <text x="108" y="84" fill="#6d28d9" font-size="15" font-weight="700">visual</text>
     </g>
-    <g transform="translate(724 158)">
-      <rect width="178" height="132" rx="18" fill="#ffffff" stroke="#cbd5e1"/>
-      <rect x="44" y="38" width="90" height="58" rx="9" fill="#e0f2fe" stroke="#0284c7" stroke-width="3"/>
-      <path d="M54 86 H124 M64 74 H114 M74 62 H104" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/>
-      <text x="25" y="104" font-size="17" font-weight="800" fill="#0f172a">MuJoCo</text>
-      <text x="25" y="124" font-size="12" fill="#64748b">or Genesis render</text>
+
+    <g transform="translate(640 188)">
+      <rect width="208" height="180" rx="26" fill="url(#laneC)" stroke="#7dd3fc"/>
+      <rect x="44" y="44" width="120" height="76" rx="14" fill="#eff6ff" stroke="#0284c7" stroke-width="3"/>
+      <path d="M58 102 H150 M72 88 H136 M86 74 H122" stroke="#0284c7" stroke-width="5" stroke-linecap="round"/>
+      <text x="42" y="148" fill="#0f172a" font-size="22" font-weight="850">MuJoCo</text>
+      <text x="42" y="169" fill="#0369a1" font-size="14" font-weight="700">render</text>
     </g>
-    <g transform="translate(946 158)">
-      <rect width="196" height="132" rx="18" fill="#ffffff" stroke="#cbd5e1"/>
-      <rect x="30" y="34" width="136" height="72" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="3"/>
-      <path d="M45 80 H151 M68 92 H128" stroke="#0f766e" stroke-width="6" stroke-linecap="round"/>
-      <circle cx="92" cy="80" r="8" fill="#14b8a6"/>
-      <text x="30" y="124" font-size="17" font-weight="800" fill="#0f172a">Teaching HTML</text>
+
+    <g transform="translate(952 188)">
+      <rect width="184" height="180" rx="26" fill="#f8fafc" stroke="#99f6e4"/>
+      <rect x="32" y="42" width="120" height="84" rx="14" fill="#ecfeff" stroke="#14b8a6" stroke-width="3"/>
+      <path d="M50 96 H136 M66 108 H118" stroke="#0f766e" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="92" cy="96" r="9" fill="#14b8a6"/>
+      <text x="32" y="148" fill="#0f172a" font-size="22" font-weight="850">Dojo UI</text>
+      <text x="32" y="169" fill="#0f766e" font-size="14" font-weight="700">review</text>
     </g>
   </g>
 
-  <g stroke="#64748b" stroke-width="3" marker-end="url(#arrow)">
-    <line x1="236" y1="224" x2="274" y2="224"/>
-    <line x1="458" y1="224" x2="496" y2="224"/>
-    <line x1="680" y1="224" x2="718" y2="224"/>
-    <line x1="902" y1="224" x2="940" y2="224"/>
+  <g fill="none" stroke="url(#line)" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow)" filter="url(#softGlow)">
+    <path d="M244 270 C285 230 291 198 330 190"/>
+    <path d="M244 286 C285 326 291 364 330 370"/>
+    <path d="M554 190 C595 190 602 238 640 248"/>
+    <path d="M554 370 C595 370 602 316 640 308"/>
+    <path d="M848 278 H952"/>
   </g>
 
   <g font-family="Inter, ui-sans-serif, system-ui, sans-serif">
-    <rect x="62" y="335" width="476" height="48" rx="24" fill="#ffffff" stroke="#dbe3ed"/>
-    <text x="86" y="366" font-size="15" fill="#334155">Scoring boundary: SMPL-X is authoritative; G1 is visualization only.</text>
-    <rect x="566" y="335" width="572" height="48" rx="24" fill="#ffffff" stroke="#dbe3ed"/>
-    <text x="590" y="366" font-size="15" fill="#334155">Artifact boundary: CI publishes HTML; raw video and heavy renders stay out of git.</text>
+    <rect x="338" y="466" width="524" height="44" rx="22" fill="#041f17" stroke="#115e59"/>
+    <text x="600" y="494" text-anchor="middle" fill="#ccfbf1" font-size="17" font-weight="750">SMPL-X scores. G1 visualizes.</text>
   </g>
 </svg>
