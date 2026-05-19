@@ -102,6 +102,13 @@ def _png_rgb_pixel(path: Path, x: int, y: int) -> tuple[int, int, int]:
     return tuple(row[start : start + 3])
 
 
+def _png_dimensions(path: Path) -> tuple[int, int]:
+    payload = path.read_bytes()
+    if not payload.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise AssertionError(f"not a PNG file: {path}")
+    return struct.unpack(">II", payload[16:24])
+
+
 def _write_actual_g1_render_manifest(
     root: Path,
     *,
@@ -635,6 +642,17 @@ class DemoHtmlTests(unittest.TestCase):
                     allow_fixture_model=True,
                 )
 
+    def test_write_mujoco_render_rejects_invalid_resolution(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            with self.assertRaisesRegex(ValueError, "width and height must be positive"):
+                write_g1_mujoco_render(
+                    root / "mujoco-render",
+                    model_descriptor_path=root / "missing-model.json",
+                    g1_track=root / "missing-track.json",
+                    width=0,
+                )
+
     @unittest.skipUnless(importlib.util.find_spec("mujoco"), "mujoco optional dependency is not installed")
     def test_write_mujoco_render_from_registered_mjcf(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -669,18 +687,23 @@ class DemoHtmlTests(unittest.TestCase):
                 root / "mujoco-render",
                 model_descriptor_path=model.descriptor_path,
                 g1_track=g1.track_manifest_path,
+                width=96,
+                height=80,
             )
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
             front_png = result.frame_paths["front"].read_bytes()
+            front_dimensions = _png_dimensions(result.frame_paths["front"])
             front_corner = _png_rgb_pixel(result.frame_paths["front"], 0, 0)
 
         self.assertEqual(manifest["renderer"]["backend"], "mujoco_python_offscreen.v1")
         self.assertEqual(manifest["renderer"]["background"], "white")
+        self.assertEqual(manifest["renderer"]["resolution"], {"width": 96, "height": 80})
         self.assertEqual(manifest["camera_definitions"]["front"]["azimuth"], 180)
         self.assertTrue(manifest["mesh_loaded"])
         self.assertTrue(manifest["nonblank_pixel_check"])
         self.assertEqual(set(result.frame_paths), {"front", "side", "top"})
         self.assertTrue(front_png.startswith(b"\x89PNG"))
+        self.assertEqual(front_dimensions, (96, 80))
         self.assertEqual(front_corner, (255, 255, 255))
 
     @unittest.skipUnless(importlib.util.find_spec("mujoco"), "mujoco optional dependency is not installed")

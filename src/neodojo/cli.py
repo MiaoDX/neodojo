@@ -611,6 +611,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="accepted for CLI symmetry, but MuJoCo rendering still requires registered assets",
     )
     render_mujoco_g1.add_argument(
+        "--width",
+        type=int,
+        default=640,
+        help="offscreen MuJoCo render width in pixels",
+    )
+    render_mujoco_g1.add_argument(
+        "--height",
+        type=int,
+        default=480,
+        help="offscreen MuJoCo render height in pixels",
+    )
+    render_mujoco_g1.add_argument(
         "--out",
         type=Path,
         default=Path("outputs/g1-mujoco-render"),
@@ -1152,6 +1164,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 model_descriptor_path=args.model_descriptor,
                 g1_track=args.g1_track,
                 allow_fixture_model=args.allow_fixture_model,
+                width=args.width,
+                height=args.height,
             )
             print(f"wrote {result.html_path}")
             print(f"wrote {result.manifest_path}")
