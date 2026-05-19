@@ -1118,6 +1118,10 @@ class DemoHtmlTests(unittest.TestCase):
             manifest["teaching_html"]["g1_replay"]["renderer_backend"],
             "neodojo_svg_schematic.v1",
         )
+        self.assertEqual(
+            manifest["teaching_html"]["g1_replay"]["visual_style"],
+            "robot-body-schematic.v1",
+        )
         self.assertEqual(recording["schema"], "neodojo.rerun_recording_export.v1")
         self.assertFalse(recording["actual_rerun_rrd"])
         self.assertEqual(scene["schema"], "neodojo.scene_timeline.v1")
@@ -1129,6 +1133,8 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("Unitree G1 robot model replay", html)
         self.assertIn("Synchronized timeline", html)
         self.assertIn("drawRobotModel", html)
+        self.assertIn("drawTorsoPlate", html)
+        self.assertIn('data-g1-render-style="robot-body-schematic.v1"', html)
         self.assertIn("fixture-only", html)
         self.assertIn("SMPL-X teacher", screenshot)
         self.assertEqual(smoke.manifest_path.name, "manifest.json")
@@ -2511,7 +2517,77 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(manifest["real_demo"]["two_panel_teaching_html"])
         self.assertEqual(manifest["artifact"]["validation_status"], "validated")
         self.assertTrue(_check_by_name(manifest, "source_validation_passed")["passed"])
+        self.assertTrue(_check_by_name(manifest, "gvhmr_export_visible_motion")["passed"])
         self.assertTrue(_check_by_name(manifest, "public_demo_two_panel_teaching_html")["passed"])
+
+    def test_real_conversion_audit_rejects_static_gvhmr_export(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            materialization = root / "source-materialization.json"
+            materialization.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.real_conversion_source_materialization.v1",
+                        "source_prep": {"source_id": "03-006"},
+                        "trim": {
+                            "start_seconds": 0.25,
+                            "end_seconds": 1.75,
+                            "duration_seconds": 1.5,
+                        },
+                        "outputs": {
+                            "trimmed_video_path": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                            "trimmed_video": {"sha256": "abc123"},
+                        },
+                        "gpu_handoff": {
+                            "trimmed_video_argument": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            static_frame = build_smplx_fixture_frames(36)[0]
+            gvhmr = root / "gvhmr-smplx-joints.json"
+            gvhmr.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gvhmr_smplx_joints.v1",
+                        "routine": "Baduanjin",
+                        "form": "static baduanjin opening",
+                        "fps": 24,
+                        "frames": [static_frame for _ in range(36)],
+                        "provenance": {
+                            "source_materialization_manifest": str(materialization),
+                            "source_materialization_sha256": sha256_file(materialization),
+                            "source_id": "03-006",
+                            "trim": {
+                                "start_seconds": 0.25,
+                                "end_seconds": 1.75,
+                                "duration_seconds": 1.5,
+                            },
+                            "input_video": "outputs/real-conversion-source/source/trimmed-clip.mp4",
+                            "input_video_sha256": "abc123",
+                            "gpu_command": "python tools/demo/demo.py --video trimmed-clip.mp4",
+                            "runtime": "test gpu",
+                            "upstream_version": "gvhmr-test",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = audit_real_conversion_completion(
+                root / "audit",
+                source_materialization=materialization,
+                gvhmr_json=gvhmr,
+                real_demo=root / "missing-real-demo",
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.status, "real_artifact_motion_too_static")
+        self.assertFalse(result.complete)
+        motion_check = _check_by_name(manifest, "gvhmr_export_visible_motion")
+        self.assertFalse(motion_check["passed"])
+        self.assertEqual(manifest["artifact"]["motion_signal"]["max_joint_displacement_m"], 0.0)
 
     def test_real_conversion_audit_rejects_verified_demo_with_missing_configured_artifact(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

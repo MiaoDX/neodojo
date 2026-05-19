@@ -46,6 +46,8 @@ pipeline、默认真实 GMR-derived G1 replay、已提交 generated motion artif
 production Viser UI，或已发布 real demo。本机 real GVHMR proof 只存在于 ignored
 `outputs/` 下。当前命令面不再支持 Colab、hosted GPU provider、self-hosted
 Actions GPU、operator-package，或 real-demo Pages-promotion workflows。
+本机 real-demo audit 也会检查返回的 GVHMR 帧是否有可见动作，因此静止的片头裁剪不会
+被当成完成的教学回放。
 
 ## 运行
 
