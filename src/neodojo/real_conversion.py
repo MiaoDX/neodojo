@@ -1640,10 +1640,11 @@ def audit_real_conversion_completion(
         if isinstance(public_demo_payload, dict)
         else None
     )
+    teaching_html_layout = teaching_html.get("layout") if isinstance(teaching_html, dict) else None
     teaching_html_two_panel = bool(
         isinstance(teaching_html, dict)
         and teaching_html.get("profile") == TWO_PANEL_TEACHING_HTML_PROFILE
-        and teaching_html.get("layout") == "split_smplx_left_g1_right"
+        and teaching_html_layout in {"split_smplx_left_g1_right", "source_video_left_smplx_center_g1_right"}
         and teaching_html.get("interactive") is True
         and teaching_html.get("synchronized_replay") is True
     )
@@ -1675,9 +1676,9 @@ def audit_real_conversion_completion(
         passed=real_demo_imported and teaching_html_two_panel,
         path=public_demo_manifest,
         message=(
-            "Public demo manifest declares an interactive two-panel SMPL-X/G1 teaching replay."
+            "Public demo manifest declares an interactive synchronized teaching replay."
             if real_demo_imported and teaching_html_two_panel
-            else "Public demo manifest does not declare the required two-panel teaching replay."
+            else "Public demo manifest does not declare the required synchronized teaching replay."
         ),
     )
 

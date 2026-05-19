@@ -14,12 +14,12 @@ real Baduanjin G1 replay proof.
   visualization and ecosystem fit only.
 - The live Pages demo remains fixture-only at
   `https://miaodx.com/neodojo/`.
-- The generated public-demo `index.html` is an interactive two-panel teaching
-  replay: SMPL-X skeleton teaching track on the left, Unitree G1 schematic
-  evidence on the right by default, and one synchronized timeline. The right
-  panel is labeled as actual Unitree G1 MuJoCo model replay only when a
-  non-fixture imported/native GMR track, non-fixture G1 descriptor, and MuJoCo
-  PNG frame sequence are supplied.
+- The generated public-demo `index.html` is an interactive synchronized teaching
+  replay: SMPL-X skeleton teaching track plus Unitree G1 visual track by
+  default, and an optional Original video panel when a local reference clip is
+  available. The G1 panel is labeled as actual Unitree G1 MuJoCo model replay
+  only when a non-fixture imported/native GMR track, non-fixture G1 descriptor,
+  and MuJoCo PNG frame sequence are supplied.
 - A local ignored proof exists in this workspace for a visible-motion Baduanjin
   clip (`80s-92s` from the local 12m08s source video): non-fixture GVHMR SMPL-X
   JSON, headless native GMR Unitree G1 joint angles, a non-fixture
@@ -143,9 +143,9 @@ as supported until a new plan explicitly restores them:
 - Deterministic opening-form key-frame annotation and feedback reports.
 - Local SVG/HTML G1 render evidence and optional MuJoCo render evidence when
   local assets/dependencies are available.
-- Teaching playback HTML, interactive two-panel public-demo export with
-  fail-closed G1 schematic-vs-actual labels, optional Viser local runtime
-  contract, browser smoke, and capture-bundle evidence.
+- Teaching playback HTML, interactive public-demo export with optional original
+  video sync, fail-closed G1 schematic-vs-actual labels, optional Viser local
+  runtime contract, browser smoke, and capture-bundle evidence.
 - Optional roboharness G1 MJCF descriptor registration and MuJoCo frame-sequence
   replay contract for actual G1 public-demo frames when local dependencies and
   assets are supplied; locally verified for the ignored `80s-92s` Baduanjin

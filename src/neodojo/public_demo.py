@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import json
 import shutil
 from dataclasses import dataclass
@@ -452,12 +453,45 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
         if render_evidence
         else "model descriptor unavailable"
     )
+    reference_video = scene.get("reference_video") or {}
+    reference_video_available = bool(
+        isinstance(reference_video, dict)
+        and reference_video.get("available")
+        and reference_video.get("path")
+    )
+    layout_class = "three-panel" if reference_video_available else "two-panel"
+    layout_label = (
+        "source video, SMPL-X, and G1 synchronized teaching replay"
+        if reference_video_available
+        else "two-panel synchronized teaching replay"
+    )
+    source_panel = ""
+    if reference_video_available:
+        source_path = html.escape(str(reference_video["path"]), quote=True)
+        trim_start = reference_video.get("trim_start_seconds", 0.0)
+        try:
+            trim_label = f"{float(trim_start):.2f}s"
+        except (TypeError, ValueError):
+            trim_label = "local clip"
+        source_panel = f"""
+    <section class="panel" data-panel="source">
+      <div class="panel-head">
+        <h2>Original video</h2>
+        <span>source clip</span>
+      </div>
+      <video id="referenceVideo" class="reference-video" src="{source_path}" muted playsinline preload="auto" aria-label="Original source video"></video>
+      <div class="meta">
+        <div class="metric"><span>Clip source</span><strong>local reference video</strong></div>
+        <div class="metric"><span>Source offset</span><strong>{trim_label}</strong></div>
+        <div class="metric"><span>Sync</span><strong>same timeline</strong></div>
+      </div>
+    </section>"""
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>neodojo two-panel teaching replay</title>
+  <title>neodojo teaching replay</title>
   <style>
     :root {{ --bg: #eef2f6; --panel: #fff; --ink: #17212b; --muted: #66717f; --line: #d8e0e8; --smplx: #147c72; --g1: #b84e32; --trail: #d73f7c; }}
     * {{ box-sizing: border-box; }}
@@ -469,12 +503,14 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
     .badges {{ display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }}
     .badge {{ border: 1px solid var(--line); border-radius: 999px; padding: 7px 11px; color: #334155; background: #f9fbfd; font-size: 12px; font-weight: 800; white-space: nowrap; }}
     main {{ display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: 0; gap: 16px; padding: 16px; }}
+    main.three-panel {{ grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1fr) minmax(0, 1fr); }}
     .panel {{ min-width: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }}
     .panel-head {{ display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }}
     h2 {{ font-size: 17px; }}
     .panel-head span {{ color: var(--muted); font-size: 12px; font-weight: 800; text-align: right; }}
     canvas {{ width: 100%; min-height: 420px; aspect-ratio: 1 / 1; display: block; background: #fbfcfe; border: 1px solid var(--line); border-radius: 8px; }}
     .g1-frame {{ width: 100%; min-height: 420px; aspect-ratio: 1 / 1; display: block; object-fit: contain; background: #fbfcfe; border: 1px solid var(--line); border-radius: 8px; }}
+    .reference-video {{ width: 100%; min-height: 420px; aspect-ratio: 1 / 1; display: block; object-fit: contain; background: #fbfcfe; border: 1px solid var(--line); border-radius: 8px; }}
     [hidden] {{ display: none !important; }}
     .meta {{ display: grid; gap: 7px; color: var(--muted); font-size: 13px; }}
     .metric {{ display: flex; justify-content: space-between; gap: 12px; padding-top: 7px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }}
@@ -483,7 +519,7 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
     button {{ min-width: 84px; min-height: 38px; border: 1px solid #b9c5d0; border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-weight: 800; cursor: pointer; }}
     input[type="range"] {{ width: 100%; accent-color: var(--smplx); }}
     .readout {{ min-width: 126px; color: var(--muted); font-size: 13px; font-weight: 800; text-align: right; }}
-    @media (max-width: 900px) {{ main {{ grid-template-columns: 1fr; }} canvas {{ min-height: 300px; }} footer {{ grid-template-columns: 1fr; }} .readout {{ text-align: left; }} }}
+    @media (max-width: 1100px) {{ main, main.three-panel {{ grid-template-columns: 1fr; }} canvas, .g1-frame, .reference-video {{ min-height: 300px; }} footer {{ grid-template-columns: 1fr; }} .readout {{ text-align: left; }} }}
   </style>
 </head>
 <body data-teaching-html-profile="{TWO_PANEL_TEACHING_HTML_PROFILE}">
@@ -497,7 +533,7 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
       <span class="badge">Synchronized timeline</span>
     </div>
   </header>
-  <main aria-label="two-panel synchronized teaching replay">
+  <main class="{layout_class}" aria-label="{layout_label}">{source_panel}
     <section class="panel" data-panel="smplx">
       <div class="panel-head">
         <h2>SMPL-X skeleton teaching track</h2>
@@ -537,10 +573,12 @@ const BONES = SCENE.bones || [];
 const smplxCanvas = document.getElementById("smplxCanvas");
 const g1Canvas = document.getElementById("g1Canvas");
 const g1ReplayImage = document.getElementById("g1ReplayImage");
+const referenceVideo = document.getElementById("referenceVideo");
 const playButton = document.getElementById("playButton");
 const timeline = document.getElementById("timeline");
 const frameReadout = document.getElementById("frameReadout");
 const g1Sequence = SCENE.g1_render_frame_sequence || {{}};
+const referenceInfo = SCENE.reference_video || {{}};
 const frameCount = SCENE.tracks.smplx.frames.length;
 const fps = Number((SCENE.timing && SCENE.timing.fps) || (SCENE.track_metadata.smplx && SCENE.track_metadata.smplx.fps) || 25);
 let frame = 0;
@@ -747,6 +785,22 @@ function drawPanel(canvas, trackId) {{
   else drawRobotModel(ctx, pose, bounds, canvas.width, canvas.height);
 }}
 
+function syncReferenceVideo() {{
+  if (!referenceVideo || !referenceInfo.available) return;
+  const offset = Number(referenceInfo.playback_offset_seconds || 0);
+  let target = offset + frame / fps;
+  if (Number.isFinite(referenceVideo.duration) && referenceVideo.duration > 0) {{
+    target = Math.min(target, Math.max(0, referenceVideo.duration - 0.04));
+  }}
+  if (Math.abs(referenceVideo.currentTime - target) > 0.04) {{
+    try {{
+      referenceVideo.currentTime = target;
+    }} catch (error) {{
+      return;
+    }}
+  }}
+}}
+
 function render() {{
   drawPanel(smplxCanvas, "smplx");
   if (g1Sequence.available && Array.isArray(g1Sequence.paths) && g1Sequence.paths.length > 0) {{
@@ -759,6 +813,7 @@ function render() {{
     g1Canvas.hidden = false;
     drawPanel(g1Canvas, "g1");
   }}
+  syncReferenceVideo();
   timeline.value = String(frame);
   frameReadout.textContent = `Frame ${{frame + 1}} / ${{frameCount}}`;
 }}
@@ -784,6 +839,10 @@ timeline.addEventListener("input", (event) => {{
   playButton.textContent = "Play";
   render();
 }});
+
+if (referenceVideo) {{
+  referenceVideo.addEventListener("loadedmetadata", render);
+}}
 
 render();
 window.requestAnimationFrame(tick);
@@ -844,6 +903,104 @@ def _attach_public_g1_replay_frames(
     }
 
 
+def _candidate_reference_video_paths(
+    media: dict[str, Any],
+    *,
+    playback_manifest_path: Path,
+) -> list[Path]:
+    candidates: list[Path] = []
+    for key in ("resolved_path", "path"):
+        reference = media.get(key)
+        if not isinstance(reference, str) or not reference:
+            continue
+        path = Path(reference)
+        if path.is_absolute():
+            candidates.append(path)
+        else:
+            candidates.append(path.resolve())
+            candidates.append((playback_manifest_path.parent / path).resolve())
+
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = str(candidate)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(candidate)
+    return unique
+
+
+def _attach_public_reference_video(
+    scene: dict[str, Any],
+    *,
+    playback_manifest_path: Path,
+    out_dir: Path,
+) -> None:
+    reference_sync = scene.get("reference_video_sync")
+    unavailable = {
+        "available": False,
+        "label": "Original video",
+        "role": "source clip",
+        "path": None,
+        "reason": "no reference video was supplied",
+    }
+    if not isinstance(reference_sync, dict):
+        scene["reference_video"] = unavailable
+        return
+
+    media = reference_sync.get("media")
+    if not isinstance(media, dict):
+        scene["reference_video"] = {**unavailable, "reason": "reference video metadata is missing media"}
+        return
+
+    source = next(
+        (
+            candidate
+            for candidate in _candidate_reference_video_paths(media, playback_manifest_path=playback_manifest_path)
+            if candidate.exists() and candidate.is_file() and candidate.stat().st_size > 0
+        ),
+        None,
+    )
+    if source is None:
+        scene["reference_video"] = {
+            **unavailable,
+            "reason": "reference video file is not available on this machine",
+            "media": media,
+        }
+        return
+
+    suffix = source.suffix.lower()
+    if suffix not in {".mp4", ".mov", ".m4v", ".webm"}:
+        scene["reference_video"] = {
+            **unavailable,
+            "reason": f"unsupported reference video suffix: {suffix}",
+            "media": media,
+        }
+        return
+
+    media_dir = out_dir / "source-video"
+    media_dir.mkdir(parents=True, exist_ok=True)
+    destination = media_dir / f"original{suffix}"
+    shutil.copyfile(source, destination)
+
+    scene["reference_video"] = {
+        "available": True,
+        "label": "Original video",
+        "role": "source clip",
+        "path": _relative_path(destination, out_dir),
+        "copied_from": str(source),
+        "media": media,
+        "trim_start_seconds": reference_sync.get("trim_start_seconds", 0.0),
+        "frame_zero_offset_seconds": reference_sync.get("frame_zero_offset_seconds", 0.0),
+        "playback_offset_seconds": 0.0,
+        "sync_confidence": reference_sync.get("sync_confidence"),
+    }
+    labels = scene.setdefault("public_labels", [])
+    if isinstance(labels, list) and "Original video" not in labels:
+        labels.append("Original video")
+
+
 def write_public_demo(
     *,
     playback_manifest_path: Path,
@@ -867,6 +1024,11 @@ def write_public_demo(
     _attach_public_g1_replay_frames(
         scene,
         g1_render_manifest_path=g1_render_manifest_path,
+        out_dir=out_dir,
+    )
+    _attach_public_reference_video(
+        scene,
+        playback_manifest_path=playback_manifest_path,
         out_dir=out_dir,
     )
     _write_json(scene_path, scene)
@@ -898,6 +1060,17 @@ def write_public_demo(
         if actual_g1_replay
         else "robot-body-schematic.v1"
     )
+    reference_video = scene.get("reference_video") or {}
+    reference_video_available = bool(
+        isinstance(reference_video, dict)
+        and reference_video.get("available")
+        and reference_video.get("path")
+    )
+    teaching_layout = (
+        "source_video_left_smplx_center_g1_right"
+        if reference_video_available
+        else "split_smplx_left_g1_right"
+    )
     fixture_label = "fixture-only" if scene["fixture_only"] else "real-artifact"
     manifest = {
         "schema": PUBLIC_DEMO_SCHEMA,
@@ -914,11 +1087,22 @@ def write_public_demo(
         },
         "teaching_html": {
             "profile": TWO_PANEL_TEACHING_HTML_PROFILE,
-            "layout": "split_smplx_left_g1_right",
+            "layout": teaching_layout,
             "interactive": True,
             "synchronized_replay": True,
             "controls": ["play_pause", "timeline_slider"],
             "panels": {
+                **(
+                    {
+                        "source": {
+                            "track": "reference_video",
+                            "label": "Original video",
+                            "scoring_allowed": False,
+                        }
+                    }
+                    if reference_video_available
+                    else {}
+                ),
                 "left": {
                     "track": "smplx",
                     "label": "SMPL-X skeleton teaching track",
@@ -929,6 +1113,21 @@ def write_public_demo(
                     "label": g1_panel_label,
                     "scoring_allowed": False,
                 },
+            },
+            "panel_order": ["source", "smplx", "g1"] if reference_video_available else ["smplx", "g1"],
+            "reference_video": {
+                "available": reference_video_available,
+                "label": "Original video",
+                "path": reference_video.get("path") if isinstance(reference_video, dict) else None,
+                "trim_start_seconds": reference_video.get("trim_start_seconds")
+                if isinstance(reference_video, dict)
+                else None,
+                "frame_zero_offset_seconds": reference_video.get("frame_zero_offset_seconds")
+                if isinstance(reference_video, dict)
+                else None,
+                "playback_offset_seconds": reference_video.get("playback_offset_seconds")
+                if isinstance(reference_video, dict)
+                else None,
             },
             "g1_replay": {
                 "robot": g1_meta.get("robot"),
@@ -978,6 +1177,7 @@ def write_public_demo(
                 "Synchronized timeline",
                 fixture_label,
                 "Routine feedback",
+                *(["Original video"] if reference_video_available else []),
                 *([scene["surface_proxy"]["label"]] if scene.get("surface_proxy") else []),
             ],
             "nonblank_artifacts": ["index.html", "screenshot.svg"],
@@ -1031,10 +1231,20 @@ def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
         raise ValueError("public demo manifest must define teaching_html metadata")
     if teaching_html.get("profile") != TWO_PANEL_TEACHING_HTML_PROFILE:
         raise ValueError("public demo teaching_html profile is not the two-panel teaching replay")
-    if teaching_html.get("layout") != "split_smplx_left_g1_right":
-        raise ValueError("public demo teaching_html layout must split SMPL-X left and G1 right")
+    teaching_layout = teaching_html.get("layout")
+    valid_layouts = {"split_smplx_left_g1_right", "source_video_left_smplx_center_g1_right"}
+    if teaching_layout not in valid_layouts:
+        raise ValueError("public demo teaching_html layout must declare a supported synchronized replay layout")
     if teaching_html.get("interactive") is not True or teaching_html.get("synchronized_replay") is not True:
         raise ValueError("public demo teaching_html must be interactive and synchronized")
+    reference_video = teaching_html.get("reference_video")
+    if not isinstance(reference_video, dict):
+        raise ValueError("public demo teaching_html must define reference_video metadata")
+    reference_video_available = bool(reference_video.get("available"))
+    if reference_video_available and teaching_layout != "source_video_left_smplx_center_g1_right":
+        raise ValueError("reference-video public demo must use the source/SMPL-X/G1 layout")
+    if not reference_video_available and teaching_layout != "split_smplx_left_g1_right":
+        raise ValueError("public demo without reference video must use the SMPL-X/G1 layout")
     g1_replay = teaching_html.get("g1_replay")
     if not isinstance(g1_replay, dict):
         raise ValueError("public demo teaching_html must define g1_replay metadata")
@@ -1059,6 +1269,16 @@ def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
     scene = _load_json(scene_path)
     require_schema(scene, SCENE_TIMELINE_SCHEMA, "scene/timeline manifest")
     checked_extra_paths: list[Path] = []
+    if reference_video_available:
+        source_reference = reference_video.get("path")
+        if not isinstance(source_reference, str) or not source_reference:
+            raise ValueError("reference-video public demo must expose a copied video path")
+        source_path = manifest_path.parent / source_reference
+        _require_nonblank_bytes(source_path)
+        checked_extra_paths.append(source_path)
+        scene_reference_video = scene.get("reference_video")
+        if not isinstance(scene_reference_video, dict) or scene_reference_video.get("available") is not True:
+            raise ValueError("scene must expose the copied reference video")
     if actual_g1_replay:
         sequence = scene.get("g1_render_frame_sequence")
         if not isinstance(sequence, dict) or sequence.get("actual_g1_model_replay") is not True:
@@ -1091,9 +1311,15 @@ def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
         'id="timeline"',
         "drawRobotModel",
     ]
+    if reference_video_available:
+        required_html_fragments.extend([
+            'data-panel="source"',
+            'id="referenceVideo"',
+            "syncReferenceVideo",
+        ])
     missing_fragments = [fragment for fragment in required_html_fragments if fragment not in html]
     if missing_fragments:
-        raise ValueError("public demo HTML is missing interactive two-panel replay controls")
+        raise ValueError("public demo HTML is missing interactive replay controls")
 
     return PublicDemoSmokeResult(
         manifest_path=manifest_path,

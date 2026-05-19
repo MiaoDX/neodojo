@@ -71,7 +71,9 @@ generated front/side/top preview screenshots; richer production teaching polish
 remains follow-on work.
 The static public HTML consumes MuJoCo G1 PNG replay frames only when the render
 manifest proves a non-fixture, nonblank, changing frame sequence; otherwise it
-labels the right panel as schematic evidence.
+labels the G1 panel as schematic evidence. When the playback manifest points to
+a local reference clip, the public HTML copies that clip into the ignored demo
+folder and prepends an Original video panel on the same timeline.
 
 ## Core Contracts
 
