@@ -21,12 +21,12 @@ from neodojo.demo_html import build_fixture, compute_feedback, render_demo_html,
 from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames, derive_g1_like_frame
 from neodojo.g1_render import (
     G1_MUJOCO_RENDER_BACKEND,
-    G1_MUJOCO_SKY_RGB,
     G1_MUJOCO_VISUAL_THEME,
     G1_RENDER_SCHEMA,
     write_g1_mujoco_backend_benchmark,
     write_g1_mujoco_backend_comparison,
     write_g1_mujoco_render,
+    write_g1_roboharness_report,
     write_g1_render,
 )
 from neodojo.g1_visual import (
@@ -846,17 +846,18 @@ class DemoHtmlTests(unittest.TestCase):
             front_corner = _png_rgb_pixel(result.frame_paths["front"], 0, 0)
 
         self.assertEqual(manifest["renderer"]["backend"], "mujoco_python_offscreen.v1")
-        self.assertEqual(manifest["renderer"]["background"], "green_sky")
-        self.assertEqual(manifest["renderer"]["ground"], "checker_table")
+        self.assertEqual(manifest["renderer"]["background"], "roboharness_skybox")
+        self.assertEqual(manifest["renderer"]["ground"], "roboharness_checker_floor")
         self.assertEqual(manifest["renderer"]["visual_theme"]["theme"], G1_MUJOCO_VISUAL_THEME)
         self.assertEqual(manifest["renderer"]["resolution"], {"width": 96, "height": 80})
-        self.assertEqual(manifest["camera_definitions"]["front"]["azimuth"], 180)
+        self.assertEqual(manifest["camera_definitions"]["front"]["name"], "front")
         self.assertTrue(manifest["mesh_loaded"])
         self.assertTrue(manifest["nonblank_pixel_check"])
         self.assertEqual(set(result.frame_paths), {"front", "side", "top"})
         self.assertTrue(front_png.startswith(b"\x89PNG"))
         self.assertEqual(front_dimensions, (96, 80))
-        self.assertEqual(front_corner, G1_MUJOCO_SKY_RGB)
+        self.assertGreater(front_corner[2], front_corner[1])
+        self.assertGreater(front_corner[1], front_corner[0])
 
     @unittest.skipUnless(importlib.util.find_spec("mujoco"), "mujoco optional dependency is not installed")
     def test_write_mujoco_render_applies_imported_gmr_joint_angles(self) -> None:
@@ -925,6 +926,78 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(pose_application["applied_joint_count"], 1)
         self.assertEqual(pose_application["applied_joint_values"]["waist_yaw_joint"], 0.25)
         self.assertEqual(pose_application["missing_joints"], ["right_hip_pitch_joint"])
+
+    @unittest.skipUnless(importlib.util.find_spec("mujoco"), "mujoco optional dependency is not installed")
+    @unittest.skipUnless(
+        importlib.util.find_spec("roboharness"),
+        "roboharness optional dependency is not installed",
+    )
+    def test_write_roboharness_report_samples_imported_g1_track(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            model_file = root / "g1_fixture.xml"
+            model_file.write_text(
+                """<mujoco model="unitree_g1_fixture">
+  <compiler angle="radian"/>
+  <worldbody>
+    <body name="pelvis" pos="0 0 0.8">
+      <geom name="body" type="capsule" size="0.08 0.28" fromto="0 0 0 0 0 0.56"/>
+      <joint name="waist_yaw_joint" type="hinge" axis="0 0 1" range="-1 1"/>
+      <body name="torso" pos="0 0 0.56">
+        <geom name="head" type="sphere" size="0.1" pos="0 0 0.18"/>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>
+""",
+                encoding="utf-8",
+            )
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            _, smplx_frames = load_motion_record_frames(motion.motion_record_manifest_path)
+            model = register_g1_model(root / "model", model_file)
+            source = root / "gmr-unitree-g1.json"
+            source.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gmr_unitree_g1_track.v1",
+                        "robot": "unitree_g1",
+                        "fps": 30,
+                        "frames": [
+                            {
+                                "visual_joints": derive_g1_like_frame(frame),
+                                "joint_angles": {"waist_yaw_joint": index * 0.01},
+                            }
+                            for index, frame in enumerate(smplx_frames)
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            g1 = import_gmr_json_track(
+                root / "g1",
+                source,
+                motion_record=motion.out_dir,
+                model_descriptor_path=model.descriptor_path,
+            )
+
+            result = write_g1_roboharness_report(
+                root / "roboharness-report",
+                model_descriptor_path=model.descriptor_path,
+                g1_track=g1.track_manifest_path,
+                width=96,
+                height=80,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            report_exists = result.html_path.exists()
+            start_cameras = set(result.stage_paths["start"])
+            start_front_dimensions = _png_dimensions(result.stage_paths["start"]["front"])
+
+        self.assertEqual(manifest["renderer"]["backend"], "roboharness_checkpoint_report.v1")
+        self.assertEqual([stage["name"] for stage in manifest["stages"]], ["start", "early", "middle", "late", "finish"])
+        self.assertEqual(manifest["renderer"]["visual_theme"]["theme"], G1_MUJOCO_VISUAL_THEME)
+        self.assertTrue(report_exists)
+        self.assertEqual(start_cameras, {"front", "side", "top", "close_up"})
+        self.assertEqual(start_front_dimensions, (96, 80))
 
     def test_write_teaching_playback_demo_from_track_manifests(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

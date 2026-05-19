@@ -72,15 +72,22 @@ uv pip install -e path/to/GMR
 PYTHONPATH=src python -m neodojo robot-model register-roboharness-g1 --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks run-gmr-g1 --motion-record outputs/real-demo/motion-contract --gvhmr-result path/to/hmr4d_results.pt --gmr-repo path/to/GMR --body-models path/to/GMR/assets/body_models --out outputs/gmr-native-run --execute
 make mujoco-g1-render MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
+make roboharness-g1-report MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
 make verify-real
 make smoke-public
 ```
 
-默认 MuJoCo G1 render 采用 roboharness `g1-reach` 风格：更浅的 G1 机身、
-绿色 sky，以及 checker-table ground。这个 render target 使用 CI-compatible
-OpenGL 路径：`MUJOCO_GL=glfw` 配合 `xvfb-run -a`，默认 `1280x960`，输出到
-`outputs/g1-mujoco-render`。GitHub Actions 里有同一 backend 路径的 focused
-smoke test。
+默认 MuJoCo G1 render 采用 roboharness `g1-reach` 的真实 scene 风格：wrapped
+G1 MJCF scene、蓝色 skybox gradient、灰白 checker floor、roboharness lights、
+原始 G1 materials，以及针对 raised-hands 气功回放调过构图的 named cameras。
+这个 render target 使用 CI-compatible OpenGL 路径：`MUJOCO_GL=glfw` 配合
+`xvfb-run -a`，默认 `1280x960`，输出到 `outputs/g1-mujoco-render`。GitHub
+Actions 里有同一 backend 路径的 focused smoke test。
+
+`make roboharness-g1-report` 会写出
+`outputs/g1-roboharness-report/neodojo_g1_replay_report.html`，这是一个 sampled
+roboharness checkpoint report，按 `start`、`early`、`middle`、`late`、`finish`
+几个阶段展示 imported G1 track。
 
 `MUJOCO_GL=osmesa` 仍然是安装 OSMesa system libraries 后的 CPU software headless
 fallback。`MUJOCO_GL=egl` 更适合有可用 EGL 的 GPU/self-hosted runner。

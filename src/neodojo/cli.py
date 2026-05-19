@@ -20,6 +20,7 @@ from .g1_render import (
     write_g1_mujoco_backend_benchmark,
     write_g1_mujoco_backend_comparison,
     write_g1_mujoco_render,
+    write_g1_roboharness_report,
     write_g1_render,
 )
 from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
@@ -632,6 +633,45 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("outputs/g1-mujoco-render"),
         help="output directory for MuJoCo render evidence",
+    )
+    render_roboharness_g1 = render_subparsers.add_parser(
+        "roboharness-g1",
+        help="write a roboharness checkpoint report from an imported G1 replay track",
+    )
+    render_roboharness_g1.add_argument(
+        "--model-descriptor",
+        type=Path,
+        required=True,
+        help="Unitree G1 MJCF robot-model descriptor manifest",
+    )
+    render_roboharness_g1.add_argument(
+        "--g1-track",
+        type=Path,
+        required=True,
+        help="G1 visual-track root directory or manifest path",
+    )
+    render_roboharness_g1.add_argument(
+        "--allow-fixture-model",
+        action="store_true",
+        help="accepted for CLI symmetry, but roboharness reporting requires registered MJCF assets",
+    )
+    render_roboharness_g1.add_argument(
+        "--width",
+        type=int,
+        default=640,
+        help="roboharness capture width in pixels",
+    )
+    render_roboharness_g1.add_argument(
+        "--height",
+        type=int,
+        default=480,
+        help="roboharness capture height in pixels",
+    )
+    render_roboharness_g1.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/g1-roboharness-report"),
+        help="output directory for the roboharness checkpoint report",
     )
     render_mujoco_g1_backends = render_subparsers.add_parser(
         "mujoco-g1-backends",
@@ -1302,6 +1342,22 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"wrote {result.manifest_path}")
             for path in result.frame_paths.values():
                 print(f"wrote {path}")
+            return 0
+
+        if args.command == "render" and args.render_command == "roboharness-g1":
+            result = write_g1_roboharness_report(
+                args.out,
+                model_descriptor_path=args.model_descriptor,
+                g1_track=args.g1_track,
+                allow_fixture_model=args.allow_fixture_model,
+                width=args.width,
+                height=args.height,
+            )
+            print(f"wrote {result.html_path}")
+            print(f"wrote {result.manifest_path}")
+            for stage, paths in result.stage_paths.items():
+                for path in paths.values():
+                    print(f"wrote {stage}: {path}")
             return 0
 
         if args.command == "render" and args.render_command == "mujoco-g1-backends":
