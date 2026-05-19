@@ -25,6 +25,7 @@ from .g1_render import (
 )
 from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
 from .public_demo import smoke_check_public_demo, write_public_demo
+from .public_demo_gif import write_public_demo_gif
 from .quality import check_quality_surface
 from .recorder_capture import write_simulator_recorder_capture
 from .real_conversion import (
@@ -497,6 +498,38 @@ def build_parser() -> argparse.ArgumentParser:
     demo_browser.add_argument("--width", type=int, default=1280, help="browser viewport width")
     demo_browser.add_argument("--height", type=int, default=720, help="browser viewport height")
     demo_browser.add_argument(
+        "--timeout-ms",
+        type=int,
+        default=10_000,
+        help="browser navigation and assertion timeout in milliseconds",
+    )
+    demo_gif = demo_subparsers.add_parser(
+        "render-gif",
+        help="render a public-demo HTML replay to an animated GIF",
+    )
+    demo_gif.add_argument(
+        "--public-demo",
+        type=Path,
+        default=Path("outputs/real-demo/public-demo"),
+        help="public-demo directory or manifest path",
+    )
+    demo_gif.add_argument(
+        "--out",
+        type=Path,
+        default=Path("docs/assets/neodojo-sample.gif"),
+        help="output GIF path",
+    )
+    demo_gif.add_argument("--width", type=int, default=1280, help="browser viewport width")
+    demo_gif.add_argument("--height", type=int, default=720, help="browser viewport height")
+    demo_gif.add_argument("--frames", type=int, default=24, help="number of sampled timeline frames")
+    demo_gif.add_argument("--duration-ms", type=int, default=120, help="GIF frame duration in milliseconds")
+    demo_gif.add_argument(
+        "--scale-width",
+        type=int,
+        default=960,
+        help="resize captured frames to this width before writing the GIF; use 0 to keep viewport size",
+    )
+    demo_gif.add_argument(
         "--timeout-ms",
         type=int,
         default=10_000,
@@ -1290,6 +1323,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"wrote {result.manifest_path}")
             print(f"wrote {result.screenshot_path}")
             print(f"captured {result.url}")
+            return 0
+
+        if args.command == "demo" and args.demo_command == "render-gif":
+            result = write_public_demo_gif(
+                public_demo=args.public_demo,
+                out=args.out,
+                width=args.width,
+                height=args.height,
+                frames=args.frames,
+                duration_ms=args.duration_ms,
+                scale_width=args.scale_width or None,
+                timeout_ms=args.timeout_ms,
+            )
+            print(f"wrote {result.gif_path}")
+            print(f"captured {result.frame_count} frames from {result.source_public_demo}")
             return 0
 
         if args.command == "capture" and args.capture_command == "bundle":

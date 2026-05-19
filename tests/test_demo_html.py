@@ -43,6 +43,7 @@ from neodojo.motion_contract import (
     write_gvhmr_json_motion_contract,
 )
 from neodojo.public_demo import build_scene_timeline, smoke_check_public_demo, write_public_demo
+from neodojo.public_demo_gif import _sample_frame_indices
 from neodojo.quality import check_quality_surface
 from neodojo.recorder_capture import write_simulator_recorder_capture
 from neodojo.real_conversion import (
@@ -1555,6 +1556,12 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("SMPL-X teacher", screenshot)
         self.assertEqual(smoke.manifest_path.name, "manifest.json")
         self.assertEqual(len(smoke.checked_paths), 4)
+
+    def test_public_demo_gif_frame_sampling_keeps_start_and_end(self) -> None:
+        self.assertEqual(_sample_frame_indices(10, 4), [0, 3, 6, 9])
+        self.assertEqual(_sample_frame_indices(3, 8), [0, 1, 2])
+        with self.assertRaisesRegex(ValueError, "at least one frame"):
+            _sample_frame_indices(0, 4)
 
     def test_public_demo_consumes_actual_g1_replay_frames_when_available(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
