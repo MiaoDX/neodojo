@@ -92,9 +92,23 @@ make mujoco-g1-render \
 ```
 
 This writes `outputs/g1-mujoco-render` at `1280x960`, applies the roboharness
-`g1-reach`-style visual theme (light G1 body, green sky, checker-table ground),
-and uses `MUJOCO_GL=glfw` under `xvfb-run -a` by default. The front camera is
-configured to show the robot face, not its back.
+`g1-reach` scene style (wrapped G1 MJCF scene, blue skybox gradient, gray/white
+checker floor, roboharness lights, original G1 materials), and uses
+`MUJOCO_GL=glfw` under `xvfb-run -a` by default. The front camera is configured
+to show the robot face and fit raised hands.
+
+For a roboharness-native phase report from the imported G1 track:
+
+```bash
+make roboharness-g1-report \
+  MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json \
+  G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
+```
+
+This writes `outputs/g1-roboharness-report/neodojo_g1_replay_report.html` with
+sampled `start`, `early`, `middle`, `late`, and `finish` checkpoints through the
+roboharness `Harness` report path. It is a stage review surface, not the full
+public-demo replay sequence.
 
 Use an explicit `MUJOCO_GL` value for reproducible rendering:
 

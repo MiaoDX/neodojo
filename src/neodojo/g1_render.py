@@ -22,12 +22,17 @@ from .motion_contract import _relative_path, _write_json, validate_output_dir
 G1_RENDER_SCHEMA = "neodojo.g1_render.v1"
 G1_RENDER_BACKEND = "neodojo_svg_schematic.v1"
 G1_MUJOCO_RENDER_BACKEND = "mujoco_python_offscreen.v1"
+G1_ROBOHARNESS_REPORT_BACKEND = "roboharness_checkpoint_report.v1"
 G1_MUJOCO_BACKEND_COMPARISON_SCHEMA = "neodojo.g1_mujoco_backend_comparison.v1"
 G1_MUJOCO_BACKEND_BENCHMARK_SCHEMA = "neodojo.g1_mujoco_backend_benchmark.v1"
-G1_MUJOCO_VISUAL_THEME = "roboharness_g1_reach_light_checker_v1"
-G1_MUJOCO_SKY_RGB = (206, 232, 205)
-G1_MUJOCO_CHECKER_LIGHT_RGBA = (0.86, 0.91, 0.76, 1.0)
-G1_MUJOCO_CHECKER_DARK_RGBA = (0.45, 0.62, 0.42, 1.0)
+G1_MUJOCO_VISUAL_THEME = "roboharness_g1_reach_scene_v1"
+G1_MUJOCO_SCENE_STYLE = {
+    "skybox": "builtin gradient rgb1=0.6 0.8 1.0 rgb2=0.2 0.3 0.5",
+    "ground": "mujoco checker texture rgb1=0.85 0.85 0.85 rgb2=0.65 0.65 0.65 texrepeat=8 8",
+    "lighting": "roboharness g1_reach two-light setup with MuJoCo headlight",
+    "cameras": ["front", "side", "top", "close_up"],
+    "props": "qigong replay omits reach-task table and targets",
+}
 
 
 @dataclass(frozen=True)
@@ -49,6 +54,13 @@ class G1MujocoBackendBenchmarkResult:
     markdown_path: Path
     manifest_path: Path
     backend_summaries: list[dict[str, Any]]
+
+
+@dataclass(frozen=True)
+class G1RoboharnessReportResult:
+    html_path: Path
+    manifest_path: Path
+    stage_paths: dict[str, dict[str, Path]]
 
 
 def _load_model_descriptor(path: Path, *, allow_fixture_model: bool) -> dict[str, Any]:
@@ -504,6 +516,78 @@ def _mujoco_pose_application_for_frame(
     }
 
 
+def _roboharness_scene_xml(model_path: Path, *, width: int = 640, height: int = 480) -> str:
+    """Build the same visual scene style used by roboharness G1 reach reports."""
+    model_path = model_path.resolve()
+    mesh_dir = model_path.parent / "assets"
+    mesh_dir_attr = html.escape(str(mesh_dir), quote=True)
+    model_path_attr = html.escape(str(model_path), quote=True)
+    return f"""\
+<mujoco model="neodojo_g1_roboharness_scene">
+  <include file="{model_path_attr}"/>
+
+  <option gravity="0 0 -9.81" timestep="0.002"/>
+  <compiler meshdir="{mesh_dir_attr}"/>
+
+  <statistic center="0 0 0.8" extent="1.5"/>
+
+  <visual>
+    <global offwidth="{int(width)}" offheight="{int(height)}"/>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0.5 0.5 0.5"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.6 0.8 1.0" rgb2="0.2 0.3 0.5"
+             width="256" height="256"/>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.85 0.85 0.85" rgb2="0.65 0.65 0.65"
+             width="256" height="256"/>
+    <material name="grid_mat" texture="grid" texrepeat="8 8" reflectance="0.1"/>
+  </asset>
+
+  <worldbody>
+    <geom name="floor" type="plane" size="3 3 0.05" material="grid_mat"/>
+    <light pos="1 1 3" dir="-0.3 -0.3 -1" diffuse="0.7 0.7 0.7"/>
+    <light pos="-1 1 3" dir="0.3 -0.3 -1" diffuse="0.4 0.4 0.4"/>
+
+    <camera name="front" pos="4.0 0 1.25" xyaxes="0 1 0 -0.15 0 1"/>
+    <camera name="side" pos="0 4.0 1.25" xyaxes="-1 0 0 0 -0.15 1"/>
+    <camera name="top" pos="0 0 4.5" xyaxes="1 0 0 0 1 0"/>
+    <camera name="close_up" pos="1.2 0.5 1.2" xyaxes="-0.4 1 0 -0.2 -0.1 1"/>
+  </worldbody>
+</mujoco>
+"""
+
+
+def _load_mujoco_model_for_render(
+    mujoco: Any,
+    model_path: Path,
+    *,
+    model_format: str | None,
+    width: int,
+    height: int,
+) -> tuple[Any, dict[str, Any]]:
+    if model_format == "mjcf":
+        scene_xml = _roboharness_scene_xml(model_path, width=width, height=height)
+        try:
+            model = mujoco.MjModel.from_xml_string(scene_xml)
+        except Exception as exc:
+            raise ValueError(f"failed to load roboharness-style G1 scene with MuJoCo: {exc}") from exc
+        return model, {
+            "theme": G1_MUJOCO_VISUAL_THEME,
+            **G1_MUJOCO_SCENE_STYLE,
+        }
+
+    try:
+        model = mujoco.MjModel.from_xml_path(str(model_path))
+    except Exception as exc:
+        raise ValueError(f"failed to load model with MuJoCo: {exc}") from exc
+    return model, {
+        "theme": "direct_model_scene_fallback",
+        "notes": "non-MJCF descriptors are rendered without the roboharness wrapper scene",
+    }
+
+
 def _render_mujoco_replay_sequence(
     *,
     mujoco: Any,
@@ -519,8 +603,8 @@ def _render_mujoco_replay_sequence(
             "available": False,
             "actual_g1_model_replay": False,
             "view": "front",
-            "background": "green_sky",
-            "ground": "checker_table",
+            "background": "roboharness_skybox",
+            "ground": "roboharness_checker_floor",
             "frame_count": 0,
             "paths": [],
             "nonblank_frame_count": 0,
@@ -552,7 +636,7 @@ def _render_mujoco_replay_sequence(
             joint_angle_names=joint_angle_names,
             frame_index=frame_index,
         )
-        rgb = _render_mujoco_rgb_with_roboharness_theme(mujoco, renderer, model, data, camera)
+        rgb = _render_mujoco_rgb(renderer, data, camera)
         signature = rgb.tobytes()
         if previous_pixels is not None:
             changed_checks.append(signature != previous_pixels)
@@ -575,8 +659,8 @@ def _render_mujoco_replay_sequence(
             and min(applied_counts) > 0
         ),
         "view": "front",
-        "background": "green_sky",
-        "ground": "checker_table",
+        "background": "roboharness_skybox",
+        "ground": "roboharness_checker_floor",
         "visual_style": "mujoco-png-frame-sequence.v1",
         "frame_count": len(paths),
         "paths": paths,
@@ -619,28 +703,9 @@ def _write_rgb_png(path: Path, pixels: Any) -> None:
     path.write_bytes(payload)
 
 
-def _render_mujoco_rgb_with_roboharness_theme(
-    mujoco: Any,
-    renderer: Any,
-    model: Any,
-    data: Any,
-    camera: Any,
-) -> Any:
+def _render_mujoco_rgb(renderer: Any, data: Any, camera: Any) -> Any:
     renderer.update_scene(data, camera=camera)
-    _add_roboharness_checker_ground(mujoco, renderer.scene, model)
-    rgb = renderer.render()[..., :3].copy()
-
-    try:
-        renderer.enable_segmentation_rendering()
-        renderer.update_scene(data, camera=camera)
-        _add_roboharness_checker_ground(mujoco, renderer.scene, model)
-        segments = renderer.render()
-    finally:
-        renderer.disable_segmentation_rendering()
-
-    background = segments[..., 0] < 0
-    rgb[background] = G1_MUJOCO_SKY_RGB
-    return rgb
+    return renderer.render()[..., :3].copy()
 
 
 def _load_mujoco() -> Any:
@@ -654,83 +719,11 @@ def _load_mujoco() -> Any:
     return mujoco
 
 
-def _lighten_rgba_rows(rows: Any, target: tuple[float, float, float], blend: float) -> int:
-    changed = 0
-    for rgba in rows:
-        try:
-            if float(rgba[3]) <= 0:
-                continue
-            for index, channel in enumerate(target):
-                rgba[index] = min(max(float(rgba[index]) * (1.0 - blend) + channel * blend, 0.0), 1.0)
-            changed += 1
-        except (IndexError, TypeError, ValueError):
-            continue
-    return changed
-
-
-def _apply_roboharness_g1_visual_theme(model: Any) -> dict[str, Any]:
-    target = (0.78, 0.82, 0.72)
-    geom_count = _lighten_rgba_rows(getattr(model, "geom_rgba", []), target, 0.58)
-    material_count = _lighten_rgba_rows(getattr(model, "mat_rgba", []), target, 0.52)
-    try:
-        model.vis.headlight.ambient[:] = [0.62, 0.62, 0.58]
-        model.vis.headlight.diffuse[:] = [0.72, 0.72, 0.68]
-        model.vis.headlight.specular[:] = [0.18, 0.18, 0.16]
-    except AttributeError:
-        pass
-    return {
-        "theme": G1_MUJOCO_VISUAL_THEME,
-        "body_color": "lightened warm grey",
-        "sky": "green",
-        "ground": "checker table",
-        "lightened_geom_count": geom_count,
-        "lightened_material_count": material_count,
-    }
-
-
-def _add_roboharness_checker_ground(mujoco: Any, scene: Any, model: Any) -> int:
-    import numpy as np
-
-    tile_count = 10
-    tile_size = max(min(float(getattr(model.stat, "extent", 1.5)) * 0.18, 0.34), 0.24)
-    z = -0.012
-    try:
-        center_x = float(model.stat.center[0])
-        center_y = float(model.stat.center[1])
-    except (AttributeError, IndexError, TypeError, ValueError):
-        center_x = 0.0
-        center_y = 0.0
-    mat = np.eye(3, dtype=np.float64).reshape(9)
-    added = 0
-    start = -(tile_count // 2)
-    for ix in range(tile_count):
-        for iy in range(tile_count):
-            if int(scene.ngeom) >= len(scene.geoms):
-                return added
-            geom = scene.geoms[int(scene.ngeom)]
-            x = center_x + (start + ix + 0.5) * tile_size
-            y = center_y + (start + iy + 0.5) * tile_size
-            rgba = G1_MUJOCO_CHECKER_LIGHT_RGBA if (ix + iy) % 2 == 0 else G1_MUJOCO_CHECKER_DARK_RGBA
-            mujoco.mjv_initGeom(
-                geom,
-                int(mujoco.mjtGeom.mjGEOM_BOX),
-                np.array([tile_size / 2.0, tile_size / 2.0, 0.008], dtype=np.float64),
-                np.array([x, y, z], dtype=np.float64),
-                mat,
-                np.array(rgba, dtype=np.float32),
-            )
-            try:
-                geom.objtype = int(mujoco.mjtObj.mjOBJ_GEOM)
-                geom.objid = 0
-                geom.segid = 0
-            except AttributeError:
-                pass
-            scene.ngeom += 1
-            added += 1
-    return added
-
-
 def _camera_for_view(mujoco: Any, model: Any, view: str) -> Any:
+    camera_id = int(mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, view))
+    if camera_id >= 0:
+        return view
+
     camera = mujoco.MjvCamera()
     mujoco.mjv_defaultFreeCamera(model, camera)
     try:
@@ -956,11 +949,13 @@ def write_g1_mujoco_render(
         expected_frame_count=len(frames),
     )
     mujoco = _load_mujoco()
-    try:
-        model = mujoco.MjModel.from_xml_path(str(model_path))
-    except Exception as exc:
-        raise ValueError(f"failed to load model with MuJoCo: {exc}") from exc
-    visual_theme = _apply_roboharness_g1_visual_theme(model)
+    model, visual_theme = _load_mujoco_model_for_render(
+        mujoco,
+        model_path,
+        model_format=model_descriptor.get("model_format"),
+        width=width,
+        height=height,
+    )
     try:
         model.vis.global_.offwidth = max(int(model.vis.global_.offwidth), width)
         model.vis.global_.offheight = max(int(model.vis.global_.offheight), height)
@@ -995,7 +990,7 @@ def write_g1_mujoco_render(
                 joint_angle_names=joint_angle_names,
                 frame_index=selected_frame,
             )
-            pixels = _render_mujoco_rgb_with_roboharness_theme(mujoco, renderer, model, data, camera)
+            pixels = _render_mujoco_rgb(renderer, data, camera)
             nonblank_checks[view] = bool(pixels.max() > pixels.min())
             _write_rgb_png(path, pixels)
         replay_sequence = _render_mujoco_replay_sequence(
@@ -1034,8 +1029,8 @@ def write_g1_mujoco_render(
             "mujoco_version": getattr(mujoco, "__version__", None),
             "gl_backend": os.environ.get("MUJOCO_GL") or "mujoco_default",
             "resolution": {"width": width, "height": height},
-            "background": "green_sky",
-            "ground": "checker_table",
+            "background": "roboharness_skybox",
+            "ground": "roboharness_checker_floor",
             "visual_theme": visual_theme,
         },
         "robot": SUPPORTED_ROBOT,
@@ -1054,9 +1049,9 @@ def write_g1_mujoco_render(
         "contact": g1_manifest.get("contact"),
         "selected_frame": selected_frame,
         "camera_definitions": {
-            "front": {"azimuth": 180, "elevation": -15},
-            "side": {"azimuth": 90, "elevation": -15},
-            "top": {"azimuth": 0, "elevation": -90},
+            "front": {"source": "roboharness named camera", "name": "front"},
+            "side": {"source": "roboharness named camera", "name": "side"},
+            "top": {"source": "roboharness named camera", "name": "top"},
         },
         "frame_paths": {
             view: _relative_path(path, manifest_path.parent)
@@ -1083,6 +1078,187 @@ def write_g1_mujoco_render(
     _write_json(manifest_path, manifest)
     html_path.write_text(_render_image_html(manifest, frame_paths), encoding="utf-8")
     return G1RenderWriteResult(html_path=html_path, manifest_path=manifest_path, frame_paths=frame_paths)
+
+
+def _sample_roboharness_stages(frame_count: int) -> list[tuple[str, int]]:
+    if frame_count <= 0:
+        raise ValueError("G1 track must contain at least one frame")
+    candidates = [
+        ("start", 0),
+        ("early", frame_count // 4),
+        ("middle", frame_count // 2),
+        ("late", (frame_count * 3) // 4),
+        ("finish", frame_count - 1),
+    ]
+    stages: list[tuple[str, int]] = []
+    seen: set[int] = set()
+    for name, index in candidates:
+        clamped = min(max(index, 0), frame_count - 1)
+        if clamped in seen:
+            continue
+        seen.add(clamped)
+        stages.append((name, clamped))
+    return stages
+
+
+def _load_roboharness_report_tools() -> tuple[Any, Any, Any, Any]:
+    try:
+        from roboharness.backends.mujoco_meshcat import MuJoCoMeshcatBackend
+        from roboharness.core.checkpoint import Checkpoint
+        from roboharness.core.harness import Harness
+        from roboharness.core.protocol import TaskPhase, TaskProtocol
+        from roboharness.reporting import generate_html_report
+    except ModuleNotFoundError as exc:
+        raise ValueError(
+            "Roboharness report generation requires roboharness; install with "
+            "`python -m pip install '.[real-g1-replay]'` or install `roboharness[demo]`."
+        ) from exc
+    return MuJoCoMeshcatBackend, Harness, Checkpoint, (TaskProtocol, TaskPhase, generate_html_report)
+
+
+def write_g1_roboharness_report(
+    out_dir: Path,
+    *,
+    model_descriptor_path: Path,
+    g1_track: Path,
+    allow_fixture_model: bool = False,
+    width: int = 640,
+    height: int = 480,
+) -> G1RoboharnessReportResult:
+    if width <= 0 or height <= 0:
+        raise ValueError("roboharness report width and height must be positive")
+    validate_output_dir(out_dir)
+    model_descriptor = _load_model_descriptor(model_descriptor_path, allow_fixture_model=allow_fixture_model)
+    if model_descriptor.get("fixture_only"):
+        raise ValueError("roboharness report requires a registered G1 MJCF descriptor")
+    if model_descriptor.get("model_format") != "mjcf":
+        raise ValueError("roboharness report currently requires a registered MJCF descriptor")
+
+    model_path = Path(model_descriptor.get("resolved_model_path") or model_descriptor.get("model_path", ""))
+    if not model_path.exists():
+        raise ValueError(f"registered model path does not exist: {model_path}")
+
+    g1_track_manifest_path = resolve_g1_track_manifest(g1_track)
+    g1_manifest, frames = load_g1_track_frames(g1_track_manifest_path)
+    joint_angle_frames, joint_angle_names = _load_g1_joint_angle_frames(
+        g1_track_manifest_path,
+        g1_manifest,
+        expected_frame_count=len(frames),
+    )
+    if not joint_angle_frames:
+        raise ValueError("roboharness report requires an imported G1 joint-angle pose stream")
+
+    mujoco = _load_mujoco()
+    MuJoCoMeshcatBackend, Harness, Checkpoint, protocol_tools = _load_roboharness_report_tools()
+    TaskProtocol, TaskPhase, generate_html_report = protocol_tools
+
+    task_name = "neodojo_g1_replay"
+    cameras = ["front", "side", "top", "close_up"]
+    stages = _sample_roboharness_stages(len(frames))
+    protocol = TaskProtocol(
+        name="neodojo_qigong_replay",
+        description="Sampled G1 replay stages from the imported neodojo visual track",
+        phases=[
+            TaskPhase(
+                name,
+                f"Imported G1 replay frame {frame_index}",
+                cameras=cameras,
+                metadata={"frame_index": frame_index},
+            )
+            for name, frame_index in stages
+        ],
+    )
+
+    backend = MuJoCoMeshcatBackend(
+        xml_string=_roboharness_scene_xml(model_path, width=width, height=height),
+        cameras=cameras,
+        render_width=width,
+        render_height=height,
+        visualizer=None,
+    )
+    model = backend._model
+    data = backend._data
+    harness = Harness(backend, output_dir=str(out_dir), task_name=task_name)
+    harness.load_protocol(protocol)
+    harness.reset()
+
+    stage_paths: dict[str, dict[str, Path]] = {}
+    for phase in protocol.phases:
+        frame_index = int(phase.metadata["frame_index"])
+        _mujoco_pose_application_for_frame(
+            mujoco,
+            model,
+            data,
+            joint_angle_frames=joint_angle_frames,
+            joint_angle_names=joint_angle_names,
+            frame_index=frame_index,
+        )
+        backend.visualizer.sync()
+        harness._step_count = frame_index
+        checkpoint = Checkpoint(name=phase.name, cameras=phase.cameras, metadata=phase.metadata)
+        result = harness.capture(checkpoint)
+        stage_dir = out_dir / task_name / "trial_001" / phase.name
+        stage_paths[phase.name] = {
+            view.name: stage_dir / f"{view.name}_rgb.png"
+            for view in result.views
+        }
+
+    report_path = generate_html_report(
+        out_dir,
+        task_name,
+        title="neodojo: G1 Roboharness Replay",
+        subtitle=(
+            "Imported Unitree G1 replay stages captured through the roboharness "
+            "MuJoCo scene, cameras, checker floor, and report shell."
+        ),
+        accent_color="#d94a4a",
+        footer_text="Generated by <code>neodojo render roboharness-g1</code>",
+        meshcat_mode="none",
+    )
+
+    manifest_path = out_dir / "manifest.json"
+    manifest = {
+        "schema": G1_RENDER_SCHEMA,
+        "fixture_only": bool(g1_manifest.get("fixture_only")),
+        "actual_g1_model_replay": bool(not g1_manifest.get("fixture_only")),
+        "renderer": {
+            "backend": G1_ROBOHARNESS_REPORT_BACKEND,
+            "role": "roboharness checkpoint report for sampled G1 replay stages",
+            "mujoco_version": getattr(mujoco, "__version__", None),
+            "gl_backend": os.environ.get("MUJOCO_GL") or "mujoco_default",
+            "resolution": {"width": width, "height": height},
+            "visual_theme": {
+                "theme": G1_MUJOCO_VISUAL_THEME,
+                **G1_MUJOCO_SCENE_STYLE,
+            },
+        },
+        "robot": SUPPORTED_ROBOT,
+        "model_descriptor": _relative_path(model_descriptor_path, manifest_path.parent),
+        "g1_track": _relative_path(g1_track_manifest_path, manifest_path.parent),
+        "pose_stream": g1_manifest.get("derivation", "unknown"),
+        "joint_angle_count": len(joint_angle_names),
+        "frame_count": len(frames),
+        "stages": [
+            {
+                "name": name,
+                "frame_index": frame_index,
+                "paths": {
+                    camera_name: _relative_path(path, manifest_path.parent)
+                    for camera_name, path in stage_paths[name].items()
+                },
+            }
+            for name, frame_index in stages
+        ],
+        "html": _relative_path(report_path, manifest_path.parent),
+        "scoring_source": "smplx",
+        "g1_scoring_allowed": False,
+    }
+    _write_json(manifest_path, manifest)
+    return G1RoboharnessReportResult(
+        html_path=report_path,
+        manifest_path=manifest_path,
+        stage_paths=stage_paths,
+    )
 
 
 def write_g1_mujoco_backend_comparison(
