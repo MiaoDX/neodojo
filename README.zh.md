@@ -80,6 +80,13 @@ MuJoCo CI rendering 应该显式设置 OpenGL backend。GitHub-hosted Ubuntu 上
 `MUJOCO_GL=glfw` 配合 `xvfb-run -a` 是最实用的 smoke-test 路径。
 安装 `libosmesa6` 后，`MUJOCO_GL=osmesa` 是 CPU headless 路径。
 `MUJOCO_GL=egl` 更适合有可用 EGL 的 GPU/self-hosted runner。
+如果要把可见差异和 backend setup failures 放在一个文件里人工比较，可以运行：
+
+```bash
+make mujoco-backend-compare MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
+```
+
+它会写出 `outputs/g1-mujoco-backend-comparison/index.html`。
 
 完整命令列表、blockers 和下一步安全任务见 [`STATUS.md`](STATUS.md)。
 

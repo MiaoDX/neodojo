@@ -19,7 +19,13 @@ from neodojo.capture_bundle import write_capture_bundle
 from neodojo.contracts import sha256_file
 from neodojo.demo_html import build_fixture, compute_feedback, render_demo_html, write_demo
 from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames, derive_g1_like_frame
-from neodojo.g1_render import G1_MUJOCO_RENDER_BACKEND, G1_RENDER_SCHEMA, write_g1_mujoco_render, write_g1_render
+from neodojo.g1_render import (
+    G1_MUJOCO_RENDER_BACKEND,
+    G1_RENDER_SCHEMA,
+    write_g1_mujoco_backend_comparison,
+    write_g1_mujoco_render,
+    write_g1_render,
+)
 from neodojo.g1_visual import (
     build_g1_visual_track,
     import_gmr_json_track,
@@ -651,6 +657,102 @@ class DemoHtmlTests(unittest.TestCase):
                     model_descriptor_path=root / "missing-model.json",
                     g1_track=root / "missing-track.json",
                     width=0,
+                )
+
+    def test_write_mujoco_backend_comparison_records_success_and_failure(self) -> None:
+        def fake_run(command, *, check, capture_output, text, env, timeout):
+            del check, capture_output, text, timeout
+            out_dir = Path(command[command.index("--out") + 1])
+            backend = env["MUJOCO_GL"]
+            if backend == "egl":
+                frame_dir = out_dir / "frames"
+                frame_dir.mkdir(parents=True)
+                for view in ("front", "side", "top"):
+                    (frame_dir / f"{view}.png").write_bytes(b"png")
+                manifest = {
+                    "schema": G1_RENDER_SCHEMA,
+                    "renderer": {
+                        "backend": G1_MUJOCO_RENDER_BACKEND,
+                        "resolution": {"width": 96, "height": 80},
+                    },
+                    "frame_paths": {
+                        "front": "frames/front.png",
+                        "side": "frames/side.png",
+                        "top": "frames/top.png",
+                    },
+                    "pose_application": {"source": "imported_gmr_joint_angles"},
+                    "nonblank_views": {"front": True, "side": True, "top": True},
+                    "actual_g1_model_replay": True,
+                }
+                (out_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+                (out_dir / "index.html").write_text("<html></html>", encoding="utf-8")
+                return subprocess.CompletedProcess(command, 0, stdout="rendered egl", stderr="")
+            return subprocess.CompletedProcess(command, 1, stdout="", stderr="missing OSMesa")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            with patch("neodojo.g1_render.subprocess.run", side_effect=fake_run):
+                result = write_g1_mujoco_backend_comparison(
+                    root / "compare",
+                    model_descriptor_path=root / "model.json",
+                    g1_track=root / "track.json",
+                    backends=["egl", "osmesa"],
+                    width=96,
+                    height=80,
+                    xvfb_glfw="never",
+                )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            html = result.html_path.read_text(encoding="utf-8")
+
+        self.assertEqual(manifest["schema"], "neodojo.g1_mujoco_backend_comparison.v1")
+        self.assertEqual([item["status"] for item in manifest["backend_results"]], ["rendered", "failed"])
+        self.assertEqual(manifest["backend_results"][0]["frame_paths"]["front"], "egl/frames/front.png")
+        self.assertIn("missing OSMesa", manifest["backend_results"][1]["stderr_tail"])
+        self.assertIn("MuJoCo GL backend comparison", html)
+        self.assertIn("egl/frames/front.png", html)
+        self.assertIn("missing OSMesa", html)
+
+    def test_write_mujoco_backend_comparison_wraps_headless_glfw_with_xvfb(self) -> None:
+        observed_commands = []
+
+        def fake_run(command, *, check, capture_output, text, env, timeout):
+            del check, capture_output, text, env, timeout
+            observed_commands.append(command)
+            out_dir = Path(command[command.index("--out") + 1])
+            (out_dir / "frames").mkdir(parents=True)
+            manifest = {
+                "schema": G1_RENDER_SCHEMA,
+                "renderer": {"backend": G1_MUJOCO_RENDER_BACKEND},
+                "frame_paths": {},
+            }
+            (out_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+            return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            with patch.dict(os.environ, {"DISPLAY": ""}), patch(
+                "neodojo.g1_render.shutil.which",
+                return_value="/usr/bin/xvfb-run",
+            ), patch("neodojo.g1_render.subprocess.run", side_effect=fake_run):
+                write_g1_mujoco_backend_comparison(
+                    root / "compare",
+                    model_descriptor_path=root / "model.json",
+                    g1_track=root / "track.json",
+                    backends=["glfw"],
+                    xvfb_glfw="auto",
+                )
+
+        self.assertEqual(observed_commands[0][:2], ["/usr/bin/xvfb-run", "-a"])
+
+    def test_write_mujoco_backend_comparison_rejects_unsafe_backend_name(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            with self.assertRaisesRegex(ValueError, "not safe"):
+                write_g1_mujoco_backend_comparison(
+                    root / "compare",
+                    model_descriptor_path=root / "model.json",
+                    g1_track=root / "track.json",
+                    backends=["../egl"],
                 )
 
     @unittest.skipUnless(importlib.util.find_spec("mujoco"), "mujoco optional dependency is not installed")
