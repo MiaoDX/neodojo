@@ -27,7 +27,7 @@ tracks，重定向到仿真 humanoid，再从多角度渲染，并叠加 joint p
 
 你看到一个动作的 standard shadow，然后把这个 shadow 装进自己的训练循环里。
 
-<img src="docs/assets/neodojo-sample.gif" alt="Baduanjin sample preview with SMPL-X skeleton and MuJoCo G1 replay panels" width="100%">
+<img src="docs/assets/neodojo-sample.gif" alt="Baduanjin preview with original video, SMPL-X skeleton, and MuJoCo G1 replay panels" width="100%">
 
 ## 可以打开什么
 
