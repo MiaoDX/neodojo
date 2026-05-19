@@ -71,6 +71,85 @@ def _check_by_name(manifest: dict, name: str) -> dict:
     raise AssertionError(f"missing audit check {name}")
 
 
+def _write_actual_g1_render_manifest(
+    root: Path,
+    *,
+    model_descriptor: Path,
+    g1_track: Path,
+    frame_count: int,
+) -> Path:
+    render_dir = root / "actual-g1-render"
+    selected_dir = render_dir / "frames"
+    replay_dir = selected_dir / "replay"
+    replay_dir.mkdir(parents=True)
+    for view in ("front", "side", "top"):
+        (selected_dir / f"{view}.png").write_bytes(f"{view} selected png".encode("utf-8"))
+    replay_paths = []
+    for index in range(frame_count):
+        path = replay_dir / f"front-{index:06d}.png"
+        path.write_bytes(f"front replay frame {index}".encode("utf-8"))
+        replay_paths.append(f"frames/replay/{path.name}")
+    manifest_path = render_dir / "manifest.json"
+    manifest = {
+        "schema": G1_RENDER_SCHEMA,
+        "fixture_only": False,
+        "actual_g1_model_replay": True,
+        "renderer": {
+            "backend": G1_MUJOCO_RENDER_BACKEND,
+            "role": "MuJoCo offscreen G1 model frame-sequence replay",
+            "resolution": {"width": 64, "height": 64},
+        },
+        "robot": "unitree_g1",
+        "model_descriptor": os.path.relpath(model_descriptor, render_dir),
+        "model_fixture_only": False,
+        "model_format": "mjcf",
+        "g1_track": os.path.relpath(g1_track, render_dir),
+        "track_fixture_only": False,
+        "pose_stream": "imported_gmr_unitree_g1",
+        "pose_application": {
+            "source": "imported_gmr_joint_angles",
+            "joint_angle_count": 1,
+            "applied_joint_count": 1,
+            "missing_joint_count": 0,
+            "skipped_joint_count": 0,
+        },
+        "frame_count": frame_count,
+        "selected_frame": min(1, frame_count - 1),
+        "frame_paths": {
+            "front": "frames/front.png",
+            "side": "frames/side.png",
+            "top": "frames/top.png",
+        },
+        "replay_frames": {
+            "available": True,
+            "actual_g1_model_replay": True,
+            "view": "front",
+            "visual_style": "mujoco-png-frame-sequence.v1",
+            "frame_count": frame_count,
+            "paths": replay_paths,
+            "nonblank_frame_count": frame_count,
+            "nonblank_pixel_check": True,
+            "changed_frame_pair_count": max(0, frame_count - 1),
+            "changed_frame_check": frame_count > 1,
+            "pose_source": "imported_gmr_joint_angles",
+            "joint_angle_count": 1,
+            "applied_joint_count_min": 1,
+            "applied_joint_count_max": 1,
+            "missing_joint_count_max": 0,
+            "skipped_joint_count_max": 0,
+        },
+        "html": "index.html",
+        "scoring_source": "smplx",
+        "g1_scoring_allowed": False,
+        "mesh_loaded": True,
+        "nonblank_pixel_check": True,
+        "nonblank_views": {"front": True, "side": True, "top": True},
+    }
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    (render_dir / "index.html").write_text("actual G1 render evidence", encoding="utf-8")
+    return manifest_path
+
+
 class DemoHtmlTests(unittest.TestCase):
     def test_fixture_preserves_scoring_boundary(self) -> None:
         fixture = build_fixture(frame_count=16)
@@ -278,6 +357,39 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(descriptor["model_format"], "urdf")
         self.assertEqual(descriptor["joint_count"], 1)
         self.assertEqual(descriptor["root_name"], "pelvis")
+        self.assertEqual(descriptor["validation"]["missing_assets"], [])
+
+    def test_register_g1_model_resolves_mjcf_compiler_meshdir(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            mesh_dir = root / "assets"
+            mesh_dir.mkdir()
+            (mesh_dir / "body.stl").write_text("solid fixture\nendsolid fixture\n", encoding="utf-8")
+            model = root / "g1_fixture.xml"
+            model.write_text(
+                """<mujoco model="unitree_g1_fixture">
+  <compiler angle="radian" meshdir="assets"/>
+  <asset>
+    <mesh file="body.stl"/>
+  </asset>
+  <worldbody>
+    <body name="pelvis">
+      <geom type="mesh" mesh="body"/>
+      <joint name="waist_yaw_joint" type="hinge"/>
+    </body>
+  </worldbody>
+</mujoco>
+""",
+                encoding="utf-8",
+            )
+
+            result = register_g1_model(root / "out", model)
+            descriptor = json.loads(result.descriptor_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(descriptor["model_format"], "mjcf")
+        self.assertEqual(descriptor["mesh_roots"], [str(mesh_dir)])
+        self.assertEqual(descriptor["implicit_mesh_roots"], [str(mesh_dir)])
+        self.assertEqual(descriptor["explicit_mesh_roots"], [])
         self.assertEqual(descriptor["validation"]["missing_assets"], [])
 
     def test_register_g1_model_rejects_missing_mesh(self) -> None:
@@ -1110,7 +1222,7 @@ class DemoHtmlTests(unittest.TestCase):
         )
         self.assertEqual(
             manifest["teaching_html"]["panels"]["right"]["label"],
-            "Unitree G1 robot model replay",
+            "Unitree G1 schematic evidence",
         )
         self.assertTrue(manifest["teaching_html"]["g1_replay"]["track_fixture_only"])
         self.assertTrue(manifest["teaching_html"]["g1_replay"]["model_fixture_only"])
@@ -1122,6 +1234,7 @@ class DemoHtmlTests(unittest.TestCase):
             manifest["teaching_html"]["g1_replay"]["visual_style"],
             "robot-body-schematic.v1",
         )
+        self.assertFalse(manifest["teaching_html"]["g1_replay"]["actual_g1_model_replay"])
         self.assertEqual(recording["schema"], "neodojo.rerun_recording_export.v1")
         self.assertFalse(recording["actual_rerun_rrd"])
         self.assertEqual(scene["schema"], "neodojo.scene_timeline.v1")
@@ -1130,7 +1243,7 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn('data-panel="smplx"', html)
         self.assertIn('data-panel="g1"', html)
         self.assertIn("SMPL-X skeleton teaching track", html)
-        self.assertIn("Unitree G1 robot model replay", html)
+        self.assertIn("Unitree G1 schematic evidence", html)
         self.assertIn("Synchronized timeline", html)
         self.assertIn("drawRobotModel", html)
         self.assertIn("drawTorsoPlate", html)
@@ -1139,6 +1252,88 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("SMPL-X teacher", screenshot)
         self.assertEqual(smoke.manifest_path.name, "manifest.json")
         self.assertEqual(len(smoke.checked_paths), 4)
+
+    def test_public_demo_consumes_actual_g1_replay_frames_when_available(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            model_file = root / "g1_fixture.xml"
+            model_file.write_text(
+                """<mujoco model="unitree_g1_fixture">
+  <worldbody>
+    <body name="pelvis">
+      <joint name="waist_yaw_joint" type="hinge"/>
+      <geom name="body" type="sphere" size="0.1"/>
+    </body>
+  </worldbody>
+</mujoco>
+""",
+                encoding="utf-8",
+            )
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            _, smplx_frames = load_motion_record_frames(motion.motion_record_manifest_path)
+            model = register_g1_model(root / "model", model_file)
+            source = root / "gmr-unitree-g1.json"
+            source.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gmr_unitree_g1_track.v1",
+                        "robot": "unitree_g1",
+                        "fps": 24,
+                        "frames": [
+                            {
+                                "visual_joints": derive_g1_like_frame(frame),
+                                "joint_angles": {"waist_yaw_joint": index * 0.01},
+                            }
+                            for index, frame in enumerate(smplx_frames)
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            g1 = import_gmr_json_track(
+                root / "g1",
+                source,
+                motion_record=motion.out_dir,
+                model_descriptor_path=model.descriptor_path,
+            )
+            render_manifest = _write_actual_g1_render_manifest(
+                root,
+                model_descriptor=model.descriptor_path,
+                g1_track=g1.track_manifest_path,
+                frame_count=10,
+            )
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+            )
+
+            result = write_public_demo(
+                playback_manifest_path=playback.manifest_path,
+                g1_render_manifest_path=render_manifest,
+                recording_path=root / "public-demo" / "neodojo-demo.rrd",
+            )
+            smoke = smoke_check_public_demo(root / "public-demo")
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            scene = json.loads(result.scene_path.read_text(encoding="utf-8"))
+            html = result.html_path.read_text(encoding="utf-8")
+            copied_frame_exists = (root / "public-demo" / "g1-replay-frames" / "front-000000.png").exists()
+
+        self.assertEqual(
+            manifest["teaching_html"]["panels"]["right"]["label"],
+            "Unitree G1 MuJoCo model replay",
+        )
+        self.assertTrue(manifest["teaching_html"]["g1_replay"]["actual_g1_model_replay"])
+        self.assertEqual(
+            manifest["teaching_html"]["g1_replay"]["visual_style"],
+            "mujoco-png-frame-sequence.v1",
+        )
+        self.assertEqual(len(manifest["teaching_html"]["g1_replay"]["rendered_frame_paths"]), 10)
+        self.assertTrue(scene["g1_render_frame_sequence"]["available"])
+        self.assertTrue(copied_frame_exists)
+        self.assertIn("g1ReplayImage", html)
+        self.assertIn("Unitree G1 MuJoCo model replay", html)
+        self.assertEqual(len(smoke.checked_paths), 14)
 
     @unittest.skipUnless(importlib.util.find_spec("rerun"), "rerun optional dependency is not installed")
     def test_public_demo_can_write_true_rerun_recording(self) -> None:
@@ -1573,13 +1768,13 @@ class DemoHtmlTests(unittest.TestCase):
                 recording_path=root / "public-demo" / "neodojo-demo.rrd",
             )
             html = result.html_path.read_text(encoding="utf-8").replace(
-                "Unitree G1 robot model replay",
-                "Unitree robot replay",
+                "Unitree G1 schematic evidence",
+                "Unitree schematic evidence",
             )
             result.html_path.write_text(html, encoding="utf-8")
             screenshot = result.screenshot_path.read_text(encoding="utf-8").replace(
-                "Unitree G1 visual",
-                "Unitree visual",
+                "Unitree G1 schematic evidence",
+                "Unitree schematic evidence",
             )
             result.screenshot_path.write_text(screenshot, encoding="utf-8")
 
@@ -1591,6 +1786,30 @@ class DemoHtmlTests(unittest.TestCase):
 
         self.assertGreaterEqual(result.checked_plan_count, 1)
         self.assertIn("mvp-quality-release-surface.md", result.checked_links)
+
+    def test_real_g1_replay_optional_dependency_uses_pinned_roboharness_git_source(self) -> None:
+        pyproject = Path("pyproject.toml").read_text(encoding="utf-8")
+
+        self.assertIn("real-g1-replay", pyproject)
+        self.assertIn("mujoco>=3.3,<4", pyproject)
+        self.assertIn("roboharness[demo] @ git+https://github.com/MiaoDX/roboharness.git@", pyproject)
+        self.assertNotIn('"roboharness[demo]>=', pyproject)
+
+    def test_cli_exposes_roboharness_g1_registration_command(self) -> None:
+        env = dict(os.environ)
+        env["PYTHONPATH"] = str(Path.cwd() / "src")
+
+        completed = subprocess.run(
+            [sys.executable, "-m", "neodojo", "robot-model", "register-roboharness-g1", "--help"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("roboharness", completed.stdout)
+        self.assertIn("--out", completed.stdout)
 
     def test_quality_check_rejects_missing_plan_link(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2299,6 +2518,8 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertFalse(manifest["gvhmr_export_fixture_only"])
         self.assertIn("derived_g1_visual_track", manifest["fixture_components"])
         self.assertTrue(manifest["g1_track_generated_from_smplx"])
+        self.assertFalse(manifest["actual_g1_model_replay"])
+        self.assertEqual(manifest["g1_replay_claim"], "schematic_or_incomplete_evidence")
         self.assertEqual(manifest["teaching_html"]["profile"], "neodojo.two_panel_teaching_replay.v1")
         self.assertEqual(manifest["teaching_html"]["layout"], "split_smplx_left_g1_right")
         self.assertEqual(manifest["scoring_source"], "smplx")
@@ -2497,7 +2718,60 @@ class DemoHtmlTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            write_real_conversion_demo(root / "real-demo", source_materialization=materialization, gvhmr_json=gvhmr)
+            source_motion = write_gvhmr_json_motion_contract(root / "motion-for-g1", gvhmr)
+            _, smplx_frames = load_motion_record_frames(source_motion.motion_record_manifest_path)
+            model_file = root / "g1_fixture.xml"
+            model_file.write_text(
+                """<mujoco model="unitree_g1_fixture">
+  <worldbody>
+    <body name="pelvis">
+      <joint name="waist_yaw_joint" type="hinge"/>
+      <geom name="body" type="sphere" size="0.1"/>
+    </body>
+  </worldbody>
+</mujoco>
+""",
+                encoding="utf-8",
+            )
+            model = register_g1_model(root / "model", model_file)
+            gmr_source = root / "gmr-unitree-g1.json"
+            gmr_source.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gmr_unitree_g1_track.v1",
+                        "robot": "unitree_g1",
+                        "fps": 24,
+                        "frames": [
+                            {
+                                "visual_joints": derive_g1_like_frame(frame),
+                                "joint_angles": {"waist_yaw_joint": index * 0.01},
+                            }
+                            for index, frame in enumerate(smplx_frames)
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            g1 = import_gmr_json_track(
+                root / "g1",
+                gmr_source,
+                motion_record=source_motion.out_dir,
+                model_descriptor_path=model.descriptor_path,
+            )
+            render_manifest = _write_actual_g1_render_manifest(
+                root,
+                model_descriptor=model.descriptor_path,
+                g1_track=g1.track_manifest_path,
+                frame_count=36,
+            )
+            write_real_conversion_demo(
+                root / "real-demo",
+                source_materialization=materialization,
+                gvhmr_json=gvhmr,
+                g1_track=g1.track_manifest_path,
+                model_descriptor=model.descriptor_path,
+                g1_render=render_manifest,
+            )
             relocated_materialization = root / "relocated" / "source-materialization.json"
             relocated_materialization.parent.mkdir()
             relocated_materialization.write_text(materialization.read_text(encoding="utf-8"), encoding="utf-8")
@@ -2515,10 +2789,17 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertFalse(manifest["blocked"])
         self.assertTrue(manifest["real_demo"]["real_gvhmr_artifact_imported"])
         self.assertTrue(manifest["real_demo"]["two_panel_teaching_html"])
+        self.assertTrue(manifest["real_demo"]["actual_g1_model_replay"])
+        self.assertTrue(manifest["g1_replay"]["imported_gmr_joint_angles"])
+        self.assertTrue(manifest["g1_replay"]["non_fixture_mjcf_descriptor"])
+        self.assertTrue(manifest["g1_replay"]["actual_mujoco_frame_sequence"])
+        self.assertTrue(manifest["g1_replay"]["public_demo_consumes_frames"])
         self.assertEqual(manifest["artifact"]["validation_status"], "validated")
         self.assertTrue(_check_by_name(manifest, "source_validation_passed")["passed"])
         self.assertTrue(_check_by_name(manifest, "gvhmr_export_visible_motion")["passed"])
         self.assertTrue(_check_by_name(manifest, "public_demo_two_panel_teaching_html")["passed"])
+        self.assertTrue(_check_by_name(manifest, "g1_track_imported_gmr_joint_angles")["passed"])
+        self.assertTrue(_check_by_name(manifest, "g1_render_actual_mujoco_frame_sequence")["passed"])
 
     def test_real_conversion_audit_rejects_static_gvhmr_export(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import os
 import pickle
+import subprocess
+import sys
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -18,6 +21,7 @@ from .motion_contract import (
 )
 
 GMR_NATIVE_ADAPTER_REPORT_SCHEMA = "neodojo.gmr_native_adapter_report.v1"
+GMR_LOCAL_RUN_SCHEMA = "neodojo.gmr_local_run.v1"
 
 UNITREE_G1_29DOF_JOINT_NAMES = [
     "left_hip_pitch_joint",
@@ -56,6 +60,15 @@ UNITREE_G1_29DOF_JOINT_NAMES = [
 class GMRNativeNormalizeResult:
     normalized_export_path: Path
     report_path: Path
+
+
+@dataclass(frozen=True)
+class GMRLocalRunResult:
+    manifest_path: Path
+    normalized_export_path: Path | None
+    report_path: Path | None
+    native_artifact_path: Path
+    status: str
 
 
 def _as_posix(path: Path) -> str:
@@ -272,3 +285,245 @@ def normalize_gmr_pickle(
         report_path=report_path,
     )
 
+
+def _resolve_gmr_repo(gmr_repo: Path | None) -> Path | None:
+    if gmr_repo is not None:
+        return gmr_repo
+    env_value = os.environ.get("GMR_REPO")
+    return Path(env_value) if env_value else None
+
+
+def _gmr_script_path(gmr_repo: Path | None) -> Path | None:
+    if gmr_repo is None:
+        return None
+    return gmr_repo / "scripts" / "gvhmr_to_robot.py"
+
+
+def _resolve_body_models_path(gmr_repo: Path | None, body_models: Path | None) -> Path | None:
+    if body_models is not None:
+        return body_models
+    env_value = os.environ.get("SMPLX_BODY_MODELS")
+    if env_value:
+        return Path(env_value)
+    if gmr_repo is not None:
+        return gmr_repo / "assets" / "body_models"
+    return None
+
+
+@contextmanager
+def _temporary_sys_path(path: Path | None):
+    if path is None:
+        yield
+        return
+
+    resolved = str(path.resolve())
+    inserted = resolved not in sys.path
+    if inserted:
+        sys.path.insert(0, resolved)
+    try:
+        yield
+    finally:
+        if inserted:
+            try:
+                sys.path.remove(resolved)
+            except ValueError:
+                pass
+
+
+def _run_headless_gmr_unitree_g1(
+    *,
+    gmr_repo: Path | None,
+    gvhmr_result: Path,
+    body_models: Path,
+    native_artifact_path: Path,
+) -> dict[str, Any]:
+    """Run GMR directly without launching MuJoCo's interactive viewer."""
+
+    if not body_models.exists():
+        raise ValueError(f"SMPL-X body-model directory does not exist: {body_models}")
+
+    with _temporary_sys_path(gmr_repo):
+        try:
+            from general_motion_retargeting import GeneralMotionRetargeting as GMR
+            from general_motion_retargeting.utils.smpl import (
+                get_gvhmr_data_offline_fast,
+                load_gvhmr_pred_file,
+            )
+        except ModuleNotFoundError as exc:
+            raise ValueError(
+                "executing local GMR requires the GMR package; install the local checkout with "
+                "`uv pip install -e path/to/GMR`"
+            ) from exc
+
+    smplx_data, body_model, smplx_output, actual_human_height = load_gvhmr_pred_file(
+        str(gvhmr_result),
+        body_models,
+    )
+    smplx_data_frames, aligned_fps = get_gvhmr_data_offline_fast(
+        smplx_data,
+        body_model,
+        smplx_output,
+        tgt_fps=30,
+    )
+    retarget = GMR(
+        actual_human_height=actual_human_height,
+        src_human="smplx",
+        tgt_robot=SUPPORTED_ROBOT,
+        verbose=False,
+    )
+
+    qpos_list = [retarget.retarget(frame) for frame in smplx_data_frames]
+    root_pos = [qpos[:3].tolist() for qpos in qpos_list]
+    root_rot = [qpos[3:7][[1, 2, 3, 0]].tolist() for qpos in qpos_list]
+    dof_pos = [qpos[7:].tolist() for qpos in qpos_list]
+    motor_names = [
+        name
+        for name, _ in sorted(retarget.robot_motor_names.items(), key=lambda item: item[1])
+        if name
+    ]
+
+    motion_data: dict[str, Any] = {
+        "fps": aligned_fps,
+        "root_pos": root_pos,
+        "root_rot": root_rot,
+        "dof_pos": dof_pos,
+        "local_body_pos": None,
+        "link_body_list": None,
+        "runner": "neodojo_headless_gmr_library",
+    }
+    if motor_names and len(motor_names) == len(dof_pos[0]):
+        motion_data["joint_names"] = motor_names
+
+    native_artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    with native_artifact_path.open("wb") as file:
+        pickle.dump(motion_data, file)
+
+    return {
+        "runner": "neodojo_headless_gmr_library.v1",
+        "frame_count": len(qpos_list),
+        "fps": aligned_fps,
+        "body_models": _as_posix(body_models),
+        "opened_viewer": False,
+    }
+
+
+def run_local_gmr_unitree_g1(
+    out_dir: Path,
+    *,
+    motion_record: Path,
+    gvhmr_result: Path,
+    gmr_repo: Path | None = None,
+    body_models: Path | None = None,
+    python_executable: str | None = None,
+    execute: bool = False,
+    joint_names: list[str] | None = None,
+) -> GMRLocalRunResult:
+    """Prepare or execute the local GMR GVHMR->Unitree G1 command."""
+
+    validate_output_dir(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = out_dir / "manifest.json"
+    native_artifact_path = out_dir / "gmr-unitree-g1.pkl"
+    resolved_repo = _resolve_gmr_repo(gmr_repo)
+    script_path = _gmr_script_path(resolved_repo)
+    resolved_body_models = _resolve_body_models_path(resolved_repo, body_models)
+    python_cmd = python_executable or sys.executable
+    upstream_script_command = [
+        python_cmd,
+        str(script_path or Path("<GMR_REPO>") / "scripts" / "gvhmr_to_robot.py"),
+        "--robot",
+        SUPPORTED_ROBOT,
+        "--gvhmr_pred_file",
+        str(gvhmr_result),
+        "--save_path",
+        str(native_artifact_path),
+    ]
+
+    motion_manifest_path = resolve_motion_record_manifest(motion_record)
+    _, smplx_frames = load_motion_record_frames(motion_manifest_path)
+    status = "prepared"
+    completed: dict[str, Any] | None = None
+    normalized: GMRNativeNormalizeResult | None = None
+    error: str | None = None
+
+    if execute:
+        if not gvhmr_result.exists():
+            raise ValueError(f"GVHMR native result does not exist: {gvhmr_result}")
+        if resolved_body_models is None:
+            raise ValueError(
+                "executing local GMR requires --body-models, SMPLX_BODY_MODELS, "
+                "or --gmr-repo with assets/body_models"
+            )
+        try:
+            completed = _run_headless_gmr_unitree_g1(
+                gmr_repo=resolved_repo,
+                gvhmr_result=gvhmr_result,
+                body_models=resolved_body_models,
+                native_artifact_path=native_artifact_path,
+            )
+        except Exception as exc:
+            status = "gmr_failed"
+            error = str(exc)
+        else:
+            if not native_artifact_path.exists():
+                status = "native_artifact_missing"
+                error = "GMR command succeeded but did not write the expected native pickle"
+            else:
+                try:
+                    normalized = normalize_gmr_pickle(
+                        out_dir / "normalized",
+                        native_artifact_path,
+                        motion_record=motion_record,
+                        robot=SUPPORTED_ROBOT,
+                        joint_names=joint_names,
+                    )
+                    status = "normalized"
+                except ValueError as exc:
+                    status = "normalization_failed"
+                    error = str(exc)
+    elif script_path is None or not script_path.exists():
+        status = "prepared_missing_gmr_repo"
+
+    manifest = {
+        "schema": GMR_LOCAL_RUN_SCHEMA,
+        "status": status,
+        "robot": SUPPORTED_ROBOT,
+        "execute": execute,
+        "source_motion_record": _relative_path(motion_manifest_path, manifest_path.parent),
+        "source_motion_record_frame_count": len(smplx_frames),
+        "gvhmr_result": _as_posix(gvhmr_result),
+        "gmr_repo": _as_posix(resolved_repo) if resolved_repo is not None else None,
+        "gmr_script": _as_posix(script_path) if script_path is not None else None,
+        "body_models": _as_posix(resolved_body_models) if resolved_body_models is not None else None,
+        "native_artifact": _relative_path(native_artifact_path, manifest_path.parent),
+        "normalized_export": _relative_path(normalized.normalized_export_path, manifest_path.parent)
+        if normalized
+        else None,
+        "adapter_report": _relative_path(normalized.report_path, manifest_path.parent) if normalized else None,
+        "runner": "neodojo_headless_gmr_library.v1" if execute else "upstream_gvhmr_to_robot_script",
+        "command": upstream_script_command,
+        "completed_process": completed,
+        "error": error,
+        "next_commands": {
+            "execute_gmr": " ".join(upstream_script_command),
+            "import_gmr_json": (
+                "PYTHONPATH=src python -m neodojo tracks import-gmr-json "
+                f"--source {_as_posix(out_dir / 'normalized' / 'gmr-unitree-g1.normalized.json')} "
+                f"--motion-record {_as_posix(motion_record)} --out outputs/g1-visual"
+            ),
+        },
+        "notes": (
+            "This wrapper does not vendor GMR. It records the local GMR command "
+            "and, when --execute is used in an equipped local checkout or installed "
+            "GMR environment, runs GMR headlessly and normalizes the returned native "
+            "pickle into neodojo.gmr_unitree_g1_track.v1."
+        ),
+    }
+    _write_json(manifest_path, manifest)
+    return GMRLocalRunResult(
+        manifest_path=manifest_path,
+        normalized_export_path=normalized.normalized_export_path if normalized else None,
+        report_path=normalized.report_path if normalized else None,
+        native_artifact_path=native_artifact_path,
+        status=status,
+    )

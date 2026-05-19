@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import importlib
+import importlib.metadata
 import json
 import os
 import xml.etree.ElementTree as ET
@@ -25,6 +27,11 @@ ROBOT_MODEL_SCHEMA = "neodojo.robot_model.v1"
 COMPARISON_REPORT_SCHEMA = "neodojo.track_comparison.v1"
 GMR_TRACK_EXPORT_SCHEMA = "neodojo.gmr_unitree_g1_track.v1"
 SUPPORTED_ROBOT = "unitree_g1"
+ROBOHARNESS_GIT_URL = "https://github.com/MiaoDX/roboharness.git"
+ROBOHARNESS_GIT_REVISION = "0bd5551d92d56a041e5c1b12a68ca6a4b8963b16"
+ROBOHARNESS_OPTIONAL_DEPENDENCY = (
+    f"roboharness[demo] @ git+{ROBOHARNESS_GIT_URL}@{ROBOHARNESS_GIT_REVISION}"
+)
 
 
 @dataclass(frozen=True)
@@ -66,6 +73,24 @@ def _mesh_references(root: ET.Element, model_format: str) -> list[str]:
     if model_format == "urdf":
         return [mesh.attrib["filename"] for mesh in root.findall(".//mesh") if mesh.attrib.get("filename")]
     return [mesh.attrib["file"] for mesh in root.findall(".//mesh") if mesh.attrib.get("file")]
+
+
+def _implicit_mesh_roots(root: ET.Element, model_path: Path, model_format: str) -> list[Path]:
+    if model_format != "mjcf":
+        return []
+
+    compiler = root.find("compiler")
+    if compiler is None:
+        return []
+
+    meshdir = compiler.attrib.get("meshdir")
+    if not meshdir:
+        return []
+
+    mesh_root = Path(meshdir)
+    if not mesh_root.is_absolute():
+        mesh_root = model_path.parent / mesh_root
+    return [mesh_root]
 
 
 def _joint_names(root: ET.Element) -> list[str]:
@@ -146,9 +171,11 @@ def register_g1_model(
         raise ValueError(f"failed to parse robot model XML: {exc}") from exc
 
     model_format = _infer_model_format(resolved_model, root)
+    implicit_mesh_roots = [_resolve_existing(path) for path in _implicit_mesh_roots(root, resolved_model, model_format)]
+    all_mesh_roots = [*resolved_mesh_roots, *implicit_mesh_roots]
     missing_assets = []
     for reference in _mesh_references(root, model_format):
-        if _resolve_mesh_reference(reference, resolved_model, resolved_mesh_roots) is None:
+        if _resolve_mesh_reference(reference, resolved_model, all_mesh_roots) is None:
             missing_assets.append(reference)
 
     if missing_assets:
@@ -164,7 +191,9 @@ def register_g1_model(
         "model_format": model_format,
         "model_path": _as_posix(model_path),
         "resolved_model_path": _as_posix(resolved_model),
-        "mesh_roots": [_as_posix(path) for path in mesh_roots or []],
+        "mesh_roots": [_as_posix(path) for path in all_mesh_roots],
+        "explicit_mesh_roots": [_as_posix(path) for path in resolved_mesh_roots],
+        "implicit_mesh_roots": [_as_posix(path) for path in implicit_mesh_roots],
         "source_url": source_url,
         "source_revision": source_revision,
         "license": license_name,
@@ -182,6 +211,61 @@ def register_g1_model(
     }
     _write_json(descriptor_path, descriptor)
     return RobotModelWriteResult(descriptor_path=descriptor_path)
+
+
+def _package_version(name: str) -> str | None:
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+def register_roboharness_g1_model(out_dir: Path) -> RobotModelWriteResult:
+    """Register the Unitree G1 MJCF exposed by roboharness' demo dependency stack."""
+
+    try:
+        description = importlib.import_module("robot_descriptions.g1_mj_description")
+    except ModuleNotFoundError as exc:
+        raise ValueError(
+            "registering the roboharness Unitree G1 model requires the optional "
+            "`real-g1-replay` dependency group; install it with "
+            "`uv pip install -e '.[real-g1-replay]'`"
+        ) from exc
+
+    mjcf_path = getattr(description, "MJCF_PATH", None)
+    if not isinstance(mjcf_path, (str, Path)):
+        raise ValueError("robot_descriptions.g1_mj_description does not expose MJCF_PATH")
+
+    result = register_g1_model(
+        out_dir,
+        Path(mjcf_path),
+        source_url=ROBOHARNESS_GIT_URL,
+        source_revision=ROBOHARNESS_GIT_REVISION,
+        license_name="upstream roboharness/robot_descriptions package license",
+        variant="roboharness robot_descriptions.g1_mj_description.MJCF_PATH",
+    )
+    descriptor = _load_json_object(result.descriptor_path, "G1 model descriptor")
+    descriptor["source_package"] = {
+        "name": "robot_descriptions",
+        "module": "robot_descriptions.g1_mj_description",
+        "version": _package_version("robot_descriptions"),
+        "mjcf_path_attribute": "MJCF_PATH",
+    }
+    descriptor["dependency"] = {
+        "name": "roboharness[demo]",
+        "install": ROBOHARNESS_OPTIONAL_DEPENDENCY,
+        "git_url": ROBOHARNESS_GIT_URL,
+        "git_revision": ROBOHARNESS_GIT_REVISION,
+        "roboharness_version": _package_version("roboharness"),
+    }
+    descriptor["provenance"] = {
+        **descriptor.get("provenance", {}),
+        "registered_by": "neodojo.robot-model register-roboharness-g1",
+        "source_package": "robot_descriptions.g1_mj_description",
+        "source_path_attribute": "MJCF_PATH",
+    }
+    _write_json(result.descriptor_path, descriptor)
+    return result
 
 
 def build_g1_visual_track(

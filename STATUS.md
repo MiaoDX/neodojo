@@ -1,7 +1,7 @@
 # Status
 
 neodojo is in bootstrap state with a fixture-only public demo and a local ignored
-real GVHMR proof.
+real Baduanjin G1 replay proof.
 
 ## Current Truth
 
@@ -14,17 +14,18 @@ real GVHMR proof.
   visualization and ecosystem fit only.
 - The live Pages demo remains fixture-only at
   `https://miaodx.com/neodojo/`.
-- The generated public-demo `index.html` is now an interactive two-panel
-  teaching replay: SMPL-X skeleton teaching track on the left, Unitree G1 robot
-  model replay on the right, and one synchronized timeline. The default G1
-  replay is still fixture-derived unless an imported GMR track and registered
-  model descriptor are supplied.
-- A local ignored GPU proof exists in this workspace for a visible-motion
-  Baduanjin clip (`80s-92s` from the local 12m08s source video): non-fixture
-  GVHMR SMPL-X JSON, imported under ignored `outputs/real-demo/`, with a strict
-  local audit reporting `real_demo_verified`, checking the two-panel public
-  teaching HTML profile, and rejecting GVHMR exports that are too static for a
-  teaching replay.
+- The generated public-demo `index.html` is an interactive two-panel teaching
+  replay: SMPL-X skeleton teaching track on the left, Unitree G1 schematic
+  evidence on the right by default, and one synchronized timeline. The right
+  panel is labeled as actual Unitree G1 MuJoCo model replay only when a
+  non-fixture imported/native GMR track, non-fixture G1 descriptor, and MuJoCo
+  PNG frame sequence are supplied.
+- A local ignored proof exists in this workspace for a visible-motion Baduanjin
+  clip (`80s-92s` from the local 12m08s source video): non-fixture GVHMR SMPL-X
+  JSON, headless native GMR Unitree G1 joint angles, a non-fixture
+  roboharness/robot_descriptions MJCF descriptor, a nonblank/changing MuJoCo PNG
+  frame sequence, and public HTML consumption of those replay frames. The strict
+  audit reports `real_demo_verified` for this local artifact set.
 
 ## Supported Command Surface
 
@@ -49,6 +50,13 @@ make real-gpu-prep LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=loc
 make gvhmr-inspect GVHMR_RESULT=path/to/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=path/to/gvhmr-smplx-joints.json
+uv pip install -e '.[real-g1-replay]'
+uv pip install -e path/to/GMR
+PYTHONPATH=src python -m neodojo robot-model register-roboharness-g1 --out outputs/g1-visual
+PYTHONPATH=src python -m neodojo tracks run-gmr-g1 --motion-record outputs/real-demo/motion-contract --gvhmr-result path/to/hmr4d_results.pt --gmr-repo path/to/GMR --body-models path/to/GMR/assets/body_models --out outputs/gmr-native-run --execute
+PYTHONPATH=src python -m neodojo tracks import-gmr-json --source outputs/gmr-native-run/normalized/gmr-unitree-g1.normalized.json --motion-record outputs/real-demo/motion-contract --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
+PYTHONPATH=src python -m neodojo render mujoco-g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --out outputs/g1-mujoco-render
+make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=path/to/gvhmr-smplx-joints.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_RENDER=outputs/g1-mujoco-render/manifest.json
 make real-conversion-audit
 make verify-real
 ```
@@ -84,13 +92,21 @@ as supported until a new plan explicitly restores them:
 - Fixture-backed Unitree G1 model descriptor and visual-track manifest.
 - External GMR JSON and native GMR pickle normalization into the G1 visual-track
   contract.
+- Local GMR run manifest/execution wrapper that can run GMR headlessly from a
+  local checkout or installed GMR environment, then normalize the returned native
+  pickle when local SMPL-X body-model assets are supplied.
 - Dependency-light SMPL-X surface proxy and local-only licensed SMPL-X asset
   descriptor/import boundary.
 - Deterministic opening-form key-frame annotation and feedback reports.
 - Local SVG/HTML G1 render evidence and optional MuJoCo render evidence when
   local assets/dependencies are available.
-- Teaching playback HTML, interactive two-panel public-demo export, optional
-  Viser local runtime contract, browser smoke, and capture-bundle evidence.
+- Teaching playback HTML, interactive two-panel public-demo export with
+  fail-closed G1 schematic-vs-actual labels, optional Viser local runtime
+  contract, browser smoke, and capture-bundle evidence.
+- Optional roboharness G1 MJCF descriptor registration and MuJoCo frame-sequence
+  replay contract for actual G1 public-demo frames when local dependencies and
+  assets are supplied; locally verified for the ignored `80s-92s` Baduanjin
+  proof artifact set.
 - Local GPU-run preparation that writes a source materialization manifest, GVHMR
   export template, `export_neodojo_gvhmr.py`, and `run_gvhmr_neodojo.sh` under
   ignored `outputs/`.
@@ -101,7 +117,8 @@ as supported until a new plan explicitly restores them:
 
 - Checked-in local GVHMR execution environment.
 - Checked-in local GMR execution environment.
-- Default true GMR-derived Unitree G1 replay.
+- Checked-in/default true GMR-derived Unitree G1 replay.
+- CI-verified or published actual G1 MuJoCo frame-sequence replay.
 - Completed simulator runtime pipeline.
 - Built-in official SMPL-X body-model renderer.
 - Production/live-client Viser capture.
@@ -113,6 +130,7 @@ as supported until a new plan explicitly restores them:
 
 1. Keep the local-only command surface small while adding a true local GVHMR
    execution contract.
-2. Add real GMR/G1 retargeting once a local GMR runtime contract exists.
-3. Continue simulator rendering polish with local assets and screenshot/frame
-   evidence.
+2. Add a compact runbook for reproducing the verified ignored `80s-92s`
+   Baduanjin proof from a local GMR checkout and local SMPL-X assets.
+3. Decide separately whether a real-demo Pages promotion path should exist; do
+   not publish generated media until licensing and artifact-size policy are set.

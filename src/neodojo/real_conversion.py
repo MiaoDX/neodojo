@@ -25,10 +25,13 @@ from .fixtures import (
     FIXTURE_ROUTINE,
     build_smplx_fixture_frames,
 )
+from .g1_render import G1_MUJOCO_RENDER_BACKEND, G1_RENDER_SCHEMA
+from .g1_visual import ROBOT_MODEL_SCHEMA
 from .motion_contract import (
     GVHMR_JOINT_EXPORT_SCHEMA,
     _SMPLX_FRAME_PARAMETER_FIELDS,
     _SMPLX_REQUIRED_PARAMETER_FIELDS,
+    TRACK_SCHEMA,
     _write_json,
     validate_output_dir,
 )
@@ -1264,6 +1267,15 @@ def _as_float(value: Any) -> float | None:
         return None
 
 
+def _as_int(value: Any) -> int | None:
+    if isinstance(value, bool) or value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _motion_duration(payload: dict[str, Any]) -> tuple[int | None, float | None, float | None]:
     frames = payload.get("frames", payload.get("smplx_joints"))
     frame_count = len(frames) if isinstance(frames, list) else None
@@ -1669,6 +1681,135 @@ def audit_real_conversion_completion(
         ),
     )
 
+    g1_track_ref = real_demo_payload.get("g1_track") if real_demo_payload else None
+    g1_track_manifest = (
+        real_demo_manifest.parent / g1_track_ref
+        if isinstance(g1_track_ref, str) and g1_track_ref
+        else real_demo_manifest.parent / "g1-visual" / "tracks" / "g1" / "manifest.json"
+    )
+    g1_track_payload, g1_track_error = _audit_json_schema(
+        g1_track_manifest,
+        TRACK_SCHEMA,
+        "G1 visual-track manifest",
+    )
+    if g1_track_payload is not None:
+        checked_paths.append(g1_track_manifest)
+    g1_pose_stream = g1_track_payload.get("pose_stream") if isinstance(g1_track_payload, dict) else None
+    g1_imported_joint_angles = bool(
+        isinstance(g1_pose_stream, dict)
+        and g1_pose_stream.get("kind") == "unitree_g1_joint_angles"
+        and (_as_int(g1_pose_stream.get("joint_angle_count")) or 0) > 0
+        and g1_track_payload.get("fixture_only") is False
+        and g1_track_payload.get("derivation") == "imported_gmr_unitree_g1"
+    )
+    _audit_add_check(
+        checks,
+        name="g1_track_imported_gmr_joint_angles",
+        passed=g1_imported_joint_angles,
+        path=g1_track_manifest,
+        message=(
+            "G1 visual track contains non-fixture imported GMR Unitree G1 joint angles."
+            if g1_imported_joint_angles
+            else g1_track_error or "G1 visual track is missing non-fixture imported GMR joint angles."
+        ),
+    )
+
+    g1_descriptor_ref = real_demo_payload.get("g1_model_descriptor") if real_demo_payload else None
+    g1_descriptor_manifest = (
+        real_demo_manifest.parent / g1_descriptor_ref
+        if isinstance(g1_descriptor_ref, str) and g1_descriptor_ref
+        else None
+    )
+    g1_descriptor_payload = None
+    g1_descriptor_error = "Real-demo manifest does not reference a G1 model descriptor."
+    if g1_descriptor_manifest is not None:
+        g1_descriptor_payload, g1_descriptor_error = _audit_json_schema(
+            g1_descriptor_manifest,
+            ROBOT_MODEL_SCHEMA,
+            "G1 model descriptor",
+        )
+        if g1_descriptor_payload is not None:
+            checked_paths.append(g1_descriptor_manifest)
+    g1_descriptor_non_fixture = bool(
+        isinstance(g1_descriptor_payload, dict)
+        and g1_descriptor_payload.get("fixture_only") is False
+        and g1_descriptor_payload.get("model_format") == "mjcf"
+    )
+    _audit_add_check(
+        checks,
+        name="g1_descriptor_non_fixture_mjcf",
+        passed=g1_descriptor_non_fixture,
+        path=g1_descriptor_manifest,
+        message=(
+            "G1 model descriptor is a non-fixture MJCF descriptor."
+            if g1_descriptor_non_fixture
+            else g1_descriptor_error or "G1 model descriptor is not a non-fixture MJCF descriptor."
+        ),
+    )
+
+    g1_render_ref = real_demo_payload.get("g1_render") if real_demo_payload else None
+    g1_render_manifest = (
+        real_demo_manifest.parent / g1_render_ref
+        if isinstance(g1_render_ref, str) and g1_render_ref
+        else real_demo_manifest.parent / "g1-mujoco-render" / "manifest.json"
+    )
+    g1_render_payload, g1_render_error = _audit_json_schema(
+        g1_render_manifest,
+        G1_RENDER_SCHEMA,
+        "G1 render manifest",
+    )
+    if g1_render_payload is not None:
+        checked_paths.append(g1_render_manifest)
+    g1_render_replay = (
+        g1_render_payload.get("replay_frames") if isinstance(g1_render_payload, dict) else None
+    )
+    g1_render_actual_replay = bool(
+        isinstance(g1_render_payload, dict)
+        and g1_render_payload.get("actual_g1_model_replay") is True
+        and g1_render_payload.get("model_fixture_only") is False
+        and g1_render_payload.get("track_fixture_only") is False
+        and isinstance(g1_render_payload.get("renderer"), dict)
+        and g1_render_payload["renderer"].get("backend") == G1_MUJOCO_RENDER_BACKEND
+        and isinstance(g1_render_replay, dict)
+        and g1_render_replay.get("available") is True
+        and g1_render_replay.get("actual_g1_model_replay") is True
+        and (_as_int(g1_render_replay.get("frame_count")) or 0) > 0
+        and g1_render_replay.get("nonblank_pixel_check") is True
+        and g1_render_replay.get("changed_frame_check") is True
+        and (_as_int(g1_render_replay.get("applied_joint_count_min")) or 0) > 0
+    )
+    _audit_add_check(
+        checks,
+        name="g1_render_actual_mujoco_frame_sequence",
+        passed=g1_render_actual_replay,
+        path=g1_render_manifest,
+        message=(
+            "G1 render manifest proves a nonblank, changing MuJoCo PNG frame sequence from imported GMR qpos."
+            if g1_render_actual_replay
+            else g1_render_error or "G1 render manifest does not prove an actual MuJoCo G1 frame replay."
+        ),
+    )
+
+    public_g1_replay = teaching_html.get("g1_replay") if isinstance(teaching_html, dict) else None
+    public_consumes_replay_frames = bool(
+        isinstance(public_g1_replay, dict)
+        and public_g1_replay.get("actual_g1_model_replay") is True
+        and public_g1_replay.get("visual_style") == "mujoco-png-frame-sequence.v1"
+        and isinstance(public_g1_replay.get("rendered_frame_paths"), list)
+        and len(public_g1_replay["rendered_frame_paths"]) > 0
+    )
+    _audit_add_check(
+        checks,
+        name="public_demo_consumes_g1_replay_frames",
+        passed=real_demo_imported and public_consumes_replay_frames,
+        path=public_demo_manifest,
+        message=(
+            "Public teaching HTML manifest consumes the actual G1 MuJoCo frame sequence."
+            if real_demo_imported and public_consumes_replay_frames
+            else "Public teaching HTML manifest does not consume actual G1 MuJoCo replay frames."
+        ),
+    )
+
     inputs_verified = (
         materialization is not None
         and gvhmr_export is not None
@@ -1677,7 +1818,19 @@ def audit_real_conversion_completion(
         and visible_motion
         and validation_status == "validated"
     )
-    complete = inputs_verified and real_demo_imported and public_demo_available and teaching_html_two_panel
+    replay_verified = (
+        g1_imported_joint_angles
+        and g1_descriptor_non_fixture
+        and g1_render_actual_replay
+        and public_consumes_replay_frames
+    )
+    complete = (
+        inputs_verified
+        and real_demo_imported
+        and public_demo_available
+        and teaching_html_two_panel
+        and replay_verified
+    )
     if complete:
         status = "real_demo_verified"
         next_action = "Inspect outputs/real-demo/public-demo and archive the real conversion evidence outside git."
@@ -1698,6 +1851,18 @@ def audit_real_conversion_completion(
     elif validation_status != "validated":
         status = "real_artifact_validation_failed"
         next_action = "Inspect the source-validation report and classify the mismatch before changing contracts."
+    elif not g1_imported_joint_angles:
+        status = "g1_gmr_track_missing"
+        next_action = "Run local GMR, normalize/import the Unitree G1 joint-angle track, and rerun the real demo."
+    elif not g1_descriptor_non_fixture:
+        status = "g1_model_descriptor_missing"
+        next_action = "Register a non-fixture Unitree G1 MJCF descriptor before claiming actual G1 replay."
+    elif not g1_render_actual_replay:
+        status = "g1_mujoco_replay_missing"
+        next_action = "Render a nonblank, changing MuJoCo G1 PNG frame sequence from imported GMR joint angles."
+    elif not public_consumes_replay_frames:
+        status = "public_demo_g1_replay_missing"
+        next_action = "Regenerate the public teaching HTML so the right panel consumes the G1 replay PNG frames."
     else:
         status = "real_artifact_ready_for_import"
         next_action = "Run make real-artifact-intake or make demo-real with the validated returned export."
@@ -1727,6 +1892,18 @@ def audit_real_conversion_completion(
             "public_demo_manifest": _as_posix(public_demo_manifest),
             "public_demo_manifest_exists": public_demo_available,
             "two_panel_teaching_html": teaching_html_two_panel,
+            "actual_g1_model_replay": bool(
+                real_demo_payload.get("actual_g1_model_replay") if real_demo_payload else False
+            ),
+        },
+        "g1_replay": {
+            "track_manifest": _as_posix(g1_track_manifest),
+            "imported_gmr_joint_angles": g1_imported_joint_angles,
+            "model_descriptor": _as_posix(g1_descriptor_manifest) if g1_descriptor_manifest is not None else None,
+            "non_fixture_mjcf_descriptor": g1_descriptor_non_fixture,
+            "render_manifest": _as_posix(g1_render_manifest),
+            "actual_mujoco_frame_sequence": g1_render_actual_replay,
+            "public_demo_consumes_frames": public_consumes_replay_frames,
         },
         "checks": checks,
         "next_action": next_action,
