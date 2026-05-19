@@ -77,13 +77,13 @@
     },
     "trimmed_video": {
       "local_only": true,
-      "path": "outputs/real-conversion-motion-80-92/source-materialized/source/trimmed-clip.mp4",
-      "resolved_path": "/home/mi/ws/gogo/neodojo/outputs/real-conversion-motion-80-92/source-materialized/source/trimmed-clip.mp4",
+      "path": "samples/baduanjin-03-006-two-hands-80-92/source/video/original-clip.mp4",
+      "resolved_path": "/home/mi/ws/gogo/neodojo/samples/baduanjin-03-006-two-hands-80-92/source/video/original-clip.mp4",
       "sha256": "532f4a96eb8fc0d8c88d96206b57493c5e0707acf75a16d808c2968583ba5187",
       "size_bytes": 263058,
       "suffix": ".mp4"
     },
-    "trimmed_video_path": "outputs/real-conversion-motion-80-92/source-materialized/source/trimmed-clip.mp4"
+    "trimmed_video_path": "samples/baduanjin-03-006-two-hands-80-92/source/video/original-clip.mp4"
   },
   "schema": "neodojo.real_conversion_source_materialization.v1",
   "source_media": {

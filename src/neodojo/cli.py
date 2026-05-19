@@ -522,7 +522,12 @@ def build_parser() -> argparse.ArgumentParser:
     demo_gif.add_argument("--width", type=int, default=1280, help="browser viewport width")
     demo_gif.add_argument("--height", type=int, default=720, help="browser viewport height")
     demo_gif.add_argument("--frames", type=int, default=24, help="number of sampled timeline frames")
-    demo_gif.add_argument("--duration-ms", type=int, default=120, help="GIF frame duration in milliseconds")
+    demo_gif.add_argument(
+        "--duration-ms",
+        type=int,
+        default=0,
+        help="GIF frame duration in milliseconds; 0 derives real-time delay from the public-demo timing",
+    )
     demo_gif.add_argument(
         "--scale-width",
         type=int,
@@ -1332,7 +1337,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 width=args.width,
                 height=args.height,
                 frames=args.frames,
-                duration_ms=args.duration_ms,
+                duration_ms=args.duration_ms or None,
                 scale_width=args.scale_width or None,
                 timeout_ms=args.timeout_ms,
             )

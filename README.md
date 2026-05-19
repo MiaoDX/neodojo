@@ -42,9 +42,9 @@ training loop.
 | CI sample-backed real HTML | `neodojo-real-demo-public-demo` in the same workflow |
 | Local sample-backed real HTML | `outputs/real-demo/public-demo/index.html` after `make ci-real-demo` |
 
-The committed Baduanjin sample contains derived JSON only: source provenance,
-returned GVHMR SMPL-X joints, and normalized GMR Unitree G1 joint angles. Raw
-video, checkpoints, pickles, and rendered frame outputs stay out of git.
+The committed Baduanjin sample includes a small trimmed source clip plus the
+derived GVHMR/GMR JSON needed to rebuild the demo. Larger source videos should
+stay out of git and be fetched by helper scripts for local testing.
 
 ## Pipeline
 

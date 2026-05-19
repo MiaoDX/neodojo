@@ -28,8 +28,9 @@ real Baduanjin G1 replay proof.
   audit reports `real_demo_verified` for this local artifact set.
 - The Baduanjin proof source should be documented as public source-index item
   `03-006` (`5八段锦两手托天理三焦`) from `video/original_videos.md`, trim
-  `80s-92s`. Real-demo publication can point to this source provenance while
-  still keeping raw source video and generated heavy artifacts out of git.
+  `80s-92s`. The committed sample includes the small trimmed clip for demo
+  reproduction; larger source videos should be downloaded by helper scripts for
+  local testing instead of committed directly.
 - The default MuJoCo G1 render style now follows the actual roboharness
   `g1-reach` scene implementation: wrapped G1 MJCF scene, blue skybox gradient,
   gray/white checker floor, roboharness lights, original G1 materials, and
@@ -152,9 +153,10 @@ as supported until a new plan explicitly restores them:
   assets are supplied; locally verified for the ignored `80s-92s` Baduanjin
   proof artifact set.
 - A committed derived JSON sample at
-  `samples/baduanjin-03-006-two-hands-80-92` that lets CI regenerate the
-  Baduanjin real-demo public HTML and actual G1 MuJoCo replay frames without
-  committing raw media, native checkpoints, pickles, or rendered PNG outputs.
+  `samples/baduanjin-03-006-two-hands-80-92` plus a small trimmed source clip
+  that lets CI regenerate the Baduanjin real-demo public HTML, original-video
+  panel, README GIF, and actual G1 MuJoCo replay frames without native
+  checkpoints, pickles, or rendered PNG outputs.
 - Local GPU-run preparation that writes a source materialization manifest, GVHMR
   export template, `export_neodojo_gvhmr.py`, and `run_gvhmr_neodojo.sh` under
   ignored `outputs/`.
@@ -165,8 +167,8 @@ as supported until a new plan explicitly restores them:
 
 - Checked-in local GVHMR execution environment.
 - Checked-in local GMR execution environment.
-- Checked-in native GVHMR/GMR checkpoints, pickles, source frames, raw video, or
-  rendered PNG outputs.
+- Checked-in native GVHMR/GMR checkpoints, pickles, source frames, large source
+  videos, or rendered PNG outputs.
 - Published actual G1 MuJoCo frame-sequence replay on Pages.
 - Completed simulator runtime pipeline.
 - Built-in official SMPL-X body-model renderer.

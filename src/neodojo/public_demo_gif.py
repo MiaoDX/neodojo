@@ -52,6 +52,16 @@ def _sample_frame_indices(total_frames: int, sample_count: int) -> list[int]:
     ]
 
 
+def _gif_frame_duration_ms(*, total_frames: int, fps: float, sample_count: int, requested_ms: int | None) -> int:
+    if requested_ms is not None and requested_ms > 0:
+        if requested_ms < 20:
+            raise ValueError("GIF frame duration must be at least 20ms")
+        return requested_ms
+    if fps <= 0:
+        raise ValueError("public-demo scene fps must be positive")
+    return max(20, round((total_frames / fps) * 1000 / sample_count))
+
+
 def _resize_frame(image: Any, *, image_module: Any, scale_width: int | None) -> Any:
     if scale_width is None or scale_width <= 0 or image.width == scale_width:
         return image
@@ -62,9 +72,9 @@ def _resize_frame(image: Any, *, image_module: Any, scale_width: int | None) -> 
     return image.resize((scale_width, height), resampling)
 
 
-def _seek_public_demo_frame(page: Any, frame_index: int) -> None:
+def _seek_public_demo_frame(page: Any, frame_index: int, seconds: float) -> None:
     page.evaluate(
-        """async (frameIndex) => {
+        """async ({frameIndex, seconds}) => {
             const playButton = document.getElementById("playButton");
             if (playButton && playButton.textContent.trim() === "Pause") {
                 playButton.click();
@@ -76,6 +86,14 @@ def _seek_public_demo_frame(page: Any, frame_index: int) -> None:
             await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
             const video = document.getElementById("referenceVideo");
             if (!video) return;
+            video.pause();
+            if (video.readyState < 1) {
+                await new Promise((resolve) => {
+                    video.addEventListener("loadedmetadata", resolve, {once: true});
+                });
+            }
+            const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : seconds;
+            const target = Math.max(0, Math.min(seconds, Math.max(0, duration - 0.04)));
             await new Promise((resolve) => {
                 let settled = false;
                 const done = () => {
@@ -85,15 +103,36 @@ def _seek_public_demo_frame(page: Any, frame_index: int) -> None:
                     video.removeEventListener("seeked", done);
                     requestAnimationFrame(() => requestAnimationFrame(resolve));
                 };
-                const timer = setTimeout(done, 700);
-                if (video.seeking) {
+                const timer = setTimeout(done, 1200);
+                if (Math.abs(video.currentTime - target) > 0.015) {
                     video.addEventListener("seeked", done, {once: true});
+                    video.currentTime = target;
                 } else {
                     done();
                 }
             });
+            const sourcePanel = document.querySelector('[data-panel="source"]');
+            if (!sourcePanel || !video.videoWidth || !video.videoHeight) return;
+            const scratch = document.createElement("canvas");
+            scratch.width = video.videoWidth;
+            scratch.height = video.videoHeight;
+            const ctx = scratch.getContext("2d");
+            ctx.drawImage(video, 0, 0, scratch.width, scratch.height);
+            let still = document.getElementById("referenceVideoStill");
+            if (!still) {
+                still = document.createElement("img");
+                still.id = "referenceVideoStill";
+                still.className = video.className;
+                still.alt = video.getAttribute("aria-label") || "Original source video";
+                video.insertAdjacentElement("afterend", still);
+                video.style.display = "none";
+            }
+            await new Promise((resolve) => {
+                still.onload = () => requestAnimationFrame(() => requestAnimationFrame(resolve));
+                still.src = scratch.toDataURL("image/png");
+            });
         }""",
-        frame_index,
+        {"frameIndex": frame_index, "seconds": seconds},
     )
 
 
@@ -104,15 +143,12 @@ def write_public_demo_gif(
     width: int = 1280,
     height: int = 720,
     frames: int = 24,
-    duration_ms: int = 120,
+    duration_ms: int | None = None,
     scale_width: int | None = 960,
     timeout_ms: int = 10_000,
 ) -> PublicDemoGifWriteResult:
     if width < 320 or height < 240:
         raise ValueError("GIF browser viewport must be at least 320x240")
-    if duration_ms < 20:
-        raise ValueError("GIF frame duration must be at least 20ms")
-
     smoke = smoke_check_public_demo(public_demo)
     public_manifest_path = smoke.manifest_path
     public_manifest = _load_json(public_manifest_path)
@@ -129,6 +165,16 @@ def write_public_demo_gif(
     timing = scene.get("timing") if isinstance(scene.get("timing"), dict) else {}
     total_frames = int(timing.get("frame_count") or len(scene["tracks"]["smplx"]["frames"]))
     frame_indices = _sample_frame_indices(total_frames, frames)
+    try:
+        fps = float(timing.get("fps") or scene.get("track_metadata", {}).get("smplx", {}).get("fps") or 25.0)
+    except (TypeError, ValueError):
+        fps = 25.0
+    gif_duration_ms = _gif_frame_duration_ms(
+        total_frames=total_frames,
+        fps=fps,
+        sample_count=len(frame_indices),
+        requested_ms=duration_ms,
+    )
 
     Image = _load_pillow()
     sync_playwright = _load_playwright()
@@ -154,7 +200,7 @@ def write_public_demo_gif(
                     timeout=timeout_ms,
                 )
                 for frame_index in frame_indices:
-                    _seek_public_demo_frame(page, frame_index)
+                    _seek_public_demo_frame(page, frame_index, frame_index / fps)
                     png = page.screenshot(full_page=False)
                     image = Image.open(io.BytesIO(png)).convert("RGB")
                     captured_frames.append(_resize_frame(image, image_module=Image, scale_width=scale_width))
@@ -171,7 +217,7 @@ def write_public_demo_gif(
         out,
         save_all=True,
         append_images=captured_frames[1:],
-        duration=duration_ms,
+        duration=gif_duration_ms,
         loop=0,
         optimize=True,
     )

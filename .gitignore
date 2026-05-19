@@ -55,6 +55,7 @@ checkpoints/
 !docs/**/*.png
 !docs/**/*.jpg
 !docs/**/*.gif
+!samples/**/*.mp4
 
 # Logs
 logs/
