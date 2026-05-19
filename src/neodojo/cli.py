@@ -16,7 +16,7 @@ from .g1_visual import (
     write_fixture_g1_model_descriptor,
 )
 from .gmr_native import normalize_gmr_pickle, run_local_gmr_unitree_g1
-from .g1_render import write_g1_mujoco_render, write_g1_render
+from .g1_render import write_g1_mujoco_backend_comparison, write_g1_mujoco_render, write_g1_render
 from .motion_contract import write_fixture_motion_contract, write_gvhmr_json_motion_contract
 from .public_demo import smoke_check_public_demo, write_public_demo
 from .quality import check_quality_surface
@@ -628,6 +628,63 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("outputs/g1-mujoco-render"),
         help="output directory for MuJoCo render evidence",
     )
+    render_mujoco_g1_backends = render_subparsers.add_parser(
+        "mujoco-g1-backends",
+        help="render one G1 comparison page across MuJoCo GL backends",
+    )
+    render_mujoco_g1_backends.add_argument(
+        "--model-descriptor",
+        type=Path,
+        required=True,
+        help="Unitree G1 robot-model descriptor manifest",
+    )
+    render_mujoco_g1_backends.add_argument(
+        "--g1-track",
+        type=Path,
+        required=True,
+        help="G1 visual-track root directory or manifest path",
+    )
+    render_mujoco_g1_backends.add_argument(
+        "--backends",
+        nargs="+",
+        default=["egl", "glfw", "osmesa"],
+        help="MuJoCo GL backends to compare; defaults to egl glfw osmesa",
+    )
+    render_mujoco_g1_backends.add_argument(
+        "--allow-fixture-model",
+        action="store_true",
+        help="accepted for CLI symmetry, but MuJoCo rendering still requires registered assets",
+    )
+    render_mujoco_g1_backends.add_argument(
+        "--width",
+        type=int,
+        default=640,
+        help="offscreen MuJoCo render width in pixels",
+    )
+    render_mujoco_g1_backends.add_argument(
+        "--height",
+        type=int,
+        default=480,
+        help="offscreen MuJoCo render height in pixels",
+    )
+    render_mujoco_g1_backends.add_argument(
+        "--xvfb-glfw",
+        choices=["auto", "always", "never"],
+        default="auto",
+        help="when to wrap the glfw backend with xvfb-run",
+    )
+    render_mujoco_g1_backends.add_argument(
+        "--timeout-seconds",
+        type=int,
+        default=180,
+        help="timeout for each backend render subprocess",
+    )
+    render_mujoco_g1_backends.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/g1-mujoco-backend-comparison"),
+        help="output directory for the backend comparison HTML",
+    )
 
     quality = subparsers.add_parser(
         "quality",
@@ -1171,6 +1228,24 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"wrote {result.manifest_path}")
             for path in result.frame_paths.values():
                 print(f"wrote {path}")
+            return 0
+
+        if args.command == "render" and args.render_command == "mujoco-g1-backends":
+            result = write_g1_mujoco_backend_comparison(
+                args.out,
+                model_descriptor_path=args.model_descriptor,
+                g1_track=args.g1_track,
+                backends=args.backends,
+                allow_fixture_model=args.allow_fixture_model,
+                width=args.width,
+                height=args.height,
+                xvfb_glfw=args.xvfb_glfw,
+                timeout_seconds=args.timeout_seconds,
+            )
+            print(f"wrote {result.html_path}")
+            print(f"wrote {result.manifest_path}")
+            for backend_result in result.backend_results:
+                print(f"{backend_result['backend']}: {backend_result['status']}")
             return 0
 
         if args.command == "quality" and args.quality_command == "check":

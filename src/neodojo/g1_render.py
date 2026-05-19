@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import json
 import binascii
+import html
+import os
+import shutil
 import struct
+import subprocess
+import sys
+import time
 import zlib
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,6 +22,7 @@ from .motion_contract import _relative_path, _write_json, validate_output_dir
 G1_RENDER_SCHEMA = "neodojo.g1_render.v1"
 G1_RENDER_BACKEND = "neodojo_svg_schematic.v1"
 G1_MUJOCO_RENDER_BACKEND = "mujoco_python_offscreen.v1"
+G1_MUJOCO_BACKEND_COMPARISON_SCHEMA = "neodojo.g1_mujoco_backend_comparison.v1"
 
 
 @dataclass(frozen=True)
@@ -23,6 +30,13 @@ class G1RenderWriteResult:
     html_path: Path
     manifest_path: Path
     frame_paths: dict[str, Path]
+
+
+@dataclass(frozen=True)
+class G1MujocoBackendComparisonResult:
+    html_path: Path
+    manifest_path: Path
+    backend_results: list[dict[str, Any]]
 
 
 def _load_model_descriptor(path: Path, *, allow_fixture_model: bool) -> dict[str, Any]:
@@ -218,6 +232,120 @@ def _render_image_html(manifest: dict[str, Any], frame_paths: dict[str, Path]) -
   </main>
   <footer>
     Renderer: {manifest["renderer"]["backend"]}. {pose_note}; scoring source remains SMPL-X.
+  </footer>
+</body>
+</html>
+"""
+
+
+def _truncate_text(value: str, limit: int = 2400) -> str:
+    if len(value) <= limit:
+        return value
+    return value[-limit:]
+
+
+def _xvfb_prefix_for_backend(backend: str, mode: str, env: dict[str, str]) -> list[str]:
+    if backend != "glfw":
+        return []
+    if mode == "never":
+        return []
+    if mode == "always":
+        xvfb = shutil.which("xvfb-run")
+        if xvfb is None:
+            raise ValueError("--xvfb-glfw=always requires xvfb-run on PATH")
+        return [xvfb, "-a"]
+    if mode != "auto":
+        raise ValueError("xvfb_glfw must be one of: auto, always, never")
+    if env.get("DISPLAY"):
+        return []
+    xvfb = shutil.which("xvfb-run")
+    return [xvfb, "-a"] if xvfb else []
+
+
+def _render_backend_comparison_html(manifest: dict[str, Any]) -> str:
+    cards = []
+    for item in manifest["backend_results"]:
+        backend = html.escape(str(item["backend"]))
+        status = html.escape(str(item["status"]))
+        elapsed = f'{float(item.get("elapsed_seconds", 0.0)):.2f}s'
+        renderer = item.get("renderer")
+        resolution = renderer.get("resolution") if isinstance(renderer, dict) else None
+        resolution_label = (
+            f'{resolution.get("width")}x{resolution.get("height")}'
+            if isinstance(resolution, dict)
+            else "unavailable"
+        )
+        images = ""
+        frame_paths = item.get("frame_paths") if isinstance(item.get("frame_paths"), dict) else {}
+        for view in ("front", "side", "top"):
+            path = frame_paths.get(view)
+            if isinstance(path, str) and path:
+                images += (
+                    f'<figure><img src="{html.escape(path)}" alt="{backend} {view} render">'
+                    f"<figcaption>{view}</figcaption></figure>"
+                )
+        stderr = html.escape(str(item.get("stderr_tail") or ""))
+        stdout = html.escape(str(item.get("stdout_tail") or ""))
+        output = ""
+        if stderr or stdout:
+            output = f"<pre>{stderr or stdout}</pre>"
+        cards.append(
+            f"""<section class="backend {status}">
+      <header>
+        <h2>{backend}</h2>
+        <span>{status}</span>
+      </header>
+      <dl>
+        <div><dt>Elapsed</dt><dd>{elapsed}</dd></div>
+        <div><dt>Resolution</dt><dd>{html.escape(resolution_label)}</dd></div>
+        <div><dt>Return code</dt><dd>{html.escape(str(item.get("returncode")))}</dd></div>
+      </dl>
+      <div class="frames">{images or '<p class="empty">No rendered frames</p>'}</div>
+      {output}
+    </section>"""
+        )
+    backend_labels = ", ".join(html.escape(str(item["backend"])) for item in manifest["backend_results"])
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>neodojo MuJoCo GL backend comparison</title>
+  <style>
+    body {{ margin: 0; background: #f4f6f8; color: #17212b; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }}
+    body > header {{ padding: 18px 20px; background: #fff; border-bottom: 1px solid #d8e0e8; }}
+    h1 {{ margin: 0 0 6px; font-size: 20px; }}
+    p {{ margin: 0; color: #66717f; font-size: 13px; line-height: 1.5; }}
+    main {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; padding: 14px; }}
+    .backend {{ min-width: 0; background: #fff; border: 1px solid #d8e0e8; border-radius: 8px; overflow: hidden; }}
+    .backend > header {{ display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid #d8e0e8; }}
+    h2 {{ margin: 0; font-size: 16px; }}
+    span {{ border: 1px solid #d8e0e8; border-radius: 999px; padding: 4px 8px; color: #66717f; font-size: 12px; font-weight: 700; }}
+    .rendered span {{ color: #17663a; border-color: #abd6bd; background: #edf8f1; }}
+    .failed span {{ color: #8c2f24; border-color: #e2b8b2; background: #fff0ee; }}
+    dl {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 0; background: #d8e0e8; border-bottom: 1px solid #d8e0e8; }}
+    dl div {{ background: #fbfcfe; padding: 8px 10px; }}
+    dt {{ color: #66717f; font-size: 11px; font-weight: 700; text-transform: uppercase; }}
+    dd {{ margin: 2px 0 0; font-size: 13px; }}
+    .frames {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: #d8e0e8; }}
+    figure {{ margin: 0; background: #fbfcfe; }}
+    img {{ display: block; width: 100%; background: #fff; }}
+    figcaption {{ padding: 6px 8px; color: #66717f; font-size: 12px; text-transform: capitalize; }}
+    .empty {{ padding: 14px; }}
+    pre {{ margin: 0; max-height: 260px; overflow: auto; padding: 12px 14px; background: #17212b; color: #f8fafc; font-size: 12px; line-height: 1.45; white-space: pre-wrap; }}
+    footer {{ padding: 0 20px 18px; color: #66717f; font-size: 13px; }}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>MuJoCo GL backend comparison</h1>
+    <p>Backends: {backend_labels}. Compare visible output, elapsed time, and backend setup errors from the same model, track, camera, and resolution.</p>
+  </header>
+  <main>
+    {"".join(cards)}
+  </main>
+  <footer>
+    Minor pixel-level differences can come from OpenGL drivers and anti-aliasing. Use this page for manual picking; exact PNG hashes are not expected to match across backends.
   </footer>
 </body>
 </html>
@@ -752,3 +880,133 @@ def write_g1_mujoco_render(
     _write_json(manifest_path, manifest)
     html_path.write_text(_render_image_html(manifest, frame_paths), encoding="utf-8")
     return G1RenderWriteResult(html_path=html_path, manifest_path=manifest_path, frame_paths=frame_paths)
+
+
+def write_g1_mujoco_backend_comparison(
+    out_dir: Path,
+    *,
+    model_descriptor_path: Path,
+    g1_track: Path,
+    backends: list[str],
+    allow_fixture_model: bool = False,
+    width: int = 640,
+    height: int = 480,
+    xvfb_glfw: str = "auto",
+    timeout_seconds: int = 180,
+) -> G1MujocoBackendComparisonResult:
+    if width <= 0 or height <= 0:
+        raise ValueError("MuJoCo render width and height must be positive")
+    if not backends:
+        raise ValueError("at least one MuJoCo GL backend is required")
+    validate_output_dir(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    backend_results: list[dict[str, Any]] = []
+    for backend in backends:
+        backend_name = backend.strip()
+        if not backend_name:
+            raise ValueError("backend names must be non-empty")
+        if "/" in backend_name or "\\" in backend_name or backend_name in {".", ".."}:
+            raise ValueError(f"backend name is not safe for an output directory: {backend_name}")
+        backend_out_dir = out_dir / backend_name
+        env = os.environ.copy()
+        env["MUJOCO_GL"] = backend_name
+        if backend_name == "osmesa":
+            env.setdefault("PYOPENGL_PLATFORM", "osmesa")
+        command = [
+            sys.executable,
+            "-m",
+            "neodojo",
+            "render",
+            "mujoco-g1",
+            "--model-descriptor",
+            str(model_descriptor_path),
+            "--g1-track",
+            str(g1_track),
+            "--width",
+            str(width),
+            "--height",
+            str(height),
+            "--out",
+            str(backend_out_dir),
+        ]
+        if allow_fixture_model:
+            command.append("--allow-fixture-model")
+        command_prefix = _xvfb_prefix_for_backend(backend_name, xvfb_glfw, env)
+        run_command = [*command_prefix, *command]
+        started = time.perf_counter()
+        try:
+            completed = subprocess.run(
+                run_command,
+                check=False,
+                capture_output=True,
+                text=True,
+                env=env,
+                timeout=timeout_seconds,
+            )
+            returncode = completed.returncode
+            stdout = completed.stdout
+            stderr = completed.stderr
+        except subprocess.TimeoutExpired as exc:
+            returncode = -1
+            stdout = exc.stdout if isinstance(exc.stdout, str) else ""
+            stderr = exc.stderr if isinstance(exc.stderr, str) else ""
+            stderr = f"timed out after {timeout_seconds}s\n{stderr}"
+        elapsed = time.perf_counter() - started
+        render_manifest_path = backend_out_dir / "manifest.json"
+        item: dict[str, Any] = {
+            "backend": backend_name,
+            "status": "rendered" if returncode == 0 and render_manifest_path.exists() else "failed",
+            "elapsed_seconds": round(elapsed, 3),
+            "returncode": returncode,
+            "command": run_command,
+            "env": {
+                "MUJOCO_GL": env.get("MUJOCO_GL"),
+                "PYOPENGL_PLATFORM": env.get("PYOPENGL_PLATFORM"),
+                "DISPLAY": env.get("DISPLAY"),
+            },
+            "stdout_tail": _truncate_text(stdout),
+            "stderr_tail": _truncate_text(stderr),
+        }
+        if item["status"] == "rendered":
+            render_manifest = json.loads(render_manifest_path.read_text(encoding="utf-8"))
+            frame_paths = {}
+            for view, relative in render_manifest.get("frame_paths", {}).items():
+                if isinstance(relative, str):
+                    frame_paths[view] = _relative_path(render_manifest_path.parent / relative, out_dir)
+            item.update(
+                {
+                    "manifest": _relative_path(render_manifest_path, out_dir),
+                    "html": _relative_path(backend_out_dir / "index.html", out_dir),
+                    "renderer": render_manifest.get("renderer"),
+                    "pose_application": render_manifest.get("pose_application"),
+                    "nonblank_views": render_manifest.get("nonblank_views"),
+                    "actual_g1_model_replay": bool(render_manifest.get("actual_g1_model_replay")),
+                    "frame_paths": frame_paths,
+                }
+            )
+        backend_results.append(item)
+
+    manifest_path = out_dir / "manifest.json"
+    html_path = out_dir / "index.html"
+    manifest = {
+        "schema": G1_MUJOCO_BACKEND_COMPARISON_SCHEMA,
+        "status": "generated",
+        "model_descriptor": _relative_path(model_descriptor_path, manifest_path.parent),
+        "g1_track": _relative_path(g1_track, manifest_path.parent),
+        "width": width,
+        "height": height,
+        "xvfb_glfw": xvfb_glfw,
+        "backend_results": backend_results,
+        "notes": (
+            "Backend comparison renders the same model, track, camera, and resolution "
+            "in isolated subprocesses because MUJOCO_GL is selected at import time."
+        ),
+    }
+    _write_json(manifest_path, manifest)
+    html_path.write_text(_render_backend_comparison_html(manifest), encoding="utf-8")
+    return G1MujocoBackendComparisonResult(
+        html_path=html_path,
+        manifest_path=manifest_path,
+        backend_results=backend_results,
+    )

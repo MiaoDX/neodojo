@@ -98,3 +98,16 @@ pixel-level differences can happen from different OpenGL drivers, especially
 around anti-aliasing, depth edges, and shading. For CI, compare manifest fields,
 resolution, nonblank pixels, and frame-change evidence rather than exact PNG
 hashes across different GL backends.
+
+To create one manual review page across backends:
+
+```bash
+make mujoco-backend-compare \
+  MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json \
+  G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
+```
+
+This writes `outputs/g1-mujoco-backend-comparison/index.html`. The command runs
+each backend in a subprocess because `MUJOCO_GL` is selected when MuJoCo is
+imported. `glfw` is wrapped with `xvfb-run -a` automatically when no `DISPLAY`
+is present and `xvfb-run` is available.
