@@ -278,6 +278,7 @@ def _render_mujoco_replay_sequence(
             "available": False,
             "actual_g1_model_replay": False,
             "view": "front",
+            "background": "white",
             "frame_count": 0,
             "paths": [],
             "nonblank_frame_count": 0,
@@ -309,9 +310,7 @@ def _render_mujoco_replay_sequence(
             joint_angle_names=joint_angle_names,
             frame_index=frame_index,
         )
-        renderer.update_scene(data, camera=camera)
-        pixels = renderer.render()
-        rgb = pixels[..., :3]
+        rgb = _render_mujoco_rgb_on_white_background(mujoco, renderer, data, camera)
         signature = rgb.tobytes()
         if previous_pixels is not None:
             changed_checks.append(signature != previous_pixels)
@@ -321,7 +320,7 @@ def _render_mujoco_replay_sequence(
         missing_counts.append(int(application.get("missing_joint_count", 0)))
         skipped_counts.append(int(application.get("skipped_joint_count", 0)))
         path = replay_dir / f"front-{frame_index:06d}.png"
-        _write_rgb_png(path, pixels)
+        _write_rgb_png(path, rgb)
         paths.append(path)
 
     return {
@@ -334,6 +333,7 @@ def _render_mujoco_replay_sequence(
             and min(applied_counts) > 0
         ),
         "view": "front",
+        "background": "white",
         "visual_style": "mujoco-png-frame-sequence.v1",
         "frame_count": len(paths),
         "paths": paths,
@@ -376,6 +376,22 @@ def _write_rgb_png(path: Path, pixels: Any) -> None:
     path.write_bytes(payload)
 
 
+def _render_mujoco_rgb_on_white_background(mujoco: Any, renderer: Any, data: Any, camera: Any) -> Any:
+    renderer.update_scene(data, camera=camera)
+    rgb = renderer.render()[..., :3].copy()
+
+    try:
+        renderer.enable_segmentation_rendering()
+        renderer.update_scene(data, camera=camera)
+        segments = renderer.render()
+    finally:
+        renderer.disable_segmentation_rendering()
+
+    background = segments[..., 0] < 0
+    rgb[background] = [255, 255, 255]
+    return rgb
+
+
 def _load_mujoco() -> Any:
     try:
         import mujoco
@@ -396,7 +412,7 @@ def _camera_for_view(mujoco: Any, model: Any, view: str) -> Any:
         camera.lookat[:] = [0.0, 0.0, 0.6]
     camera.distance = max(float(model.stat.extent) * 2.2, 1.5)
     if view == "front":
-        camera.azimuth = 0
+        camera.azimuth = 180
         camera.elevation = -15
     elif view == "side":
         camera.azimuth = 90
@@ -644,8 +660,7 @@ def write_g1_mujoco_render(
                 joint_angle_names=joint_angle_names,
                 frame_index=selected_frame,
             )
-            renderer.update_scene(data, camera=camera)
-            pixels = renderer.render()
+            pixels = _render_mujoco_rgb_on_white_background(mujoco, renderer, data, camera)
             nonblank_checks[view] = bool(pixels.max() > pixels.min())
             _write_rgb_png(path, pixels)
         replay_sequence = _render_mujoco_replay_sequence(
@@ -683,6 +698,7 @@ def write_g1_mujoco_render(
             ),
             "mujoco_version": getattr(mujoco, "__version__", None),
             "resolution": {"width": width, "height": height},
+            "background": "white",
         },
         "robot": SUPPORTED_ROBOT,
         "model_descriptor": _relative_path(model_descriptor_path, manifest_path.parent),
@@ -700,7 +716,7 @@ def write_g1_mujoco_render(
         "contact": g1_manifest.get("contact"),
         "selected_frame": selected_frame,
         "camera_definitions": {
-            "front": {"azimuth": 0, "elevation": -15},
+            "front": {"azimuth": 180, "elevation": -15},
             "side": {"azimuth": 90, "elevation": -15},
             "top": {"azimuth": 0, "elevation": -90},
         },
