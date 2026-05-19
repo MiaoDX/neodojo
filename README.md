@@ -34,8 +34,12 @@ published to GitHub Pages from `main` when `NEODOJO_DEPLOY_PAGES=true`.
 The same workflow also runs `make ci-real-demo` and uploads
 `outputs/real-demo/public-demo/index.html` as the
 `neodojo-real-demo-public-demo` artifact. By default that CI real-demo artifact
-uses fixture-shaped returned JSON inputs, so it proves the real-demo HTML
-packaging path and browser smoke, not a real Baduanjin GVHMR/GMR run.
+uses the committed derived JSON sample in
+[`samples/baduanjin-03-006-two-hands-80-92`](samples/baduanjin-03-006-two-hands-80-92):
+source provenance, returned GVHMR SMPL-X joints, and normalized GMR Unitree G1
+joint angles. CI regenerates the G1 model descriptor, MuJoCo frames, and public
+HTML from those JSON artifacts; raw source video and rendered outputs remain
+out of git.
 
 - Live fixture-only demo: [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
 - Generated files: `index.html`, `manifest.json`, `scene.json`,
@@ -59,19 +63,21 @@ handoff/normalization, roboharness G1 descriptor registration, returned GVHMR
 export inspection/import, real-demo audit commands, and a public two-panel
 teaching HTML profile.
 
-It does not yet ship a checked-in local GVHMR/GMR execution environment, true
-GMR-derived default G1 replay, completed simulator runtime pipeline, committed
-generated motion artifact, production Viser UI, or published real demo. A local
-ignored Baduanjin proof for the `80s-92s` visible-motion clip now passes
+It does not yet ship a checked-in local GVHMR/GMR execution environment,
+completed simulator runtime pipeline, production Viser UI, or published real
+demo. The repo now includes a small derived JSON Baduanjin sample for CI, while
+raw video, native checkpoints, pickles, rendered PNGs, and large generated
+outputs remain ignored. A local ignored Baduanjin proof for the `80s-92s`
+visible-motion clip now passes
 `make verify-real` with imported/native GMR Unitree G1 joint angles, a
 non-fixture roboharness/robot_descriptions MJCF descriptor, a nonblank/changing
 MuJoCo PNG frame sequence, and public HTML consumption of those frames. Colab,
 hosted GPU provider, self-hosted Actions GPU, operator-package, and real-demo
 Pages-promotion workflows are not supported by the current command surface. CI
-does upload a smoke real-demo public HTML artifact from fixture-shaped returned
-JSON inputs. The local real-demo audit also checks that returned GVHMR frames
-contain visible motion, so a static intro trim is not accepted as a completed
-teaching replay.
+does upload a sample-backed real-demo public HTML artifact from committed
+derived JSON. The local and CI real-demo audits also check that returned GVHMR
+frames contain visible motion, so a static intro trim is not accepted as a
+completed teaching replay.
 
 ## Run
 
@@ -82,9 +88,7 @@ make ci-real-demo
 make ci-real-demo \
   CI_REAL_SOURCE_MATERIALIZATION=path/to/source-materialization.json \
   CI_REAL_GVHMR_JSON=path/to/gvhmr-smplx-joints.json \
-  CI_REAL_G1_TRACK=path/to/g1-track/manifest.json \
-  CI_REAL_MODEL_DESCRIPTOR=path/to/g1-model/manifest.json \
-  CI_REAL_RENDER_MUJOCO=1 \
+  CI_REAL_GMR_G1_JSON=path/to/gmr-unitree-g1.json \
   CI_REAL_VERIFY_STRICT=1
 make real-gpu-prep LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin REAL_DRY_RUN=0
 make gvhmr-inspect GVHMR_RESULT=path/to/hmr4d_results.pt

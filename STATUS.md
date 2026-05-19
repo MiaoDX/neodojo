@@ -48,10 +48,11 @@ real Baduanjin G1 replay proof.
   `xvfb-run -a env MUJOCO_GL=glfw`.
 - The same workflow runs `make ci-real-demo` and uploads
   `outputs/real-demo/public-demo/index.html` as the
-  `neodojo-real-demo-public-demo` artifact. Without externally supplied real
-  JSON inputs this lane uses fixture-shaped returned artifacts, so it verifies
-  CI packaging/browser smoke for the real-demo path but does not claim a real
-  Baduanjin GVHMR/GMR run.
+  `neodojo-real-demo-public-demo` artifact. By default this lane uses
+  `samples/baduanjin-03-006-two-hands-80-92`, a committed derived JSON sample
+  with source provenance, returned GVHMR SMPL-X joints, and normalized GMR
+  Unitree G1 joint angles. CI regenerates the G1 descriptor, MuJoCo PNG frames,
+  public HTML, and strict real-demo audit from those JSON artifacts.
 - `make mujoco-backend-compare MODEL_DESCRIPTOR=... G1_TRACK=...` writes
   `outputs/g1-mujoco-backend-comparison/index.html`, a single manual review
   page comparing `egl`, `glfw`, and `osmesa` render outputs, timings, and setup
@@ -77,9 +78,7 @@ make ci-real-demo
 make ci-real-demo \
   CI_REAL_SOURCE_MATERIALIZATION=path/to/source-materialization.json \
   CI_REAL_GVHMR_JSON=path/to/gvhmr-smplx-joints.json \
-  CI_REAL_G1_TRACK=path/to/g1-track/manifest.json \
-  CI_REAL_MODEL_DESCRIPTOR=path/to/g1-model/manifest.json \
-  CI_REAL_RENDER_MUJOCO=1 \
+  CI_REAL_GMR_G1_JSON=path/to/gmr-unitree-g1.json \
   CI_REAL_VERIFY_STRICT=1
 make smoke-public
 ```
@@ -151,6 +150,10 @@ as supported until a new plan explicitly restores them:
   replay contract for actual G1 public-demo frames when local dependencies and
   assets are supplied; locally verified for the ignored `80s-92s` Baduanjin
   proof artifact set.
+- A committed derived JSON sample at
+  `samples/baduanjin-03-006-two-hands-80-92` that lets CI regenerate the
+  Baduanjin real-demo public HTML and actual G1 MuJoCo replay frames without
+  committing raw media, native checkpoints, pickles, or rendered PNG outputs.
 - Local GPU-run preparation that writes a source materialization manifest, GVHMR
   export template, `export_neodojo_gvhmr.py`, and `run_gvhmr_neodojo.sh` under
   ignored `outputs/`.
@@ -161,12 +164,12 @@ as supported until a new plan explicitly restores them:
 
 - Checked-in local GVHMR execution environment.
 - Checked-in local GMR execution environment.
-- Checked-in/default true GMR-derived Unitree G1 replay.
-- CI-verified or published actual G1 MuJoCo frame-sequence replay.
+- Checked-in native GVHMR/GMR checkpoints, pickles, source frames, raw video, or
+  rendered PNG outputs.
+- Published actual G1 MuJoCo frame-sequence replay on Pages.
 - Completed simulator runtime pipeline.
 - Built-in official SMPL-X body-model renderer.
 - Production/live-client Viser capture.
-- Committed generated motion artifact.
 - Published real demo.
 - Broad static-analysis, type-checking, coverage, or release gates.
 

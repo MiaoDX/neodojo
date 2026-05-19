@@ -30,16 +30,25 @@ MUJOCO_BENCHMARK_WARMUP_RUNS ?= 0
 MUJOCO_BENCHMARK_OUT ?= outputs/g1-mujoco-backend-benchmark
 REAL_ARTIFACT_SMOKE_INPUT_OUT ?= outputs/real-artifact-intake-smoke-input
 REAL_ARTIFACT_SMOKE_OUT ?= outputs/real-artifact-intake-smoke
+SAMPLE_BADUANJIN_ROOT ?= samples/baduanjin-03-006-two-hands-80-92
+SAMPLE_BADUANJIN_SOURCE_MATERIALIZATION ?= $(SAMPLE_BADUANJIN_ROOT)/source/source-materialization.json
+SAMPLE_BADUANJIN_GVHMR_JSON ?= $(SAMPLE_BADUANJIN_ROOT)/gvhmr/gvhmr-smplx-joints.json
+SAMPLE_BADUANJIN_GMR_G1_JSON ?= $(SAMPLE_BADUANJIN_ROOT)/gmr/gmr-unitree-g1.json
 CI_REAL_DEMO_INPUT_OUT ?= outputs/ci-real-demo-input
 CI_REAL_DEMO_OUT ?= outputs/real-demo
+CI_REAL_MOTION_OUT ?= outputs/ci-real-motion-contract
+CI_REAL_MODEL_OUT ?= outputs/ci-real-g1-model
+CI_REAL_G1_TRACK_OUT ?= outputs/ci-real-g1-track
+CI_REAL_G1_RENDER_OUT ?= outputs/ci-real-g1-render
 CI_REAL_SOURCE_MATERIALIZATION ?=
 CI_REAL_GVHMR_JSON ?=
+CI_REAL_GMR_G1_JSON ?=
 CI_REAL_G1_TRACK ?=
 CI_REAL_MODEL_DESCRIPTOR ?=
 CI_REAL_G1_RENDER ?=
 CI_REAL_RENDER_MUJOCO ?=
 CI_REAL_USE_RERUN_SDK ?=
-CI_REAL_VERIFY_STRICT ?= 0
+CI_REAL_VERIFY_STRICT ?= 1
 REAL_CONVERSION_AUDIT_OUT ?= outputs/real-conversion-audit
 REAL_CONVERSION_AUDIT_ARGS = \
 	--source-materialization "$(REAL_ARTIFACT_SOURCE_MATERIALIZATION)" \
@@ -173,8 +182,23 @@ demo-real:
 	PYTHONPATH=src $(PYTHON) -m neodojo real-conversion import-demo $(REAL_DEMO_ARGS)
 
 ci-real-demo:
-	rm -rf "$(CI_REAL_DEMO_OUT)"
-	@if [ -n "$(CI_REAL_SOURCE_MATERIALIZATION)" ] || [ -n "$(CI_REAL_GVHMR_JSON)" ]; then \
+	rm -rf "$(CI_REAL_DEMO_OUT)" "$(CI_REAL_MOTION_OUT)" "$(CI_REAL_MODEL_OUT)" "$(CI_REAL_G1_TRACK_OUT)" "$(CI_REAL_G1_RENDER_OUT)"
+	@if [ -n "$(CI_REAL_GMR_G1_JSON)" ]; then \
+		test -f "$(CI_REAL_SOURCE_MATERIALIZATION)" || (echo "CI_REAL_SOURCE_MATERIALIZATION=path/to/source-materialization.json is required" && exit 2); \
+		test -f "$(CI_REAL_GVHMR_JSON)" || (echo "CI_REAL_GVHMR_JSON=path/to/gvhmr-smplx-joints.json is required" && exit 2); \
+		test -f "$(CI_REAL_GMR_G1_JSON)" || (echo "CI_REAL_GMR_G1_JSON=path/to/gmr-unitree-g1.json is required" && exit 2); \
+		PYTHONPATH=src $(PYTHON) -m neodojo motion-record create --from-gvhmr-json "$(CI_REAL_GVHMR_JSON)" --out "$(CI_REAL_MOTION_OUT)"; \
+		PYTHONPATH=src $(PYTHON) -m neodojo robot-model register-roboharness-g1 --out "$(CI_REAL_MODEL_OUT)"; \
+		PYTHONPATH=src $(PYTHON) -m neodojo tracks import-gmr-json --source "$(CI_REAL_GMR_G1_JSON)" --motion-record "$(CI_REAL_MOTION_OUT)" --model-descriptor "$(CI_REAL_MODEL_OUT)/robot-models/unitree_g1/manifest.json" --out "$(CI_REAL_G1_TRACK_OUT)"; \
+		$(MAKE) mujoco-g1-render MODEL_DESCRIPTOR="$(CI_REAL_MODEL_OUT)/robot-models/unitree_g1/manifest.json" G1_TRACK="$(CI_REAL_G1_TRACK_OUT)/tracks/g1/manifest.json" MUJOCO_RENDER_OUT="$(CI_REAL_G1_RENDER_OUT)"; \
+		$(MAKE) demo-real SOURCE_MATERIALIZATION="$(CI_REAL_SOURCE_MATERIALIZATION)" GVHMR_JSON="$(CI_REAL_GVHMR_JSON)" G1_TRACK="$(CI_REAL_G1_TRACK_OUT)/tracks/g1/manifest.json" MODEL_DESCRIPTOR="$(CI_REAL_MODEL_OUT)/robot-models/unitree_g1/manifest.json" G1_RENDER="$(CI_REAL_G1_RENDER_OUT)/manifest.json" REAL_DEMO_OUT="$(CI_REAL_DEMO_OUT)"; \
+	elif [ -z "$(CI_REAL_SOURCE_MATERIALIZATION)" ] && [ -z "$(CI_REAL_GVHMR_JSON)" ] && [ -f "$(SAMPLE_BADUANJIN_SOURCE_MATERIALIZATION)" ] && [ -f "$(SAMPLE_BADUANJIN_GVHMR_JSON)" ] && [ -f "$(SAMPLE_BADUANJIN_GMR_G1_JSON)" ]; then \
+		PYTHONPATH=src $(PYTHON) -m neodojo motion-record create --from-gvhmr-json "$(SAMPLE_BADUANJIN_GVHMR_JSON)" --out "$(CI_REAL_MOTION_OUT)"; \
+		PYTHONPATH=src $(PYTHON) -m neodojo robot-model register-roboharness-g1 --out "$(CI_REAL_MODEL_OUT)"; \
+		PYTHONPATH=src $(PYTHON) -m neodojo tracks import-gmr-json --source "$(SAMPLE_BADUANJIN_GMR_G1_JSON)" --motion-record "$(CI_REAL_MOTION_OUT)" --model-descriptor "$(CI_REAL_MODEL_OUT)/robot-models/unitree_g1/manifest.json" --out "$(CI_REAL_G1_TRACK_OUT)"; \
+		$(MAKE) mujoco-g1-render MODEL_DESCRIPTOR="$(CI_REAL_MODEL_OUT)/robot-models/unitree_g1/manifest.json" G1_TRACK="$(CI_REAL_G1_TRACK_OUT)/tracks/g1/manifest.json" MUJOCO_RENDER_OUT="$(CI_REAL_G1_RENDER_OUT)"; \
+		$(MAKE) demo-real SOURCE_MATERIALIZATION="$(SAMPLE_BADUANJIN_SOURCE_MATERIALIZATION)" GVHMR_JSON="$(SAMPLE_BADUANJIN_GVHMR_JSON)" G1_TRACK="$(CI_REAL_G1_TRACK_OUT)/tracks/g1/manifest.json" MODEL_DESCRIPTOR="$(CI_REAL_MODEL_OUT)/robot-models/unitree_g1/manifest.json" G1_RENDER="$(CI_REAL_G1_RENDER_OUT)/manifest.json" REAL_DEMO_OUT="$(CI_REAL_DEMO_OUT)"; \
+	elif [ -n "$(CI_REAL_SOURCE_MATERIALIZATION)" ] || [ -n "$(CI_REAL_GVHMR_JSON)" ]; then \
 		test -f "$(CI_REAL_SOURCE_MATERIALIZATION)" || (echo "CI_REAL_SOURCE_MATERIALIZATION=path/to/source-materialization.json is required" && exit 2); \
 		test -f "$(CI_REAL_GVHMR_JSON)" || (echo "CI_REAL_GVHMR_JSON=path/to/gvhmr-smplx-joints.json is required" && exit 2); \
 		$(MAKE) demo-real $(CI_REAL_DEMO_ARGS); \
@@ -186,9 +210,13 @@ ci-real-demo:
 	test -f "$(CI_REAL_DEMO_OUT)/public-demo/index.html"
 	PYTHONPATH=src $(PYTHON) -m neodojo demo smoke --public-demo "$(CI_REAL_DEMO_OUT)/public-demo"
 	@if [ "$(CI_REAL_VERIFY_STRICT)" = "1" ]; then \
-		test -f "$(CI_REAL_SOURCE_MATERIALIZATION)" || (echo "CI_REAL_VERIFY_STRICT=1 requires CI_REAL_SOURCE_MATERIALIZATION=path/to/source-materialization.json" && exit 2); \
-		test -f "$(CI_REAL_GVHMR_JSON)" || (echo "CI_REAL_VERIFY_STRICT=1 requires CI_REAL_GVHMR_JSON=path/to/gvhmr-smplx-joints.json" && exit 2); \
-		$(MAKE) verify-real REAL_ARTIFACT_SOURCE_MATERIALIZATION="$(CI_REAL_SOURCE_MATERIALIZATION)" REAL_ARTIFACT_GVHMR_JSON="$(CI_REAL_GVHMR_JSON)" REAL_ARTIFACT_OUT="$(CI_REAL_DEMO_OUT)"; \
+		if [ -n "$(CI_REAL_SOURCE_MATERIALIZATION)" ] || [ -n "$(CI_REAL_GVHMR_JSON)" ]; then \
+			test -f "$(CI_REAL_SOURCE_MATERIALIZATION)" || (echo "CI_REAL_VERIFY_STRICT=1 requires CI_REAL_SOURCE_MATERIALIZATION=path/to/source-materialization.json" && exit 2); \
+			test -f "$(CI_REAL_GVHMR_JSON)" || (echo "CI_REAL_VERIFY_STRICT=1 requires CI_REAL_GVHMR_JSON=path/to/gvhmr-smplx-joints.json" && exit 2); \
+			$(MAKE) verify-real REAL_ARTIFACT_SOURCE_MATERIALIZATION="$(CI_REAL_SOURCE_MATERIALIZATION)" REAL_ARTIFACT_GVHMR_JSON="$(CI_REAL_GVHMR_JSON)" REAL_ARTIFACT_OUT="$(CI_REAL_DEMO_OUT)"; \
+		else \
+			$(MAKE) verify-real REAL_ARTIFACT_SOURCE_MATERIALIZATION="$(SAMPLE_BADUANJIN_SOURCE_MATERIALIZATION)" REAL_ARTIFACT_GVHMR_JSON="$(SAMPLE_BADUANJIN_GVHMR_JSON)" REAL_ARTIFACT_OUT="$(CI_REAL_DEMO_OUT)"; \
+		fi; \
 	fi
 
 mujoco-g1-render:

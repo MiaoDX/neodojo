@@ -2908,9 +2908,12 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("make ci-real-demo", workflow)
         self.assertIn("neodojo-real-demo-public-demo", workflow)
         self.assertIn("outputs/real-demo/public-demo", workflow)
+        self.assertIn("real-g1-replay", workflow)
         self.assertIn("neodojo-local-gpu-prep-smoke", workflow)
         self.assertIn("outputs/real-gpu-prep-smoke/gpu-run/manifest.json", workflow)
         self.assertIn("ci-real-demo", makefile)
+        self.assertIn("SAMPLE_BADUANJIN_ROOT", makefile)
+        self.assertIn("samples/baduanjin-03-006-two-hands-80-92", makefile)
         self.assertIn("real-gpu-prep", makefile)
         self.assertIn("prepare-gpu-run", makefile)
         removed_names = [
@@ -2926,6 +2929,23 @@ class DemoHtmlTests(unittest.TestCase):
         combined = "\n".join([workflow, makefile])
         for removed_name in removed_names:
             self.assertNotIn(removed_name, combined)
+
+    def test_committed_baduanjin_sample_artifacts_are_real_derived_json(self) -> None:
+        root = Path("samples/baduanjin-03-006-two-hands-80-92")
+        source = json.loads((root / "source" / "source-materialization.json").read_text(encoding="utf-8"))
+        gvhmr = json.loads((root / "gvhmr" / "gvhmr-smplx-joints.json").read_text(encoding="utf-8"))
+        gmr = json.loads((root / "gmr" / "gmr-unitree-g1.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(source["schema"], "neodojo.real_conversion_source_materialization.v1")
+        self.assertEqual(gvhmr["schema"], "neodojo.gvhmr_smplx_joints.v1")
+        self.assertEqual(gmr["schema"], "neodojo.gmr_unitree_g1_track.v1")
+        self.assertFalse(source["fixture_only"])
+        self.assertFalse(gvhmr["fixture_only"])
+        self.assertFalse(gmr["fixture_only"])
+        self.assertEqual(source["source_prep"]["source_id"], "bilibili-baduanjin-480p-motion-80-92")
+        self.assertEqual(len(gvhmr["frames"]), 300)
+        self.assertEqual(len(gmr["frames"]), 300)
+        self.assertTrue(gmr["frames"][0]["joint_angles"])
 
     def test_real_conversion_audit_distinguishes_fixture_intake_smoke(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
