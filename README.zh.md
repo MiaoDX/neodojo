@@ -27,6 +27,11 @@ non-fixture imported GMR joint-angle track 和 MuJoCo PNG frame sequence 时，
 [`.github/workflows/public-demo.yml`](.github/workflows/public-demo.yml) 在 CI
 中通过 `make demo-public-browser` 生成，上传为 `neodojo-public-demo` artifact，
 并在 `main` 分支设置 `NEODOJO_DEPLOY_PAGES=true` 时发布到 GitHub Pages。
+同一个 workflow 也会运行 `make ci-real-demo`，并把
+`outputs/real-demo/public-demo/index.html` 上传为
+`neodojo-real-demo-public-demo` artifact。默认这个 CI real-demo artifact 使用
+fixture-shaped returned JSON inputs，所以它证明的是 real-demo HTML packaging
+和 browser smoke 路径，不是真实 Baduanjin GVHMR/GMR run。
 
 - 在线 fixture-only demo: [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
 - 生成文件：`index.html`、`manifest.json`、`scene.json`、`screenshot.svg`、
@@ -56,14 +61,23 @@ imported/native GMR Unitree G1 joint angles、non-fixture
 roboharness/robot_descriptions MJCF descriptor、nonblank/changing MuJoCo PNG
 frame sequence，并且 public HTML 会消费这些 replay frames。当前命令面不再支持
 Colab、hosted GPU provider、self-hosted Actions GPU、operator-package，或
-real-demo Pages-promotion workflows。本机 real-demo audit 也会检查返回的 GVHMR 帧
-是否有可见动作，因此静止的片头裁剪不会被当成完成的教学回放。
+real-demo Pages-promotion workflows。CI 现在会从 fixture-shaped returned JSON
+inputs 上传一个 smoke real-demo public HTML artifact。本机 real-demo audit 也会检查
+返回的 GVHMR 帧是否有可见动作，因此静止的片头裁剪不会被当成完成的教学回放。
 
 ## 运行
 
 ```bash
 make verify
 make demo-public-browser
+make ci-real-demo
+make ci-real-demo \
+  CI_REAL_SOURCE_MATERIALIZATION=path/to/source-materialization.json \
+  CI_REAL_GVHMR_JSON=path/to/gvhmr-smplx-joints.json \
+  CI_REAL_G1_TRACK=path/to/g1-track/manifest.json \
+  CI_REAL_MODEL_DESCRIPTOR=path/to/g1-model/manifest.json \
+  CI_REAL_RENDER_MUJOCO=1 \
+  CI_REAL_VERIFY_STRICT=1
 make real-gpu-prep LOCAL_VIDEO=path/to/local-source.mp4 REAL_LOCAL_SOURCE_ID=local-baduanjin REAL_DRY_RUN=0
 make gvhmr-inspect GVHMR_RESULT=path/to/hmr4d_results.pt
 make real-artifact-intake REAL_ARTIFACT_SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json REAL_ARTIFACT_GVHMR_JSON=path/to/gvhmr-smplx-joints.json
