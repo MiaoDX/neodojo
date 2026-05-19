@@ -24,6 +24,10 @@ G1_RENDER_BACKEND = "neodojo_svg_schematic.v1"
 G1_MUJOCO_RENDER_BACKEND = "mujoco_python_offscreen.v1"
 G1_MUJOCO_BACKEND_COMPARISON_SCHEMA = "neodojo.g1_mujoco_backend_comparison.v1"
 G1_MUJOCO_BACKEND_BENCHMARK_SCHEMA = "neodojo.g1_mujoco_backend_benchmark.v1"
+G1_MUJOCO_VISUAL_THEME = "roboharness_g1_reach_light_checker_v1"
+G1_MUJOCO_SKY_RGB = (206, 232, 205)
+G1_MUJOCO_CHECKER_LIGHT_RGBA = (0.86, 0.91, 0.76, 1.0)
+G1_MUJOCO_CHECKER_DARK_RGBA = (0.45, 0.62, 0.42, 1.0)
 
 
 @dataclass(frozen=True)
@@ -515,7 +519,8 @@ def _render_mujoco_replay_sequence(
             "available": False,
             "actual_g1_model_replay": False,
             "view": "front",
-            "background": "white",
+            "background": "green_sky",
+            "ground": "checker_table",
             "frame_count": 0,
             "paths": [],
             "nonblank_frame_count": 0,
@@ -547,7 +552,7 @@ def _render_mujoco_replay_sequence(
             joint_angle_names=joint_angle_names,
             frame_index=frame_index,
         )
-        rgb = _render_mujoco_rgb_on_white_background(mujoco, renderer, data, camera)
+        rgb = _render_mujoco_rgb_with_roboharness_theme(mujoco, renderer, model, data, camera)
         signature = rgb.tobytes()
         if previous_pixels is not None:
             changed_checks.append(signature != previous_pixels)
@@ -570,7 +575,8 @@ def _render_mujoco_replay_sequence(
             and min(applied_counts) > 0
         ),
         "view": "front",
-        "background": "white",
+        "background": "green_sky",
+        "ground": "checker_table",
         "visual_style": "mujoco-png-frame-sequence.v1",
         "frame_count": len(paths),
         "paths": paths,
@@ -613,19 +619,27 @@ def _write_rgb_png(path: Path, pixels: Any) -> None:
     path.write_bytes(payload)
 
 
-def _render_mujoco_rgb_on_white_background(mujoco: Any, renderer: Any, data: Any, camera: Any) -> Any:
+def _render_mujoco_rgb_with_roboharness_theme(
+    mujoco: Any,
+    renderer: Any,
+    model: Any,
+    data: Any,
+    camera: Any,
+) -> Any:
     renderer.update_scene(data, camera=camera)
+    _add_roboharness_checker_ground(mujoco, renderer.scene, model)
     rgb = renderer.render()[..., :3].copy()
 
     try:
         renderer.enable_segmentation_rendering()
         renderer.update_scene(data, camera=camera)
+        _add_roboharness_checker_ground(mujoco, renderer.scene, model)
         segments = renderer.render()
     finally:
         renderer.disable_segmentation_rendering()
 
     background = segments[..., 0] < 0
-    rgb[background] = [255, 255, 255]
+    rgb[background] = G1_MUJOCO_SKY_RGB
     return rgb
 
 
@@ -638,6 +652,82 @@ def _load_mujoco() -> Any:
             "`python -m pip install '.[sim]'` or `python -m pip install mujoco`"
         ) from exc
     return mujoco
+
+
+def _lighten_rgba_rows(rows: Any, target: tuple[float, float, float], blend: float) -> int:
+    changed = 0
+    for rgba in rows:
+        try:
+            if float(rgba[3]) <= 0:
+                continue
+            for index, channel in enumerate(target):
+                rgba[index] = min(max(float(rgba[index]) * (1.0 - blend) + channel * blend, 0.0), 1.0)
+            changed += 1
+        except (IndexError, TypeError, ValueError):
+            continue
+    return changed
+
+
+def _apply_roboharness_g1_visual_theme(model: Any) -> dict[str, Any]:
+    target = (0.78, 0.82, 0.72)
+    geom_count = _lighten_rgba_rows(getattr(model, "geom_rgba", []), target, 0.58)
+    material_count = _lighten_rgba_rows(getattr(model, "mat_rgba", []), target, 0.52)
+    try:
+        model.vis.headlight.ambient[:] = [0.62, 0.62, 0.58]
+        model.vis.headlight.diffuse[:] = [0.72, 0.72, 0.68]
+        model.vis.headlight.specular[:] = [0.18, 0.18, 0.16]
+    except AttributeError:
+        pass
+    return {
+        "theme": G1_MUJOCO_VISUAL_THEME,
+        "body_color": "lightened warm grey",
+        "sky": "green",
+        "ground": "checker table",
+        "lightened_geom_count": geom_count,
+        "lightened_material_count": material_count,
+    }
+
+
+def _add_roboharness_checker_ground(mujoco: Any, scene: Any, model: Any) -> int:
+    import numpy as np
+
+    tile_count = 10
+    tile_size = max(min(float(getattr(model.stat, "extent", 1.5)) * 0.18, 0.34), 0.24)
+    z = -0.012
+    try:
+        center_x = float(model.stat.center[0])
+        center_y = float(model.stat.center[1])
+    except (AttributeError, IndexError, TypeError, ValueError):
+        center_x = 0.0
+        center_y = 0.0
+    mat = np.eye(3, dtype=np.float64).reshape(9)
+    added = 0
+    start = -(tile_count // 2)
+    for ix in range(tile_count):
+        for iy in range(tile_count):
+            if int(scene.ngeom) >= len(scene.geoms):
+                return added
+            geom = scene.geoms[int(scene.ngeom)]
+            x = center_x + (start + ix + 0.5) * tile_size
+            y = center_y + (start + iy + 0.5) * tile_size
+            rgba = G1_MUJOCO_CHECKER_LIGHT_RGBA if (ix + iy) % 2 == 0 else G1_MUJOCO_CHECKER_DARK_RGBA
+            mujoco.mjv_initGeom(
+                geom,
+                int(mujoco.mjtGeom.mjGEOM_BOX),
+                np.array([tile_size / 2.0, tile_size / 2.0, 0.008], dtype=np.float64),
+                np.array([x, y, z], dtype=np.float64),
+                mat,
+                np.array(rgba, dtype=np.float32),
+            )
+            try:
+                geom.objtype = int(mujoco.mjtObj.mjOBJ_GEOM)
+                geom.objid = 0
+                geom.segid = 0
+            except AttributeError:
+                pass
+            scene.ngeom += 1
+            added += 1
+    return added
 
 
 def _camera_for_view(mujoco: Any, model: Any, view: str) -> Any:
@@ -870,6 +960,7 @@ def write_g1_mujoco_render(
         model = mujoco.MjModel.from_xml_path(str(model_path))
     except Exception as exc:
         raise ValueError(f"failed to load model with MuJoCo: {exc}") from exc
+    visual_theme = _apply_roboharness_g1_visual_theme(model)
     try:
         model.vis.global_.offwidth = max(int(model.vis.global_.offwidth), width)
         model.vis.global_.offheight = max(int(model.vis.global_.offheight), height)
@@ -904,7 +995,7 @@ def write_g1_mujoco_render(
                 joint_angle_names=joint_angle_names,
                 frame_index=selected_frame,
             )
-            pixels = _render_mujoco_rgb_on_white_background(mujoco, renderer, data, camera)
+            pixels = _render_mujoco_rgb_with_roboharness_theme(mujoco, renderer, model, data, camera)
             nonblank_checks[view] = bool(pixels.max() > pixels.min())
             _write_rgb_png(path, pixels)
         replay_sequence = _render_mujoco_replay_sequence(
@@ -941,8 +1032,11 @@ def write_g1_mujoco_render(
                 else "MuJoCo offscreen neutral/static mesh render evidence"
             ),
             "mujoco_version": getattr(mujoco, "__version__", None),
+            "gl_backend": os.environ.get("MUJOCO_GL") or "mujoco_default",
             "resolution": {"width": width, "height": height},
-            "background": "white",
+            "background": "green_sky",
+            "ground": "checker_table",
+            "visual_theme": visual_theme,
         },
         "robot": SUPPORTED_ROBOT,
         "model_descriptor": _relative_path(model_descriptor_path, manifest_path.parent),

@@ -78,15 +78,20 @@ uv pip install -e '.[real-g1-replay]'
 uv pip install -e path/to/GMR
 PYTHONPATH=src python -m neodojo robot-model register-roboharness-g1 --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks run-gmr-g1 --motion-record outputs/real-demo/motion-contract --gvhmr-result path/to/hmr4d_results.pt --gmr-repo path/to/GMR --body-models path/to/GMR/assets/body_models --out outputs/gmr-native-run --execute
-PYTHONPATH=src python -m neodojo render mujoco-g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --width 1280 --height 960 --out outputs/g1-mujoco-render
+make mujoco-g1-render MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
 make verify-real
 make smoke-public
 ```
 
-MuJoCo CI rendering should use an explicit OpenGL backend. On GitHub-hosted
-Ubuntu, `MUJOCO_GL=glfw` under `xvfb-run -a` is the most practical smoke-test
-path. `MUJOCO_GL=osmesa` is the CPU headless path when `libosmesa6` is installed.
-`MUJOCO_GL=egl` is best reserved for GPU/self-hosted runners with working EGL.
+The default MuJoCo G1 render uses the roboharness `g1-reach` visual style:
+lighter G1 body colors, green sky, and a checker-table ground. The render
+target uses the CI-compatible OpenGL path `MUJOCO_GL=glfw` under
+`xvfb-run -a`, at `1280x960`, writing `outputs/g1-mujoco-render`. GitHub
+Actions has a focused smoke test for this same backend path.
+
+`MUJOCO_GL=osmesa` remains the CPU software headless fallback when OSMesa system
+libraries are installed. `MUJOCO_GL=egl` is best reserved for GPU/self-hosted
+runners with working EGL.
 To review visible differences and setup failures in one file, run:
 
 ```bash

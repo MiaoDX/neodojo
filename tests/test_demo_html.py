@@ -21,6 +21,8 @@ from neodojo.demo_html import build_fixture, compute_feedback, render_demo_html,
 from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames, derive_g1_like_frame
 from neodojo.g1_render import (
     G1_MUJOCO_RENDER_BACKEND,
+    G1_MUJOCO_SKY_RGB,
+    G1_MUJOCO_VISUAL_THEME,
     G1_RENDER_SCHEMA,
     write_g1_mujoco_backend_benchmark,
     write_g1_mujoco_backend_comparison,
@@ -844,7 +846,9 @@ class DemoHtmlTests(unittest.TestCase):
             front_corner = _png_rgb_pixel(result.frame_paths["front"], 0, 0)
 
         self.assertEqual(manifest["renderer"]["backend"], "mujoco_python_offscreen.v1")
-        self.assertEqual(manifest["renderer"]["background"], "white")
+        self.assertEqual(manifest["renderer"]["background"], "green_sky")
+        self.assertEqual(manifest["renderer"]["ground"], "checker_table")
+        self.assertEqual(manifest["renderer"]["visual_theme"]["theme"], G1_MUJOCO_VISUAL_THEME)
         self.assertEqual(manifest["renderer"]["resolution"], {"width": 96, "height": 80})
         self.assertEqual(manifest["camera_definitions"]["front"]["azimuth"], 180)
         self.assertTrue(manifest["mesh_loaded"])
@@ -852,7 +856,7 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(set(result.frame_paths), {"front", "side", "top"})
         self.assertTrue(front_png.startswith(b"\x89PNG"))
         self.assertEqual(front_dimensions, (96, 80))
-        self.assertEqual(front_corner, (255, 255, 255))
+        self.assertEqual(front_corner, G1_MUJOCO_SKY_RGB)
 
     @unittest.skipUnless(importlib.util.find_spec("mujoco"), "mujoco optional dependency is not installed")
     def test_write_mujoco_render_applies_imported_gmr_joint_angles(self) -> None:

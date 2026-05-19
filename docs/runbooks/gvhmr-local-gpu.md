@@ -83,10 +83,24 @@ real GVHMR artifact.
 
 ## MuJoCo GL Backend Notes
 
+Use the project render target for the default local/CI path:
+
+```bash
+make mujoco-g1-render \
+  MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json \
+  G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
+```
+
+This writes `outputs/g1-mujoco-render` at `1280x960`, applies the roboharness
+`g1-reach`-style visual theme (light G1 body, green sky, checker-table ground),
+and uses `MUJOCO_GL=glfw` under `xvfb-run -a` by default. The front camera is
+configured to show the robot face, not its back.
+
 Use an explicit `MUJOCO_GL` value for reproducible rendering:
 
 - `MUJOCO_GL=glfw`: display-backed OpenGL. On headless CI, run it through
-  `xvfb-run -a`; on a desktop session, no Xvfb wrapper is needed.
+  `xvfb-run -a`. This is the chosen default for neodojo because it is usable on
+  GitHub-hosted Ubuntu and local machines with the same rendering path.
 - `MUJOCO_GL=osmesa`: CPU software headless rendering. Useful on GitHub-hosted
   Ubuntu if `libosmesa6` and matching Python OpenGL dependencies are installed;
   typically slower than GPU-backed EGL/GLFW.

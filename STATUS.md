@@ -30,11 +30,16 @@ real Baduanjin G1 replay proof.
   `03-006` (`5八段锦两手托天理三焦`) from `video/original_videos.md`, trim
   `80s-92s`. Real-demo publication can point to this source provenance while
   still keeping raw source video and generated heavy artifacts out of git.
-- MuJoCo CI rendering should use an explicit GL backend. For GitHub-hosted
-  Ubuntu smoke tests, `MUJOCO_GL=glfw` under `xvfb-run -a` is the practical
-  display-backed option; `MUJOCO_GL=osmesa` is CPU headless when OSMesa system
-  libraries are installed; `MUJOCO_GL=egl` is for GPU/self-hosted runners with
-  working EGL.
+- The default MuJoCo G1 render style follows the roboharness `g1-reach` visual
+  reference: lighter G1 body colors, green sky, and a checker-table ground.
+- MuJoCo CI/local parity uses an explicit GL backend. The chosen default is
+  `MUJOCO_GL=glfw` under `xvfb-run -a`, because it runs on GitHub-hosted Ubuntu
+  and local machines with the same display-backed path. `MUJOCO_GL=osmesa` is
+  CPU headless when OSMesa system libraries are installed; `MUJOCO_GL=egl` is
+  for GPU/self-hosted runners with working EGL.
+- `.github/workflows/public-demo.yml` has a focused MuJoCo smoke lane that
+  installs the `sim` extra and validates the G1 renderer through
+  `xvfb-run -a env MUJOCO_GL=glfw`.
 - `make mujoco-backend-compare MODEL_DESCRIPTOR=... G1_TRACK=...` writes
   `outputs/g1-mujoco-backend-comparison/index.html`, a single manual review
   page comparing `egl`, `glfw`, and `osmesa` render outputs, timings, and setup
@@ -71,7 +76,7 @@ uv pip install -e path/to/GMR
 PYTHONPATH=src python -m neodojo robot-model register-roboharness-g1 --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo tracks run-gmr-g1 --motion-record outputs/real-demo/motion-contract --gvhmr-result path/to/hmr4d_results.pt --gmr-repo path/to/GMR --body-models path/to/GMR/assets/body_models --out outputs/gmr-native-run --execute
 PYTHONPATH=src python -m neodojo tracks import-gmr-json --source outputs/gmr-native-run/normalized/gmr-unitree-g1.normalized.json --motion-record outputs/real-demo/motion-contract --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
-PYTHONPATH=src python -m neodojo render mujoco-g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --width 1280 --height 960 --out outputs/g1-mujoco-render
+make mujoco-g1-render MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
 make mujoco-backend-compare MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
 make mujoco-backend-benchmark MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=path/to/gvhmr-smplx-joints.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_RENDER=outputs/g1-mujoco-render/manifest.json

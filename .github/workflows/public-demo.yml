@@ -31,6 +31,16 @@ jobs:
         run: python -m pip install -e '.[browser]'
       - name: Verify fixture and local real-conversion surface
         run: make verify
+      - name: Install MuJoCo CI render runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgl1 libglx-mesa0 libgl1-mesa-dri
+          python -m pip install -e '.[sim]'
+      - name: Verify CI MuJoCo G1 render backend
+        run: |
+          xvfb-run -a env MUJOCO_GL=glfw PYTHONPATH=src python -m unittest \
+            tests.test_demo_html.DemoHtmlTests.test_write_mujoco_render_from_registered_mjcf \
+            tests.test_demo_html.DemoHtmlTests.test_write_mujoco_render_applies_imported_gmr_joint_angles
       - name: Upload local GPU prep smoke artifact
         uses: actions/upload-artifact@v7
         with:
