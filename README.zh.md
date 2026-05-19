@@ -8,77 +8,67 @@
 
 [English](README.md) · **中文**
 
-<img src="docs/assets/neodojo-hero.webp" alt="neodojo SMPL-X and Unitree G1 teaching replay hero" width="100%">
+<img src="docs/assets/neodojo-code-dojo.webp" alt="green-code dojo with a robot and motion skeleton training together" width="100%">
 
-neodojo 把官方或用户提供的教学动作视频转成可多视角检查的仿真教学回放。
-教学与评分来源是 SMPL-X motion；Unitree G1 是同步视觉伴随轨道，不作为评分来源。
+> "This is the Construct. It's our loading program. We can load anything, from clothing, to equipment, weapons, training simulations..."
+>
+> — Morpheus, *The Matrix* (1999)
 
-## 为什么做
+**I know kung fu.**
 
-教学视频容易观看，但很难逐帧检查。neodojo 保留人体教学轨道，把动作重定向到
-humanoid visual track，再把两者打包成可以本地或 CI 打开的 HTML artifact。
+二十七年后，我们终于可以做一个真实的 Construct。
 
-<img src="docs/assets/neodojo-sample.gif" alt="sample Unitree G1 MuJoCo replay from the Baduanjin derived JSON sample" width="420">
+不是用来加载武器，也不是加载战斗程序。这个 Construct 加载 Baduanjin、Wu Qin
+Xi、Yi Jin Jing，最终也可以加载任何需要看清标准动作的人体练习。
 
-## 当前证明
+neodojo 是一个面向广义 kung fu 的 simulation training dojo：qigong、taichi、
+traditional martial arts、daoyin、康复动作，以及更多。它把教学视频转成 motion
+tracks，重定向到仿真 humanoid，再从多角度渲染，并叠加 joint paths 与同步回放。
 
-- 在线 fixture public demo: [`https://miaodx.com/neodojo/`](https://miaodx.com/neodojo/)
-- CI real-demo artifact: [`public-demo` workflow](https://github.com/MiaoDX/neodojo/actions/workflows/public-demo.yml)
-  里的 `neodojo-real-demo-public-demo`
-- 本地 real-demo HTML: 运行 `make ci-real-demo` 后的
-  `outputs/real-demo/public-demo/index.html`
-- Sample input:
-  [`samples/baduanjin-03-006-two-hands-80-92`](samples/baduanjin-03-006-two-hands-80-92)
+你看到一个动作的 standard shadow，然后把这个 shadow 装进自己的训练循环里。
 
-提交的 sample 只包含派生 JSON：source provenance、返回的 GVHMR SMPL-X joints、
-normalized GMR Unitree G1 joint angles。CI 会从这些 JSON 重新生成 G1 model
-descriptor、MuJoCo frames、browser smoke capture 和 public HTML。Raw video、
-checkpoints、pickles、rendered frame outputs 仍然不进 git。
+<img src="docs/assets/neodojo-sample.gif" alt="Baduanjin sample preview with SMPL-X skeleton and MuJoCo G1 replay panels" width="100%">
+
+## 可以打开什么
+
+| Artifact | Link |
+| --- | --- |
+| 在线 fixture demo | [`miaodx.com/neodojo`](https://miaodx.com/neodojo/) |
+| CI fixture HTML | [`public-demo` workflow](https://github.com/MiaoDX/neodojo/actions/workflows/public-demo.yml) 里的 `neodojo-public-demo` |
+| CI sample-backed real HTML | 同一 workflow 里的 `neodojo-real-demo-public-demo` |
+| 本地 sample-backed real HTML | `make ci-real-demo` 后的 `outputs/real-demo/public-demo/index.html` |
+
+提交的 Baduanjin sample 只包含派生 JSON：source provenance、返回的 GVHMR
+SMPL-X joints、normalized GMR Unitree G1 joint angles。Raw video、checkpoints、
+pickles、rendered frame outputs 仍然不进 git。
 
 ## Pipeline
 
 ![neodojo architecture](docs/assets/neodojo-architecture.svg)
 
-```text
-source video -> GVHMR SMPL-X -> GMR Unitree G1 -> MuJoCo/Genesis -> teaching UI
-```
+`source video -> GVHMR SMPL-X -> GMR Unitree G1 -> MuJoCo/Genesis -> teaching UI`
 
-## 运行
+SMPL-X 是教学与评分来源。Unitree G1 是视觉伴随轨道，不作为评分来源。
 
-```bash
-make verify
-make demo-public-browser
-make ci-real-demo
-make ci-real-demo \
-  CI_REAL_SOURCE_MATERIALIZATION=path/to/source-materialization.json \
-  CI_REAL_GVHMR_JSON=path/to/gvhmr-smplx-joints.json \
-  CI_REAL_GMR_G1_JSON=path/to/gmr-unitree-g1.json
-```
+## 试一下
 
-MuJoCo 的 CI/local parity 使用 `MUJOCO_GL=glfw` 配合 `xvfb-run -a`。`osmesa`
-是安装 system libraries 后的 CPU headless fallback；`egl` 适合可用 EGL 的
-GPU/self-hosted runner。
+用 `make ci-real-demo` 生成 sample-backed real HTML，用 `make verify` 检查
+bootstrap verification surface。更完整的命令在 [`STATUS.md`](STATUS.md)。
 
-## HTML 链接
+## Contributing
 
-| Target | 打开方式 |
-| --- | --- |
-| 在线 fixture HTML | [`miaodx.com/neodojo`](https://miaodx.com/neodojo/) |
-| CI fixture artifact | [`public-demo` workflow](https://github.com/MiaoDX/neodojo/actions/workflows/public-demo.yml) 里的 `neodojo-public-demo` |
-| CI sample-backed real HTML | [`public-demo` workflow](https://github.com/MiaoDX/neodojo/actions/workflows/public-demo.yml) 里的 `neodojo-real-demo-public-demo` |
-| 本地 fixture HTML | `make demo-public-browser` 后的 `outputs/public-demo/index.html` |
-| 本地 sample-backed real HTML | `make ci-real-demo` 后的 `outputs/real-demo/public-demo/index.html` |
+The dojo is not the place. The dojo is the practice.
 
-## 状态
+Issues、PRs、ideas、field notes 都欢迎。现在还很早，每一条反馈都有价值。
 
-这个 repo 仍处于 bootstrap 阶段。它已有 fixture motion contracts、sample-backed
-Baduanjin real-demo CI lane、roboharness-style G1 MuJoCo replay、browser smoke、
-capture bundles，以及本地 GVHMR/GMR handoff boundaries。它还没有提交到仓库的
-GVHMR/GMR runtime environment、production Viser UI、已发布的 real-demo Pages
-site，或完整 simulator runtime pipeline。
+- 练 qigong、taichi、martial arts 的人：老师会讲、但平面视频看不出来的细节，
+  正是这个项目最需要的东西。
+- HMR / humanoid researchers：欢迎 review roadmap，建议更好的 reconstruction、
+  retargeting、rendering 或 evaluation 方法。
+- roboharness / AI-coding-agent builders：这是一个开放的 agent-assisted
+  simulation tooling 实验。
 
-Baduanjin proof 的 source provenance 是 [`video/original_videos.md`](video/original_videos.md)
-里的 public index item `03-006`，trim `80s-92s`。
+**Show me.**
 
 ## 文档
 
