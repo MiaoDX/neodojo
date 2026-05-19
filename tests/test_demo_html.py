@@ -2905,8 +2905,12 @@ class DemoHtmlTests(unittest.TestCase):
         makefile = Path("Makefile").read_text(encoding="utf-8")
 
         self.assertIn("make verify", workflow)
+        self.assertIn("make ci-real-demo", workflow)
+        self.assertIn("neodojo-real-demo-public-demo", workflow)
+        self.assertIn("outputs/real-demo/public-demo", workflow)
         self.assertIn("neodojo-local-gpu-prep-smoke", workflow)
         self.assertIn("outputs/real-gpu-prep-smoke/gpu-run/manifest.json", workflow)
+        self.assertIn("ci-real-demo", makefile)
         self.assertIn("real-gpu-prep", makefile)
         self.assertIn("prepare-gpu-run", makefile)
         removed_names = [

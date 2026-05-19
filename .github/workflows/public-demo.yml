@@ -41,6 +41,8 @@ jobs:
           xvfb-run -a env MUJOCO_GL=glfw PYTHONPATH=src python -m unittest \
             tests.test_demo_html.DemoHtmlTests.test_write_mujoco_render_from_registered_mjcf \
             tests.test_demo_html.DemoHtmlTests.test_write_mujoco_render_applies_imported_gmr_joint_angles
+      - name: Build CI real-demo public HTML
+        run: make ci-real-demo
       - name: Upload local GPU prep smoke artifact
         uses: actions/upload-artifact@v7
         with:
@@ -75,8 +77,20 @@ jobs:
           if-no-files-found: error
       - name: Install browser runtime
         run: python -m playwright install --with-deps chromium
+      - name: Browser smoke CI real-demo public HTML
+        run: PYTHONPATH=src python -m neodojo demo browser-smoke --public-demo outputs/real-demo/public-demo --out outputs/real-demo/browser-capture
       - name: Build public demo with browser capture
         run: make demo-public-browser
+      - name: Upload CI real-demo public artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: neodojo-real-demo-public-demo
+          path: |
+            outputs/real-demo/manifest.json
+            outputs/real-demo/public-demo
+            outputs/real-demo/capture
+            outputs/real-demo/browser-capture
+          if-no-files-found: error
       - name: Upload public demo artifact
         uses: actions/upload-artifact@v7
         with:
