@@ -33,6 +33,10 @@ non-fixture imported GMR joint-angle track 和 MuJoCo PNG frame sequence 时，
   `neodojo-demo.rrd`
 - 当前 CI 证据：[`STATUS.md`](STATUS.md) 记录已验证的 GitHub Actions runs 和
   fixture-only Pages 状态。
+- real-demo 的 source provenance 可以直接指向公开 source-video index。本机
+  Baduanjin proof 使用 [`video/original_videos.md`](video/original_videos.md)
+  里的 source `03-006`（`5八段锦两手托天理三焦`），trim `80s-92s`；demo 发布的是
+  派生 skeleton/robot playback，不发布 source video。
 
 ![Fixture-only neodojo public demo screenshot](https://miaodx.com/neodojo/screenshot.svg)
 
@@ -72,6 +76,11 @@ make verify-real
 make smoke-public
 ```
 
+MuJoCo CI rendering 应该显式设置 OpenGL backend。GitHub-hosted Ubuntu 上，
+`MUJOCO_GL=glfw` 配合 `xvfb-run -a` 是最实用的 smoke-test 路径。
+安装 `libosmesa6` 后，`MUJOCO_GL=osmesa` 是 CPU headless 路径。
+`MUJOCO_GL=egl` 更适合有可用 EGL 的 GPU/self-hosted runner。
+
 完整命令列表、blockers 和下一步安全任务见 [`STATUS.md`](STATUS.md)。
 
 ## 项目文档
@@ -88,8 +97,8 @@ make smoke-public
 
 - 不要提交 raw videos、generated motion files、rendered videos、checkpoints、
   logs 或大输出。
-- 官方教学视频需要按 licensing-sensitive 处理；除非权利已确认，否则优先使用本地或
-  用户提供的 source media。
+- real demo 要在 docs/manifests 里保留公开 source-video provenance；不要从本 repo
+  发布 raw source videos。
 - 不要把 fixture demo 当成真实 GVHMR/GMR/simulator 证明。
 - 不要把 schematic 右栏证据标成 actual G1 model replay。
 - 不要把 G1 当成评分来源。

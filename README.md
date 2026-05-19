@@ -37,6 +37,11 @@ published to GitHub Pages from `main` when `NEODOJO_DEPLOY_PAGES=true`.
   `screenshot.svg`, `neodojo-demo.rrd`
 - Current CI evidence: [`STATUS.md`](STATUS.md) records the verified GitHub
   Actions runs and the fixture-only Pages state.
+- Real-demo source provenance can be documented by pointing to the public
+  source-video index. The local Baduanjin proof uses source `03-006`
+  (`5八段锦两手托天理三焦`) from [`video/original_videos.md`](video/original_videos.md),
+  trim `80s-92s`; the demo publishes derived skeleton/robot playback, not the
+  source video.
 
 ![Fixture-only neodojo public demo screenshot](https://miaodx.com/neodojo/screenshot.svg)
 
@@ -78,6 +83,11 @@ make verify-real
 make smoke-public
 ```
 
+MuJoCo CI rendering should use an explicit OpenGL backend. On GitHub-hosted
+Ubuntu, `MUJOCO_GL=glfw` under `xvfb-run -a` is the most practical smoke-test
+path. `MUJOCO_GL=osmesa` is the CPU headless path when `libosmesa6` is installed.
+`MUJOCO_GL=egl` is best reserved for GPU/self-hosted runners with working EGL.
+
 See [`STATUS.md`](STATUS.md) for the full command list, blockers, and next safe
 task.
 
@@ -98,8 +108,8 @@ task.
 
 - Do not commit raw videos, generated motion files, rendered videos,
   checkpoints, logs, or large outputs.
-- Treat official instructional videos as licensing-sensitive; prefer local or
-  user-supplied source media unless rights are confirmed.
+- Keep public source-video provenance in docs/manifests for real demos; do not
+  publish raw source videos from this repo.
 - Do not treat the fixture demo as real GVHMR/GMR/simulator proof.
 - Do not label schematic right-panel evidence as actual G1 model replay.
 - Do not use G1 as the scoring source.

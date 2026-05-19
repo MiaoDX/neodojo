@@ -12,7 +12,12 @@ self-hosted GitHub Actions runners, or real-demo Pages promotion.
 - A local CUDA-capable machine.
 - A local GVHMR checkout and dependencies.
 - Local licensed SMPL-X assets. Do not commit or publish them.
-- A local/user-supplied source clip with rights approval for this use.
+- A local source clip from a documented public source index, or another
+  user-supplied clip. Preserve the source URL/provenance in the generated
+  manifests; do not commit or publish the raw source video from this repo.
+
+The current local Baduanjin proof uses public source-index item `03-006`
+(`5八段锦两手托天理三焦`) from `video/original_videos.md`, trim `80s-92s`.
 
 ## Prepare The Local Run Workspace
 
@@ -75,3 +80,21 @@ make verify-real
 `make verify-real` only passes when the source materialization, returned GVHMR
 JSON, imported real-demo manifest, and public-demo manifest prove a non-fixture
 real GVHMR artifact.
+
+## MuJoCo GL Backend Notes
+
+Use an explicit `MUJOCO_GL` value for reproducible rendering:
+
+- `MUJOCO_GL=glfw`: display-backed OpenGL. On headless CI, run it through
+  `xvfb-run -a`; on a desktop session, no Xvfb wrapper is needed.
+- `MUJOCO_GL=osmesa`: CPU software headless rendering. Useful on GitHub-hosted
+  Ubuntu if `libosmesa6` and matching Python OpenGL dependencies are installed;
+  typically slower than GPU-backed EGL/GLFW.
+- `MUJOCO_GL=egl`: headless GPU rendering. Prefer this for self-hosted GPU
+  runners with working EGL/NVIDIA or Mesa EGL support.
+
+The backend should not materially change the G1 pose, camera, or labels. Minor
+pixel-level differences can happen from different OpenGL drivers, especially
+around anti-aliasing, depth edges, and shading. For CI, compare manifest fields,
+resolution, nonblank pixels, and frame-change evidence rather than exact PNG
+hashes across different GL backends.

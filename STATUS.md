@@ -26,6 +26,15 @@ real Baduanjin G1 replay proof.
   roboharness/robot_descriptions MJCF descriptor, a nonblank/changing MuJoCo PNG
   frame sequence, and public HTML consumption of those replay frames. The strict
   audit reports `real_demo_verified` for this local artifact set.
+- The Baduanjin proof source should be documented as public source-index item
+  `03-006` (`5八段锦两手托天理三焦`) from `video/original_videos.md`, trim
+  `80s-92s`. Real-demo publication can point to this source provenance while
+  still keeping raw source video and generated heavy artifacts out of git.
+- MuJoCo CI rendering should use an explicit GL backend. For GitHub-hosted
+  Ubuntu smoke tests, `MUJOCO_GL=glfw` under `xvfb-run -a` is the practical
+  display-backed option; `MUJOCO_GL=osmesa` is CPU headless when OSMesa system
+  libraries are installed; `MUJOCO_GL=egl` is for GPU/self-hosted runners with
+  working EGL.
 
 ## Supported Command Surface
 
