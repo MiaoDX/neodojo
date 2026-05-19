@@ -607,6 +607,8 @@ def write_g1_mujoco_render(
     width: int = 640,
     height: int = 480,
 ) -> G1RenderWriteResult:
+    if width <= 0 or height <= 0:
+        raise ValueError("MuJoCo render width and height must be positive")
     validate_output_dir(out_dir)
     model_descriptor = _load_model_descriptor(model_descriptor_path, allow_fixture_model=allow_fixture_model)
     if model_descriptor.get("fixture_only"):
@@ -631,6 +633,11 @@ def write_g1_mujoco_render(
         model = mujoco.MjModel.from_xml_path(str(model_path))
     except Exception as exc:
         raise ValueError(f"failed to load model with MuJoCo: {exc}") from exc
+    try:
+        model.vis.global_.offwidth = max(int(model.vis.global_.offwidth), width)
+        model.vis.global_.offheight = max(int(model.vis.global_.offheight), height)
+    except AttributeError:
+        pass
     data = mujoco.MjData(model)
     pose_application = _mujoco_pose_application_for_frame(
         mujoco,
