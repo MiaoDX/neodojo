@@ -75,6 +75,7 @@ make demo-html
 make demo-public
 make demo-public-browser
 make ci-real-demo
+make readme-gif
 make ci-real-demo \
   CI_REAL_SOURCE_MATERIALIZATION=path/to/source-materialization.json \
   CI_REAL_GVHMR_JSON=path/to/gvhmr-smplx-joints.json \

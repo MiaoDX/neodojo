@@ -17,7 +17,7 @@ neodojo = "neodojo.cli:main"
 sim = ["mujoco>=3.3,<4"]
 rerun = ["rerun-sdk>=0.32,<1"]
 viser = ["viser>=1.0,<2"]
-browser = ["playwright>=1.56,<2"]
+browser = ["playwright>=1.56,<2", "Pillow>=10,<13"]
 real-g1-replay = [
     "mujoco>=3.3,<4",
     "roboharness[demo] @ git+https://github.com/MiaoDX/roboharness.git@0bd5551d92d56a041e5c1b12a68ca6a4b8963b16",

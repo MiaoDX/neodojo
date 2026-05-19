@@ -1,4 +1,4 @@
-.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-gpu-prep gvhmr-inspect demo-real ci-real-demo mujoco-g1-render roboharness-g1-report mujoco-backend-compare mujoco-backend-benchmark real-artifact-intake real-conversion-audit real-conversion-audit-strict smoke-public
+.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser readme-gif real-gpu-prep gvhmr-inspect demo-real ci-real-demo mujoco-g1-render roboharness-g1-report mujoco-backend-compare mujoco-backend-benchmark real-artifact-intake real-conversion-audit real-conversion-audit-strict smoke-public
 
 PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 REAL_SOURCE_ID ?= 03-006
@@ -49,6 +49,10 @@ CI_REAL_G1_RENDER ?=
 CI_REAL_RENDER_MUJOCO ?=
 CI_REAL_USE_RERUN_SDK ?=
 CI_REAL_VERIFY_STRICT ?= 1
+README_GIF_PUBLIC_DEMO ?= outputs/real-demo/public-demo
+README_GIF_OUT ?= docs/assets/neodojo-sample.gif
+README_GIF_FRAMES ?= 24
+README_GIF_SCALE_WIDTH ?= 960
 REAL_CONVERSION_AUDIT_OUT ?= outputs/real-conversion-audit
 REAL_CONVERSION_AUDIT_ARGS = \
 	--source-materialization "$(REAL_ARTIFACT_SOURCE_MATERIALIZATION)" \
@@ -154,6 +158,9 @@ demo-public-browser: demo-public
 	rm -rf outputs/browser-capture
 	PYTHONPATH=src $(PYTHON) -m neodojo demo browser-smoke --public-demo outputs/public-demo --out outputs/browser-capture
 	PYTHONPATH=src $(PYTHON) -m neodojo capture bundle --public-demo outputs/public-demo --viser-runtime outputs/viser-runtime --g1-render outputs/g1-render --browser-capture outputs/browser-capture --out outputs/capture
+
+readme-gif: ci-real-demo
+	PYTHONPATH=src $(PYTHON) -m neodojo demo render-gif --public-demo "$(README_GIF_PUBLIC_DEMO)" --out "$(README_GIF_OUT)" --frames "$(README_GIF_FRAMES)" --scale-width "$(README_GIF_SCALE_WIDTH)"
 
 real-gpu-prep:
 	@test -n "$(LOCAL_VIDEO)" || (echo "LOCAL_VIDEO=path/to/local-source.mp4 is required" && exit 2)
