@@ -39,6 +39,9 @@ real Baduanjin G1 replay proof.
   `outputs/g1-mujoco-backend-comparison/index.html`, a single manual review
   page comparing `egl`, `glfw`, and `osmesa` render outputs, timings, and setup
   errors.
+- `make mujoco-backend-benchmark MODEL_DESCRIPTOR=... G1_TRACK=...` writes
+  `outputs/g1-mujoco-backend-benchmark/benchmark.md` and `manifest.json`, with
+  repeated render timing stats per backend.
 
 ## Supported Command Surface
 
@@ -70,6 +73,7 @@ PYTHONPATH=src python -m neodojo tracks run-gmr-g1 --motion-record outputs/real-
 PYTHONPATH=src python -m neodojo tracks import-gmr-json --source outputs/gmr-native-run/normalized/gmr-unitree-g1.normalized.json --motion-record outputs/real-demo/motion-contract --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 PYTHONPATH=src python -m neodojo render mujoco-g1 --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --g1-track outputs/g1-visual/tracks/g1/manifest.json --width 1280 --height 960 --out outputs/g1-mujoco-render
 make mujoco-backend-compare MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
+make mujoco-backend-benchmark MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=path/to/gvhmr-smplx-joints.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_RENDER=outputs/g1-mujoco-render/manifest.json
 make real-conversion-audit
 make verify-real

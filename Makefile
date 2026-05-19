@@ -1,4 +1,4 @@
-.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-gpu-prep gvhmr-inspect demo-real mujoco-backend-compare real-artifact-intake real-conversion-audit real-conversion-audit-strict smoke-public
+.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser real-gpu-prep gvhmr-inspect demo-real mujoco-backend-compare mujoco-backend-benchmark real-artifact-intake real-conversion-audit real-conversion-audit-strict smoke-public
 
 PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 REAL_SOURCE_ID ?= 03-006
@@ -17,6 +17,12 @@ MUJOCO_COMPARE_BACKENDS ?= egl glfw osmesa
 MUJOCO_COMPARE_WIDTH ?= 1280
 MUJOCO_COMPARE_HEIGHT ?= 960
 MUJOCO_COMPARE_OUT ?= outputs/g1-mujoco-backend-comparison
+MUJOCO_BENCHMARK_BACKENDS ?= egl glfw osmesa
+MUJOCO_BENCHMARK_WIDTH ?= 1280
+MUJOCO_BENCHMARK_HEIGHT ?= 960
+MUJOCO_BENCHMARK_RUNS ?= 2
+MUJOCO_BENCHMARK_WARMUP_RUNS ?= 0
+MUJOCO_BENCHMARK_OUT ?= outputs/g1-mujoco-backend-benchmark
 REAL_ARTIFACT_SMOKE_INPUT_OUT ?= outputs/real-artifact-intake-smoke-input
 REAL_ARTIFACT_SMOKE_OUT ?= outputs/real-artifact-intake-smoke
 REAL_CONVERSION_AUDIT_OUT ?= outputs/real-conversion-audit
@@ -139,6 +145,11 @@ mujoco-backend-compare:
 	@test -n "$(MODEL_DESCRIPTOR)" || (echo "MODEL_DESCRIPTOR=path/to/g1-model-manifest.json is required" && exit 2)
 	@test -n "$(G1_TRACK)" || (echo "G1_TRACK=path/to/g1-track-manifest.json is required" && exit 2)
 	PYTHONPATH=src $(PYTHON) -m neodojo render mujoco-g1-backends --model-descriptor "$(MODEL_DESCRIPTOR)" --g1-track "$(G1_TRACK)" --backends $(MUJOCO_COMPARE_BACKENDS) --width "$(MUJOCO_COMPARE_WIDTH)" --height "$(MUJOCO_COMPARE_HEIGHT)" --out "$(MUJOCO_COMPARE_OUT)"
+
+mujoco-backend-benchmark:
+	@test -n "$(MODEL_DESCRIPTOR)" || (echo "MODEL_DESCRIPTOR=path/to/g1-model-manifest.json is required" && exit 2)
+	@test -n "$(G1_TRACK)" || (echo "G1_TRACK=path/to/g1-track-manifest.json is required" && exit 2)
+	PYTHONPATH=src $(PYTHON) -m neodojo render mujoco-g1-benchmark --model-descriptor "$(MODEL_DESCRIPTOR)" --g1-track "$(G1_TRACK)" --backends $(MUJOCO_BENCHMARK_BACKENDS) --width "$(MUJOCO_BENCHMARK_WIDTH)" --height "$(MUJOCO_BENCHMARK_HEIGHT)" --runs "$(MUJOCO_BENCHMARK_RUNS)" --warmup-runs "$(MUJOCO_BENCHMARK_WARMUP_RUNS)" --out "$(MUJOCO_BENCHMARK_OUT)"
 
 real-artifact-intake:
 	@test -f "$(REAL_ARTIFACT_SOURCE_MATERIALIZATION)" || (echo "REAL_ARTIFACT_SOURCE_MATERIALIZATION=path/to/source-materialization.json is required" && exit 2)

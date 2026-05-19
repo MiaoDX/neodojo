@@ -22,6 +22,7 @@ from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames, derive
 from neodojo.g1_render import (
     G1_MUJOCO_RENDER_BACKEND,
     G1_RENDER_SCHEMA,
+    write_g1_mujoco_backend_benchmark,
     write_g1_mujoco_backend_comparison,
     write_g1_mujoco_render,
     write_g1_render,
@@ -754,6 +755,51 @@ class DemoHtmlTests(unittest.TestCase):
                     g1_track=root / "track.json",
                     backends=["../egl"],
                 )
+
+    def test_write_mujoco_backend_benchmark_writes_markdown_summary(self) -> None:
+        def fake_run(command, *, check, capture_output, text, env, timeout):
+            del check, capture_output, text, timeout
+            out_dir = Path(command[command.index("--out") + 1])
+            backend = env["MUJOCO_GL"]
+            if backend == "egl":
+                frame_dir = out_dir / "frames"
+                frame_dir.mkdir(parents=True)
+                for view in ("front", "side", "top"):
+                    (frame_dir / f"{view}.png").write_bytes(b"png")
+                manifest = {
+                    "schema": G1_RENDER_SCHEMA,
+                    "renderer": {
+                        "backend": G1_MUJOCO_RENDER_BACKEND,
+                        "resolution": {"width": 96, "height": 80},
+                    },
+                    "frame_paths": {"front": "frames/front.png"},
+                }
+                (out_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+                return subprocess.CompletedProcess(command, 0, stdout="rendered egl", stderr="")
+            return subprocess.CompletedProcess(command, 1, stdout="", stderr="missing OSMesa")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            with patch("neodojo.g1_render.subprocess.run", side_effect=fake_run):
+                result = write_g1_mujoco_backend_benchmark(
+                    root / "benchmark",
+                    model_descriptor_path=root / "model.json",
+                    g1_track=root / "track.json",
+                    backends=["egl", "osmesa"],
+                    width=96,
+                    height=80,
+                    runs=2,
+                    xvfb_glfw="never",
+                )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            markdown = result.markdown_path.read_text(encoding="utf-8")
+
+        self.assertEqual(manifest["schema"], "neodojo.g1_mujoco_backend_benchmark.v1")
+        self.assertEqual([item["status"] for item in manifest["backend_summaries"]], ["complete", "failed"])
+        self.assertEqual(manifest["backend_summaries"][0]["successful_runs"], 2)
+        self.assertEqual(manifest["backend_summaries"][1]["failed_runs"], 2)
+        self.assertIn("| egl | complete | 2/2 |", markdown)
+        self.assertIn("| osmesa | failed | 0/2 |", markdown)
 
     @unittest.skipUnless(importlib.util.find_spec("mujoco"), "mujoco optional dependency is not installed")
     def test_write_mujoco_render_from_registered_mjcf(self) -> None:

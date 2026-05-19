@@ -94,6 +94,14 @@ make mujoco-backend-compare MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unit
 ```
 
 This writes `outputs/g1-mujoco-backend-comparison/index.html`.
+For a repeated timing benchmark, run:
+
+```bash
+make mujoco-backend-benchmark MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
+```
+
+This writes `outputs/g1-mujoco-backend-benchmark/benchmark.md` plus a full
+`manifest.json`.
 
 See [`STATUS.md`](STATUS.md) for the full command list, blockers, and next safe
 task.
