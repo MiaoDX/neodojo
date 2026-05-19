@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Fixture-first teaching playback prototype for neodojo."
 readme = "README.md"
 requires-python = ">=3.9"
+license = { file = "LICENSE" }
 
 [project.scripts]
 neodojo = "neodojo.cli:main"

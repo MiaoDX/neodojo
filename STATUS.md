@@ -44,7 +44,7 @@ real Baduanjin G1 replay proof.
   CPU headless when OSMesa system libraries are installed; `MUJOCO_GL=egl` is
   for GPU/self-hosted runners with working EGL.
 - `.github/workflows/public-demo.yml` has a focused MuJoCo smoke lane that
-  installs the `sim` extra and validates the G1 renderer through
+  installs the `real-g1-replay` extra and validates the G1 renderer through
   `xvfb-run -a env MUJOCO_GL=glfw`.
 - The same workflow runs `make ci-real-demo` and uploads
   `outputs/real-demo/public-demo/index.html` as the

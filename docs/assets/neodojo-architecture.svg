@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
+  <title id="title">neodojo architecture</title>
+  <desc id="desc">Source video becomes SMPL-X motion, GMR Unitree G1 motion, MuJoCo or Genesis rendering, and synchronized teaching HTML.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7fbff"/>
+      <stop offset="0.5" stop-color="#ecfdf5"/>
+      <stop offset="1" stop-color="#f8fafc"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="420" rx="28" fill="url(#bg)"/>
+  <path d="M120 310 C300 220 440 345 600 250 C760 155 910 230 1080 120" fill="none" stroke="#99f6e4" stroke-width="26" opacity="0.38"/>
+  <path d="M120 310 C300 220 440 345 600 250 C760 155 910 230 1080 120" fill="none" stroke="url(#accent)" stroke-width="4" stroke-dasharray="10 14" opacity="0.75"/>
+
+  <g font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">
+    <text x="60" y="72" font-size="34" font-weight="800" fill="#0f172a">neodojo data flow</text>
+    <text x="60" y="104" font-size="17" fill="#475569">SMPL-X teaches. Unitree G1 visualizes. HTML makes the proof reviewable.</text>
+  </g>
+
+  <g filter="url(#shadow)" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
+    <g transform="translate(58 158)">
+      <rect width="178" height="132" rx="18" fill="#ffffff" stroke="#cbd5e1"/>
+      <circle cx="52" cy="52" r="24" fill="#dbeafe"/>
+      <path d="M38 70 L66 70 M42 46 L62 58 L42 70 Z" fill="#2563eb"/>
+      <text x="24" y="104" font-size="17" font-weight="800" fill="#0f172a">Source video</text>
+      <text x="24" y="124" font-size="12" fill="#64748b">local or official</text>
+    </g>
+    <g transform="translate(280 158)">
+      <rect width="178" height="132" rx="18" fill="#ffffff" stroke="#cbd5e1"/>
+      <circle cx="89" cy="42" r="18" fill="#ccfbf1" stroke="#0f766e" stroke-width="3"/>
+      <path d="M89 60 V92 M56 82 H122 M66 118 L89 92 L112 118" fill="none" stroke="#0f766e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="28" y="104" font-size="17" font-weight="800" fill="#0f172a">GVHMR</text>
+      <text x="28" y="124" font-size="12" fill="#64748b">SMPL-X motion</text>
+    </g>
+    <g transform="translate(502 158)">
+      <rect width="178" height="132" rx="18" fill="#ffffff" stroke="#cbd5e1"/>
+      <path d="M58 42 H120 M72 42 V82 M106 42 V82 M72 82 L54 112 M106 82 L124 112" fill="none" stroke="#7c3aed" stroke-width="8" stroke-linecap="round"/>
+      <circle cx="58" cy="42" r="9" fill="#ede9fe" stroke="#7c3aed" stroke-width="4"/>
+      <circle cx="120" cy="42" r="9" fill="#ede9fe" stroke="#7c3aed" stroke-width="4"/>
+      <text x="38" y="104" font-size="17" font-weight="800" fill="#0f172a">GMR</text>
+      <text x="38" y="124" font-size="12" fill="#64748b">Unitree G1 track</text>
+    </g>
+    <g transform="translate(724 158)">
+      <rect width="178" height="132" rx="18" fill="#ffffff" stroke="#cbd5e1"/>
+      <rect x="44" y="38" width="90" height="58" rx="9" fill="#e0f2fe" stroke="#0284c7" stroke-width="3"/>
+      <path d="M54 86 H124 M64 74 H114 M74 62 H104" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/>
+      <text x="25" y="104" font-size="17" font-weight="800" fill="#0f172a">MuJoCo</text>
+      <text x="25" y="124" font-size="12" fill="#64748b">or Genesis render</text>
+    </g>
+    <g transform="translate(946 158)">
+      <rect width="196" height="132" rx="18" fill="#ffffff" stroke="#cbd5e1"/>
+      <rect x="30" y="34" width="136" height="72" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="3"/>
+      <path d="M45 80 H151 M68 92 H128" stroke="#0f766e" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="92" cy="80" r="8" fill="#14b8a6"/>
+      <text x="30" y="124" font-size="17" font-weight="800" fill="#0f172a">Teaching HTML</text>
+    </g>
+  </g>
+
+  <g stroke="#64748b" stroke-width="3" marker-end="url(#arrow)">
+    <line x1="236" y1="224" x2="274" y2="224"/>
+    <line x1="458" y1="224" x2="496" y2="224"/>
+    <line x1="680" y1="224" x2="718" y2="224"/>
+    <line x1="902" y1="224" x2="940" y2="224"/>
+  </g>
+
+  <g font-family="Inter, ui-sans-serif, system-ui, sans-serif">
+    <rect x="62" y="335" width="476" height="48" rx="24" fill="#ffffff" stroke="#dbe3ed"/>
+    <text x="86" y="366" font-size="15" fill="#334155">Scoring boundary: SMPL-X is authoritative; G1 is visualization only.</text>
+    <rect x="566" y="335" width="572" height="48" rx="24" fill="#ffffff" stroke="#dbe3ed"/>
+    <text x="590" y="366" font-size="15" fill="#334155">Artifact boundary: CI publishes HTML; raw video and heavy renders stay out of git.</text>
+  </g>
+</svg>
