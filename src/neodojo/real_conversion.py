@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -40,6 +41,7 @@ GVHMR_RESULT_INSPECTION_SCHEMA = "neodojo.gvhmr_result_inspection.v1"
 REAL_CONVERSION_AUDIT_SCHEMA = "neodojo.real_conversion_audit.v1"
 DEFAULT_SOURCE_INDEX = Path("video/original_videos.csv")
 DEFAULT_SOURCE_ID = "03-006"
+REAL_GVHMR_MIN_VISIBLE_MOTION_M = 0.15
 
 
 @dataclass(frozen=True)
@@ -1453,6 +1455,48 @@ def _audit_add_check(
     )
 
 
+def _gvhmr_visible_motion_signal(frames: Any) -> dict[str, Any]:
+    if not isinstance(frames, list) or len(frames) < 2 or not isinstance(frames[0], dict):
+        return {
+            "frame_count": len(frames) if isinstance(frames, list) else None,
+            "max_joint_displacement_m": None,
+            "top_joint": None,
+            "threshold_m": REAL_GVHMR_MIN_VISIBLE_MOTION_M,
+        }
+
+    first = frames[0]
+    max_displacement = 0.0
+    top_joint = None
+    for joint, first_point in first.items():
+        if not (
+            isinstance(first_point, list)
+            and len(first_point) == 3
+            and all(isinstance(component, (int, float)) for component in first_point)
+        ):
+            continue
+        for frame in frames[1:]:
+            if not isinstance(frame, dict):
+                continue
+            point = frame.get(joint)
+            if not (
+                isinstance(point, list)
+                and len(point) == 3
+                and all(isinstance(component, (int, float)) for component in point)
+            ):
+                continue
+            displacement = math.dist(first_point, point)
+            if displacement > max_displacement:
+                max_displacement = displacement
+                top_joint = joint
+
+    return {
+        "frame_count": len(frames),
+        "max_joint_displacement_m": round(max_displacement, 6),
+        "top_joint": top_joint,
+        "threshold_m": REAL_GVHMR_MIN_VISIBLE_MOTION_M,
+    }
+
+
 def audit_real_conversion_completion(
     out_dir: Path,
     *,
@@ -1495,6 +1539,11 @@ def audit_real_conversion_completion(
         checked_paths.append(gvhmr_json)
     frames = gvhmr_export.get("frames", gvhmr_export.get("smplx_joints")) if gvhmr_export else None
     frame_count = len(frames) if isinstance(frames, list) else None
+    motion_signal = _gvhmr_visible_motion_signal(frames)
+    visible_motion = bool(
+        isinstance(motion_signal.get("max_joint_displacement_m"), (int, float))
+        and motion_signal["max_joint_displacement_m"] >= REAL_GVHMR_MIN_VISIBLE_MOTION_M
+    )
     gvhmr_export_fixture_only = bool(gvhmr_export.get("fixture_only") if gvhmr_export is not None else False)
     _audit_add_check(
         checks,
@@ -1512,6 +1561,21 @@ def audit_real_conversion_completion(
             "GVHMR export is not marked fixture-only."
             if gvhmr_export is not None and not gvhmr_export_fixture_only
             else "No non-fixture returned GVHMR export is available."
+        ),
+    )
+    _audit_add_check(
+        checks,
+        name="gvhmr_export_visible_motion",
+        passed=gvhmr_export is not None and visible_motion,
+        path=gvhmr_json,
+        message=(
+            "GVHMR export contains visible motion for a teaching replay."
+            if gvhmr_export is not None and visible_motion
+            else (
+                "GVHMR export is too static for a teaching replay; choose an action segment from the source video."
+                if gvhmr_export is not None
+                else "No GVHMR export is available for motion-amplitude validation."
+            )
         ),
     )
 
@@ -1610,6 +1674,7 @@ def audit_real_conversion_completion(
         and gvhmr_export is not None
         and not source_materialization_fixture_only
         and not gvhmr_export_fixture_only
+        and visible_motion
         and validation_status == "validated"
     )
     complete = inputs_verified and real_demo_imported and public_demo_available and teaching_html_two_panel
@@ -1627,6 +1692,9 @@ def audit_real_conversion_completion(
     elif gvhmr_export_fixture_only or source_materialization_fixture_only:
         status = "fixture_artifact_only"
         next_action = "Use a non-fixture source materialization and returned GVHMR export for the real gate."
+    elif not visible_motion:
+        status = "real_artifact_motion_too_static"
+        next_action = "Select a source-video trim with visible movement, rerun local GVHMR, and regenerate the real demo."
     elif validation_status != "validated":
         status = "real_artifact_validation_failed"
         next_action = "Inspect the source-validation report and classify the mismatch before changing contracts."
@@ -1648,6 +1716,7 @@ def audit_real_conversion_completion(
             "source_materialization_fixture_only": source_materialization_fixture_only,
             "gvhmr_export_fixture_only": gvhmr_export_fixture_only,
             "frame_count": frame_count,
+            "motion_signal": motion_signal,
             "validation_status": validation_status,
             "validation_report": _relative_to_out_dir(validation_report_path, out_dir),
         },

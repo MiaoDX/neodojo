@@ -19,10 +19,12 @@ real GVHMR proof.
   model replay on the right, and one synchronized timeline. The default G1
   replay is still fixture-derived unless an imported GMR track and registered
   model descriptor are supplied.
-- A local ignored GPU proof exists in this workspace for a short Baduanjin clip:
-  non-fixture GVHMR SMPL-X JSON, imported under ignored `outputs/real-demo/`,
-  with a strict local audit reporting `real_demo_verified` and checking the
-  two-panel public teaching HTML profile.
+- A local ignored GPU proof exists in this workspace for a visible-motion
+  Baduanjin clip (`80s-92s` from the local 12m08s source video): non-fixture
+  GVHMR SMPL-X JSON, imported under ignored `outputs/real-demo/`, with a strict
+  local audit reporting `real_demo_verified`, checking the two-panel public
+  teaching HTML profile, and rejecting GVHMR exports that are too static for a
+  teaching replay.
 
 ## Supported Command Surface
 
@@ -54,7 +56,7 @@ make verify-real
 Useful direct CLI equivalents:
 
 ```bash
-PYTHONPATH=src python -m neodojo real-conversion prepare --local-source-id local-baduanjin --local-video path/to/local-source.mp4 --start 0 --end 12 --out outputs/real-conversion-gate
+PYTHONPATH=src python -m neodojo real-conversion prepare --local-source-id local-baduanjin --local-video path/to/local-source.mp4 --start 80 --end 92 --out outputs/real-conversion-gate
 PYTHONPATH=src python -m neodojo real-conversion materialize-source --prep outputs/real-conversion-gate/real-conversion-prep.json --local-video path/to/local-source.mp4 --out outputs/real-conversion-source
 PYTHONPATH=src python -m neodojo real-conversion prepare-gpu-run --source-materialization outputs/real-conversion-source/source-materialization.json --out outputs/gvhmr-local-gpu-run
 PYTHONPATH=src python -m neodojo real-conversion inspect-gvhmr-result --source path/to/hmr4d_results.pt --out outputs/gvhmr-result-inspection

@@ -51,6 +51,8 @@ generated motion artifact, production Viser UI, or published real demo. A local
 real GVHMR proof exists only under ignored `outputs/`. Colab, hosted GPU
 provider, self-hosted Actions GPU, operator-package, and real-demo
 Pages-promotion workflows are not supported by the current command surface.
+The local real-demo audit also checks that returned GVHMR frames contain visible
+motion, so a static intro trim is not accepted as a completed teaching replay.
 
 ## Run
 

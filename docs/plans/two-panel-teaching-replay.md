@@ -150,3 +150,9 @@ source changes remain except ignored generated artifacts.
   remains future work.
 - 2026-05-18: Verified with `make lint`, `make test`, `make check`,
   `make verify`, `make verify-real`, and `make demo-public-browser`.
+- 2026-05-19: Reopened the proof artifact after visual review showed the
+  original `0s-12s` Baduanjin trim was effectively static and the G1 panel was
+  too skeleton-like. Replaced the local ignored proof with an `80s-92s`
+  visible-motion trim, added strict-audit motion-amplitude validation, and
+  changed the right panel to a robot-body schematic replay while keeping the
+  fixture-derived G1 provenance explicit.

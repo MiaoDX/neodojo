@@ -466,7 +466,7 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
         <h2>Unitree G1 robot model replay</h2>
         <span>visual companion</span>
       </div>
-      <canvas id="g1Canvas" width="720" height="720" aria-label="Unitree G1 robot model replay"></canvas>
+      <canvas id="g1Canvas" width="720" height="720" aria-label="Unitree G1 robot model replay" data-g1-render-style="robot-body-schematic.v1"></canvas>
       <div class="meta">
         <div class="metric"><span>Track source</span><strong>{g1_track_source}</strong></div>
         <div class="metric"><span>Model source</span><strong>{g1_model_source}</strong></div>
@@ -584,30 +584,102 @@ function drawSkeleton(ctx, pose, bounds, width, height) {{
   }}
 }}
 
+function canvasPoint(pose, joint, bounds, width, height) {{
+  if (!pose[joint]) return null;
+  return toCanvas(pose[joint], bounds, width, height);
+}}
+
+function midPoint(a, b) {{
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+}}
+
+function drawCapsule(ctx, a, b, thickness, fill, stroke) {{
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const length = Math.max(Math.hypot(dx, dy), thickness);
+  ctx.save();
+  ctx.translate((a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+  ctx.rotate(Math.atan2(dy, dx));
+  ctx.fillStyle = fill;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(-length / 2, -thickness / 2, length, thickness, thickness / 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}}
+
+function drawBlock(ctx, center, width, height, fill, stroke) {{
+  ctx.fillStyle = fill;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(center[0] - width / 2, center[1] - height / 2, width, height, 5);
+  ctx.fill();
+  ctx.stroke();
+}}
+
+function drawTorsoPlate(ctx, shoulders, hips) {{
+  const [leftShoulder, rightShoulder] = shoulders;
+  const [leftHip, rightHip] = hips;
+  ctx.fillStyle = "#bf5737";
+  ctx.strokeStyle = "#7f2f1d";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(leftShoulder[0], leftShoulder[1]);
+  ctx.lineTo(rightShoulder[0], rightShoulder[1]);
+  ctx.lineTo(rightHip[0], rightHip[1]);
+  ctx.lineTo(leftHip[0], leftHip[1]);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}}
+
+function drawRobotLink(ctx, pose, bounds, width, height, a, b, thickness, fill) {{
+  const start = canvasPoint(pose, a, bounds, width, height);
+  const end = canvasPoint(pose, b, bounds, width, height);
+  if (!start || !end) return;
+  drawCapsule(ctx, start, end, thickness, fill, "#8f351f");
+}}
+
 function drawRobotModel(ctx, pose, bounds, width, height) {{
+  const leftShoulder = canvasPoint(pose, "left_shoulder", bounds, width, height);
+  const rightShoulder = canvasPoint(pose, "right_shoulder", bounds, width, height);
+  const leftHip = canvasPoint(pose, "left_hip", bounds, width, height);
+  const rightHip = canvasPoint(pose, "right_hip", bounds, width, height);
+  const pelvis = canvasPoint(pose, "pelvis", bounds, width, height);
+  const spine = canvasPoint(pose, "spine", bounds, width, height);
+  const neck = canvasPoint(pose, "neck", bounds, width, height);
+  const head = canvasPoint(pose, "head", bounds, width, height);
+
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  for (const [a, b] of BONES) {{
-    if (!pose[a] || !pose[b]) continue;
-    const [ax, ay] = toCanvas(pose[a], bounds, width, height);
-    const [bx, by] = toCanvas(pose[b], bounds, width, height);
-    ctx.strokeStyle = "#b84e32";
-    ctx.lineWidth = a === "pelvis" || b === "pelvis" || a === "spine" || b === "spine" ? 16 : 11;
-    ctx.beginPath();
-    ctx.moveTo(ax, ay);
-    ctx.lineTo(bx, by);
-    ctx.stroke();
+  drawRobotLink(ctx, pose, bounds, width, height, "left_shoulder", "left_elbow", 20, "#c15a38");
+  drawRobotLink(ctx, pose, bounds, width, height, "left_elbow", "left_wrist", 16, "#d77a57");
+  drawRobotLink(ctx, pose, bounds, width, height, "right_shoulder", "right_elbow", 20, "#c15a38");
+  drawRobotLink(ctx, pose, bounds, width, height, "right_elbow", "right_wrist", 16, "#d77a57");
+  drawRobotLink(ctx, pose, bounds, width, height, "left_hip", "left_knee", 23, "#b84e32");
+  drawRobotLink(ctx, pose, bounds, width, height, "left_knee", "left_ankle", 19, "#d06b46");
+  drawRobotLink(ctx, pose, bounds, width, height, "right_hip", "right_knee", 23, "#b84e32");
+  drawRobotLink(ctx, pose, bounds, width, height, "right_knee", "right_ankle", 19, "#d06b46");
+  if (leftShoulder && rightShoulder && leftHip && rightHip) {{
+    drawTorsoPlate(ctx, [leftShoulder, rightShoulder], [leftHip, rightHip]);
   }}
-  for (const [joint, point] of Object.entries(pose)) {{
-    const [x, y] = toCanvas(point, bounds, width, height);
-    const isCore = joint === "pelvis" || joint === "spine" || joint === "neck" || joint === "head";
-    ctx.fillStyle = isCore ? "#17212b" : "#fff7ed";
-    ctx.strokeStyle = "#b84e32";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.roundRect(x - (isCore ? 8 : 6), y - (isCore ? 8 : 6), isCore ? 16 : 12, isCore ? 16 : 12, 3);
-    ctx.fill();
-    ctx.stroke();
+  if (spine && neck) drawCapsule(ctx, spine, neck, 22, "#9f3d25", "#6f2b1b");
+  if (pelvis) drawBlock(ctx, pelvis, 42, 30, "#17212b", "#7f2f1d");
+  if (head) drawBlock(ctx, head, 28, 28, "#17212b", "#7f2f1d");
+  for (const joint of ["left_elbow", "right_elbow", "left_knee", "right_knee", "left_shoulder", "right_shoulder"]) {{
+    const point = canvasPoint(pose, joint, bounds, width, height);
+    if (point) drawBlock(ctx, point, 16, 16, "#fff7ed", "#8f351f");
+  }}
+  for (const joint of ["left_wrist", "right_wrist", "left_ankle", "right_ankle"]) {{
+    const point = canvasPoint(pose, joint, bounds, width, height);
+    if (point) drawBlock(ctx, point, 20, 14, "#ffffff", "#8f351f");
+  }}
+  if (leftShoulder && rightShoulder) {{
+    const shoulderCenter = midPoint(leftShoulder, rightShoulder);
+    drawBlock(ctx, shoulderCenter, 30, 20, "#17212b", "#7f2f1d");
   }}
 }}
 
@@ -736,6 +808,7 @@ def write_public_demo(
                 "renderer_backend": (render_evidence.get("renderer") or {}).get("backend")
                 if isinstance(render_evidence.get("renderer"), dict)
                 else None,
+                "visual_style": "robot-body-schematic.v1",
             },
         },
         "routine_feedback": {
