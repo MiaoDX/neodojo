@@ -38,9 +38,9 @@ tracks，重定向到仿真 humanoid，再从多角度渲染，并叠加 joint p
 | CI sample-backed real HTML | 同一 workflow 里的 `neodojo-real-demo-public-demo` |
 | 本地 sample-backed real HTML | `make ci-real-demo` 后的 `outputs/real-demo/public-demo/index.html` |
 
-提交的 Baduanjin sample 只包含派生 JSON：source provenance、返回的 GVHMR
-SMPL-X joints、normalized GMR Unitree G1 joint angles。Raw video、checkpoints、
-pickles、rendered frame outputs 仍然不进 git。
+提交的 Baduanjin sample 包含一个小的 trimmed source clip，以及重建 demo 所需的
+GVHMR/GMR 派生 JSON。更大的 source videos 后续用 helper scripts 下载到本地测试，
+不直接放进 git。
 
 ## Pipeline
 

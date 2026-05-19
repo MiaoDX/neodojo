@@ -24639,7 +24639,7 @@
     "smplx_model_path": "/home/mi/ws/gogo/neodojo/outputs/gvhmr-runtime/GVHMR/inputs/checkpoints/body_models",
     "source_id": "bilibili-baduanjin-480p-motion-80-92",
     "source_materialization_manifest": "/home/mi/ws/gogo/neodojo/outputs/real-conversion-motion-80-92/gpu-run/source-materialization.json",
-    "source_materialization_sha256": "2f2cfe837d517ea6ec528ff6f8940ef380b23ca1a53709a8436966cb109733c4",
+    "source_materialization_sha256": "1ab6257912f838e452001e2031c41ffb7e9585eba8efd8706b3bb58f025000f4",
     "trim": {
       "duration_seconds": 12.0,
       "end_seconds": 92.0,

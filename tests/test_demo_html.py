@@ -43,7 +43,7 @@ from neodojo.motion_contract import (
     write_gvhmr_json_motion_contract,
 )
 from neodojo.public_demo import build_scene_timeline, smoke_check_public_demo, write_public_demo
-from neodojo.public_demo_gif import _sample_frame_indices
+from neodojo.public_demo_gif import _gif_frame_duration_ms, _sample_frame_indices
 from neodojo.quality import check_quality_surface
 from neodojo.recorder_capture import write_simulator_recorder_capture
 from neodojo.real_conversion import (
@@ -1560,6 +1560,8 @@ class DemoHtmlTests(unittest.TestCase):
     def test_public_demo_gif_frame_sampling_keeps_start_and_end(self) -> None:
         self.assertEqual(_sample_frame_indices(10, 4), [0, 3, 6, 9])
         self.assertEqual(_sample_frame_indices(3, 8), [0, 1, 2])
+        self.assertEqual(_gif_frame_duration_ms(total_frames=300, fps=25.0, sample_count=24, requested_ms=None), 500)
+        self.assertEqual(_gif_frame_duration_ms(total_frames=300, fps=25.0, sample_count=24, requested_ms=120), 120)
         with self.assertRaisesRegex(ValueError, "at least one frame"):
             _sample_frame_indices(0, 4)
 
@@ -2957,11 +2959,12 @@ class DemoHtmlTests(unittest.TestCase):
         for removed_name in removed_names:
             self.assertNotIn(removed_name, combined)
 
-    def test_committed_baduanjin_sample_artifacts_are_real_derived_json(self) -> None:
+    def test_committed_baduanjin_sample_artifacts_are_real_demo_inputs(self) -> None:
         root = Path("samples/baduanjin-03-006-two-hands-80-92")
         source = json.loads((root / "source" / "source-materialization.json").read_text(encoding="utf-8"))
         gvhmr = json.loads((root / "gvhmr" / "gvhmr-smplx-joints.json").read_text(encoding="utf-8"))
         gmr = json.loads((root / "gmr" / "gmr-unitree-g1.json").read_text(encoding="utf-8"))
+        source_clip = root / "source" / "video" / "original-clip.mp4"
 
         self.assertEqual(source["schema"], "neodojo.real_conversion_source_materialization.v1")
         self.assertEqual(gvhmr["schema"], "neodojo.gvhmr_smplx_joints.v1")
@@ -2970,6 +2973,9 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertFalse(gvhmr["fixture_only"])
         self.assertFalse(gmr["fixture_only"])
         self.assertEqual(source["source_prep"]["source_id"], "bilibili-baduanjin-480p-motion-80-92")
+        self.assertTrue(source_clip.exists())
+        self.assertEqual(source["outputs"]["trimmed_video_path"], str(source_clip))
+        self.assertEqual(source["outputs"]["trimmed_video"]["sha256"], sha256_file(source_clip))
         self.assertEqual(len(gvhmr["frames"]), 300)
         self.assertEqual(len(gmr["frames"]), 300)
         self.assertTrue(gmr["frames"][0]["joint_angles"])

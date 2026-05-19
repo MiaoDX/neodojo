@@ -16,9 +16,11 @@ G1 joint angles, a roboharness/robot_descriptions G1 MJCF descriptor, and a
 nonblank/changing MuJoCo PNG replay sequence consumed by
 `outputs/real-demo/public-demo/index.html`. The tracked repo also contains a
 small derived Baduanjin JSON sample that lets CI regenerate the same shape of
-actual G1 MuJoCo replay without committing raw video, checkpoints, pickles, or
-rendered frame outputs. It does not contain a checked-in GVHMR/GMR/simulator
-runtime pipeline, production teaching UI, or published real demo.
+actual G1 MuJoCo replay. The sample also carries a small trimmed source clip for
+the Original video panel and README GIF, while larger source videos,
+checkpoints, pickles, and rendered frame outputs stay outside git. It does not
+contain a checked-in GVHMR/GMR/simulator runtime pipeline, production teaching
+UI, or published real demo.
 
 ## MVP Data Flow
 
@@ -37,7 +39,8 @@ official/user-supplied source video
 
 Source video intake owns local video selection, licensing boundaries, clip
 metadata, trim handoff, reference-frame extraction, and routine segmentation.
-The repo should not commit source video.
+Only small sample clips should be committed; larger source videos should be
+fetched locally by helper scripts.
 
 Human motion reconstruction owns GVHMR execution and normalization into a shared
 SMPL-X motion record. This record is the canonical motion source for teaching
