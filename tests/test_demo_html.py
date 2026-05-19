@@ -1061,7 +1061,8 @@ class DemoHtmlTests(unittest.TestCase):
                 encoding="utf-8",
             )
             reference = root / "reference.mp4"
-            reference.write_bytes(b"fixture reference video bytes")
+            reference_bytes = b"fixture reference video bytes"
+            reference.write_bytes(reference_bytes)
 
             result = write_teaching_playback_demo(
                 root / "teaching-demo",
@@ -1071,13 +1072,32 @@ class DemoHtmlTests(unittest.TestCase):
                 reference_video=reference,
                 reference_trim_start_seconds=1.25,
             )
+            public = write_public_demo(
+                playback_manifest_path=result.manifest_path,
+                recording_path=root / "public-demo" / "neodojo-demo.rrd",
+            )
+            smoke = smoke_check_public_demo(root / "public-demo")
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            public_manifest = json.loads(public.manifest_path.read_text(encoding="utf-8"))
+            scene = json.loads(public.scene_path.read_text(encoding="utf-8"))
+            public_html = public.html_path.read_text(encoding="utf-8")
+            copied_reference = root / "public-demo" / "source-video" / "original.mp4"
+            copied_reference_bytes = copied_reference.read_bytes()
 
         self.assertEqual(manifest["key_frame"], 6)
         self.assertEqual(manifest["annotation_name"], "raise hands apex")
         self.assertEqual(manifest["reference_video_sync"]["media"]["suffix"], ".mp4")
         self.assertEqual(manifest["reference_video_sync"]["trim_start_seconds"], 1.25)
         self.assertEqual(len(manifest["reference_video_sync"]["media"]["sha256"]), 64)
+        self.assertEqual(public_manifest["teaching_html"]["layout"], "source_video_left_smplx_center_g1_right")
+        self.assertTrue(public_manifest["teaching_html"]["reference_video"]["available"])
+        self.assertEqual(public_manifest["teaching_html"]["reference_video"]["path"], "source-video/original.mp4")
+        self.assertTrue(scene["reference_video"]["available"])
+        self.assertIn('data-panel="source"', public_html)
+        self.assertIn('id="referenceVideo"', public_html)
+        self.assertIn("Original video", public_html)
+        self.assertEqual(copied_reference_bytes, reference_bytes)
+        self.assertEqual(len(smoke.checked_paths), 5)
 
     def test_smplx_surface_proxy_integrates_with_playback_and_public_demo(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
