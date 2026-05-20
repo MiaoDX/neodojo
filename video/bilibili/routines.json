@@ -3,8 +3,8 @@
   "generated_at": "2026-05-20",
   "selection_rule": "first_demo_only",
   "notes": [
-    "Manual first-demo phase boundaries for the three tracked Bilibili source videos.",
-    "Baduanjin phase boundaries use one visible round per method from the local Bilibili source video.",
+    "Manual one-visible-round phase boundaries for the three tracked Bilibili source videos.",
+    "Baduanjin, Wu Qin Xi, and Yi Jin Jing phase boundaries were visually inspected from local Bilibili source videos and trimmed to representative rounds instead of full repeated practice sets.",
     "These timestamps are orchestration metadata for local clip preparation; they are not evidence that GVHMR or GMR ran locally."
   ],
   "routines": {
@@ -92,80 +92,80 @@
           "phase_id": "tiger_lifting",
           "name_zh": "虎举",
           "name_en": "Tiger Lifting",
-          "start_seconds": 85.0,
-          "end_seconds": 120.0,
+          "start_seconds": 70.0,
+          "end_seconds": 85.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "tiger_pouncing",
           "name_zh": "虎扑",
           "name_en": "Tiger Pouncing",
-          "start_seconds": 145.0,
-          "end_seconds": 180.0,
+          "start_seconds": 140.0,
+          "end_seconds": 160.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "deer_colliding",
           "name_zh": "鹿抵",
           "name_en": "Deer Colliding",
-          "start_seconds": 205.0,
-          "end_seconds": 240.0,
+          "start_seconds": 229.0,
+          "end_seconds": 257.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "deer_running",
           "name_zh": "鹿奔",
           "name_en": "Deer Running",
-          "start_seconds": 265.0,
-          "end_seconds": 300.0,
+          "start_seconds": 282.0,
+          "end_seconds": 310.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "bear_rotating",
           "name_zh": "熊运",
           "name_en": "Bear Rotating",
-          "start_seconds": 325.0,
-          "end_seconds": 360.0,
+          "start_seconds": 354.0,
+          "end_seconds": 393.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "bear_swaying",
           "name_zh": "熊晃",
           "name_en": "Bear Swaying",
-          "start_seconds": 385.0,
-          "end_seconds": 420.0,
+          "start_seconds": 397.0,
+          "end_seconds": 426.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "ape_lifting",
           "name_zh": "猿提",
           "name_en": "Ape Lifting",
-          "start_seconds": 445.0,
-          "end_seconds": 480.0,
+          "start_seconds": 462.0,
+          "end_seconds": 486.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "ape_plucking",
           "name_zh": "猿摘",
           "name_en": "Ape Plucking",
-          "start_seconds": 505.0,
-          "end_seconds": 540.0,
+          "start_seconds": 510.0,
+          "end_seconds": 537.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "bird_stretching",
           "name_zh": "鸟伸",
           "name_en": "Bird Stretching",
-          "start_seconds": 565.0,
-          "end_seconds": 600.0,
+          "start_seconds": 590.0,
+          "end_seconds": 609.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "bird_flying",
           "name_zh": "鸟飞",
           "name_en": "Bird Flying",
-          "start_seconds": 625.0,
-          "end_seconds": 660.0,
+          "start_seconds": 640.0,
+          "end_seconds": 666.0,
           "selection_rule": "first_demo_only"
         }
       ]
@@ -181,80 +181,80 @@
           "phase_id": "wei_tuo_presents_pestle_1",
           "name_zh": "韦驮献杵第一势",
           "name_en": "Wei Tuo Presents the Pestle I",
-          "start_seconds": 70.0,
-          "end_seconds": 100.0,
+          "start_seconds": 40.0,
+          "end_seconds": 50.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "wei_tuo_presents_pestle_2",
           "name_zh": "韦驮献杵第二势",
           "name_en": "Wei Tuo Presents the Pestle II",
-          "start_seconds": 116.0,
-          "end_seconds": 146.0,
+          "start_seconds": 50.0,
+          "end_seconds": 72.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "wei_tuo_presents_pestle_3",
           "name_zh": "韦驮献杵第三势",
           "name_en": "Wei Tuo Presents the Pestle III",
-          "start_seconds": 162.0,
-          "end_seconds": 192.0,
+          "start_seconds": 76.0,
+          "end_seconds": 99.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "pluck_star_exchange_constellation",
           "name_zh": "摘星换斗势",
           "name_en": "Pluck a Star and Exchange a Constellation",
-          "start_seconds": 208.0,
-          "end_seconds": 238.0,
+          "start_seconds": 100.0,
+          "end_seconds": 126.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "pull_nine_oxen_tail",
           "name_zh": "倒拽九牛尾势",
           "name_en": "Pull Nine Oxen by Their Tails",
-          "start_seconds": 254.0,
-          "end_seconds": 284.0,
+          "start_seconds": 158.0,
+          "end_seconds": 185.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "show_claws_spread_wings",
           "name_zh": "出爪亮翅势",
           "name_en": "Show Claws and Spread Wings",
-          "start_seconds": 300.0,
-          "end_seconds": 330.0,
+          "start_seconds": 190.0,
+          "end_seconds": 210.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "nine_ghosts_draw_sabers",
           "name_zh": "九鬼拔马刀势",
           "name_en": "Nine Ghosts Draw Sabers",
-          "start_seconds": 346.0,
-          "end_seconds": 376.0,
+          "start_seconds": 253.0,
+          "end_seconds": 279.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "three_levels_fall_to_ground",
           "name_zh": "三盘落地势",
           "name_en": "Three Levels Fall to the Ground",
-          "start_seconds": 392.0,
-          "end_seconds": 422.0,
+          "start_seconds": 350.0,
+          "end_seconds": 402.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "green_dragon_stretches_claws",
           "name_zh": "青龙探爪势",
           "name_en": "Green Dragon Stretches Claws",
-          "start_seconds": 438.0,
-          "end_seconds": 468.0,
+          "start_seconds": 420.0,
+          "end_seconds": 443.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "crouching_tiger_pounces",
           "name_zh": "卧虎扑食势",
           "name_en": "Crouching Tiger Pounces on Food",
-          "start_seconds": 484.0,
-          "end_seconds": 514.0,
+          "start_seconds": 481.0,
+          "end_seconds": 523.0,
           "selection_rule": "first_demo_only"
         },
         {
@@ -262,15 +262,15 @@
           "name_zh": "打躬势",
           "name_en": "Bowing",
           "start_seconds": 530.0,
-          "end_seconds": 560.0,
+          "end_seconds": 562.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "swing_tail",
           "name_zh": "掉尾势",
           "name_en": "Swing the Tail",
-          "start_seconds": 576.0,
-          "end_seconds": 606.0,
+          "start_seconds": 612.0,
+          "end_seconds": 650.0,
           "selection_rule": "first_demo_only"
         }
       ]

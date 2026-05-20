@@ -68,6 +68,8 @@ make routine-smoke ROUTINE=baduanjin
 ```
 
 这条路径会准备本地 one-round phase clips 和逐 phase 的 GVHMR/GMR handoff。
+已跟踪的八段锦、五禽戏、易筋经边界都是从本地视频目测校正的代表性一轮切片，
+不是固定时长占位块，也不是完整重复练习组。
 当当前 returned artifacts 已存在时，`routine assemble` 会写 self-contained report
 directory：一个 overview `index.html`，加上每个 selected round 一页同步 phase report，
 包含 Original video、SMPL-X Teaching Track 和 G1 visual evidence。设置

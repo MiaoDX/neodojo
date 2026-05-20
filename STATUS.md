@@ -33,8 +33,9 @@ real Baduanjin G1 replay proof.
   local testing instead of committed directly.
 - The tracked Bilibili batch now has a local-only routine orchestration surface
   for 八段锦, 易筋经, and 五禽戏. `video/bilibili/routines.json` stores manual
-  first-demo phase boundaries; Baduanjin now uses one visible round per method
-  from the local Bilibili source video. `neodojo routine
+  visually inspected representative one-round phase boundaries for all three
+  routines, rather than fixed-duration placeholder blocks or full repeated
+  practice sets. `neodojo routine
   split/prepare-gpu-runs/assemble` writes ignored per-phase clips, GVHMR
   handoffs, optional GMR artifact links, and a fail-closed routine HTML report.
   `routine assemble` defaults to a self-contained report directory when current
@@ -59,6 +60,13 @@ real Baduanjin G1 replay proof.
   `289M`; the G1 replay MP4s themselves totaled about `10M`. The prior 5 fps
   PNG playback report was `326M`, the 10 fps PNG playback report was `372M`,
   and the older full-source-rate replay was roughly `510M`.
+- Local Wu Qin Xi and Yi Jin Jing one-round report evidence in this workspace:
+  Wuqinxi is 10 phases / 255 seconds and Yi Jin Jing is 12 phases / 341 seconds
+  after cutting waits and overlong holds. Both regenerated reports are complete
+  self-contained 5 fps G1 Model Replay reports with per-phase Original video,
+  SMPL-X Teaching Track, and G1 MP4 playback. `outputs/routines/wuqinxi/html`
+  is `45M` with 10 G1 MP4s; `outputs/routines/yijinjing/html` is `56M` with 12
+  G1 MP4s. Neither report retains MuJoCo replay PNG frame trees by default.
 - The default MuJoCo G1 render style now follows the actual roboharness
   `g1-reach` scene implementation: wrapped G1 MJCF scene, blue skybox gradient,
   gray/white checker floor, roboharness lights, original G1 materials, and

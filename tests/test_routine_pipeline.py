@@ -77,6 +77,28 @@ class RoutinePipelineTests(unittest.TestCase):
         separate = next(phase for phase in baduanjin_phases if phase["phase_id"] == "separate_heaven_earth")
         self.assertEqual(separate["start_seconds"], 240.0)
 
+        wuqinxi_phases = manifest["routines"]["wuqinxi"]["phases"]
+        wuqinxi_duration = sum(phase["duration_seconds"] for phase in wuqinxi_phases)
+        self.assertGreaterEqual(wuqinxi_duration, 230)
+        self.assertLessEqual(wuqinxi_duration, 270)
+        self.assertLessEqual(max(phase["duration_seconds"] for phase in wuqinxi_phases), 40)
+        tiger_lifting = next(phase for phase in wuqinxi_phases if phase["phase_id"] == "tiger_lifting")
+        deer_colliding = next(phase for phase in wuqinxi_phases if phase["phase_id"] == "deer_colliding")
+        self.assertEqual(tiger_lifting["start_seconds"], 70.0)
+        self.assertEqual(deer_colliding["start_seconds"], 229.0)
+
+        yijinjing_phases = manifest["routines"]["yijinjing"]["phases"]
+        yijinjing_duration = sum(phase["duration_seconds"] for phase in yijinjing_phases)
+        self.assertGreaterEqual(yijinjing_duration, 300)
+        self.assertLessEqual(yijinjing_duration, 350)
+        self.assertLessEqual(max(phase["duration_seconds"] for phase in yijinjing_phases), 55)
+        pestle_1 = next(phase for phase in yijinjing_phases if phase["phase_id"] == "wei_tuo_presents_pestle_1")
+        pluck_star = next(
+            phase for phase in yijinjing_phases if phase["phase_id"] == "pluck_star_exchange_constellation"
+        )
+        self.assertEqual(pestle_1["start_seconds"], 40.0)
+        self.assertEqual(pluck_star["start_seconds"], 100.0)
+
     def test_unknown_routine_is_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "unknown routine"):
             get_routine_definition("does-not-exist")
