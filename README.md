@@ -74,6 +74,9 @@ make routine-smoke ROUTINE=baduanjin
 ```
 
 This prepares local one-round phase clips and per-phase GVHMR/GMR handoffs.
+The tracked Baduanjin, Wu Qin Xi, and Yi Jin Jing boundaries are visually
+inspected representative rounds, not fixed-duration placeholder blocks or full
+repeated practice sets.
 When current returned artifacts are present, `routine assemble` writes a
 self-contained report directory: an overview `index.html` plus one synchronized
 phase report per selected round with Original video, SMPL-X Teaching Track, and
