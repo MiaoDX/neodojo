@@ -904,7 +904,7 @@ def package_gvhmr_gpu_handoff(
         f"--source-materialization {source_materialization_copy_path.name} "
         f"--out {Path(expected_export).name} "
         "--parameter-block smpl_params_global "
-        "--fps 30 "
+        "--fps <source-video-fps> "
         "--routine Baduanjin "
         "--form \"Two Hands Hold Up the Heavens\" "
         "--runtime \"<GPU runtime and hardware>\" "

@@ -6,6 +6,8 @@ source file by default.
 ## Current Local Files
 
 - `bilibili/`: the first Bilibili batch, downloaded as compact 480p MP4 files.
+- `bilibili/routines.json`: manual first-demo phase boundaries for the tracked
+  八段锦, 易筋经, and 五禽戏 Bilibili videos.
 - `original_videos.*`: an index of the 131 official Shenzhen site source MP4s.
 - `manifest.json`: source metadata and English filename mapping for the official
   Shenzhen site videos.
@@ -72,6 +74,54 @@ ideally with browser cookies or an authenticated downloader.
 
 Bilibili media URLs expire. Do not commit or rely on transient `playurl`
 responses; treat BVID/AID/CID as the stable re-download identifiers.
+
+The project-owned Bilibili helper uses `yt-dlp` to resolve fresh media from the
+stable BVID page URLs:
+
+```bash
+PYTHONPATH=src python -m neodojo bilibili download --quality 480p --dry-run --out outputs/bilibili-download
+PYTHONPATH=src python -m neodojo bilibili download --routine baduanjin --quality best --cookies-from-browser chrome --out outputs/bilibili-download
+```
+
+Authenticated cookies may be required for higher-quality Bilibili streams. The
+download report records stable metadata and commands only; it does not preserve
+transient media URLs. When downloads run, the helper validates each MP4 with
+`ffprobe` and an `ffmpeg -xerror` decode smoke.
+
+## Routine Phase Clips
+
+`bilibili/routines.json` is the canonical manual phase manifest for the three
+tracked Bilibili routines. Each phase has `name_zh`, `name_en`,
+`start_seconds`, `end_seconds`, and `selection_rule: first_demo_only`.
+
+Dry-run or materialize local phase clips and GPU handoffs:
+
+```bash
+PYTHONPATH=src python -m neodojo routine split \
+  --routine baduanjin \
+  --source-video video/bilibili/01_baduanjin-complete-routine-with-breathing-cues.mp4 \
+  --dry-run \
+  --out outputs/routines/baduanjin/source
+
+PYTHONPATH=src python -m neodojo routine prepare-gpu-runs \
+  --routine baduanjin \
+  --clips outputs/routines/baduanjin/source \
+  --out outputs/routines/baduanjin/gvhmr-runs
+
+PYTHONPATH=src python -m neodojo routine assemble \
+  --routine baduanjin \
+  --source-materializations outputs/routines/baduanjin/source \
+  --gvhmr-json-root outputs/routines/baduanjin/gvhmr-runs \
+  --gmr-json-root outputs/routines/baduanjin/gmr-json \
+  --out outputs/routines/baduanjin/html
+```
+
+Remove `--dry-run` after the source MP4 is downloaded and `ffmpeg` is available
+to write actual ignored phase clips under `outputs/`.
+
+The routine HTML is local-only and fail-closed: missing GVHMR, GMR, or render
+artifacts are shown as missing, while SMPL-X remains the teaching/scoring
+source and G1 remains visual-only.
 
 ## Official Shenzhen Source Notes
 

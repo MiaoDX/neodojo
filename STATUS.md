@@ -31,6 +31,12 @@ real Baduanjin G1 replay proof.
   `80s-92s`. The committed sample includes the small trimmed clip for demo
   reproduction; larger source videos should be downloaded by helper scripts for
   local testing instead of committed directly.
+- The tracked Bilibili batch now has a local-only routine orchestration surface
+  for 八段锦, 易筋经, and 五禽戏. `video/bilibili/routines.json` stores manual
+  first-demo phase boundaries; `neodojo routine split/prepare-gpu-runs/assemble`
+  writes ignored per-phase clips, GVHMR handoffs, optional GMR imports, and a
+  fail-closed routine HTML page. This is orchestration metadata and artifact
+  assembly, not evidence that the repo vendors or runs GVHMR/GMR locally.
 - The default MuJoCo G1 render style now follows the actual roboharness
   `g1-reach` scene implementation: wrapped G1 MJCF scene, blue skybox gradient,
   gray/white checker floor, roboharness lights, original G1 materials, and
@@ -83,6 +89,22 @@ make ci-real-demo \
   CI_REAL_GMR_G1_JSON=path/to/gmr-unitree-g1.json \
   CI_REAL_VERIFY_STRICT=1
 make smoke-public
+```
+
+Tracked Bilibili routine orchestration:
+
+```bash
+make bilibili-download BILIBILI_DRY_RUN=1
+make bilibili-download BILIBILI_DRY_RUN=0 BILIBILI_COOKIES_FROM_BROWSER=chrome
+make routine-split ROUTINE=baduanjin ROUTINE_SOURCE_VIDEO=video/bilibili/01_baduanjin-complete-routine-with-breathing-cues.mp4 ROUTINE_DRY_RUN=0
+make routine-prepare-gpu ROUTINE=baduanjin
+make routine-assemble ROUTINE=baduanjin
+make routine-smoke ROUTINE=baduanjin
+PYTHONPATH=src python -m neodojo bilibili download --routine baduanjin --quality 480p --dry-run --out outputs/bilibili-download
+PYTHONPATH=src python -m neodojo routine split --routine baduanjin --source-video video/bilibili/01_baduanjin-complete-routine-with-breathing-cues.mp4 --dry-run --out outputs/routines/baduanjin/source
+PYTHONPATH=src python -m neodojo routine prepare-gpu-runs --routine baduanjin --clips outputs/routines/baduanjin/source --out outputs/routines/baduanjin/gvhmr-runs
+PYTHONPATH=src python -m neodojo routine assemble --routine baduanjin --source-materializations outputs/routines/baduanjin/source --gvhmr-json-root outputs/routines/baduanjin/gvhmr-runs --gmr-json-root outputs/routines/baduanjin/gmr-json --out outputs/routines/baduanjin/html
+PYTHONPATH=src python -m neodojo routine smoke --routine-html outputs/routines/baduanjin/html
 ```
 
 Local real-conversion preparation and returned-artifact handling:
@@ -162,6 +184,12 @@ as supported until a new plan explicitly restores them:
   ignored `outputs/`.
 - Returned GVHMR result inspection, returned JSON validation/import, and a
   real-conversion audit.
+- Bilibili re-download planning/execution through `yt-dlp`, with stable
+  BVID/AID/CID metadata, optional cookies, 480p/best quality selection,
+  `ffprobe` metadata, and `ffmpeg -xerror` decode smoke when downloads run.
+- Manual first-demo phase manifests for 八段锦, 易筋经, and 五禽戏 plus routine
+  split, per-phase GVHMR handoff, aggregate routine HTML assembly, and routine
+  HTML smoke validation.
 
 ## What Does Not Exist Yet
 
@@ -171,6 +199,8 @@ as supported until a new plan explicitly restores them:
   videos, or rendered PNG outputs.
 - Published actual G1 MuJoCo frame-sequence replay on Pages.
 - Completed simulator runtime pipeline.
+- Built-in full-routine GVHMR/GMR execution or checked-in returned artifacts for
+  the three Bilibili routines.
 - Built-in official SMPL-X body-model renderer.
 - Production/live-client Viser capture.
 - Published real demo.

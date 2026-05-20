@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .annotations import write_detected_annotations
+from .bilibili import DEFAULT_BILIBILI_DOWNLOAD_OUT, DEFAULT_BILIBILI_MANIFEST, write_bilibili_download_manifest
 from .browser_capture import write_public_demo_browser_capture
 from .capture_bundle import write_capture_bundle
 from .demo_html import write_demo
@@ -40,6 +41,13 @@ from .real_conversion import (
     write_real_conversion_prep,
 )
 from .real_demo import write_real_conversion_demo
+from .routine import (
+    DEFAULT_ROUTINE_MANIFEST,
+    smoke_check_routine_html,
+    write_routine_gpu_handoffs,
+    write_routine_html,
+    write_routine_split,
+)
 from .smplx_surface import (
     register_smplx_asset_descriptor,
     write_smplx_mesh_surface,
@@ -539,6 +547,155 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=10_000,
         help="browser navigation and assertion timeout in milliseconds",
+    )
+
+    bilibili = subparsers.add_parser(
+        "bilibili",
+        help="prepare local-only Bilibili source video downloads",
+    )
+    bilibili_subparsers = bilibili.add_subparsers(dest="bilibili_command", required=True)
+    bilibili_download = bilibili_subparsers.add_parser(
+        "download",
+        help="write or execute yt-dlp commands for the tracked Bilibili sources",
+    )
+    bilibili_download.add_argument(
+        "--manifest",
+        type=Path,
+        default=DEFAULT_BILIBILI_MANIFEST,
+        help="tracked stable Bilibili source manifest",
+    )
+    bilibili_download.add_argument(
+        "--routine",
+        action="append",
+        help="routine key to download; may be repeated; defaults to all tracked Bilibili entries",
+    )
+    bilibili_download.add_argument(
+        "--media-dir",
+        type=Path,
+        help="optional directory for downloaded MP4 files; defaults to each manifest output_path",
+    )
+    bilibili_download.add_argument(
+        "--quality",
+        choices=["480p", "best"],
+        default="480p",
+        help="yt-dlp format selection; 480p works without assuming authenticated higher-quality media",
+    )
+    bilibili_download.add_argument("--cookies", type=Path, help="yt-dlp cookies.txt file")
+    bilibili_download.add_argument(
+        "--cookies-from-browser",
+        help="yt-dlp browser cookie source, for example chrome or firefox",
+    )
+    bilibili_download.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="write planned yt-dlp commands without downloading media",
+    )
+    bilibili_download.add_argument(
+        "--out",
+        type=Path,
+        default=DEFAULT_BILIBILI_DOWNLOAD_OUT,
+        help="output directory for the download manifest",
+    )
+
+    routine = subparsers.add_parser(
+        "routine",
+        help="split and assemble local Bilibili routine phase artifacts",
+    )
+    routine_subparsers = routine.add_subparsers(dest="routine_command", required=True)
+    routine_split = routine_subparsers.add_parser(
+        "split",
+        help="split one tracked routine source video into first-demo phase clips or dry-run manifests",
+    )
+    routine_split.add_argument("--routine", required=True, help="routine key, for example baduanjin")
+    routine_split.add_argument(
+        "--source-video",
+        type=Path,
+        help="local source MP4; defaults to the routine manifest source_video path",
+    )
+    routine_split.add_argument(
+        "--manifest",
+        type=Path,
+        default=DEFAULT_ROUTINE_MANIFEST,
+        help="routine phase manifest",
+    )
+    routine_split.add_argument(
+        "--bilibili-manifest",
+        type=Path,
+        default=DEFAULT_BILIBILI_MANIFEST,
+        help="Bilibili source manifest used for source duration/provenance checks",
+    )
+    routine_split.add_argument("--frame-rate", type=float, default=1.0, help="reference frame extraction FPS")
+    routine_split.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="write source materialization manifests and ffmpeg commands without trimming media",
+    )
+    routine_split.add_argument(
+        "--out",
+        type=Path,
+        help="output directory; defaults to outputs/routines/<routine>/source",
+    )
+    routine_gpu = routine_subparsers.add_parser(
+        "prepare-gpu-runs",
+        help="write per-phase GVHMR GPU handoff workspaces from routine split outputs",
+    )
+    routine_gpu.add_argument("--routine", required=True, help="routine key, for example baduanjin")
+    routine_gpu.add_argument(
+        "--clips",
+        type=Path,
+        required=True,
+        help="routine split output directory or manifest",
+    )
+    routine_gpu.add_argument(
+        "--out",
+        type=Path,
+        help="output directory; defaults to outputs/routines/<routine>/gvhmr-runs",
+    )
+    routine_assemble = routine_subparsers.add_parser(
+        "assemble",
+        help="assemble one local routine HTML page from source, GVHMR, and optional GMR artifacts",
+    )
+    routine_assemble.add_argument("--routine", required=True, help="routine key, for example baduanjin")
+    routine_assemble.add_argument(
+        "--source-materializations",
+        type=Path,
+        required=True,
+        help="routine split output directory or manifest",
+    )
+    routine_assemble.add_argument(
+        "--gvhmr-json-root",
+        type=Path,
+        help="root containing <phase_id>/gvhmr-smplx-joints.json returned exports",
+    )
+    routine_assemble.add_argument(
+        "--gmr-json-root",
+        type=Path,
+        help="root containing <phase_id>/gmr-unitree-g1.json returned visual-track exports",
+    )
+    routine_assemble.add_argument(
+        "--model-descriptor",
+        type=Path,
+        help="optional Unitree G1 model descriptor used when importing GMR JSON",
+    )
+    routine_assemble.add_argument(
+        "--use-rerun-sdk",
+        action="store_true",
+        help="request true Rerun SDK .rrd files for generated phase demos",
+    )
+    routine_assemble.add_argument(
+        "--out",
+        type=Path,
+        help="output directory; defaults to outputs/routines/<routine>/html",
+    )
+    routine_smoke = routine_subparsers.add_parser(
+        "smoke",
+        help="validate an assembled local routine HTML page",
+    )
+    routine_smoke.add_argument(
+        "--routine-html",
+        type=Path,
+        required=True,
+        help="routine HTML output directory or manifest path",
     )
 
     capture = subparsers.add_parser(
@@ -1343,6 +1500,73 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(f"wrote {result.gif_path}")
             print(f"captured {result.frame_count} frames from {result.source_public_demo}")
+            return 0
+
+        if args.command == "bilibili" and args.bilibili_command == "download":
+            result = write_bilibili_download_manifest(
+                args.out,
+                manifest_path=args.manifest,
+                routines=args.routine,
+                media_dir=args.media_dir,
+                quality=args.quality,
+                cookies=args.cookies,
+                cookies_from_browser=args.cookies_from_browser,
+                dry_run=args.dry_run,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"status {result.status}")
+            for path in result.checked_paths:
+                print(f"validated {path}")
+            return 0
+
+        if args.command == "routine" and args.routine_command == "split":
+            out_dir = args.out or Path("outputs") / "routines" / args.routine / "source"
+            result = write_routine_split(
+                out_dir,
+                routine=args.routine,
+                source_video=args.source_video,
+                manifest_path=args.manifest,
+                bilibili_manifest=args.bilibili_manifest,
+                frame_rate=args.frame_rate,
+                dry_run=args.dry_run,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"phases {result.phase_count}")
+            return 0
+
+        if args.command == "routine" and args.routine_command == "prepare-gpu-runs":
+            out_dir = args.out or Path("outputs") / "routines" / args.routine / "gvhmr-runs"
+            result = write_routine_gpu_handoffs(
+                out_dir,
+                routine=args.routine,
+                clips=args.clips,
+            )
+            print(f"wrote {result.manifest_path}")
+            print(f"phases {result.phase_count}")
+            return 0
+
+        if args.command == "routine" and args.routine_command == "assemble":
+            out_dir = args.out or Path("outputs") / "routines" / args.routine / "html"
+            result = write_routine_html(
+                out_dir,
+                routine=args.routine,
+                source_materializations=args.source_materializations,
+                gvhmr_json_root=args.gvhmr_json_root,
+                gmr_json_root=args.gmr_json_root,
+                model_descriptor=args.model_descriptor,
+                use_rerun_sdk=args.use_rerun_sdk,
+            )
+            print(f"wrote {result.html_path}")
+            print(f"wrote {result.manifest_path}")
+            for path in result.checked_paths:
+                print(f"validated {path}")
+            return 0
+
+        if args.command == "routine" and args.routine_command == "smoke":
+            result = smoke_check_routine_html(args.routine_html)
+            print(f"validated {result.manifest_path}")
+            for path in result.checked_paths:
+                print(f"validated {path}")
             return 0
 
         if args.command == "capture" and args.capture_command == "bundle":

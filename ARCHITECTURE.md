@@ -40,7 +40,10 @@ official/user-supplied source video
 Source video intake owns local video selection, licensing boundaries, clip
 metadata, trim handoff, reference-frame extraction, and routine segmentation.
 Only small sample clips should be committed; larger source videos should be
-fetched locally by helper scripts.
+fetched locally by helper scripts. For the tracked Bilibili batch, stable
+BVID/AID/CID metadata remains in `video/bilibili/manifest.json`, manual
+first-demo phase boundaries live in `video/bilibili/routines.json`, and
+downloaded media plus split clips stay local or under ignored `outputs/`.
 
 Human motion reconstruction owns GVHMR execution and normalization into a shared
 SMPL-X motion record. This record is the canonical motion source for teaching
@@ -77,6 +80,10 @@ manifest proves a non-fixture, nonblank, changing frame sequence; otherwise it
 labels the G1 panel as schematic evidence. When the playback manifest points to
 a local reference clip, the public HTML copies that clip into the ignored demo
 folder and prepends an Original video panel on the same timeline.
+Routine assembly is a higher-level local HTML index over per-phase artifacts:
+each phase can point at its original clip, SMPL-X teaching-track public demo,
+G1 visual replay evidence, and provenance. Missing GVHMR/GMR/render artifacts
+are labeled as missing instead of being treated as completed runtime work.
 
 ## Core Contracts
 
@@ -88,6 +95,8 @@ folder and prepends an Original video panel on the same timeline.
   should work with local/user-supplied files.
 - Project docs must not describe install, test, lint, build, or demo commands
   until those commands actually exist.
+- Routine pages must keep SMPL-X as the scoring source and G1 as visual-only
+  even when phase-level GMR or MuJoCo evidence is supplied.
 
 ## Non-Goals For The MVP
 

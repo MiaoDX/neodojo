@@ -194,7 +194,7 @@ def normalize_gmr_pickle(
         raise ValueError("only unitree_g1 native GMR output is supported in this adapter")
 
     payload = _load_pickle_object(source_path)
-    fps = _positive_fps(payload.get("fps"))
+    native_fps = _positive_fps(payload.get("fps"))
     dof_rows = _numeric_rows(payload.get("dof_pos"), "dof_pos")
     root_pos_rows = _numeric_rows(payload.get("root_pos"), "root_pos", width=3)
     root_rot_rows = _numeric_rows(payload.get("root_rot"), "root_rot", width=4)
@@ -215,11 +215,16 @@ def normalize_gmr_pickle(
     motion_manifest, smplx_frames = load_motion_record_frames(motion_manifest_path)
     if len(smplx_frames) != len(dof_rows):
         raise ValueError("GMR native frame count must match the source motion record")
-    fps_match = float(motion_manifest.get("fps", fps)) == float(fps)
+    motion_fps = motion_manifest.get("fps", native_fps)
+    if isinstance(motion_fps, bool) or not isinstance(motion_fps, (int, float)) or motion_fps <= 0:
+        motion_fps = native_fps
+    export_fps = motion_fps
+    native_fps_match = float(motion_fps) == float(native_fps)
+    fps_match = float(motion_fps) == float(export_fps)
 
     normalized_path = out_dir / "gmr-unitree-g1.normalized.json"
     report_path = out_dir / "gmr-native-adapter-report.json"
-    timing = motion_manifest.get("timing") or _timing_metadata(fps, len(dof_rows))
+    timing = motion_manifest.get("timing") or _timing_metadata(export_fps, len(dof_rows))
     visual_frames = [derive_g1_like_frame(frame) for frame in smplx_frames]
     joint_angle_frames = _joint_angle_frames(resolved_joint_names, dof_rows)
 
@@ -227,7 +232,7 @@ def normalize_gmr_pickle(
         "schema": GMR_TRACK_EXPORT_SCHEMA,
         "robot": SUPPORTED_ROBOT,
         "fixture_only": bool(motion_manifest.get("fixture_only", False)),
-        "fps": fps,
+        "fps": export_fps,
         "timing": timing,
         "coordinates": motion_manifest.get("coordinates"),
         "contact": motion_manifest.get("contact"),
@@ -241,6 +246,8 @@ def normalize_gmr_pickle(
         "provenance": {
             "adapter": "neodojo.tracks normalize-gmr-pkl",
             "native_format": "YanjieZe/GMR robot motion pickle",
+            "native_fps": native_fps,
+            "normalized_fps_source": "source_motion_record",
             "source_artifact": _as_posix(source_path),
             "source_artifact_resolved": _as_posix(source_path.resolve()),
             "source_artifact_sha256": sha256_file(source_path),
@@ -258,8 +265,10 @@ def normalize_gmr_pickle(
         "normalized_export": _relative_path(normalized_path, report_path.parent),
         "robot": SUPPORTED_ROBOT,
         "frame_count": len(dof_rows),
-        "fps": fps,
+        "fps": export_fps,
+        "native_fps": native_fps,
         "fps_match": fps_match,
+        "native_fps_match": native_fps_match,
         "source_motion_record": _relative_path(motion_manifest_path, report_path.parent),
         "source_motion_record_fixture_only": motion_manifest.get("fixture_only"),
         "scoring_source": "smplx",

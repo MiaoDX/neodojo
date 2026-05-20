@@ -15,6 +15,7 @@ from neodojo.gmr_native import (
     normalize_gmr_pickle,
     run_local_gmr_unitree_g1,
 )
+from neodojo.motion_contract import _timing_metadata
 from neodojo.motion_contract import write_fixture_motion_contract
 
 
@@ -64,6 +65,27 @@ class GMRNativeTests(unittest.TestCase):
         self.assertFalse(track["scoring_allowed"])
         self.assertEqual(len(data["joint_angles"]), 10)
         self.assertIn("left_hip_pitch_joint", data["joint_angles"][0])
+
+    def test_normalize_gmr_pickle_uses_motion_record_fps_for_sync(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            manifest_path = motion.motion_record_manifest_path
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["fps"] = 25
+            manifest["timing"] = _timing_metadata(25, 10)
+            manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+            source = root / "gmr-motion.pkl"
+            _write_native_gmr_pickle(source, frame_count=10, fps=30)
+
+            result = normalize_gmr_pickle(root / "native", source, motion_record=motion.out_dir)
+            normalized = json.loads(result.normalized_export_path.read_text(encoding="utf-8"))
+            report = json.loads(result.report_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(normalized["fps"], 25)
+        self.assertEqual(normalized["provenance"]["native_fps"], 30)
+        self.assertEqual(report["native_fps"], 30)
+        self.assertFalse(report["native_fps_match"])
 
     def test_normalize_gmr_pickle_rejects_frame_count_mismatch(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
