@@ -145,6 +145,7 @@ class RoutinePipelineTests(unittest.TestCase):
         self.assertEqual(split_manifest["phases"][0]["source_materialization_status"], "dry_run")
         self.assertTrue(gpu_manifest_exists)
         self.assertEqual(manifest["assembly_mode"], "self_contained_report_incomplete")
+        self.assertEqual(manifest["g1_replay_fps"], 5.0)
         self.assertEqual(smoke.manifest_path, html.manifest_path)
         self.assertFalse(phases_dir_exists)
         self.assertEqual(manifest["phases"][0]["phase_report_status"], "missing_gvhmr_json")
@@ -327,7 +328,10 @@ class RoutinePipelineTests(unittest.TestCase):
                     },
                 )
 
-            def fake_demo(out_dir: Path, **_: object) -> SimpleNamespace:
+            seen_replay_fps: list[object] = []
+
+            def fake_demo(out_dir: Path, **kwargs: object) -> SimpleNamespace:
+                seen_replay_fps.append(kwargs.get("g1_replay_fps"))
                 manifest_path = out_dir / "manifest.json"
                 public_manifest_path = out_dir / "public-demo" / "manifest.json"
                 index_path = out_dir / "public-demo" / "index.html"
@@ -360,14 +364,17 @@ class RoutinePipelineTests(unittest.TestCase):
                     gmr_json_root=root / "gmr",
                     model_descriptor=root / "g1-model" / "manifest.json",
                     render_mujoco=True,
+                    g1_replay_fps=10,
                 )
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
             page = result.html_path.read_text(encoding="utf-8")
             smoke_check_routine_html(result.manifest_path)
 
         self.assertEqual(manifest["assembly_mode"], "self_contained_report")
+        self.assertEqual(manifest["g1_replay_fps"], 10)
         self.assertTrue(manifest["report_complete"])
         self.assertTrue(manifest["actual_g1_model_replay_complete"])
+        self.assertEqual(seen_replay_fps, [10] * 8)
         self.assertTrue(all(phase["phase_report"] for phase in manifest["phases"]))
         self.assertTrue(all(phase["actual_g1_model_replay"] for phase in manifest["phases"]))
         self.assertIn("Open phase report", page)

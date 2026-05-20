@@ -18,6 +18,7 @@ from .g1_visual import (
 )
 from .gmr_native import normalize_gmr_pickle, run_local_gmr_unitree_g1
 from .g1_render import (
+    DEFAULT_G1_REPLAY_FPS,
     write_g1_mujoco_backend_benchmark,
     write_g1_mujoco_backend_comparison,
     write_g1_mujoco_render,
@@ -698,6 +699,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="render imported GMR tracks as MuJoCo Unitree G1 model replay frames for phase reports",
     )
     routine_assemble.add_argument(
+        "--g1-replay-fps",
+        type=float,
+        default=DEFAULT_G1_REPLAY_FPS,
+        help="sample MuJoCo G1 replay PNG frames to this FPS; defaults to 5",
+    )
+    routine_assemble.add_argument(
         "--out",
         type=Path,
         help="output directory; defaults to outputs/routines/<routine>/html",
@@ -837,6 +844,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=480,
         help="offscreen MuJoCo render height in pixels",
+    )
+    render_mujoco_g1.add_argument(
+        "--replay-fps",
+        type=float,
+        default=DEFAULT_G1_REPLAY_FPS,
+        help="sample the MuJoCo replay PNG sequence to this FPS; defaults to 5",
     )
     render_mujoco_g1.add_argument(
         "--out",
@@ -1273,6 +1286,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="render the provided imported GMR track with MuJoCo instead of writing schematic evidence",
     )
     real_import_demo.add_argument(
+        "--g1-replay-fps",
+        type=float,
+        default=DEFAULT_G1_REPLAY_FPS,
+        help="sample MuJoCo G1 replay PNG frames to this FPS when --render-mujoco is used; defaults to 5",
+    )
+    real_import_demo.add_argument(
         "--use-rerun-sdk",
         action="store_true",
         help="write a true Rerun SDK .rrd instead of the JSON fallback artifact",
@@ -1573,6 +1592,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 use_rerun_sdk=args.use_rerun_sdk,
                 build_phase_demos=build_phase_reports,
                 render_mujoco=args.render_mujoco,
+                g1_replay_fps=args.g1_replay_fps,
             )
             print(f"wrote {result.html_path}")
             print(f"wrote {result.manifest_path}")
@@ -1632,6 +1652,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 allow_fixture_model=args.allow_fixture_model,
                 width=args.width,
                 height=args.height,
+                replay_fps=args.replay_fps,
             )
             print(f"wrote {result.html_path}")
             print(f"wrote {result.manifest_path}")
@@ -1802,6 +1823,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 model_descriptor=args.model_descriptor,
                 g1_render=args.g1_render,
                 render_mujoco=args.render_mujoco,
+                g1_replay_fps=args.g1_replay_fps,
                 use_rerun_sdk=args.use_rerun_sdk,
             )
             print(f"wrote {result.manifest_path}")

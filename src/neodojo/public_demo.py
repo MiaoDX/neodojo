@@ -581,8 +581,12 @@ const g1Sequence = SCENE.g1_render_frame_sequence || {{}};
 const referenceInfo = SCENE.reference_video || {{}};
 const frameCount = SCENE.tracks.smplx.frames.length;
 const fps = Number((SCENE.timing && SCENE.timing.fps) || (SCENE.track_metadata.smplx && SCENE.track_metadata.smplx.fps) || 25);
+const requestedDisplayFps = Number(g1Sequence.replay_fps || fps);
+const displayFps = Number.isFinite(requestedDisplayFps) && requestedDisplayFps > 0 ? Math.min(requestedDisplayFps, fps) : fps;
+const frameStep = Math.max(1, fps / displayFps);
 const TRAJECTORY_WINDOW_SECONDS = 3;
 let frame = 0;
+let frameCursor = 0;
 let playing = true;
 let lastTick = 0;
 timeline.max = String(Math.max(0, frameCount - 1));
@@ -789,6 +793,27 @@ function drawPanel(canvas, trackId) {{
   else drawRobotModel(ctx, pose, bounds, canvas.width, canvas.height);
 }}
 
+function replayIndexForSourceFrame(sequence, sourceFrame) {{
+  const paths = Array.isArray(sequence.paths) ? sequence.paths : [];
+  if (!paths.length) return 0;
+  const indices = sequence.source_frame_indices;
+  if (!Array.isArray(indices) || !indices.length) return Math.min(sourceFrame, paths.length - 1);
+  let low = 0;
+  let high = Math.min(indices.length, paths.length) - 1;
+  let result = 0;
+  while (low <= high) {{
+    const mid = Math.floor((low + high) / 2);
+    const value = Number(indices[mid]);
+    if (Number.isFinite(value) && value <= sourceFrame) {{
+      result = mid;
+      low = mid + 1;
+    }} else {{
+      high = mid - 1;
+    }}
+  }}
+  return Math.min(result, paths.length - 1);
+}}
+
 function syncReferenceVideo() {{
   if (!referenceVideo || !referenceInfo.available) return;
   const offset = Number(referenceInfo.playback_offset_seconds || 0);
@@ -810,7 +835,7 @@ function render() {{
   if (g1Sequence.available && Array.isArray(g1Sequence.paths) && g1Sequence.paths.length > 0) {{
     g1Canvas.hidden = true;
     g1ReplayImage.hidden = false;
-    const index = Math.min(frame, g1Sequence.paths.length - 1);
+    const index = replayIndexForSourceFrame(g1Sequence, frame);
     g1ReplayImage.src = g1Sequence.paths[index];
   }} else {{
     g1ReplayImage.hidden = true;
@@ -824,8 +849,9 @@ function render() {{
 
 function tick(timestamp) {{
   if (!lastTick) lastTick = timestamp;
-  if (playing && timestamp - lastTick > 1000 / fps) {{
-    frame = (frame + 1) % frameCount;
+  if (playing && timestamp - lastTick > 1000 / displayFps) {{
+    frameCursor = (frameCursor + frameStep) % frameCount;
+    frame = Math.min(frameCount - 1, Math.round(frameCursor));
     lastTick = timestamp;
     render();
   }}
@@ -839,6 +865,7 @@ playButton.addEventListener("click", () => {{
 
 timeline.addEventListener("input", (event) => {{
   frame = Number(event.target.value);
+  frameCursor = frame;
   playing = false;
   playButton.textContent = "Play";
   render();
@@ -900,6 +927,10 @@ def _attach_public_g1_replay_frames(
         "view": replay.get("view", "front"),
         "paths": copied_paths,
         "frame_count": len(copied_paths),
+        "source_fps": replay.get("source_fps"),
+        "replay_fps": replay.get("replay_fps"),
+        "source_frame_count": replay.get("source_frame_count"),
+        "source_frame_indices": replay.get("source_frame_indices"),
         "source_render_manifest": scene.get("source_manifests", {}).get("g1_render"),
         "nonblank_pixel_check": replay.get("nonblank_pixel_check"),
         "changed_frame_check": replay.get("changed_frame_check"),
@@ -1145,6 +1176,10 @@ def write_public_demo(
                 "visual_style": g1_visual_style,
                 "actual_g1_model_replay": actual_g1_replay,
                 "rendered_frame_count": g1_sequence.get("frame_count", 0),
+                "source_fps": g1_sequence.get("source_fps"),
+                "replay_fps": g1_sequence.get("replay_fps"),
+                "source_frame_count": g1_sequence.get("source_frame_count"),
+                "source_frame_indices": g1_sequence.get("source_frame_indices"),
                 "rendered_frame_paths": g1_sequence.get("paths", []),
             },
         },

@@ -23,6 +23,7 @@ from neodojo.g1_render import (
     G1_MUJOCO_RENDER_BACKEND,
     G1_MUJOCO_VISUAL_THEME,
     G1_RENDER_SCHEMA,
+    _sample_replay_frame_indices,
     write_g1_mujoco_backend_benchmark,
     write_g1_mujoco_backend_comparison,
     write_g1_mujoco_render,
@@ -125,6 +126,9 @@ def _write_actual_g1_render_manifest(
     model_descriptor: Path,
     g1_track: Path,
     frame_count: int,
+    source_frame_indices: list[int] | None = None,
+    source_fps: float = 24.0,
+    replay_fps: float | None = None,
 ) -> Path:
     render_dir = root / "actual-g1-render"
     selected_dir = render_dir / "frames"
@@ -137,6 +141,7 @@ def _write_actual_g1_render_manifest(
         path = replay_dir / f"front-{index:06d}.png"
         path.write_bytes(f"front replay frame {index}".encode("utf-8"))
         replay_paths.append(f"frames/replay/{path.name}")
+    replay_source_indices = source_frame_indices or list(range(frame_count))
     manifest_path = render_dir / "manifest.json"
     manifest = {
         "schema": G1_RENDER_SCHEMA,
@@ -174,6 +179,10 @@ def _write_actual_g1_render_manifest(
             "view": "front",
             "visual_style": "mujoco-png-frame-sequence.v1",
             "frame_count": frame_count,
+            "source_fps": source_fps,
+            "replay_fps": replay_fps or source_fps,
+            "source_frame_count": max(replay_source_indices) + 1 if replay_source_indices else frame_count,
+            "source_frame_indices": replay_source_indices,
             "paths": replay_paths,
             "nonblank_frame_count": frame_count,
             "nonblank_pixel_check": True,
@@ -199,6 +208,17 @@ def _write_actual_g1_render_manifest(
 
 
 class DemoHtmlTests(unittest.TestCase):
+    def test_g1_replay_frame_sampling_targets_configured_fps(self) -> None:
+        five_fps = _sample_replay_frame_indices(725, source_fps=25, replay_fps=5)
+        ten_fps = _sample_replay_frame_indices(725, source_fps=25, replay_fps=10)
+
+        self.assertEqual(len(five_fps), 145)
+        self.assertEqual(five_fps[:4], [0, 5, 10, 15])
+        self.assertEqual(five_fps[-1], 720)
+        self.assertEqual(len(ten_fps), 290)
+        self.assertEqual(ten_fps[:5], [0, 2, 5, 8, 10])
+        self.assertEqual(len(_sample_replay_frame_indices(725, source_fps=25, replay_fps=None)), 725)
+
     def test_fixture_preserves_scoring_boundary(self) -> None:
         fixture = build_fixture(frame_count=16)
 
@@ -1617,7 +1637,10 @@ class DemoHtmlTests(unittest.TestCase):
                 root,
                 model_descriptor=model.descriptor_path,
                 g1_track=g1.track_manifest_path,
-                frame_count=10,
+                frame_count=5,
+                source_frame_indices=[0, 2, 4, 6, 8],
+                source_fps=24,
+                replay_fps=12,
             )
             playback = write_teaching_playback_demo(
                 root / "teaching-demo",
@@ -1645,12 +1668,17 @@ class DemoHtmlTests(unittest.TestCase):
             manifest["teaching_html"]["g1_replay"]["visual_style"],
             "mujoco-png-frame-sequence.v1",
         )
-        self.assertEqual(len(manifest["teaching_html"]["g1_replay"]["rendered_frame_paths"]), 10)
+        self.assertEqual(len(manifest["teaching_html"]["g1_replay"]["rendered_frame_paths"]), 5)
+        self.assertEqual(manifest["teaching_html"]["g1_replay"]["replay_fps"], 12)
+        self.assertEqual(manifest["teaching_html"]["g1_replay"]["source_frame_indices"], [0, 2, 4, 6, 8])
         self.assertTrue(scene["g1_render_frame_sequence"]["available"])
+        self.assertEqual(scene["g1_render_frame_sequence"]["replay_fps"], 12)
         self.assertTrue(copied_frame_exists)
         self.assertIn("g1ReplayImage", html)
+        self.assertIn("replayIndexForSourceFrame", html)
+        self.assertIn("displayFps", html)
         self.assertIn("Unitree G1 MuJoCo model replay", html)
-        self.assertEqual(len(smoke.checked_paths), 14)
+        self.assertEqual(len(smoke.checked_paths), 9)
 
     @unittest.skipUnless(importlib.util.find_spec("rerun"), "rerun optional dependency is not installed")
     def test_public_demo_can_write_true_rerun_recording(self) -> None:

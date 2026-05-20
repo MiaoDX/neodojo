@@ -39,9 +39,17 @@ real Baduanjin G1 replay proof.
   handoffs, optional GMR artifact links, and a fail-closed routine HTML report.
   `routine assemble` defaults to a self-contained report directory when current
   GVHMR/GMR artifacts are present: overview `index.html` plus one phase report
-  per selected round. `--index-only` preserves the compact artifact-status
-  index. This is orchestration metadata and local artifact assembly, not
-  evidence that the repo vendors or runs GVHMR/GMR locally.
+  per selected round. MuJoCo G1 replay PNG sequences default to 5 fps via
+  `ROUTINE_G1_REPLAY_FPS` / CLI `--g1-replay-fps`, keeping the Original video,
+  SMPL-X canvas, and G1 replay on one sampled playback cadence while preserving
+  frame-addressable evidence. `--index-only` preserves the compact
+  artifact-status index. This is orchestration metadata and local artifact
+  assembly, not evidence that the repo vendors or runs GVHMR/GMR locally.
+- Local Baduanjin one-round report size evidence in this workspace: 5 fps G1
+  replay writes 1015 PNGs and `326M` under `outputs/routines/baduanjin/html`;
+  10 fps writes 2030 PNGs and `372M` under
+  `outputs/routines/baduanjin/html-10fps`. The old full-source-rate replay was
+  5075 PNGs at roughly `510M`, so 5 fps is the current default tradeoff.
 - The default MuJoCo G1 render style now follows the actual roboharness
   `g1-reach` scene implementation: wrapped G1 MJCF scene, blue skybox gradient,
   gray/white checker floor, roboharness lights, original G1 materials, and
@@ -109,15 +117,17 @@ PYTHONPATH=src python -m neodojo bilibili download --routine baduanjin --quality
 PYTHONPATH=src python -m neodojo routine split --routine baduanjin --source-video video/bilibili/01_baduanjin-complete-routine-with-breathing-cues.mp4 --dry-run --out outputs/routines/baduanjin/source
 PYTHONPATH=src python -m neodojo routine prepare-gpu-runs --routine baduanjin --clips outputs/routines/baduanjin/source --out outputs/routines/baduanjin/gvhmr-runs
 PYTHONPATH=src python -m neodojo routine assemble --routine baduanjin --source-materializations outputs/routines/baduanjin/source --gvhmr-json-root outputs/routines/baduanjin/gvhmr-runs --gmr-json-root outputs/routines/baduanjin/gmr-json --out outputs/routines/baduanjin/html
-PYTHONPATH=src python -m neodojo routine assemble --routine baduanjin --source-materializations outputs/routines/baduanjin/source --gvhmr-json-root outputs/routines/baduanjin/gvhmr-runs --gmr-json-root outputs/routines/baduanjin/gmr-json --model-descriptor outputs/routines/baduanjin/g1-model/robot-models/unitree_g1/manifest.json --render-mujoco --out outputs/routines/baduanjin/html
+PYTHONPATH=src python -m neodojo routine assemble --routine baduanjin --source-materializations outputs/routines/baduanjin/source --gvhmr-json-root outputs/routines/baduanjin/gvhmr-runs --gmr-json-root outputs/routines/baduanjin/gmr-json --model-descriptor outputs/routines/baduanjin/g1-model/robot-models/unitree_g1/manifest.json --render-mujoco --g1-replay-fps 5 --out outputs/routines/baduanjin/html
 PYTHONPATH=src python -m neodojo routine assemble --routine baduanjin --source-materializations outputs/routines/baduanjin/source --gvhmr-json-root outputs/routines/baduanjin/gvhmr-runs --gmr-json-root outputs/routines/baduanjin/gmr-json --index-only --out outputs/routines/baduanjin/html
 PYTHONPATH=src python -m neodojo routine smoke --routine-html outputs/routines/baduanjin/html
 ```
 
 The first `routine assemble` command is the default self-contained report path.
 Add `--model-descriptor ... --render-mujoco` when the local machine should build
-actual G1 Model Replay frames from imported GMR tracks. The `--index-only`
-variant writes only the compact artifact-status index.
+actual G1 Model Replay frames from imported GMR tracks. G1 replay frame
+sequences default to 5 fps; use `ROUTINE_G1_REPLAY_FPS=10` for Make or
+`--g1-replay-fps 10` for CLI when smoother G1 playback is worth the larger PNG
+tree. The `--index-only` variant writes only the compact artifact-status index.
 
 Local real-conversion preparation and returned-artifact handling:
 

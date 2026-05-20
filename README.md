@@ -78,10 +78,13 @@ When current returned artifacts are present, `routine assemble` writes a
 self-contained report directory: an overview `index.html` plus one synchronized
 phase report per selected round with Original video, SMPL-X Teaching Track, and
 G1 visual evidence. Add `ROUTINE_MODEL_DESCRIPTOR=... ROUTINE_RENDER_MUJOCO=1`
-to build actual G1 Model Replay frames from imported GMR tracks. Use
-`ROUTINE_INDEX_ONLY=1` or CLI `--index-only` for the old compact artifact-status
-index. The repo still does not vendor GVHMR, GMR, checkpoints, MuJoCo/Genesis
-assets, or a live published real routine demo.
+to build actual G1 Model Replay frames from imported GMR tracks. MuJoCo G1
+replay PNGs default to 5 fps so the Original video, SMPL-X canvas, and G1 replay
+advance on the same sampled timeline; set `ROUTINE_G1_REPLAY_FPS=10` or CLI
+`--g1-replay-fps 10` to change that. Use `ROUTINE_INDEX_ONLY=1` or CLI
+`--index-only` for the old compact artifact-status index. The repo still does
+not vendor GVHMR, GMR, checkpoints, MuJoCo/Genesis assets, or a live published
+real routine demo.
 
 ## Contributing
 
