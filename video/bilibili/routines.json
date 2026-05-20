@@ -1,9 +1,10 @@
 {
   "schema": "neodojo.bilibili_routines.v1",
-  "generated_at": "2026-05-19",
+  "generated_at": "2026-05-20",
   "selection_rule": "first_demo_only",
   "notes": [
     "Manual first-demo phase boundaries for the three tracked Bilibili source videos.",
+    "Baduanjin phase boundaries use one visible round per method from the local Bilibili source video.",
     "These timestamps are orchestration metadata for local clip preparation; they are not evidence that GVHMR or GMR ran locally."
   ],
   "routines": {
@@ -18,64 +19,64 @@
           "phase_id": "two_hands_hold_up_heavens",
           "name_zh": "两手托天理三焦",
           "name_en": "Two Hands Hold Up the Heavens",
-          "start_seconds": 80.0,
-          "end_seconds": 116.0,
+          "start_seconds": 75.0,
+          "end_seconds": 92.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "drawing_bow",
           "name_zh": "左右开弓似射雕",
           "name_en": "Drawing the Bow to Shoot the Hawk",
-          "start_seconds": 143.0,
-          "end_seconds": 181.0,
+          "start_seconds": 140.0,
+          "end_seconds": 169.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "separate_heaven_earth",
           "name_zh": "调理脾胃须单举",
           "name_en": "Separate Heaven and Earth",
-          "start_seconds": 208.0,
-          "end_seconds": 246.0,
+          "start_seconds": 240.0,
+          "end_seconds": 262.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "wise_owl_gazes_backward",
           "name_zh": "五劳七伤往后瞧",
           "name_en": "Wise Owl Gazes Backward",
-          "start_seconds": 272.0,
-          "end_seconds": 310.0,
+          "start_seconds": 300.0,
+          "end_seconds": 324.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "sway_head_shake_tail",
           "name_zh": "摇头摆尾去心火",
           "name_en": "Sway the Head and Shake the Tail",
-          "start_seconds": 338.0,
-          "end_seconds": 385.0,
+          "start_seconds": 370.0,
+          "end_seconds": 407.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "two_hands_hold_feet",
           "name_zh": "两手攀足固肾腰",
           "name_en": "Two Hands Hold the Feet",
-          "start_seconds": 414.0,
-          "end_seconds": 460.0,
+          "start_seconds": 475.0,
+          "end_seconds": 501.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "clench_fists_glare",
           "name_zh": "攒拳怒目增气力",
           "name_en": "Clench Fists and Glare Fiercely",
-          "start_seconds": 492.0,
-          "end_seconds": 535.0,
+          "start_seconds": 598.0,
+          "end_seconds": 619.0,
           "selection_rule": "first_demo_only"
         },
         {
           "phase_id": "seven_bounces",
           "name_zh": "背后七颠百病消",
           "name_en": "Seven Bounces",
-          "start_seconds": 562.0,
-          "end_seconds": 593.0,
+          "start_seconds": 653.0,
+          "end_seconds": 680.0,
           "selection_rule": "first_demo_only"
         }
       ]

@@ -80,10 +80,13 @@ manifest proves a non-fixture, nonblank, changing frame sequence; otherwise it
 labels the G1 panel as schematic evidence. When the playback manifest points to
 a local reference clip, the public HTML copies that clip into the ignored demo
 folder and prepends an Original video panel on the same timeline.
-Routine assembly is a higher-level local HTML index over per-phase artifacts:
-each phase can point at its original clip, SMPL-X teaching-track public demo,
-G1 visual replay evidence, and provenance. Missing GVHMR/GMR/render artifacts
-are labeled as missing instead of being treated as completed runtime work.
+Routine assembly is a higher-level local report directory over per-phase
+artifacts. By default the overview links to one self-contained phase report per
+selected round when current GVHMR and GMR artifacts are present. Each phase
+report carries the local Original video, SMPL-X Teaching Track, and either G1
+Model Replay or clearly labeled G1 Schematic Evidence. `--index-only` preserves
+the compact artifact-status index. Missing GVHMR/GMR/render artifacts are
+labeled as missing instead of being treated as completed runtime work.
 
 ## Core Contracts
 

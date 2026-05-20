@@ -73,9 +73,15 @@ make routine-assemble ROUTINE=baduanjin
 make routine-smoke ROUTINE=baduanjin
 ```
 
-This prepares local phase clips and per-phase GVHMR/GMR handoffs. It does not
-vendor or run GVHMR, GMR, checkpoints, MuJoCo/Genesis mesh rendering, or a live
-published real routine demo.
+This prepares local one-round phase clips and per-phase GVHMR/GMR handoffs.
+When current returned artifacts are present, `routine assemble` writes a
+self-contained report directory: an overview `index.html` plus one synchronized
+phase report per selected round with Original video, SMPL-X Teaching Track, and
+G1 visual evidence. Add `ROUTINE_MODEL_DESCRIPTOR=... ROUTINE_RENDER_MUJOCO=1`
+to build actual G1 Model Replay frames from imported GMR tracks. Use
+`ROUTINE_INDEX_ONLY=1` or CLI `--index-only` for the old compact artifact-status
+index. The repo still does not vendor GVHMR, GMR, checkpoints, MuJoCo/Genesis
+assets, or a live published real routine demo.
 
 ## Contributing
 

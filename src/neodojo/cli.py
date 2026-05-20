@@ -653,7 +653,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     routine_assemble = routine_subparsers.add_parser(
         "assemble",
-        help="assemble one local routine HTML page from source, GVHMR, and optional GMR artifacts",
+        help="assemble a local routine report from source, GVHMR, and optional GMR artifacts",
     )
     routine_assemble.add_argument("--routine", required=True, help="routine key, for example baduanjin")
     routine_assemble.add_argument(
@@ -680,7 +680,22 @@ def build_parser() -> argparse.ArgumentParser:
     routine_assemble.add_argument(
         "--use-rerun-sdk",
         action="store_true",
-        help="request true Rerun SDK .rrd files for generated phase demos",
+        help="request true Rerun SDK .rrd files when phase reports are built",
+    )
+    routine_assemble.add_argument(
+        "--build-phase-demos",
+        action="store_true",
+        help="compatibility alias; phase reports are built by default unless --index-only is set",
+    )
+    routine_assemble.add_argument(
+        "--index-only",
+        action="store_true",
+        help="write only the compact overview/index without self-contained phase report pages",
+    )
+    routine_assemble.add_argument(
+        "--render-mujoco",
+        action="store_true",
+        help="render imported GMR tracks as MuJoCo Unitree G1 model replay frames for phase reports",
     )
     routine_assemble.add_argument(
         "--out",
@@ -1547,6 +1562,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         if args.command == "routine" and args.routine_command == "assemble":
             out_dir = args.out or Path("outputs") / "routines" / args.routine / "html"
+            build_phase_reports = args.build_phase_demos or not args.index_only
             result = write_routine_html(
                 out_dir,
                 routine=args.routine,
@@ -1555,6 +1571,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 gmr_json_root=args.gmr_json_root,
                 model_descriptor=args.model_descriptor,
                 use_rerun_sdk=args.use_rerun_sdk,
+                build_phase_demos=build_phase_reports,
+                render_mujoco=args.render_mujoco,
             )
             print(f"wrote {result.html_path}")
             print(f"wrote {result.manifest_path}")
