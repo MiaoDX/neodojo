@@ -1553,7 +1553,7 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("Synchronized timeline", html)
         self.assertIn("drawRobotModel", html)
         self.assertIn("drawTorsoPlate", html)
-        self.assertIn("const TRAJECTORY_WINDOW_SECONDS = 5;", html)
+        self.assertIn("const TRAJECTORY_WINDOW_SECONDS = 3;", html)
         self.assertIn("frame - Math.round(fps * TRAJECTORY_WINDOW_SECONDS)", html)
         self.assertIn("return [-point[0], point[1]];", html)
         self.assertIn('data-g1-render-style="robot-body-schematic.v1"', html)
