@@ -172,7 +172,7 @@ def build_scene_timeline(
         "coordinates": playback.get("coordinates") or motion_manifest.get("coordinates"),
         "contact": playback.get("contact") or motion_manifest.get("contact"),
         "camera_definitions": {
-            "front": {"projection_axes": ["x", "y"]},
+            "front": {"projection_axes": ["-x", "y"], "orientation": "front_facing"},
             "side": {"projection_axes": ["z", "y"]},
             "top": {"projection_axes": ["x", "z"]},
         },
@@ -243,7 +243,7 @@ def build_scene_timeline(
 def _project(point: list[float], view: str) -> tuple[float, float]:
     x, y, z = point
     if view == "front":
-        return x, y
+        return -x, y
     if view == "side":
         return z, y
     if view == "top":
@@ -581,13 +581,14 @@ const g1Sequence = SCENE.g1_render_frame_sequence || {{}};
 const referenceInfo = SCENE.reference_video || {{}};
 const frameCount = SCENE.tracks.smplx.frames.length;
 const fps = Number((SCENE.timing && SCENE.timing.fps) || (SCENE.track_metadata.smplx && SCENE.track_metadata.smplx.fps) || 25);
+const TRAJECTORY_WINDOW_SECONDS = 5;
 let frame = 0;
 let playing = true;
 let lastTick = 0;
 timeline.max = String(Math.max(0, frameCount - 1));
 
 function project(point) {{
-  return [point[0], point[1]];
+  return [-point[0], point[1]];
 }}
 
 function boundsFor(pose) {{
@@ -632,17 +633,20 @@ function drawGrid(ctx, width, height) {{
 
 function drawTrajectory(ctx, frames, bounds, width, height, color) {{
   const joints = SCENE.trajectory_joints || ["left_wrist", "right_wrist"];
-  ctx.globalAlpha = 0.48;
+  const startFrame = Math.max(0, frame - Math.round(fps * TRAJECTORY_WINDOW_SECONDS));
+  ctx.globalAlpha = 0.34;
   ctx.strokeStyle = color;
   ctx.lineWidth = 3;
   for (const joint of joints) {{
     ctx.beginPath();
-    for (let index = 0; index <= frame; index += 1) {{
+    let hasPoint = false;
+    for (let index = startFrame; index <= frame; index += 1) {{
       const point = frames[index][joint];
       if (!point) continue;
       const [x, y] = toCanvas(point, bounds, width, height);
-      if (index === 0) ctx.moveTo(x, y);
+      if (!hasPoint) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
+      hasPoint = true;
     }}
     ctx.stroke();
   }}

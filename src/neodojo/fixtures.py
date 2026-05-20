@@ -22,6 +22,7 @@ BONES = [
 ]
 
 TRAJECTORY_JOINTS = [
+    "head",
     "left_wrist",
     "right_wrist",
     "left_elbow",
