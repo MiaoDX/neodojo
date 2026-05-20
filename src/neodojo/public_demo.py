@@ -3,6 +3,7 @@ from __future__ import annotations
 import html
 import json
 import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -140,7 +141,7 @@ def build_scene_timeline(
     actual_g1_replay = _actual_g1_replay_available(render_manifest)
     g1_panel_label = "Unitree G1 MuJoCo model replay" if actual_g1_replay else "Unitree G1 schematic evidence"
     g1_visual_style = (
-        "mujoco-png-frame-sequence.v1"
+        "mujoco-video-replay.v1"
         if actual_g1_replay
         else "robot-body-schematic.v1"
     )
@@ -224,6 +225,7 @@ def build_scene_timeline(
             "available": False,
             "actual_g1_model_replay": actual_g1_replay,
             "visual_style": g1_visual_style,
+            "video": {"available": False, "path": None},
             "paths": [],
             "frame_count": 0,
         },
@@ -441,7 +443,9 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
     )
     g1_panel_role = "actual MuJoCo frame replay" if actual_g1_replay else "schematic evidence"
     g1_visual_style = (
-        "mujoco-png-frame-sequence.v1"
+        str(g1_sequence.get("visual_style"))
+        if actual_g1_replay and g1_sequence.get("visual_style")
+        else "mujoco-video-replay.v1"
         if actual_g1_replay
         else "robot-body-schematic.v1"
     )
@@ -552,6 +556,7 @@ def _render_public_html(scene: dict[str, Any], manifest: dict[str, Any]) -> str:
         <h2>{g1_panel_label}</h2>
         <span>{g1_panel_role}</span>
       </div>
+      <video id="g1ReplayVideo" class="g1-frame" muted playsinline preload="auto" aria-label="Unitree G1 MuJoCo model replay video" hidden></video>
       <img id="g1ReplayImage" class="g1-frame" alt="Unitree G1 MuJoCo model replay frame" hidden>
       <canvas id="g1Canvas" width="720" height="720" aria-label="{g1_panel_label}" data-g1-render-style="{g1_visual_style}"></canvas>
       <div class="meta">
@@ -572,12 +577,14 @@ const SCENE = {payload};
 const BONES = SCENE.bones || [];
 const smplxCanvas = document.getElementById("smplxCanvas");
 const g1Canvas = document.getElementById("g1Canvas");
+const g1ReplayVideo = document.getElementById("g1ReplayVideo");
 const g1ReplayImage = document.getElementById("g1ReplayImage");
 const referenceVideo = document.getElementById("referenceVideo");
 const playButton = document.getElementById("playButton");
 const timeline = document.getElementById("timeline");
 const frameReadout = document.getElementById("frameReadout");
 const g1Sequence = SCENE.g1_render_frame_sequence || {{}};
+const g1ReplayVideoInfo = g1Sequence.video || {{}};
 const referenceInfo = SCENE.reference_video || {{}};
 const frameCount = SCENE.tracks.smplx.frames.length;
 const fps = Number((SCENE.timing && SCENE.timing.fps) || (SCENE.track_metadata.smplx && SCENE.track_metadata.smplx.fps) || 25);
@@ -793,13 +800,21 @@ function drawPanel(canvas, trackId) {{
   else drawRobotModel(ctx, pose, bounds, canvas.width, canvas.height);
 }}
 
+function replayFrameCount(sequence) {{
+  const paths = Array.isArray(sequence.paths) ? sequence.paths : [];
+  const indices = Array.isArray(sequence.source_frame_indices) ? sequence.source_frame_indices : [];
+  const declared = Number(sequence.frame_count || 0);
+  return Math.max(paths.length, indices.length, Number.isFinite(declared) ? declared : 0);
+}}
+
 function replayIndexForSourceFrame(sequence, sourceFrame) {{
   const paths = Array.isArray(sequence.paths) ? sequence.paths : [];
-  if (!paths.length) return 0;
+  const count = replayFrameCount(sequence);
+  if (!count) return 0;
   const indices = sequence.source_frame_indices;
-  if (!Array.isArray(indices) || !indices.length) return Math.min(sourceFrame, paths.length - 1);
+  if (!Array.isArray(indices) || !indices.length) return Math.min(sourceFrame, count - 1);
   let low = 0;
-  let high = Math.min(indices.length, paths.length) - 1;
+  let high = Math.min(indices.length, count) - 1;
   let result = 0;
   while (low <= high) {{
     const mid = Math.floor((low + high) / 2);
@@ -811,7 +826,7 @@ function replayIndexForSourceFrame(sequence, sourceFrame) {{
       high = mid - 1;
     }}
   }}
-  return Math.min(result, paths.length - 1);
+  return Math.min(result, count - 1);
 }}
 
 function syncReferenceVideo() {{
@@ -830,14 +845,40 @@ function syncReferenceVideo() {{
   }}
 }}
 
+function syncG1ReplayVideo() {{
+  if (!g1ReplayVideo || !g1ReplayVideoInfo.available || !g1ReplayVideoInfo.path) return;
+  const replayFps = Number(g1Sequence.replay_fps || displayFps || fps);
+  if (!Number.isFinite(replayFps) || replayFps <= 0) return;
+  const replayIndex = replayIndexForSourceFrame(g1Sequence, frame);
+  let target = replayIndex / replayFps;
+  if (Number.isFinite(g1ReplayVideo.duration) && g1ReplayVideo.duration > 0) {{
+    target = Math.min(target, Math.max(0, g1ReplayVideo.duration - 0.04));
+  }}
+  if (Math.abs(g1ReplayVideo.currentTime - target) > 0.04) {{
+    try {{
+      g1ReplayVideo.currentTime = target;
+    }} catch (error) {{
+      return;
+    }}
+  }}
+}}
+
 function render() {{
   drawPanel(smplxCanvas, "smplx");
-  if (g1Sequence.available && Array.isArray(g1Sequence.paths) && g1Sequence.paths.length > 0) {{
+  if (g1ReplayVideoInfo.available && g1ReplayVideoInfo.path) {{
     g1Canvas.hidden = true;
+    g1ReplayImage.hidden = true;
+    g1ReplayVideo.hidden = false;
+    if (!g1ReplayVideo.getAttribute("src")) g1ReplayVideo.setAttribute("src", g1ReplayVideoInfo.path);
+    syncG1ReplayVideo();
+  }} else if (g1Sequence.available && Array.isArray(g1Sequence.paths) && g1Sequence.paths.length > 0) {{
+    g1Canvas.hidden = true;
+    g1ReplayVideo.hidden = true;
     g1ReplayImage.hidden = false;
     const index = replayIndexForSourceFrame(g1Sequence, frame);
     g1ReplayImage.src = g1Sequence.paths[index];
   }} else {{
+    g1ReplayVideo.hidden = true;
     g1ReplayImage.hidden = true;
     g1Canvas.hidden = false;
     drawPanel(g1Canvas, "g1");
@@ -874,6 +915,9 @@ timeline.addEventListener("input", (event) => {{
 if (referenceVideo) {{
   referenceVideo.addEventListener("loadedmetadata", render);
 }}
+if (g1ReplayVideo) {{
+  g1ReplayVideo.addEventListener("loadedmetadata", render);
+}}
 
 render();
 window.requestAnimationFrame(tick);
@@ -881,6 +925,87 @@ window.requestAnimationFrame(tick);
 </body>
 </html>
 """
+
+
+def _coerce_replay_fps(value: Any) -> float:
+    try:
+        fps = float(value)
+    except (TypeError, ValueError):
+        return 25.0
+    return fps if fps > 0 else 25.0
+
+
+def _write_g1_replay_video(
+    source_frame_paths: list[Path],
+    *,
+    out_dir: Path,
+    replay_fps: Any,
+) -> dict[str, Any]:
+    fps = _coerce_replay_fps(replay_fps)
+    video = {
+        "available": False,
+        "path": None,
+        "fps": fps,
+        "container": "mp4",
+        "codec": "h264",
+        "encoding": "ffmpeg-libx264-all-intra-yuv420p",
+        "frame_count": len(source_frame_paths),
+    }
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        return {**video, "reason": "ffmpeg not found on PATH"}
+    if not source_frame_paths:
+        return {**video, "reason": "no G1 replay PNG frames were provided"}
+
+    first = source_frame_paths[0]
+    frame_dir = first.parent
+    for index, path in enumerate(source_frame_paths):
+        expected = frame_dir / f"front-{index:06d}.png"
+        if path != expected:
+            return {
+                **video,
+                "reason": "G1 replay frames are not a contiguous front-%06d.png sequence",
+            }
+
+    destination = out_dir / "g1-replay-video" / "front.mp4"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    command = [
+        ffmpeg,
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-framerate",
+        f"{fps:g}",
+        "-i",
+        str(frame_dir / "front-%06d.png"),
+        "-vf",
+        "format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "23",
+        "-g",
+        "1",
+        "-movflags",
+        "+faststart",
+        str(destination),
+    ]
+    completed = subprocess.run(command, check=False, capture_output=True, text=True)
+    if completed.returncode != 0:
+        message = completed.stderr.strip() or completed.stdout.strip() or f"ffmpeg exited with {completed.returncode}"
+        return {**video, "reason": message}
+    if not destination.exists() or destination.stat().st_size == 0:
+        return {**video, "reason": "ffmpeg did not write a nonblank replay video"}
+    return {
+        **video,
+        "available": True,
+        "path": _relative_path(destination, out_dir),
+        "size_bytes": destination.stat().st_size,
+        "source_frame_count": len(source_frame_paths),
+    }
 
 
 def _attach_public_g1_replay_frames(
@@ -895,6 +1020,7 @@ def _attach_public_g1_replay_frames(
             "available": False,
             "actual_g1_model_replay": False,
             "visual_style": "robot-body-schematic.v1",
+            "video": {"available": False, "path": None},
             "paths": [],
             "frame_count": 0,
         }
@@ -907,26 +1033,43 @@ def _attach_public_g1_replay_frames(
     if not isinstance(source_paths, list) or not source_paths:
         raise ValueError("actual G1 replay render manifest is missing replay frame paths")
 
-    frame_dir = out_dir / "g1-replay-frames"
-    copied_paths: list[str] = []
-    frame_dir.mkdir(parents=True, exist_ok=True)
-    for index, reference in enumerate(source_paths):
+    source_frame_paths: list[Path] = []
+    for reference in source_paths:
         if not isinstance(reference, str) or not reference:
             raise ValueError("actual G1 replay frame paths must be non-empty strings")
         source = (g1_render_manifest_path.parent / reference).resolve()
         if not source.exists() or not source.read_bytes():
             raise ValueError(f"actual G1 replay frame is missing or blank: {source}")
-        destination = frame_dir / f"front-{index:06d}.png"
-        shutil.copyfile(source, destination)
-        copied_paths.append(_relative_path(destination, out_dir))
+        source_frame_paths.append(source)
+
+    replay_fps = replay.get("replay_fps") or replay.get("source_fps")
+    video = _write_g1_replay_video(
+        source_frame_paths,
+        out_dir=out_dir,
+        replay_fps=replay_fps,
+    )
+    copied_paths: list[str] = []
+    if not video.get("available"):
+        frame_dir = out_dir / "g1-replay-frames"
+        frame_dir.mkdir(parents=True, exist_ok=True)
+        for index, source in enumerate(source_frame_paths):
+            destination = frame_dir / f"front-{index:06d}.png"
+            shutil.copyfile(source, destination)
+            copied_paths.append(_relative_path(destination, out_dir))
+    else:
+        replay["paths"] = []
+        replay["video"] = video
+        replay["retained_public_media"] = "video"
 
     scene["g1_render_frame_sequence"] = {
         "available": True,
         "actual_g1_model_replay": True,
-        "visual_style": "mujoco-png-frame-sequence.v1",
+        "visual_style": "mujoco-video-replay.v1" if video.get("available") else "mujoco-png-frame-sequence.v1",
+        "evidence_style": "mujoco-png-frame-sequence.v1",
         "view": replay.get("view", "front"),
+        "video": video,
         "paths": copied_paths,
-        "frame_count": len(copied_paths),
+        "frame_count": len(source_frame_paths),
         "source_fps": replay.get("source_fps"),
         "replay_fps": replay.get("replay_fps"),
         "source_frame_count": replay.get("source_frame_count"),
@@ -1091,7 +1234,9 @@ def write_public_demo(
         else "Unitree G1 schematic evidence"
     )
     g1_visual_style = (
-        "mujoco-png-frame-sequence.v1"
+        str(g1_sequence.get("visual_style"))
+        if actual_g1_replay and g1_sequence.get("visual_style")
+        else "mujoco-video-replay.v1"
         if actual_g1_replay
         else "robot-body-schematic.v1"
     )
@@ -1180,6 +1325,7 @@ def write_public_demo(
                 "replay_fps": g1_sequence.get("replay_fps"),
                 "source_frame_count": g1_sequence.get("source_frame_count"),
                 "source_frame_indices": g1_sequence.get("source_frame_indices"),
+                "video": g1_sequence.get("video"),
                 "rendered_frame_paths": g1_sequence.get("paths", []),
             },
         },
@@ -1289,10 +1435,20 @@ def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
         raise ValueError("public demo teaching_html must define g1_replay metadata")
     actual_g1_replay = bool(g1_replay.get("actual_g1_model_replay"))
     if actual_g1_replay:
-        if g1_replay.get("visual_style") != "mujoco-png-frame-sequence.v1":
-            raise ValueError("actual G1 replay must use the MuJoCo PNG frame-sequence visual style")
-        if not isinstance(g1_replay.get("rendered_frame_paths"), list) or not g1_replay["rendered_frame_paths"]:
-            raise ValueError("actual G1 replay must expose rendered frame paths")
+        if g1_replay.get("visual_style") not in {"mujoco-video-replay.v1", "mujoco-png-frame-sequence.v1"}:
+            raise ValueError("actual G1 replay must use a supported MuJoCo replay visual style")
+        g1_video = g1_replay.get("video")
+        has_replay_video = (
+            isinstance(g1_video, dict)
+            and g1_video.get("available") is True
+            and isinstance(g1_video.get("path"), str)
+            and bool(g1_video.get("path"))
+        )
+        has_replay_frames = isinstance(g1_replay.get("rendered_frame_paths"), list) and bool(
+            g1_replay["rendered_frame_paths"]
+        )
+        if not has_replay_video and not has_replay_frames:
+            raise ValueError("actual G1 replay must expose a replay video or rendered frame paths")
     elif teaching_html.get("panels", {}).get("right", {}).get("label") != "Unitree G1 schematic evidence":
         raise ValueError("non-actual G1 public demo must label the right panel as schematic evidence")
 
@@ -1322,14 +1478,28 @@ def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
         sequence = scene.get("g1_render_frame_sequence")
         if not isinstance(sequence, dict) or sequence.get("actual_g1_model_replay") is not True:
             raise ValueError("scene must expose the actual G1 replay frame sequence")
-        if sequence.get("frame_count") != len(g1_replay["rendered_frame_paths"]):
+        rendered_frame_paths = g1_replay.get("rendered_frame_paths")
+        if isinstance(rendered_frame_paths, list) and rendered_frame_paths:
+            expected_frame_count = len(rendered_frame_paths)
+        else:
+            expected_frame_count = g1_replay.get("rendered_frame_count")
+        if sequence.get("frame_count") != expected_frame_count:
             raise ValueError("actual G1 replay frame counts differ between scene and public manifest")
-        for reference in g1_replay["rendered_frame_paths"]:
-            if not isinstance(reference, str) or not reference:
-                raise ValueError("actual G1 replay rendered frame paths must be non-empty strings")
-            frame_path = manifest_path.parent / reference
-            _require_nonblank_bytes(frame_path)
-            checked_extra_paths.append(frame_path)
+        g1_video = g1_replay.get("video")
+        if isinstance(g1_video, dict) and g1_video.get("available") is True:
+            video_reference = g1_video.get("path")
+            if not isinstance(video_reference, str) or not video_reference:
+                raise ValueError("actual G1 replay video path must be a non-empty string")
+            video_path = manifest_path.parent / video_reference
+            _require_nonblank_bytes(video_path)
+            checked_extra_paths.append(video_path)
+        if isinstance(rendered_frame_paths, list):
+            for reference in rendered_frame_paths:
+                if not isinstance(reference, str) or not reference:
+                    raise ValueError("actual G1 replay rendered frame paths must be non-empty strings")
+                frame_path = manifest_path.parent / reference
+                _require_nonblank_bytes(frame_path)
+                checked_extra_paths.append(frame_path)
     if manifest.get("rerun", {}).get("actual_rrd"):
         recording_bytes = _require_nonblank_bytes(recording_path)
         if recording_bytes.startswith(b"{"):
@@ -1355,6 +1525,12 @@ def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
             'data-panel="source"',
             'id="referenceVideo"',
             "syncReferenceVideo",
+        ])
+    g1_replay_video = g1_replay.get("video") if isinstance(g1_replay, dict) else None
+    if actual_g1_replay and isinstance(g1_replay_video, dict) and g1_replay_video.get("available") is True:
+        required_html_fragments.extend([
+            'id="g1ReplayVideo"',
+            "syncG1ReplayVideo",
         ])
     missing_fragments = [fragment for fragment in required_html_fragments if fragment not in html]
     if missing_fragments:

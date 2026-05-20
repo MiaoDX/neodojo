@@ -39,17 +39,19 @@ real Baduanjin G1 replay proof.
   handoffs, optional GMR artifact links, and a fail-closed routine HTML report.
   `routine assemble` defaults to a self-contained report directory when current
   GVHMR/GMR artifacts are present: overview `index.html` plus one phase report
-  per selected round. MuJoCo G1 replay PNG sequences default to 5 fps via
-  `ROUTINE_G1_REPLAY_FPS` / CLI `--g1-replay-fps`, keeping the Original video,
-  SMPL-X canvas, and G1 replay on one sampled playback cadence while preserving
-  frame-addressable evidence. `--index-only` preserves the compact
-  artifact-status index. This is orchestration metadata and local artifact
-  assembly, not evidence that the repo vendors or runs GVHMR/GMR locally.
-- Local Baduanjin one-round report size evidence in this workspace: 5 fps G1
-  replay writes 1015 PNGs and `326M` under `outputs/routines/baduanjin/html`;
-  10 fps writes 2030 PNGs and `372M` under
-  `outputs/routines/baduanjin/html-10fps`. The old full-source-rate replay was
-  5075 PNGs at roughly `510M`, so 5 fps is the current default tradeoff.
+  per selected round. MuJoCo G1 replay defaults to 5 fps via
+  `ROUTINE_G1_REPLAY_FPS` / CLI `--g1-replay-fps`, then each phase is encoded
+  to an MP4 for HTML playback so the Original video, SMPL-X canvas, and G1
+  replay stay on one sampled playback cadence. `--index-only` preserves the
+  compact artifact-status index. This is orchestration metadata and local
+  artifact assembly, not evidence that the repo vendors or runs GVHMR/GMR
+  locally.
+- Local Baduanjin one-round report size evidence in this workspace: default
+  5 fps G1 replay writes 8 phase MP4s, no retained replay PNG sequence, and
+  `289M` under `outputs/routines/baduanjin/html`; the G1 replay MP4s themselves
+  total about `10M`. The prior 5 fps PNG playback report was `326M`, the 10 fps
+  PNG playback report was `372M`, and the older full-source-rate replay was
+  roughly `510M`.
 - The default MuJoCo G1 render style now follows the actual roboharness
   `g1-reach` scene implementation: wrapped G1 MJCF scene, blue skybox gradient,
   gray/white checker floor, roboharness lights, original G1 materials, and
@@ -71,8 +73,9 @@ real Baduanjin G1 replay proof.
   `neodojo-real-demo-public-demo` artifact. By default this lane uses
   `samples/baduanjin-03-006-two-hands-80-92`, a committed derived JSON sample
   with source provenance, returned GVHMR SMPL-X joints, and normalized GMR
-  Unitree G1 joint angles. CI regenerates the G1 descriptor, MuJoCo PNG frames,
-  public HTML, and strict real-demo audit from those JSON artifacts.
+  Unitree G1 joint angles. CI regenerates the G1 descriptor, MuJoCo sampled
+  replay frames, G1 replay MP4, public HTML, and strict real-demo audit from
+  those JSON artifacts.
 - `make mujoco-backend-compare MODEL_DESCRIPTOR=... G1_TRACK=...` writes
   `outputs/g1-mujoco-backend-comparison/index.html`, a single manual review
   page comparing `egl`, `glfw`, and `osmesa` render outputs, timings, and setup
@@ -124,10 +127,11 @@ PYTHONPATH=src python -m neodojo routine smoke --routine-html outputs/routines/b
 
 The first `routine assemble` command is the default self-contained report path.
 Add `--model-descriptor ... --render-mujoco` when the local machine should build
-actual G1 Model Replay frames from imported GMR tracks. G1 replay frame
-sequences default to 5 fps; use `ROUTINE_G1_REPLAY_FPS=10` for Make or
-`--g1-replay-fps 10` for CLI when smoother G1 playback is worth the larger PNG
-tree. The `--index-only` variant writes only the compact artifact-status index.
+actual G1 Model Replay media from imported GMR tracks. G1 replay defaults to
+5 fps and is encoded to per-phase MP4 for HTML playback; use
+`ROUTINE_G1_REPLAY_FPS=10` for Make or `--g1-replay-fps 10` for CLI when
+smoother G1 playback is worth the larger media tree. The `--index-only` variant
+writes only the compact artifact-status index.
 
 Local real-conversion preparation and returned-artifact handling:
 
@@ -192,14 +196,14 @@ as supported until a new plan explicitly restores them:
 - Teaching playback HTML, interactive public-demo export with optional original
   video sync, fail-closed G1 schematic-vs-actual labels, optional Viser local
   runtime contract, browser smoke, and capture-bundle evidence.
-- Optional roboharness G1 MJCF descriptor registration and MuJoCo frame-sequence
-  replay contract for actual G1 public-demo frames when local dependencies and
-  assets are supplied; locally verified for the ignored `80s-92s` Baduanjin
-  proof artifact set.
+- Optional roboharness G1 MJCF descriptor registration and MuJoCo sampled replay
+  contract for actual G1 public-demo video when local dependencies and assets
+  are supplied; locally verified for the ignored `80s-92s` Baduanjin proof
+  artifact set.
 - A committed derived JSON sample at
   `samples/baduanjin-03-006-two-hands-80-92` plus a small trimmed source clip
   that lets CI regenerate the Baduanjin real-demo public HTML, original-video
-  panel, README GIF, and actual G1 MuJoCo replay frames without native
+  panel, README GIF, and actual G1 MuJoCo replay video without native
   checkpoints, pickles, or rendered PNG outputs.
 - Local GPU-run preparation that writes a source materialization manifest, GVHMR
   export template, `export_neodojo_gvhmr.py`, and `run_gvhmr_neodojo.sh` under

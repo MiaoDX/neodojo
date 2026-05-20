@@ -692,7 +692,7 @@ def _artifact_source_status(artifact: Path | None, source_materialization: Path)
 
 
 def _dedupe_phase_report_replay_frames(phase_report_manifest_path: Path) -> list[Path]:
-    """Point render evidence at the public replay frames and remove duplicate PNGs."""
+    """Point render evidence at public replay media and remove duplicate PNGs."""
 
     phase_report = _load_json_object(phase_report_manifest_path, "phase report manifest")
     g1_render_reference = phase_report.get("g1_render")
@@ -715,6 +715,29 @@ def _dedupe_phase_report_replay_frames(phase_report_manifest_path: Path) -> list
     g1_replay = teaching_html.get("g1_replay")
     if not isinstance(g1_replay, dict) or g1_replay.get("actual_g1_model_replay") is not True:
         return []
+    public_dir = public_manifest_path.parent
+    replay_dir = render_manifest_path.parent / "frames" / "replay"
+    public_video = g1_replay.get("video")
+    if isinstance(public_video, dict) and public_video.get("available") is True:
+        public_video_ref = public_video.get("path")
+        if not isinstance(public_video_ref, str) or not public_video_ref:
+            return []
+        public_video_path = public_dir / public_video_ref
+        if not public_video_path.exists() or public_video_path.stat().st_size == 0:
+            return []
+        replay["video"] = {
+            **public_video,
+            "path": _relative_path(public_video_path, render_manifest_path.parent),
+        }
+        replay["paths"] = []
+        replay["paths_deduplicated_to_public_demo"] = True
+        replay["deduplicated_original_frame_dir"] = _relative_path(replay_dir, render_manifest_path.parent)
+        replay["retained_public_media"] = "video"
+        _write_json(render_manifest_path, render_manifest)
+        if replay_dir.exists() and replay_dir.is_dir():
+            shutil.rmtree(replay_dir)
+        return [render_manifest_path, public_video_path]
+
     public_frame_refs = g1_replay.get("rendered_frame_paths")
     original_frame_refs = replay.get("paths")
     if not isinstance(public_frame_refs, list) or not public_frame_refs:
@@ -722,7 +745,6 @@ def _dedupe_phase_report_replay_frames(phase_report_manifest_path: Path) -> list
     if not isinstance(original_frame_refs, list) or len(public_frame_refs) != len(original_frame_refs):
         return []
 
-    public_dir = public_manifest_path.parent
     rewritten_refs: list[str] = []
     for reference in public_frame_refs:
         if not isinstance(reference, str) or not reference:
@@ -732,7 +754,6 @@ def _dedupe_phase_report_replay_frames(phase_report_manifest_path: Path) -> list
             return []
         rewritten_refs.append(_relative_path(public_frame, render_manifest_path.parent))
 
-    replay_dir = render_manifest_path.parent / "frames" / "replay"
     replay["paths"] = rewritten_refs
     replay["paths_deduplicated_to_public_demo"] = True
     replay["deduplicated_original_frame_dir"] = _relative_path(replay_dir, render_manifest_path.parent)

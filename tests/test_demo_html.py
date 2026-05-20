@@ -1590,7 +1590,12 @@ class DemoHtmlTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "at least one frame"):
             _sample_frame_indices(0, 4)
 
-    def test_public_demo_consumes_actual_g1_replay_frames_when_available(self) -> None:
+    def test_public_demo_consumes_actual_g1_replay_video_when_available(self) -> None:
+        def fake_ffmpeg(command, *, check, capture_output, text):
+            del check, capture_output, text
+            Path(command[-1]).write_bytes(b"fixture g1 replay mp4")
+            return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             model_file = root / "g1_fixture.xml"
@@ -1648,15 +1653,21 @@ class DemoHtmlTests(unittest.TestCase):
                 g1.track_manifest_path,
             )
 
-            result = write_public_demo(
-                playback_manifest_path=playback.manifest_path,
-                g1_render_manifest_path=render_manifest,
-                recording_path=root / "public-demo" / "neodojo-demo.rrd",
-            )
+            with patch("neodojo.public_demo.shutil.which", return_value="/usr/bin/ffmpeg"), patch(
+                "neodojo.public_demo.subprocess.run",
+                side_effect=fake_ffmpeg,
+            ):
+                result = write_public_demo(
+                    playback_manifest_path=playback.manifest_path,
+                    g1_render_manifest_path=render_manifest,
+                    recording_path=root / "public-demo" / "neodojo-demo.rrd",
+                )
             smoke = smoke_check_public_demo(root / "public-demo")
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
             scene = json.loads(result.scene_path.read_text(encoding="utf-8"))
             html = result.html_path.read_text(encoding="utf-8")
+            replay_video = root / "public-demo" / "g1-replay-video" / "front.mp4"
+            replay_video_exists = replay_video.exists()
             copied_frame_exists = (root / "public-demo" / "g1-replay-frames" / "front-000000.png").exists()
 
         self.assertEqual(
@@ -1666,19 +1677,26 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(manifest["teaching_html"]["g1_replay"]["actual_g1_model_replay"])
         self.assertEqual(
             manifest["teaching_html"]["g1_replay"]["visual_style"],
-            "mujoco-png-frame-sequence.v1",
+            "mujoco-video-replay.v1",
         )
-        self.assertEqual(len(manifest["teaching_html"]["g1_replay"]["rendered_frame_paths"]), 5)
+        self.assertEqual(manifest["teaching_html"]["g1_replay"]["rendered_frame_count"], 5)
+        self.assertEqual(manifest["teaching_html"]["g1_replay"]["rendered_frame_paths"], [])
+        self.assertTrue(manifest["teaching_html"]["g1_replay"]["video"]["available"])
+        self.assertEqual(manifest["teaching_html"]["g1_replay"]["video"]["path"], "g1-replay-video/front.mp4")
         self.assertEqual(manifest["teaching_html"]["g1_replay"]["replay_fps"], 12)
         self.assertEqual(manifest["teaching_html"]["g1_replay"]["source_frame_indices"], [0, 2, 4, 6, 8])
         self.assertTrue(scene["g1_render_frame_sequence"]["available"])
         self.assertEqual(scene["g1_render_frame_sequence"]["replay_fps"], 12)
-        self.assertTrue(copied_frame_exists)
+        self.assertTrue(scene["g1_render_frame_sequence"]["video"]["available"])
+        self.assertTrue(replay_video_exists)
+        self.assertFalse(copied_frame_exists)
+        self.assertIn("g1ReplayVideo", html)
         self.assertIn("g1ReplayImage", html)
         self.assertIn("replayIndexForSourceFrame", html)
+        self.assertIn("syncG1ReplayVideo", html)
         self.assertIn("displayFps", html)
         self.assertIn("Unitree G1 MuJoCo model replay", html)
-        self.assertEqual(len(smoke.checked_paths), 9)
+        self.assertIn(replay_video, smoke.checked_paths)
 
     @unittest.skipUnless(importlib.util.find_spec("rerun"), "rerun optional dependency is not installed")
     def test_public_demo_can_write_true_rerun_recording(self) -> None:

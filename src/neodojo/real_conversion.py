@@ -1792,22 +1792,33 @@ def audit_real_conversion_completion(
     )
 
     public_g1_replay = teaching_html.get("g1_replay") if isinstance(teaching_html, dict) else None
-    public_consumes_replay_frames = bool(
+    public_g1_replay_video = public_g1_replay.get("video") if isinstance(public_g1_replay, dict) else None
+    public_consumes_replay = bool(
         isinstance(public_g1_replay, dict)
         and public_g1_replay.get("actual_g1_model_replay") is True
-        and public_g1_replay.get("visual_style") == "mujoco-png-frame-sequence.v1"
-        and isinstance(public_g1_replay.get("rendered_frame_paths"), list)
-        and len(public_g1_replay["rendered_frame_paths"]) > 0
+        and public_g1_replay.get("visual_style") in {"mujoco-video-replay.v1", "mujoco-png-frame-sequence.v1"}
+        and (
+            (
+                isinstance(public_g1_replay_video, dict)
+                and public_g1_replay_video.get("available") is True
+                and isinstance(public_g1_replay_video.get("path"), str)
+                and bool(public_g1_replay_video.get("path"))
+            )
+            or (
+                isinstance(public_g1_replay.get("rendered_frame_paths"), list)
+                and len(public_g1_replay["rendered_frame_paths"]) > 0
+            )
+        )
     )
     _audit_add_check(
         checks,
-        name="public_demo_consumes_g1_replay_frames",
-        passed=real_demo_imported and public_consumes_replay_frames,
+        name="public_demo_consumes_g1_replay",
+        passed=real_demo_imported and public_consumes_replay,
         path=public_demo_manifest,
         message=(
-            "Public teaching HTML manifest consumes the actual G1 MuJoCo frame sequence."
-            if real_demo_imported and public_consumes_replay_frames
-            else "Public teaching HTML manifest does not consume actual G1 MuJoCo replay frames."
+            "Public teaching HTML manifest consumes the actual G1 MuJoCo replay."
+            if real_demo_imported and public_consumes_replay
+            else "Public teaching HTML manifest does not consume actual G1 MuJoCo replay."
         ),
     )
 
@@ -1823,7 +1834,7 @@ def audit_real_conversion_completion(
         g1_imported_joint_angles
         and g1_descriptor_non_fixture
         and g1_render_actual_replay
-        and public_consumes_replay_frames
+        and public_consumes_replay
     )
     complete = (
         inputs_verified
@@ -1861,9 +1872,9 @@ def audit_real_conversion_completion(
     elif not g1_render_actual_replay:
         status = "g1_mujoco_replay_missing"
         next_action = "Render a nonblank, changing MuJoCo G1 PNG frame sequence from imported GMR joint angles."
-    elif not public_consumes_replay_frames:
+    elif not public_consumes_replay:
         status = "public_demo_g1_replay_missing"
-        next_action = "Regenerate the public teaching HTML so the right panel consumes the G1 replay PNG frames."
+        next_action = "Regenerate the public teaching HTML so the right panel consumes the G1 replay video or frames."
     else:
         status = "real_artifact_ready_for_import"
         next_action = "Run make real-artifact-intake or make demo-real with the validated returned export."
@@ -1904,7 +1915,12 @@ def audit_real_conversion_completion(
             "non_fixture_mjcf_descriptor": g1_descriptor_non_fixture,
             "render_manifest": _as_posix(g1_render_manifest),
             "actual_mujoco_frame_sequence": g1_render_actual_replay,
-            "public_demo_consumes_frames": public_consumes_replay_frames,
+            "public_demo_consumes_replay": public_consumes_replay,
+            "public_demo_consumes_video": bool(
+                isinstance(public_g1_replay_video, dict)
+                and public_g1_replay_video.get("available") is True
+            ),
+            "public_demo_consumes_frames": public_consumes_replay,
         },
         "checks": checks,
         "next_action": next_action,
