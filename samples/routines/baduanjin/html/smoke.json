@@ -1,0 +1,28 @@
+{
+  "checked_paths": [
+    "samples/routines/baduanjin/html/manifest.json",
+    "samples/routines/baduanjin/html/index.html",
+    "samples/routines/baduanjin/html/clips/two_hands_hold_up_heavens.mp4",
+    "samples/routines/baduanjin/html/phases/two_hands_hold_up_heavens/report/public-demo/index.html",
+    "samples/routines/baduanjin/html/clips/drawing_bow.mp4",
+    "samples/routines/baduanjin/html/phases/drawing_bow/report/public-demo/index.html",
+    "samples/routines/baduanjin/html/clips/separate_heaven_earth.mp4",
+    "samples/routines/baduanjin/html/phases/separate_heaven_earth/report/public-demo/index.html",
+    "samples/routines/baduanjin/html/clips/wise_owl_gazes_backward.mp4",
+    "samples/routines/baduanjin/html/phases/wise_owl_gazes_backward/report/public-demo/index.html",
+    "samples/routines/baduanjin/html/clips/sway_head_shake_tail.mp4",
+    "samples/routines/baduanjin/html/phases/sway_head_shake_tail/report/public-demo/index.html",
+    "samples/routines/baduanjin/html/clips/two_hands_hold_feet.mp4",
+    "samples/routines/baduanjin/html/phases/two_hands_hold_feet/report/public-demo/index.html",
+    "samples/routines/baduanjin/html/clips/clench_fists_glare.mp4",
+    "samples/routines/baduanjin/html/phases/clench_fists_glare/report/public-demo/index.html",
+    "samples/routines/baduanjin/html/clips/seven_bounces.mp4",
+    "samples/routines/baduanjin/html/phases/seven_bounces/report/public-demo/index.html"
+  ],
+  "g1_scoring_allowed": false,
+  "phase_count": 8,
+  "routine": "baduanjin",
+  "schema": "neodojo.routine_smoke.v1",
+  "scoring_source": "smplx",
+  "status": "validated"
+}

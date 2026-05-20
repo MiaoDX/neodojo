@@ -34,10 +34,19 @@ tracks，重定向到仿真 humanoid，再从多角度渲染，并叠加 joint p
 | Artifact | Link |
 | --- | --- |
 | 在线 fixture demo | [`miaodx.com/neodojo`](https://miaodx.com/neodojo/) |
+| 完整套路 gallery | [`miaodx.com/neodojo/samples/routines`](https://miaodx.com/neodojo/samples/routines/) |
+| 完整八段锦 report | [`samples/routines/baduanjin/html`](https://miaodx.com/neodojo/samples/routines/baduanjin/html/) |
+| 完整五禽戏 report | [`samples/routines/wuqinxi/html`](https://miaodx.com/neodojo/samples/routines/wuqinxi/html/) |
+| 完整易筋经 report | [`samples/routines/yijinjing/html`](https://miaodx.com/neodojo/samples/routines/yijinjing/html/) |
 | CI fixture HTML | [`public-demo` workflow](https://github.com/MiaoDX/neodojo/actions/workflows/public-demo.yml) 里的 `neodojo-public-demo` |
 | CI sample-backed real HTML | 同一 workflow 里的 `neodojo-real-demo-public-demo` |
 | 本地 sample-backed real HTML | `make ci-real-demo` 后的 `outputs/real-demo/public-demo/index.html` |
 | 本地整套套路 HTML | 运行 routine split/assemble 命令后的 `outputs/routines/<routine>/html/index.html` |
+
+已提交的完整套路 samples 位于 [`samples/routines`](samples/routines)，并由 Pages
+workflow 发布。它们是 lean self-contained reports：每个 selected round 都包含
+Original video clips、SMPL-X Teaching Track，以及 5 fps Unitree G1 Model Replay
+MP4 media。
 
 提交的 Baduanjin sample 包含一个小的 trimmed source clip，以及重建 demo 所需的
 GVHMR/GMR 派生 JSON。更大的 source videos 后续用 helper scripts 下载到本地测试，

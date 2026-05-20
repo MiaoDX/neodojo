@@ -12,8 +12,9 @@ real Baduanjin G1 replay proof.
   Viser UI.
 - Teaching feedback is based on the SMPL-X track. The Unitree G1 track is for
   visualization and ecosystem fit only.
-- The live Pages demo remains fixture-only at
-  `https://miaodx.com/neodojo/`.
+- The live Pages root demo remains fixture-only at `https://miaodx.com/neodojo/`.
+  The same Pages deployment now also publishes committed full routine samples
+  under `https://miaodx.com/neodojo/samples/routines/`.
 - The generated public-demo `index.html` is an interactive synchronized teaching
   replay: SMPL-X skeleton teaching track plus Unitree G1 visual track by
   default, and an optional Original video panel when a local reference clip is
@@ -67,6 +68,11 @@ real Baduanjin G1 replay proof.
   SMPL-X Teaching Track, and G1 MP4 playback. `outputs/routines/wuqinxi/html`
   is `45M` with 10 G1 MP4s; `outputs/routines/yijinjing/html` is `56M` with 12
   G1 MP4s. Neither report retains MuJoCo replay PNG frame trees by default.
+- The committed routine sample reports live under `samples/routines`: Baduanjin
+  is `36M`, Wuqinxi is `45M`, and Yi Jin Jing is `56M`. These are publishable
+  static playback results, not the full local GPU workspace: native GVHMR `.pt`
+  files, GMR `.pkl` files, logs, source full videos, checkpoints, and MuJoCo PNG
+  frame trees remain uncommitted.
 - The default MuJoCo G1 render style now follows the actual roboharness
   `g1-reach` scene implementation: wrapped G1 MJCF scene, blue skybox gradient,
   gray/white checker floor, roboharness lights, original G1 materials, and
@@ -82,7 +88,9 @@ real Baduanjin G1 replay proof.
   for GPU/self-hosted runners with working EGL.
 - `.github/workflows/public-demo.yml` has a focused MuJoCo smoke lane that
   installs the `real-g1-replay` extra and validates the G1 renderer through
-  `xvfb-run -a env MUJOCO_GL=glfw`.
+  `xvfb-run -a env MUJOCO_GL=glfw`. Its Pages artifact is assembled into
+  `outputs/pages-site`, with the fixture public demo at the root and committed
+  routine samples copied under `samples/routines/`.
 - The same workflow runs `make ci-real-demo` and uploads
   `outputs/real-demo/public-demo/index.html` as the
   `neodojo-real-demo-public-demo` artifact. By default this lane uses

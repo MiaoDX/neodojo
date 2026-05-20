@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>neodojo routine replay - Wu Qin Xi</title>
+  <style>
+    :root { --bg:#eef2f6; --panel:#fff; --ink:#17212b; --muted:#5d6875; --line:#d8e0e8; --smplx:#147c72; --g1:#b84e32; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    header { padding:18px 22px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+    h1,h2,h3,p { margin:0; }
+    h1 { font-size:24px; }
+    .subtitle { margin-top:4px; color:var(--muted); font-size:14px; }
+    .top-badges,.badges { display:flex; flex-wrap:wrap; gap:8px; }
+    .top-badges span,.badges span { border:1px solid var(--line); background:#f9fbfd; border-radius:999px; padding:7px 10px; font-size:12px; font-weight:800; color:#334155; }
+    nav { position:sticky; top:0; z-index:2; display:flex; overflow-x:auto; gap:8px; padding:10px 16px; background:rgba(255,255,255,.94); border-bottom:1px solid var(--line); }
+    nav a { flex:0 0 auto; color:var(--ink); text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:13px; font-weight:750; background:#fff; }
+    main { padding:16px; display:grid; gap:16px; }
+    .phase { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; display:grid; gap:12px; }
+    .phase-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+    h2 { font-size:20px; }
+    h2 span { display:block; margin-top:3px; color:var(--muted); font-size:14px; font-weight:650; }
+    .panels { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+    article { border:1px solid var(--line); border-radius:8px; padding:12px; min-width:0; display:grid; gap:10px; align-content:start; background:#fbfcfe; }
+    h3 { font-size:16px; }
+    video { width:100%; aspect-ratio:16/9; background:#101820; border-radius:8px; }
+    .missing,.open-report,.artifact-status { min-height:88px; display:grid; place-items:center; text-align:center; border:1px dashed #b9c5d0; border-radius:8px; padding:12px; color:var(--muted); background:#fff; }
+    .open-report { color:var(--smplx); font-weight:800; text-decoration:none; }
+    .g1-report { color:var(--g1); }
+    .artifact-status { gap:7px; }
+    .artifact-status a { color:var(--smplx); font-weight:850; text-decoration:none; }
+    .artifact-status span { font-size:12px; }
+    .missing-inline { font-weight:800; color:var(--muted); }
+    details { border-top:1px solid var(--line); padding-top:10px; }
+    summary { cursor:pointer; font-weight:800; }
+    ul { display:grid; gap:7px; padding-left:0; list-style:none; }
+    li { display:flex; justify-content:space-between; gap:12px; color:var(--muted); }
+    code { color:var(--ink); word-break:break-all; text-align:right; }
+    @media (max-width: 980px) { header,.phase-head { display:grid; } .panels { grid-template-columns:1fr; } li { display:grid; } code { text-align:left; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>五禽戏 · Wu Qin Xi</h1>
+      <p class="subtitle">Self-contained report directory: one overview plus one synchronized phase report per selected round.</p>
+    </div>
+    <div class="top-badges">
+      <span>SMPL-X scoring</span>
+      <span>G1 non-scoring</span>
+      <span>Local-only media</span>
+      <span>lean playback</span>
+      <span>Complete phase reports</span>
+      <span>G1 Model Replay complete</span>
+    </div>
+  </header>
+  <nav aria-label="Phase navigation"><a href="#phase-tiger_lifting">1. 虎举 · Tiger Lifting</a>
+<a href="#phase-tiger_pouncing">2. 虎扑 · Tiger Pouncing</a>
+<a href="#phase-deer_colliding">3. 鹿抵 · Deer Colliding</a>
+<a href="#phase-deer_running">4. 鹿奔 · Deer Running</a>
+<a href="#phase-bear_rotating">5. 熊运 · Bear Rotating</a>
+<a href="#phase-bear_swaying">6. 熊晃 · Bear Swaying</a>
+<a href="#phase-ape_lifting">7. 猿提 · Ape Lifting</a>
+<a href="#phase-ape_plucking">8. 猿摘 · Ape Plucking</a>
+<a href="#phase-bird_stretching">9. 鸟伸 · Bird Stretching</a>
+<a href="#phase-bird_flying">10. 鸟飞 · Bird Flying</a></nav>
+  <main>
+    <section id="phase-tiger_lifting" class="phase">
+      <div class="phase-head">
+        <h2>1. 虎举 <span>Tiger Lifting</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/tiger_lifting.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/tiger_lifting/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/tiger_lifting/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/tiger_lifting/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/tiger_lifting/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/tiger_lifting/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/tiger_lifting/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-tiger_pouncing" class="phase">
+      <div class="phase-head">
+        <h2>2. 虎扑 <span>Tiger Pouncing</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/tiger_pouncing.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/tiger_pouncing/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/tiger_pouncing/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/tiger_pouncing/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/tiger_pouncing/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/tiger_pouncing/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/tiger_pouncing/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-deer_colliding" class="phase">
+      <div class="phase-head">
+        <h2>3. 鹿抵 <span>Deer Colliding</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/deer_colliding.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/deer_colliding/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/deer_colliding/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/deer_colliding/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/deer_colliding/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/deer_colliding/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/deer_colliding/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-deer_running" class="phase">
+      <div class="phase-head">
+        <h2>4. 鹿奔 <span>Deer Running</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/deer_running.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/deer_running/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/deer_running/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/deer_running/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/deer_running/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/deer_running/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/deer_running/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-bear_rotating" class="phase">
+      <div class="phase-head">
+        <h2>5. 熊运 <span>Bear Rotating</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/bear_rotating.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/bear_rotating/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/bear_rotating/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/bear_rotating/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/bear_rotating/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/bear_rotating/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/bear_rotating/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-bear_swaying" class="phase">
+      <div class="phase-head">
+        <h2>6. 熊晃 <span>Bear Swaying</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/bear_swaying.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/bear_swaying/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/bear_swaying/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/bear_swaying/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/bear_swaying/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/bear_swaying/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/bear_swaying/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-ape_lifting" class="phase">
+      <div class="phase-head">
+        <h2>7. 猿提 <span>Ape Lifting</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/ape_lifting.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/ape_lifting/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/ape_lifting/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/ape_lifting/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/ape_lifting/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/ape_lifting/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/ape_lifting/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-ape_plucking" class="phase">
+      <div class="phase-head">
+        <h2>8. 猿摘 <span>Ape Plucking</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/ape_plucking.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/ape_plucking/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/ape_plucking/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/ape_plucking/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/ape_plucking/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/ape_plucking/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/ape_plucking/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-bird_stretching" class="phase">
+      <div class="phase-head">
+        <h2>9. 鸟伸 <span>Bird Stretching</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/bird_stretching.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/bird_stretching/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/bird_stretching/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/bird_stretching/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/bird_stretching/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/bird_stretching/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/bird_stretching/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-bird_flying" class="phase">
+      <div class="phase-head">
+        <h2>10. 鸟飞 <span>Bird Flying</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/bird_flying.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/bird_flying/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/bird_flying/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/bird_flying/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/bird_flying/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/bird_flying/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/bird_flying/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+  </main>
+</body>
+</html>

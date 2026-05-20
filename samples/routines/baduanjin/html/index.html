@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>neodojo routine replay - Baduanjin</title>
+  <style>
+    :root { --bg:#eef2f6; --panel:#fff; --ink:#17212b; --muted:#5d6875; --line:#d8e0e8; --smplx:#147c72; --g1:#b84e32; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    header { padding:18px 22px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+    h1,h2,h3,p { margin:0; }
+    h1 { font-size:24px; }
+    .subtitle { margin-top:4px; color:var(--muted); font-size:14px; }
+    .top-badges,.badges { display:flex; flex-wrap:wrap; gap:8px; }
+    .top-badges span,.badges span { border:1px solid var(--line); background:#f9fbfd; border-radius:999px; padding:7px 10px; font-size:12px; font-weight:800; color:#334155; }
+    nav { position:sticky; top:0; z-index:2; display:flex; overflow-x:auto; gap:8px; padding:10px 16px; background:rgba(255,255,255,.94); border-bottom:1px solid var(--line); }
+    nav a { flex:0 0 auto; color:var(--ink); text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:13px; font-weight:750; background:#fff; }
+    main { padding:16px; display:grid; gap:16px; }
+    .phase { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; display:grid; gap:12px; }
+    .phase-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+    h2 { font-size:20px; }
+    h2 span { display:block; margin-top:3px; color:var(--muted); font-size:14px; font-weight:650; }
+    .panels { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+    article { border:1px solid var(--line); border-radius:8px; padding:12px; min-width:0; display:grid; gap:10px; align-content:start; background:#fbfcfe; }
+    h3 { font-size:16px; }
+    video { width:100%; aspect-ratio:16/9; background:#101820; border-radius:8px; }
+    .missing,.open-report,.artifact-status { min-height:88px; display:grid; place-items:center; text-align:center; border:1px dashed #b9c5d0; border-radius:8px; padding:12px; color:var(--muted); background:#fff; }
+    .open-report { color:var(--smplx); font-weight:800; text-decoration:none; }
+    .g1-report { color:var(--g1); }
+    .artifact-status { gap:7px; }
+    .artifact-status a { color:var(--smplx); font-weight:850; text-decoration:none; }
+    .artifact-status span { font-size:12px; }
+    .missing-inline { font-weight:800; color:var(--muted); }
+    details { border-top:1px solid var(--line); padding-top:10px; }
+    summary { cursor:pointer; font-weight:800; }
+    ul { display:grid; gap:7px; padding-left:0; list-style:none; }
+    li { display:flex; justify-content:space-between; gap:12px; color:var(--muted); }
+    code { color:var(--ink); word-break:break-all; text-align:right; }
+    @media (max-width: 980px) { header,.phase-head { display:grid; } .panels { grid-template-columns:1fr; } li { display:grid; } code { text-align:left; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>八段锦 · Baduanjin</h1>
+      <p class="subtitle">Self-contained report directory: one overview plus one synchronized phase report per selected round.</p>
+    </div>
+    <div class="top-badges">
+      <span>SMPL-X scoring</span>
+      <span>G1 non-scoring</span>
+      <span>Local-only media</span>
+      <span>lean playback</span>
+      <span>Complete phase reports</span>
+      <span>G1 Model Replay complete</span>
+    </div>
+  </header>
+  <nav aria-label="Phase navigation"><a href="#phase-two_hands_hold_up_heavens">1. 两手托天理三焦 · Two Hands Hold Up the Heavens</a>
+<a href="#phase-drawing_bow">2. 左右开弓似射雕 · Drawing the Bow to Shoot the Hawk</a>
+<a href="#phase-separate_heaven_earth">3. 调理脾胃须单举 · Separate Heaven and Earth</a>
+<a href="#phase-wise_owl_gazes_backward">4. 五劳七伤往后瞧 · Wise Owl Gazes Backward</a>
+<a href="#phase-sway_head_shake_tail">5. 摇头摆尾去心火 · Sway the Head and Shake the Tail</a>
+<a href="#phase-two_hands_hold_feet">6. 两手攀足固肾腰 · Two Hands Hold the Feet</a>
+<a href="#phase-clench_fists_glare">7. 攒拳怒目增气力 · Clench Fists and Glare Fiercely</a>
+<a href="#phase-seven_bounces">8. 背后七颠百病消 · Seven Bounces</a></nav>
+  <main>
+    <section id="phase-two_hands_hold_up_heavens" class="phase">
+      <div class="phase-head">
+        <h2>1. 两手托天理三焦 <span>Two Hands Hold Up the Heavens</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/two_hands_hold_up_heavens.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/two_hands_hold_up_heavens/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/two_hands_hold_up_heavens/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/two_hands_hold_up_heavens/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/two_hands_hold_up_heavens/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/two_hands_hold_up_heavens/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/two_hands_hold_up_heavens/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-drawing_bow" class="phase">
+      <div class="phase-head">
+        <h2>2. 左右开弓似射雕 <span>Drawing the Bow to Shoot the Hawk</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/drawing_bow.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/drawing_bow/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/drawing_bow/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/drawing_bow/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/drawing_bow/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/drawing_bow/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/drawing_bow/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-separate_heaven_earth" class="phase">
+      <div class="phase-head">
+        <h2>3. 调理脾胃须单举 <span>Separate Heaven and Earth</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/separate_heaven_earth.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/separate_heaven_earth/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/separate_heaven_earth/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/separate_heaven_earth/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/separate_heaven_earth/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/separate_heaven_earth/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/separate_heaven_earth/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-wise_owl_gazes_backward" class="phase">
+      <div class="phase-head">
+        <h2>4. 五劳七伤往后瞧 <span>Wise Owl Gazes Backward</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/wise_owl_gazes_backward.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/wise_owl_gazes_backward/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/wise_owl_gazes_backward/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/wise_owl_gazes_backward/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/wise_owl_gazes_backward/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/wise_owl_gazes_backward/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/wise_owl_gazes_backward/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-sway_head_shake_tail" class="phase">
+      <div class="phase-head">
+        <h2>5. 摇头摆尾去心火 <span>Sway the Head and Shake the Tail</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/sway_head_shake_tail.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/sway_head_shake_tail/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/sway_head_shake_tail/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/sway_head_shake_tail/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/sway_head_shake_tail/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/sway_head_shake_tail/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/sway_head_shake_tail/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-two_hands_hold_feet" class="phase">
+      <div class="phase-head">
+        <h2>6. 两手攀足固肾腰 <span>Two Hands Hold the Feet</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/two_hands_hold_feet.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/two_hands_hold_feet/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/two_hands_hold_feet/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/two_hands_hold_feet/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/two_hands_hold_feet/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/two_hands_hold_feet/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/two_hands_hold_feet/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-clench_fists_glare" class="phase">
+      <div class="phase-head">
+        <h2>7. 攒拳怒目增气力 <span>Clench Fists and Glare Fiercely</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/clench_fists_glare.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/clench_fists_glare/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/clench_fists_glare/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/clench_fists_glare/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/clench_fists_glare/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/clench_fists_glare/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/clench_fists_glare/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+
+    <section id="phase-seven_bounces" class="phase">
+      <div class="phase-head">
+        <h2>8. 背后七颠百病消 <span>Seven Bounces</span></h2>
+        <div class="badges">
+          <span>original clip available</span>
+          <span>smplx teaching track generated</span>
+          <span>g1 model replay generated non scoring</span>
+        </div>
+      </div>
+      <div class="panels">
+        <article>
+          <h3>Original clip</h3>
+          <video src="clips/seven_bounces.mp4" controls playsinline preload="metadata"></video>
+        </article>
+        <article>
+          <h3>SMPL-X skeleton teaching track</h3>
+          <p>Teaching feedback and scoring source: <strong>SMPL-X</strong>.</p>
+          <a class="open-report" href="phases/seven_bounces/report/public-demo/index.html">Open phase report</a>
+        </article>
+        <article>
+          <h3>Unitree G1 visual track</h3>
+          <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
+          <a class="open-report g1-report" href="phases/seven_bounces/report/public-demo/index.html">G1 Model Replay</a>
+        </article>
+      </div>
+      <details>
+        <summary>Provenance</summary>
+        <ul><li><span>source materialization</span><code>../source/seven_bounces/source-materialization.json</code></li>
+<li><span>GVHMR JSON</span><code>../gvhmr-runs/seven_bounces/gvhmr-smplx-joints.json</code></li>
+<li><span>GMR JSON</span><code>../gmr-json/seven_bounces/normalized/gmr-unitree-g1.normalized.json</code></li>
+<li><span>phase report</span><code>phases/seven_bounces/report/public-demo/index.html</code></li>
+<li><span>phase report status</span><code>phase report generated</code></li></ul>
+      </details>
+    </section>
+  </main>
+</body>
+</html>

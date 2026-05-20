@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img">
+<style>text{font-family:Inter,Arial,sans-serif}.title{font-size:30px;font-weight:760;fill:#17212b}.muted{font-size:16px;fill:#66717f}.badge{font-size:14px;font-weight:760;fill:#b54708}</style>
+<rect width="1280" height="720" fill="#eef2f6"/>
+<rect x="32" y="28" width="1216" height="86" rx="8" fill="#ffffff" stroke="#d8e0e8"/>
+<text x="56" y="68" class="title">neodojo public fixture demo</text>
+<text x="56" y="94" class="muted">SMPL-X teacher + Unitree G1 MuJoCo model replay - frame 496</text>
+<text x="1080" y="66" class="badge">REAL ARTIFACT</text>
+<rect x="48" y="144" width="560" height="500" rx="8" fill="#ffffff" stroke="#d8e0e8"/>
+<rect x="672" y="144" width="560" height="500" rx="8" fill="#ffffff" stroke="#d8e0e8"/>
+<text x="72" y="184" class="title">SMPL-X teacher</text>
+<text x="696" y="184" class="title">Unitree G1 MuJoCo model replay</text>
+<g transform="translate(80 210)"><line x1="241.8" y1="163.5" x2="242.6" y2="117.2" stroke="#147c72" stroke-opacity="0.16" stroke-width="18.9" stroke-linecap="round"/>
+<line x1="242.6" y1="117.2" x2="240.9" y2="90.5" stroke="#147c72" stroke-opacity="0.16" stroke-width="17.1" stroke-linecap="round"/>
+<line x1="240.9" y1="90.5" x2="247.7" y2="65.0" stroke="#147c72" stroke-opacity="0.16" stroke-width="12.6" stroke-linecap="round"/>
+<line x1="242.6" y1="117.2" x2="250.8" y2="179.1" stroke="#147c72" stroke-opacity="0.16" stroke-width="15.3" stroke-linecap="round"/>
+<line x1="250.8" y1="179.1" x2="265.8" y2="235.7" stroke="#147c72" stroke-opacity="0.16" stroke-width="10.8" stroke-linecap="round"/>
+<line x1="265.8" y1="235.7" x2="265.3" y2="295.0" stroke="#147c72" stroke-opacity="0.16" stroke-width="8.1" stroke-linecap="round"/>
+<line x1="242.6" y1="117.2" x2="230.2" y2="179.6" stroke="#147c72" stroke-opacity="0.16" stroke-width="15.3" stroke-linecap="round"/>
+<line x1="230.2" y1="179.6" x2="212.6" y2="233.0" stroke="#147c72" stroke-opacity="0.16" stroke-width="10.8" stroke-linecap="round"/>
+<line x1="212.6" y1="233.0" x2="207.1" y2="291.7" stroke="#147c72" stroke-opacity="0.16" stroke-width="8.1" stroke-linecap="round"/>
+<line x1="240.9" y1="90.5" x2="269.8" y2="100.1" stroke="#147c72" stroke-opacity="0.16" stroke-width="9.9" stroke-linecap="round"/>
+<line x1="269.8" y1="100.1" x2="294.8" y2="132.4" stroke="#147c72" stroke-opacity="0.16" stroke-width="8.1" stroke-linecap="round"/>
+<line x1="294.8" y1="132.4" x2="330.2" y2="141.8" stroke="#147c72" stroke-opacity="0.16" stroke-width="8.0" stroke-linecap="round"/>
+<line x1="240.9" y1="90.5" x2="218.3" y2="98.4" stroke="#147c72" stroke-opacity="0.16" stroke-width="9.9" stroke-linecap="round"/>
+<line x1="218.3" y1="98.4" x2="185.9" y2="124.6" stroke="#147c72" stroke-opacity="0.16" stroke-width="8.1" stroke-linecap="round"/>
+<line x1="185.9" y1="124.6" x2="149.8" y2="131.9" stroke="#147c72" stroke-opacity="0.16" stroke-width="8.0" stroke-linecap="round"/><line x1="241.8" y1="163.5" x2="242.6" y2="117.2" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<line x1="242.6" y1="117.2" x2="240.9" y2="90.5" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<line x1="240.9" y1="90.5" x2="247.7" y2="65.0" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<line x1="242.6" y1="117.2" x2="250.8" y2="179.1" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<line x1="250.8" y1="179.1" x2="265.8" y2="235.7" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<line x1="265.8" y1="235.7" x2="265.3" y2="295.0" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<line x1="242.6" y1="117.2" x2="230.2" y2="179.6" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<line x1="230.2" y1="179.6" x2="212.6" y2="233.0" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<line x1="212.6" y1="233.0" x2="207.1" y2="291.7" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<line x1="240.9" y1="90.5" x2="269.8" y2="100.1" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<line x1="269.8" y1="100.1" x2="294.8" y2="132.4" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<line x1="294.8" y1="132.4" x2="330.2" y2="141.8" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<line x1="240.9" y1="90.5" x2="218.3" y2="98.4" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<line x1="218.3" y1="98.4" x2="185.9" y2="124.6" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<line x1="185.9" y1="124.6" x2="149.8" y2="131.9" stroke="#147c72" stroke-width="4" stroke-linecap="round"/>
+<circle cx="247.7" cy="65.0" r="3.5" fill="#147c72"/>
+<circle cx="265.3" cy="295.0" r="3.5" fill="#147c72"/>
+<circle cx="294.8" cy="132.4" r="3.5" fill="#147c72"/>
+<circle cx="250.8" cy="179.1" r="3.5" fill="#147c72"/>
+<circle cx="265.8" cy="235.7" r="3.5" fill="#147c72"/>
+<circle cx="269.8" cy="100.1" r="3.5" fill="#147c72"/>
+<circle cx="330.2" cy="141.8" r="3.5" fill="#147c72"/>
+<circle cx="240.9" cy="90.5" r="3.5" fill="#147c72"/>
+<circle cx="241.8" cy="163.5" r="3.5" fill="#147c72"/>
+<circle cx="207.1" cy="291.7" r="3.5" fill="#147c72"/>
+<circle cx="185.9" cy="124.6" r="3.5" fill="#147c72"/>
+<circle cx="230.2" cy="179.6" r="3.5" fill="#147c72"/>
+<circle cx="212.6" cy="233.0" r="3.5" fill="#147c72"/>
+<circle cx="218.3" cy="98.4" r="3.5" fill="#147c72"/>
+<circle cx="149.8" cy="131.9" r="3.5" fill="#147c72"/>
+<circle cx="242.6" cy="117.2" r="3.5" fill="#147c72"/></g>
+<g transform="translate(704 210)"><line x1="241.8" y1="160.7" x2="242.6" y2="113.5" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<line x1="242.6" y1="113.5" x2="241.0" y2="86.2" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<line x1="241.0" y1="86.2" x2="247.4" y2="65.0" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<line x1="242.6" y1="113.5" x2="250.4" y2="176.7" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<line x1="250.4" y1="176.7" x2="264.8" y2="234.5" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<line x1="264.8" y1="234.5" x2="264.4" y2="295.0" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<line x1="242.6" y1="113.5" x2="230.6" y2="177.2" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<line x1="230.6" y1="177.2" x2="213.8" y2="231.7" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<line x1="213.8" y1="231.7" x2="208.5" y2="291.6" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<line x1="241.0" y1="86.2" x2="268.7" y2="96.0" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<line x1="268.7" y1="96.0" x2="292.6" y2="138.6" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<line x1="292.6" y1="138.6" x2="333.5" y2="158.0" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<line x1="241.0" y1="86.2" x2="219.2" y2="94.3" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<line x1="219.2" y1="94.3" x2="188.1" y2="130.7" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<line x1="188.1" y1="130.7" x2="146.5" y2="147.9" stroke="#b84e32" stroke-width="4" stroke-linecap="round"/>
+<circle cx="247.4" cy="65.0" r="3.5" fill="#b84e32"/>
+<circle cx="264.4" cy="295.0" r="3.5" fill="#b84e32"/>
+<circle cx="292.6" cy="138.6" r="3.5" fill="#b84e32"/>
+<circle cx="250.4" cy="176.7" r="3.5" fill="#b84e32"/>
+<circle cx="264.8" cy="234.5" r="3.5" fill="#b84e32"/>
+<circle cx="268.7" cy="96.0" r="3.5" fill="#b84e32"/>
+<circle cx="333.5" cy="158.0" r="3.5" fill="#b84e32"/>
+<circle cx="241.0" cy="86.2" r="3.5" fill="#b84e32"/>
+<circle cx="241.8" cy="160.7" r="3.5" fill="#b84e32"/>
+<circle cx="208.5" cy="291.6" r="3.5" fill="#b84e32"/>
+<circle cx="188.1" cy="130.7" r="3.5" fill="#b84e32"/>
+<circle cx="230.6" cy="177.2" r="3.5" fill="#b84e32"/>
+<circle cx="213.8" cy="231.7" r="3.5" fill="#b84e32"/>
+<circle cx="219.2" cy="94.3" r="3.5" fill="#b84e32"/>
+<circle cx="146.5" cy="147.9" r="3.5" fill="#b84e32"/>
+<circle cx="242.6" cy="113.5" r="3.5" fill="#b84e32"/></g>
+<text x="56" y="684" class="muted">Scoring source: SMPL-X. G1 scoring allowed: false. Feedback passed: False</text>
+<text x="696" y="672" class="muted">Routine feedback anchors: opening stance, settled support, raise hands apex</text>
+<text x="696" y="696" class="muted">SMPL-X surface layer: SMPL-X surface proxy</text>
+</svg>

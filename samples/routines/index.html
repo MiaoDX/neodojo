@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>neodojo full routine samples</title>
+  <style>
+    :root {
+      --bg: #eef2f6;
+      --panel: #ffffff;
+      --ink: #17212b;
+      --muted: #5d6875;
+      --line: #d8e0e8;
+      --smplx: #147c72;
+      --g1: #b84e32;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    header {
+      display: grid;
+      gap: 10px;
+      padding: 26px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: clamp(26px, 4vw, 42px); letter-spacing: 0; }
+    .subtitle { max-width: 860px; color: var(--muted); line-height: 1.55; }
+    main { display: grid; gap: 16px; padding: 18px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    article {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    h2 { font-size: 20px; }
+    h2 span { display: block; color: var(--muted); font-size: 14px; font-weight: 650; margin-top: 3px; }
+    .stats { display: flex; flex-wrap: wrap; gap: 8px; }
+    .stats span {
+      border: 1px solid var(--line);
+      background: #f9fbfd;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #334155;
+    }
+    a.demo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      border-radius: 8px;
+      background: var(--smplx);
+      color: white;
+      text-decoration: none;
+      font-weight: 850;
+    }
+    a.phase { color: var(--g1); font-weight: 800; text-decoration: none; }
+    .note {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 14px 16px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+      header, main { padding-left: 14px; padding-right: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>neodojo full routine samples</h1>
+    <p class="subtitle">
+      Static self-contained reports for representative one-round cuts of Baduanjin, Wu Qin Xi, and Yi Jin Jing.
+      Each routine opens to an overview with Original video, SMPL-X Teaching Track, and Unitree G1 Model Replay panels.
+    </p>
+  </header>
+  <main>
+    <section class="grid" aria-label="Full routine sample reports">
+      <article>
+        <h2>八段锦 <span>Baduanjin</span></h2>
+        <div class="stats">
+          <span>8 phases</span>
+          <span>203 s</span>
+          <span>5 fps G1 MP4</span>
+          <span>SMPL-X scoring</span>
+        </div>
+        <a class="demo" href="baduanjin/html/index.html">Open Baduanjin Report</a>
+        <a class="phase" href="baduanjin/html/phases/two_hands_hold_up_heavens/report/public-demo/index.html">Open first phase playback</a>
+      </article>
+      <article>
+        <h2>五禽戏 <span>Wu Qin Xi</span></h2>
+        <div class="stats">
+          <span>10 phases</span>
+          <span>255 s</span>
+          <span>5 fps G1 MP4</span>
+          <span>SMPL-X scoring</span>
+        </div>
+        <a class="demo" href="wuqinxi/html/index.html">Open Wu Qin Xi Report</a>
+        <a class="phase" href="wuqinxi/html/phases/tiger_lifting/report/public-demo/index.html">Open first phase playback</a>
+      </article>
+      <article>
+        <h2>易筋经 <span>Yi Jin Jing</span></h2>
+        <div class="stats">
+          <span>12 phases</span>
+          <span>341 s</span>
+          <span>5 fps G1 MP4</span>
+          <span>SMPL-X scoring</span>
+        </div>
+        <a class="demo" href="yijinjing/html/index.html">Open Yi Jin Jing Report</a>
+        <a class="phase" href="yijinjing/html/phases/wei_tuo_presents_pestle_1/report/public-demo/index.html">Open first phase playback</a>
+      </article>
+    </section>
+    <p class="note">
+      The Unitree G1 track is visual evidence only. Teaching feedback and scoring remain based on SMPL-X.
+      Full source videos, native GVHMR checkpoints/results, GMR native pickles, logs, and MuJoCo PNG frame sequences are not committed.
+    </p>
+  </main>
+</body>
+</html>

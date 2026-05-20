@@ -1,0 +1,32 @@
+{
+  "checked_paths": [
+    "samples/routines/wuqinxi/html/manifest.json",
+    "samples/routines/wuqinxi/html/index.html",
+    "samples/routines/wuqinxi/html/clips/tiger_lifting.mp4",
+    "samples/routines/wuqinxi/html/phases/tiger_lifting/report/public-demo/index.html",
+    "samples/routines/wuqinxi/html/clips/tiger_pouncing.mp4",
+    "samples/routines/wuqinxi/html/phases/tiger_pouncing/report/public-demo/index.html",
+    "samples/routines/wuqinxi/html/clips/deer_colliding.mp4",
+    "samples/routines/wuqinxi/html/phases/deer_colliding/report/public-demo/index.html",
+    "samples/routines/wuqinxi/html/clips/deer_running.mp4",
+    "samples/routines/wuqinxi/html/phases/deer_running/report/public-demo/index.html",
+    "samples/routines/wuqinxi/html/clips/bear_rotating.mp4",
+    "samples/routines/wuqinxi/html/phases/bear_rotating/report/public-demo/index.html",
+    "samples/routines/wuqinxi/html/clips/bear_swaying.mp4",
+    "samples/routines/wuqinxi/html/phases/bear_swaying/report/public-demo/index.html",
+    "samples/routines/wuqinxi/html/clips/ape_lifting.mp4",
+    "samples/routines/wuqinxi/html/phases/ape_lifting/report/public-demo/index.html",
+    "samples/routines/wuqinxi/html/clips/ape_plucking.mp4",
+    "samples/routines/wuqinxi/html/phases/ape_plucking/report/public-demo/index.html",
+    "samples/routines/wuqinxi/html/clips/bird_stretching.mp4",
+    "samples/routines/wuqinxi/html/phases/bird_stretching/report/public-demo/index.html",
+    "samples/routines/wuqinxi/html/clips/bird_flying.mp4",
+    "samples/routines/wuqinxi/html/phases/bird_flying/report/public-demo/index.html"
+  ],
+  "g1_scoring_allowed": false,
+  "phase_count": 10,
+  "routine": "wuqinxi",
+  "schema": "neodojo.routine_smoke.v1",
+  "scoring_source": "smplx",
+  "status": "validated"
+}
