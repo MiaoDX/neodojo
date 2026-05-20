@@ -75,7 +75,11 @@ directory：一个 overview `index.html`，加上每个 selected round 一页同
 生成实际 G1 Model Replay media。MuJoCo G1 replay 默认按 5 fps 采样，并编码成
 每个 phase 一段 MP4 给 HTML 播放，所以 Original video、SMPL-X canvas 和 G1
 replay 会沿同一个采样 timeline 前进；可用 `ROUTINE_G1_REPLAY_FPS=10` 或 CLI
-`--g1-replay-fps 10` 调整。旧的 compact artifact-status index 可通过
+`--g1-replay-fps 10` 调整。routine assembly 默认保留这些 self-contained phase
+reports，但会剪掉 duplicate scene JSON、Rerun fallback、validation copy、Viser
+runtime output、capture bundle 等完整证据树；调试时可用
+`ROUTINE_PRESERVE_PHASE_EVIDENCE=1` 或 CLI `--preserve-phase-evidence` 保留完整
+artifact tree。旧的 compact artifact-status index 可通过
 `ROUTINE_INDEX_ONLY=1` 或 CLI `--index-only` 生成。这不表示仓库已经内置 GVHMR、
 GMR、checkpoints、MuJoCo/Genesis assets，或已经发布真实整套套路 demo。
 

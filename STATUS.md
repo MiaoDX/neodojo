@@ -42,16 +42,23 @@ real Baduanjin G1 replay proof.
   per selected round. MuJoCo G1 replay defaults to 5 fps via
   `ROUTINE_G1_REPLAY_FPS` / CLI `--g1-replay-fps`, then each phase is encoded
   to an MP4 for HTML playback so the Original video, SMPL-X canvas, and G1
-  replay stay on one sampled playback cadence. `--index-only` preserves the
-  compact artifact-status index. This is orchestration metadata and local
-  artifact assembly, not evidence that the repo vendors or runs GVHMR/GMR
-  locally.
+  replay stay on one sampled playback cadence. Routine assembly now prunes
+  bulky full-evidence artifacts from those phase report directories by default
+  after the self-contained playback HTML and media are written; use
+  `ROUTINE_PRESERVE_PHASE_EVIDENCE=1` / CLI `--preserve-phase-evidence` to keep
+  duplicate scene JSON, Rerun fallback, validation copies, Viser output, and
+  capture bundles for debugging. `--index-only` preserves the compact
+  artifact-status index. This is orchestration metadata and local artifact
+  assembly, not evidence that the repo vendors or runs GVHMR/GMR locally.
 - Local Baduanjin one-round report size evidence in this workspace: default
-  5 fps G1 replay writes 8 phase MP4s, no retained replay PNG sequence, and
-  `289M` under `outputs/routines/baduanjin/html`; the G1 replay MP4s themselves
-  total about `10M`. The prior 5 fps PNG playback report was `326M`, the 10 fps
-  PNG playback report was `372M`, and the older full-source-rate replay was
-  roughly `510M`.
+  lean 5 fps G1 replay writes 8 phase MP4s, no retained replay PNG sequence, and
+  keeps only self-contained phase playback plus review media. The regenerated
+  `outputs/routines/baduanjin/html` tree is `36M`; the manifest records 96
+  pruned full-evidence artifacts totaling about `264 MB` decimal. Before
+  routine-level evidence pruning, the same 5 fps MP4 playback report was
+  `289M`; the G1 replay MP4s themselves totaled about `10M`. The prior 5 fps
+  PNG playback report was `326M`, the 10 fps PNG playback report was `372M`,
+  and the older full-source-rate replay was roughly `510M`.
 - The default MuJoCo G1 render style now follows the actual roboharness
   `g1-reach` scene implementation: wrapped G1 MJCF scene, blue skybox gradient,
   gray/white checker floor, roboharness lights, original G1 materials, and
@@ -121,6 +128,7 @@ PYTHONPATH=src python -m neodojo routine split --routine baduanjin --source-vide
 PYTHONPATH=src python -m neodojo routine prepare-gpu-runs --routine baduanjin --clips outputs/routines/baduanjin/source --out outputs/routines/baduanjin/gvhmr-runs
 PYTHONPATH=src python -m neodojo routine assemble --routine baduanjin --source-materializations outputs/routines/baduanjin/source --gvhmr-json-root outputs/routines/baduanjin/gvhmr-runs --gmr-json-root outputs/routines/baduanjin/gmr-json --out outputs/routines/baduanjin/html
 PYTHONPATH=src python -m neodojo routine assemble --routine baduanjin --source-materializations outputs/routines/baduanjin/source --gvhmr-json-root outputs/routines/baduanjin/gvhmr-runs --gmr-json-root outputs/routines/baduanjin/gmr-json --model-descriptor outputs/routines/baduanjin/g1-model/robot-models/unitree_g1/manifest.json --render-mujoco --g1-replay-fps 5 --out outputs/routines/baduanjin/html
+PYTHONPATH=src python -m neodojo routine assemble --routine baduanjin --source-materializations outputs/routines/baduanjin/source --gvhmr-json-root outputs/routines/baduanjin/gvhmr-runs --gmr-json-root outputs/routines/baduanjin/gmr-json --model-descriptor outputs/routines/baduanjin/g1-model/robot-models/unitree_g1/manifest.json --render-mujoco --g1-replay-fps 5 --preserve-phase-evidence --out outputs/routines/baduanjin/html
 PYTHONPATH=src python -m neodojo routine assemble --routine baduanjin --source-materializations outputs/routines/baduanjin/source --gvhmr-json-root outputs/routines/baduanjin/gvhmr-runs --gmr-json-root outputs/routines/baduanjin/gmr-json --index-only --out outputs/routines/baduanjin/html
 PYTHONPATH=src python -m neodojo routine smoke --routine-html outputs/routines/baduanjin/html
 ```
@@ -130,8 +138,11 @@ Add `--model-descriptor ... --render-mujoco` when the local machine should build
 actual G1 Model Replay media from imported GMR tracks. G1 replay defaults to
 5 fps and is encoded to per-phase MP4 for HTML playback; use
 `ROUTINE_G1_REPLAY_FPS=10` for Make or `--g1-replay-fps 10` for CLI when
-smoother G1 playback is worth the larger media tree. The `--index-only` variant
-writes only the compact artifact-status index.
+smoother G1 playback is worth the larger media tree. Default routine assembly
+keeps phase playback self-contained and prunes full-evidence debug artifacts;
+use `ROUTINE_PRESERVE_PHASE_EVIDENCE=1` for Make or
+`--preserve-phase-evidence` for CLI to retain the full phase artifact tree. The
+`--index-only` variant writes only the compact artifact-status index.
 
 Local real-conversion preparation and returned-artifact handling:
 

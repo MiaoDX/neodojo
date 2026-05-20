@@ -75,18 +75,22 @@ the public-demo scene contract and proves synchronized SMPL-X/G1 tracks with a
 frame slider, camera preset controls, annotation-anchor navigation, and
 generated front/side/top preview screenshots; richer production teaching polish
 remains follow-on work.
-The static public HTML consumes MuJoCo G1 PNG replay frames only when the render
-manifest proves a non-fixture, nonblank, changing frame sequence; otherwise it
-labels the G1 panel as schematic evidence. When the playback manifest points to
-a local reference clip, the public HTML copies that clip into the ignored demo
-folder and prepends an Original video panel on the same timeline.
+The static public HTML consumes MuJoCo G1 replay media only when the render
+manifest proves a non-fixture, nonblank, changing frame sequence, then prefers
+the encoded per-phase MP4 for playback; otherwise it labels the G1 panel as
+schematic evidence. When the playback manifest points to a local reference
+clip, the public HTML copies that clip into the ignored demo folder and prepends
+an Original video panel on the same timeline.
 Routine assembly is a higher-level local report directory over per-phase
 artifacts. By default the overview links to one self-contained phase report per
 selected round when current GVHMR and GMR artifacts are present. Each phase
 report carries the local Original video, SMPL-X Teaching Track, and either G1
-Model Replay or clearly labeled G1 Schematic Evidence. `--index-only` preserves
-the compact artifact-status index. Missing GVHMR/GMR/render artifacts are
-labeled as missing instead of being treated as completed runtime work.
+Model Replay or clearly labeled G1 Schematic Evidence. Routine assembly prunes
+bulky full-evidence artifacts from those phase report directories by default
+after the self-contained playback page is written; `--preserve-phase-evidence`
+keeps the full debug/audit tree, and `--index-only` preserves the compact
+artifact-status index. Missing GVHMR/GMR/render artifacts are labeled as missing
+instead of being treated as completed runtime work.
 
 ## Core Contracts
 

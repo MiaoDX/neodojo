@@ -31,6 +31,7 @@ ROUTINE_SPLIT_SCHEMA = "neodojo.routine_split.v1"
 ROUTINE_GPU_HANDOFF_SCHEMA = "neodojo.routine_gpu_handoffs.v1"
 ROUTINE_HTML_SCHEMA = "neodojo.routine_html.v1"
 ROUTINE_SMOKE_SCHEMA = "neodojo.routine_smoke.v1"
+ROUTINE_PHASE_REPORT_PRUNE_SCHEMA = "neodojo.routine_phase_report_prune.v1"
 DEFAULT_ROUTINE_MANIFEST = Path("video/bilibili/routines.json")
 DEFAULT_BILIBILI_MANIFEST = Path("video/bilibili/manifest.json")
 
@@ -763,11 +764,234 @@ def _dedupe_phase_report_replay_frames(phase_report_manifest_path: Path) -> list
     return [render_manifest_path]
 
 
+def _path_size_bytes(path: Path) -> int:
+    if not path.exists():
+        return 0
+    if path.is_file():
+        return path.stat().st_size
+    total = 0
+    for child in path.rglob("*"):
+        if child.is_file():
+            total += child.stat().st_size
+    return total
+
+
+def _prune_path(path: Path, *, report_dir: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    size_bytes = _path_size_bytes(path)
+    kind = "directory" if path.is_dir() else "file"
+    if path.is_dir():
+        shutil.rmtree(path)
+    else:
+        path.unlink()
+    return {
+        "path": _relative_path(path, report_dir),
+        "kind": kind,
+        "size_bytes": size_bytes,
+    }
+
+
+def _public_demo_video_path(public_manifest_path: Path, public_manifest: dict[str, Any]) -> Path | None:
+    teaching_html = public_manifest.get("teaching_html")
+    if not isinstance(teaching_html, dict):
+        return None
+    g1_replay = teaching_html.get("g1_replay")
+    if not isinstance(g1_replay, dict):
+        return None
+    video = g1_replay.get("video")
+    if not isinstance(video, dict) or video.get("available") is not True:
+        return None
+    reference = video.get("path")
+    if not isinstance(reference, str) or not reference:
+        return None
+    return public_manifest_path.parent / reference
+
+
+def _existing_retained_artifact(path: Path | None, *, report_dir: Path, role: str) -> dict[str, Any] | None:
+    if path is None or not path.exists():
+        return None
+    return {
+        "path": _relative_path(path, report_dir),
+        "role": role,
+        "kind": "directory" if path.is_dir() else "file",
+        "size_bytes": _path_size_bytes(path),
+    }
+
+
+def _mark_manifest_reference_pruned(manifest: dict[str, Any], key: str) -> None:
+    value = manifest.get(key)
+    if value is None:
+        return
+    manifest[f"{key}_full_evidence"] = value
+    manifest[key] = None
+
+
+def _prune_phase_report_for_routine_review(phase_report_manifest_path: Path) -> dict[str, Any]:
+    """Keep self-contained playback assets and remove bulky full-evidence artifacts.
+
+    The generic real/public demo pipeline still writes complete evidence first and
+    validates it. Routine assembly then keeps the static review page and media
+    needed to open that phase report by itself.
+    """
+
+    report_dir = phase_report_manifest_path.parent
+    phase_dir = report_dir.parent
+    phase_report = _load_json_object(phase_report_manifest_path, "phase report manifest")
+
+    public_manifest_path: Path | None = None
+    public_manifest: dict[str, Any] = {}
+    public_reference = phase_report.get("public_demo")
+    if isinstance(public_reference, str) and public_reference:
+        candidate = report_dir / public_reference
+        if candidate.exists():
+            public_manifest_path = candidate
+            public_manifest = _load_json_object(candidate, "phase public demo manifest")
+
+    public_dir = public_manifest_path.parent if public_manifest_path is not None else report_dir / "public-demo"
+    public_html_path = None
+    public_html_reference = public_manifest.get("html")
+    if isinstance(public_html_reference, str) and public_html_reference:
+        public_html_path = public_dir / public_html_reference
+    elif public_dir.exists():
+        public_html_path = public_dir / "index.html"
+    source_video_path = public_dir / "source-video" / "original.mp4"
+    g1_video_path = _public_demo_video_path(public_manifest_path, public_manifest) if public_manifest_path else None
+    screenshot_path = None
+    screenshot_reference = public_manifest.get("screenshot")
+    if isinstance(screenshot_reference, str) and screenshot_reference:
+        screenshot_path = public_dir / screenshot_reference
+
+    prune_candidates = [
+        public_dir / "scene.json",
+        public_dir / "neodojo-demo.rrd",
+        report_dir / "annotations",
+        report_dir / "capture",
+        report_dir / "g1-render",
+        report_dir / "g1-mujoco-render",
+        report_dir / "motion-contract",
+        report_dir / "real-conversion-validation",
+        report_dir / "smplx-surface",
+        report_dir / "teaching-demo",
+        report_dir / "viser-runtime",
+        phase_dir / "demo",
+        phase_dir / "g1-import",
+        phase_dir / "g1-model",
+        phase_dir / "preimport-motion-contract",
+    ]
+
+    pruned: list[dict[str, Any]] = []
+    seen_candidates: set[Path] = set()
+    for candidate in prune_candidates:
+        resolved = candidate.resolve()
+        if resolved in seen_candidates:
+            continue
+        seen_candidates.add(resolved)
+        record = _prune_path(candidate, report_dir=report_dir)
+        if record is not None:
+            pruned.append(record)
+
+    retained = [
+        artifact
+        for artifact in [
+            _existing_retained_artifact(phase_report_manifest_path, report_dir=report_dir, role="phase report manifest"),
+            _existing_retained_artifact(public_manifest_path, report_dir=report_dir, role="public demo manifest"),
+            _existing_retained_artifact(public_html_path, report_dir=report_dir, role="self-contained playback HTML"),
+            _existing_retained_artifact(source_video_path, report_dir=report_dir, role="original clipped video"),
+            _existing_retained_artifact(g1_video_path, report_dir=report_dir, role="G1 replay video"),
+            _existing_retained_artifact(screenshot_path, report_dir=report_dir, role="static screenshot"),
+        ]
+        if artifact is not None
+    ]
+
+    pruned_bytes = sum(int(record.get("size_bytes", 0)) for record in pruned)
+    prune_payload = {
+        "schema": ROUTINE_PHASE_REPORT_PRUNE_SCHEMA,
+        "mode": "lean_self_contained_playback",
+        "status": "pruned" if pruned else "no_prunable_artifacts",
+        "phase_report": _relative_path(phase_report_manifest_path, report_dir),
+        "retained_artifacts": retained,
+        "pruned_artifacts": pruned,
+        "pruned_artifact_count": len(pruned),
+        "pruned_size_bytes": pruned_bytes,
+        "notes": (
+            "Routine assembly keeps self-contained phase playback for review and removes bulky "
+            "full-evidence artifacts. Re-run with --preserve-phase-evidence to retain the full tree."
+        ),
+    }
+    prune_manifest_path = report_dir / "routine-lean-report.json"
+    _write_json(prune_manifest_path, prune_payload)
+
+    phase_report["routine_report_mode"] = "lean_self_contained_playback"
+    phase_report["routine_lean_report"] = {
+        "manifest": _relative_path(prune_manifest_path, report_dir),
+        "pruned_artifact_count": len(pruned),
+        "pruned_size_bytes": pruned_bytes,
+        "retained_artifacts": retained,
+    }
+    for key in (
+        "annotations",
+        "capture_bundle",
+        "g1_render",
+        "g1_track",
+        "motion_record",
+        "smplx_surface",
+        "source_validation",
+    ):
+        _mark_manifest_reference_pruned(phase_report, key)
+    _write_json(phase_report_manifest_path, phase_report)
+
+    if public_manifest_path is not None:
+        if public_manifest.get("scene") is not None:
+            public_manifest["scene_full_evidence"] = public_manifest.get("scene")
+            public_manifest["scene"] = None
+        if public_manifest.get("recording") is not None:
+            public_manifest["recording_full_evidence"] = public_manifest.get("recording")
+            public_manifest["recording"] = None
+        if public_manifest.get("source_manifests") is not None:
+            public_manifest["source_manifests_full_evidence"] = public_manifest.get("source_manifests")
+            public_manifest["source_manifests"] = {}
+        public_manifest["routine_report_mode"] = "lean_self_contained_playback"
+        public_manifest["routine_lean_report"] = {
+            "manifest": _relative_path(prune_manifest_path, public_manifest_path.parent),
+            "pruned_artifact_count": len(pruned),
+            "pruned_size_bytes": pruned_bytes,
+        }
+        _write_json(public_manifest_path, public_manifest)
+
+    checked_paths = [
+        path
+        for path in [phase_report_manifest_path, public_manifest_path, public_html_path, source_video_path, g1_video_path, prune_manifest_path]
+        if path is not None and path.exists()
+    ]
+    return {
+        "manifest": prune_manifest_path,
+        "checked_paths": checked_paths,
+        "pruned_artifact_count": len(pruned),
+        "pruned_size_bytes": pruned_bytes,
+        "retained_artifacts": retained,
+        "pruned_artifacts": pruned,
+    }
+
+
+def _existing_unique_paths(paths: list[Path]) -> list[Path]:
+    seen: set[Path] = set()
+    unique: list[Path] = []
+    for path in paths:
+        resolved = path.resolve()
+        if resolved in seen or not path.exists():
+            continue
+        seen.add(resolved)
+        unique.append(path)
+    return unique
+
+
 def _render_routine_html(payload: dict[str, Any]) -> str:
     routine_name = html.escape(payload["routine_name_en"])
     routine_name_zh = html.escape(payload["routine_name_zh"])
     report_complete = bool(payload.get("report_complete"))
     actual_g1_complete = bool(payload.get("actual_g1_model_replay_complete"))
+    phase_evidence_label = _status_label(str(payload.get("phase_evidence_mode") or "unknown"))
     nav = "\n".join(
         f'<a href="#phase-{html.escape(phase["phase_id"])}">{index + 1}. '
         f'{html.escape(phase["name_zh"])} · {html.escape(phase["name_en"])}</a>'
@@ -901,6 +1125,7 @@ def _render_routine_html(payload: dict[str, Any]) -> str:
       <span>SMPL-X scoring</span>
       <span>G1 non-scoring</span>
       <span>Local-only media</span>
+      <span>{html.escape(phase_evidence_label)}</span>
       <span>{'Complete phase reports' if report_complete else 'Incomplete phase reports'}</span>
       <span>{'G1 Model Replay complete' if actual_g1_complete else 'G1 Schematic Evidence or missing fallback'}</span>
     </div>
@@ -923,6 +1148,7 @@ def write_routine_html(
     model_descriptor: Path | None = None,
     use_rerun_sdk: bool = False,
     build_phase_demos: bool = True,
+    preserve_phase_evidence: bool = False,
     render_mujoco: bool = False,
     g1_replay_fps: float | None = DEFAULT_G1_REPLAY_FPS,
 ) -> RoutineHtmlWriteResult:
@@ -968,6 +1194,7 @@ def write_routine_html(
         phase_error: str | None = None
         actual_g1_model_replay = False
         phase_report_status = "phase_report_not_requested_index_only"
+        phase_evidence_prune: dict[str, Any] | None = None
         if gvhmr_json is None:
             gvhmr_status = "missing_gvhmr_json"
         elif gvhmr_source_status == "stale_source_materialization":
@@ -1032,6 +1259,9 @@ def write_routine_html(
                     phase_report_status = "phase_report_generated"
                     checked_paths.extend(demo.checked_paths)
                     checked_paths.extend(_dedupe_phase_report_replay_frames(phase_report_manifest_path))
+                    if not preserve_phase_evidence:
+                        phase_evidence_prune = _prune_phase_report_for_routine_review(phase_report_manifest_path)
+                        checked_paths.extend(phase_evidence_prune["checked_paths"])
                 except ValueError as exc:
                     phase_error = str(exc)
                     phase_report_status = "phase_report_generation_failed"
@@ -1064,6 +1294,21 @@ def write_routine_html(
             else None,
             "phase_report_status": phase_report_status,
             "actual_g1_model_replay": actual_g1_model_replay,
+            "phase_evidence_mode": "full_evidence"
+            if build_phase_demos and preserve_phase_evidence
+            else "lean_playback"
+            if build_phase_demos
+            else "index_only",
+            "phase_evidence_pruned": phase_evidence_prune is not None,
+            "phase_evidence_prune_manifest": _relative_path(phase_evidence_prune["manifest"], manifest_path.parent)
+            if phase_evidence_prune is not None
+            else None,
+            "phase_evidence_pruned_artifact_count": phase_evidence_prune.get("pruned_artifact_count")
+            if phase_evidence_prune is not None
+            else 0,
+            "phase_evidence_pruned_size_bytes": phase_evidence_prune.get("pruned_size_bytes")
+            if phase_evidence_prune is not None
+            else 0,
             "phase_demo": _relative_path(phase_report_manifest_path, manifest_path.parent)
             if phase_report_manifest_path
             else None,
@@ -1096,6 +1341,19 @@ def write_routine_html(
     actual_g1_model_replay_complete = bool(phase_entries) and all(
         bool(phase.get("actual_g1_model_replay")) for phase in phase_entries
     )
+    phase_evidence_mode = (
+        "full_evidence"
+        if build_phase_demos and preserve_phase_evidence
+        else "lean_playback"
+        if build_phase_demos
+        else "index_only"
+    )
+    phase_evidence_pruned_artifact_count = sum(
+        int(phase.get("phase_evidence_pruned_artifact_count") or 0) for phase in phase_entries
+    )
+    phase_evidence_pruned_size_bytes = sum(
+        int(phase.get("phase_evidence_pruned_size_bytes") or 0) for phase in phase_entries
+    )
     assembly_mode = (
         "self_contained_report"
         if build_phase_demos and report_complete
@@ -1117,6 +1375,11 @@ def write_routine_html(
         "assembly_mode": assembly_mode,
         "build_phase_demos": build_phase_demos,
         "build_phase_reports": build_phase_demos,
+        "phase_evidence_mode": phase_evidence_mode,
+        "preserve_phase_evidence": preserve_phase_evidence,
+        "phase_evidence_pruned": phase_evidence_pruned_artifact_count > 0,
+        "phase_evidence_pruned_artifact_count": phase_evidence_pruned_artifact_count,
+        "phase_evidence_pruned_size_bytes": phase_evidence_pruned_size_bytes,
         "report_complete": report_complete,
         "actual_g1_model_replay_complete": actual_g1_model_replay_complete,
         "render_mujoco_requested": render_mujoco,
@@ -1130,6 +1393,8 @@ def write_routine_html(
         "notes": (
             "This is a local self-contained routine report directory when current GVHMR and GMR "
             "artifacts are present. The overview links to one phase report per selected round. "
+            "Routine assembly keeps phase playback self-contained and prunes bulky full-evidence "
+            "artifacts by default unless phase evidence preservation is requested. "
             "Missing GVHMR/GMR/render inputs are labeled explicitly and are not treated as "
             "successful runtime execution."
         ),
@@ -1137,7 +1402,11 @@ def write_routine_html(
     _write_json(manifest_path, payload)
     html_path.write_text(_render_routine_html(payload), encoding="utf-8")
     checked_paths.extend([manifest_path, html_path])
-    return RoutineHtmlWriteResult(html_path=html_path, manifest_path=manifest_path, checked_paths=checked_paths)
+    return RoutineHtmlWriteResult(
+        html_path=html_path,
+        manifest_path=manifest_path,
+        checked_paths=_existing_unique_paths(checked_paths),
+    )
 
 
 def smoke_check_routine_html(routine_html: Path) -> RoutineSmokeResult:
@@ -1151,6 +1420,8 @@ def smoke_check_routine_html(routine_html: Path) -> RoutineSmokeResult:
         "self_contained_report_incomplete",
     }:
         raise ValueError("routine HTML manifest has unknown assembly_mode")
+    if manifest.get("phase_evidence_mode") not in {"lean_playback", "full_evidence", "index_only"}:
+        raise ValueError("routine HTML manifest has unknown phase_evidence_mode")
     if manifest.get("scoring_source") != "smplx":
         raise ValueError("routine HTML must keep SMPL-X as scoring_source")
     if manifest.get("g1_scoring_allowed") is not False:
