@@ -26,6 +26,7 @@ G1_ROBOHARNESS_REPORT_BACKEND = "roboharness_checkpoint_report.v1"
 G1_MUJOCO_BACKEND_COMPARISON_SCHEMA = "neodojo.g1_mujoco_backend_comparison.v1"
 G1_MUJOCO_BACKEND_BENCHMARK_SCHEMA = "neodojo.g1_mujoco_backend_benchmark.v1"
 G1_MUJOCO_VISUAL_THEME = "roboharness_g1_reach_scene_v1"
+DEFAULT_G1_REPLAY_FPS = 5.0
 G1_MUJOCO_SCENE_STYLE = {
     "skybox": "builtin gradient rgb1=0.6 0.8 1.0 rgb2=0.2 0.3 0.5",
     "ground": "mujoco checker texture rgb1=0.85 0.85 0.85 rgb2=0.65 0.65 0.65 texrepeat=8 8",
@@ -588,6 +589,43 @@ def _load_mujoco_model_for_render(
     }
 
 
+def _positive_float(value: Any, label: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{label} must be a positive number")
+    number = float(value)
+    if number <= 0:
+        raise ValueError(f"{label} must be positive")
+    return number
+
+
+def _g1_track_fps(g1_manifest: dict[str, Any]) -> float:
+    if g1_manifest.get("fps") is not None:
+        return _positive_float(g1_manifest["fps"], "G1 track fps")
+    timing = g1_manifest.get("timing")
+    if isinstance(timing, dict) and timing.get("fps") is not None:
+        return _positive_float(timing["fps"], "G1 track timing fps")
+    return 25.0
+
+
+def _sample_replay_frame_indices(frame_count: int, *, source_fps: float, replay_fps: float | None) -> list[int]:
+    if frame_count <= 0:
+        return []
+    source_fps = _positive_float(source_fps, "source_fps")
+    if replay_fps is None or replay_fps >= source_fps:
+        return list(range(frame_count))
+    replay_fps = _positive_float(replay_fps, "replay_fps")
+    duration_seconds = frame_count / source_fps
+    sample_count = max(1, round(duration_seconds * replay_fps))
+    indices: list[int] = []
+    for sample_index in range(sample_count):
+        source_frame = min(frame_count - 1, round(sample_index * source_fps / replay_fps))
+        if indices and source_frame <= indices[-1]:
+            source_frame = min(frame_count - 1, indices[-1] + 1)
+        if not indices or source_frame != indices[-1]:
+            indices.append(source_frame)
+    return indices
+
+
 def _render_mujoco_replay_sequence(
     *,
     mujoco: Any,
@@ -597,12 +635,20 @@ def _render_mujoco_replay_sequence(
     frame_dir: Path,
     joint_angle_frames: list[dict[str, float]],
     joint_angle_names: list[str],
+    source_fps: float,
+    replay_fps: float | None,
 ) -> dict[str, Any]:
+    source_fps = _positive_float(source_fps, "source_fps")
+    requested_replay_fps = None if replay_fps is None else _positive_float(replay_fps, "replay_fps")
     if not joint_angle_frames:
         return {
             "available": False,
             "actual_g1_model_replay": False,
             "view": "front",
+            "source_fps": source_fps,
+            "replay_fps": requested_replay_fps or source_fps,
+            "source_frame_count": 0,
+            "source_frame_indices": [],
             "background": "roboharness_skybox",
             "ground": "roboharness_checker_floor",
             "frame_count": 0,
@@ -619,6 +665,11 @@ def _render_mujoco_replay_sequence(
 
     camera = _camera_for_view(mujoco, model, "front")
     replay_dir = frame_dir / "replay"
+    source_frame_indices = _sample_replay_frame_indices(
+        len(joint_angle_frames),
+        source_fps=source_fps,
+        replay_fps=requested_replay_fps,
+    )
     paths: list[Path] = []
     nonblank_checks: list[bool] = []
     changed_checks: list[bool] = []
@@ -627,7 +678,7 @@ def _render_mujoco_replay_sequence(
     skipped_counts: list[int] = []
     previous_pixels: bytes | None = None
 
-    for frame_index in range(len(joint_angle_frames)):
+    for replay_index, frame_index in enumerate(source_frame_indices):
         application = _mujoco_pose_application_for_frame(
             mujoco,
             model,
@@ -645,20 +696,24 @@ def _render_mujoco_replay_sequence(
         applied_counts.append(int(application.get("applied_joint_count", 0)))
         missing_counts.append(int(application.get("missing_joint_count", 0)))
         skipped_counts.append(int(application.get("skipped_joint_count", 0)))
-        path = replay_dir / f"front-{frame_index:06d}.png"
+        path = replay_dir / f"front-{replay_index:06d}.png"
         _write_rgb_png(path, rgb)
         paths.append(path)
 
     return {
         "available": True,
         "actual_g1_model_replay": bool(
-            len(paths) == len(joint_angle_frames)
+            len(paths) == len(source_frame_indices)
             and all(nonblank_checks)
             and any(changed_checks)
             and bool(applied_counts)
             and min(applied_counts) > 0
         ),
         "view": "front",
+        "source_fps": source_fps,
+        "replay_fps": requested_replay_fps or source_fps,
+        "source_frame_count": len(joint_angle_frames),
+        "source_frame_indices": source_frame_indices,
         "background": "roboharness_skybox",
         "ground": "roboharness_checker_floor",
         "visual_style": "mujoco-png-frame-sequence.v1",
@@ -926,6 +981,7 @@ def write_g1_mujoco_render(
     allow_fixture_model: bool = False,
     width: int = 640,
     height: int = 480,
+    replay_fps: float | None = DEFAULT_G1_REPLAY_FPS,
 ) -> G1RenderWriteResult:
     if width <= 0 or height <= 0:
         raise ValueError("MuJoCo render width and height must be positive")
@@ -942,6 +998,7 @@ def write_g1_mujoco_render(
 
     g1_track_manifest_path = resolve_g1_track_manifest(g1_track)
     g1_manifest, frames = load_g1_track_frames(g1_track_manifest_path)
+    source_fps = _g1_track_fps(g1_manifest)
     selected_frame = len(frames) // 2
     joint_angle_frames, joint_angle_names = _load_g1_joint_angle_frames(
         g1_track_manifest_path,
@@ -1001,6 +1058,8 @@ def write_g1_mujoco_render(
             frame_dir=frame_dir,
             joint_angle_frames=joint_angle_frames,
             joint_angle_names=joint_angle_names,
+            source_fps=source_fps,
+            replay_fps=replay_fps,
         )
     finally:
         renderer.close()
@@ -1029,6 +1088,7 @@ def write_g1_mujoco_render(
             "mujoco_version": getattr(mujoco, "__version__", None),
             "gl_backend": os.environ.get("MUJOCO_GL") or "mujoco_default",
             "resolution": {"width": width, "height": height},
+            "replay_fps": replay_sequence.get("replay_fps"),
             "background": "roboharness_skybox",
             "ground": "roboharness_checker_floor",
             "visual_theme": visual_theme,

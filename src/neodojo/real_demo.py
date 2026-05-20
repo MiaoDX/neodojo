@@ -7,7 +7,7 @@ from typing import Any
 
 from .annotations import write_detected_annotations
 from .capture_bundle import write_capture_bundle
-from .g1_render import write_g1_mujoco_render, write_g1_render
+from .g1_render import DEFAULT_G1_REPLAY_FPS, write_g1_mujoco_render, write_g1_render
 from .g1_visual import build_g1_visual_track, resolve_g1_track_manifest, write_fixture_g1_model_descriptor
 from .motion_contract import _relative_path, _write_json, validate_output_dir, write_gvhmr_json_motion_contract
 from .public_demo import smoke_check_public_demo, write_public_demo
@@ -75,6 +75,7 @@ def write_real_conversion_demo(
     model_descriptor: Path | None = None,
     g1_render: Path | None = None,
     render_mujoco: bool = False,
+    g1_replay_fps: float | None = DEFAULT_G1_REPLAY_FPS,
     use_rerun_sdk: bool = False,
 ) -> RealConversionDemoWriteResult:
     validate_output_dir(out_dir)
@@ -135,6 +136,7 @@ def write_real_conversion_demo(
             out_dir / "g1-mujoco-render",
             model_descriptor_path=model_descriptor_path,
             g1_track=g1_track_path,
+            replay_fps=g1_replay_fps,
         )
         render_manifest_path = render.manifest_path
         render_checked_paths = [render.manifest_path, *render.frame_paths.values()]

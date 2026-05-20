@@ -72,9 +72,12 @@ make routine-smoke ROUTINE=baduanjin
 directory：一个 overview `index.html`，加上每个 selected round 一页同步 phase report，
 包含 Original video、SMPL-X Teaching Track 和 G1 visual evidence。设置
 `ROUTINE_MODEL_DESCRIPTOR=... ROUTINE_RENDER_MUJOCO=1` 可从 imported GMR tracks
-生成实际 G1 Model Replay frames。旧的 compact artifact-status index 可通过
-`ROUTINE_INDEX_ONLY=1` 或 CLI `--index-only` 生成。这不表示仓库已经内置 GVHMR、
-GMR、checkpoints、MuJoCo/Genesis assets，或已经发布真实整套套路 demo。
+生成实际 G1 Model Replay frames。MuJoCo G1 replay PNG 默认采样为 5 fps，所以
+Original video、SMPL-X canvas 和 G1 replay 会沿同一个采样 timeline 前进；可用
+`ROUTINE_G1_REPLAY_FPS=10` 或 CLI `--g1-replay-fps 10` 调整。旧的 compact
+artifact-status index 可通过 `ROUTINE_INDEX_ONLY=1` 或 CLI `--index-only` 生成。
+这不表示仓库已经内置 GVHMR、GMR、checkpoints、MuJoCo/Genesis assets，或已经发布
+真实整套套路 demo。
 
 ## Contributing
 

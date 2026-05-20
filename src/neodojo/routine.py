@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .contracts import local_file_metadata, require_schema, sha256_file
+from .g1_render import DEFAULT_G1_REPLAY_FPS
 from .g1_visual import import_gmr_json_track, write_fixture_g1_model_descriptor
 from .motion_contract import (
     _relative_path,
@@ -902,6 +903,7 @@ def write_routine_html(
     use_rerun_sdk: bool = False,
     build_phase_demos: bool = True,
     render_mujoco: bool = False,
+    g1_replay_fps: float | None = DEFAULT_G1_REPLAY_FPS,
 ) -> RoutineHtmlWriteResult:
     validate_output_dir(out_dir)
     if render_mujoco and model_descriptor is None:
@@ -990,6 +992,7 @@ def write_routine_html(
                         g1_track=imported.track_manifest_path,
                         model_descriptor=g1_model,
                         render_mujoco=render_mujoco,
+                        g1_replay_fps=g1_replay_fps,
                         use_rerun_sdk=use_rerun_sdk,
                     )
                     phase_report_manifest_path = demo.manifest_path
@@ -1096,6 +1099,7 @@ def write_routine_html(
         "report_complete": report_complete,
         "actual_g1_model_replay_complete": actual_g1_model_replay_complete,
         "render_mujoco_requested": render_mujoco,
+        "g1_replay_fps": g1_replay_fps,
         "scoring_source": "smplx",
         "g1_scoring_allowed": False,
         "artifact_roots": {
