@@ -145,6 +145,7 @@ class RoutinePipelineTests(unittest.TestCase):
         self.assertEqual(split_manifest["phases"][0]["source_materialization_status"], "dry_run")
         self.assertTrue(gpu_manifest_exists)
         self.assertEqual(manifest["assembly_mode"], "self_contained_report_incomplete")
+        self.assertEqual(manifest["phase_evidence_mode"], "lean_playback")
         self.assertEqual(manifest["g1_replay_fps"], 5.0)
         self.assertEqual(smoke.manifest_path, html.manifest_path)
         self.assertFalse(phases_dir_exists)
@@ -226,6 +227,7 @@ class RoutinePipelineTests(unittest.TestCase):
 
         first_phase = manifest["phases"][0]
         self.assertEqual(manifest["assembly_mode"], "lightweight_index")
+        self.assertEqual(manifest["phase_evidence_mode"], "index_only")
         self.assertEqual(first_phase["gvhmr_status"], "gvhmr_json_available")
         self.assertEqual(first_phase["g1_status"], "gmr_json_available_non_scoring")
         self.assertEqual(first_phase["phase_report_status"], "phase_report_not_requested_index_only")
@@ -285,7 +287,7 @@ class RoutinePipelineTests(unittest.TestCase):
         self.assertFalse(first_phase["artifact_current"]["gvhmr_json"])
         self.assertFalse(first_phase["artifact_current"]["gmr_json"])
 
-    def test_routine_assemble_builds_phase_reports_by_default(self) -> None:
+    def test_routine_assemble_builds_lean_phase_reports_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             source = root / "source.mp4"
@@ -329,15 +331,74 @@ class RoutinePipelineTests(unittest.TestCase):
                 )
 
             seen_replay_fps: list[object] = []
+            fake_report_roots: list[Path] = []
 
             def fake_demo(out_dir: Path, **kwargs: object) -> SimpleNamespace:
                 seen_replay_fps.append(kwargs.get("g1_replay_fps"))
+                fake_report_roots.append(out_dir)
                 manifest_path = out_dir / "manifest.json"
                 public_manifest_path = out_dir / "public-demo" / "manifest.json"
                 index_path = out_dir / "public-demo" / "index.html"
-                _write_json(public_manifest_path, {"html": "index.html"})
+                source_video_path = out_dir / "public-demo" / "source-video" / "original.mp4"
+                g1_video_path = out_dir / "public-demo" / "g1-replay-video" / "front.mp4"
+                source_video_path.parent.mkdir(parents=True, exist_ok=True)
+                g1_video_path.parent.mkdir(parents=True, exist_ok=True)
+                source_video_path.write_bytes(b"source clip")
+                g1_video_path.write_bytes(b"g1 mp4")
+                _write_json(
+                    public_manifest_path,
+                    {
+                        "html": "index.html",
+                        "scene": "scene.json",
+                        "recording": "neodojo-demo.rrd",
+                        "source_manifests": {
+                            "motion_record": "../motion-contract/motion-record/manifest.json",
+                            "g1_track": "../../g1-import/tracks/g1/manifest.json",
+                        },
+                        "teaching_html": {
+                            "g1_replay": {
+                                "actual_g1_model_replay": True,
+                                "video": {
+                                    "available": True,
+                                    "path": "g1-replay-video/front.mp4",
+                                },
+                            }
+                        },
+                    },
+                )
+                (out_dir / "public-demo" / "scene.json").write_text("scene", encoding="utf-8")
+                (out_dir / "public-demo" / "neodojo-demo.rrd").write_text("recording", encoding="utf-8")
                 index_path.write_text(
                     "Original video SMPL-X skeleton teaching track Unitree G1 MuJoCo model replay G1 non-scoring",
+                    encoding="utf-8",
+                )
+                (out_dir / "teaching-demo").mkdir(parents=True)
+                (out_dir / "teaching-demo" / "index.html").write_text("duplicate teaching html", encoding="utf-8")
+                _write_json(out_dir / "motion-contract" / "motion-record" / "manifest.json", {"motion": True})
+                (out_dir / "motion-contract" / "motion-record" / "smplx-parameters.json").write_text(
+                    "parameters",
+                    encoding="utf-8",
+                )
+                (out_dir / "real-conversion-validation").mkdir(parents=True)
+                (out_dir / "real-conversion-validation" / "gvhmr-smplx-joints.validated.json").write_text(
+                    "validated",
+                    encoding="utf-8",
+                )
+                (out_dir / "smplx-surface" / "surfaces" / "smplx").mkdir(parents=True)
+                (out_dir / "smplx-surface" / "surfaces" / "smplx" / "surface-proxy.json").write_text(
+                    "surface",
+                    encoding="utf-8",
+                )
+                (out_dir / "viser-runtime").mkdir(parents=True)
+                (out_dir / "viser-runtime" / "scene.json").write_text("viser scene", encoding="utf-8")
+                (out_dir.parent / "g1-import" / "tracks" / "g1").mkdir(parents=True)
+                (out_dir.parent / "g1-import" / "tracks" / "g1" / "joints.json").write_text(
+                    "joints",
+                    encoding="utf-8",
+                )
+                (out_dir.parent / "preimport-motion-contract" / "motion-record").mkdir(parents=True)
+                (out_dir.parent / "preimport-motion-contract" / "motion-record" / "smplx-parameters.json").write_text(
+                    "preimport",
                     encoding="utf-8",
                 )
                 _write_json(
@@ -345,9 +406,21 @@ class RoutinePipelineTests(unittest.TestCase):
                     {
                         "public_demo": "public-demo/manifest.json",
                         "actual_g1_model_replay": True,
+                        "motion_record": "motion-contract/motion-record/manifest.json",
+                        "g1_track": "../g1-import/tracks/g1/manifest.json",
+                        "smplx_surface": "smplx-surface/surfaces/smplx/manifest.json",
+                        "source_validation": "real-conversion-validation/source-validation.json",
+                        "g1_render": "g1-mujoco-render/manifest.json",
                     },
                 )
-                return SimpleNamespace(manifest_path=manifest_path, checked_paths=[index_path])
+                return SimpleNamespace(
+                    manifest_path=manifest_path,
+                    checked_paths=[
+                        index_path,
+                        out_dir / "public-demo" / "scene.json",
+                        out_dir / "public-demo" / "neodojo-demo.rrd",
+                    ],
+                )
 
             with patch(
                 "neodojo.routine.write_gvhmr_json_motion_contract",
@@ -369,16 +442,58 @@ class RoutinePipelineTests(unittest.TestCase):
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
             page = result.html_path.read_text(encoding="utf-8")
             smoke_check_routine_html(result.manifest_path)
+            first_report = fake_report_roots[0]
+            phase_report_manifest = json.loads((first_report / "manifest.json").read_text(encoding="utf-8"))
+            public_manifest = json.loads((first_report / "public-demo" / "manifest.json").read_text(encoding="utf-8"))
+            lean_state = {
+                "public_index": (first_report / "public-demo" / "index.html").exists(),
+                "source_video": (first_report / "public-demo" / "source-video" / "original.mp4").exists(),
+                "g1_video": (first_report / "public-demo" / "g1-replay-video" / "front.mp4").exists(),
+                "prune_manifest": (first_report / "routine-lean-report.json").exists(),
+                "scene": (first_report / "public-demo" / "scene.json").exists(),
+                "recording": (first_report / "public-demo" / "neodojo-demo.rrd").exists(),
+                "teaching_demo": (first_report / "teaching-demo").exists(),
+                "motion_contract": (first_report / "motion-contract").exists(),
+                "validation": (first_report / "real-conversion-validation").exists(),
+                "surface": (first_report / "smplx-surface").exists(),
+                "viser": (first_report / "viser-runtime").exists(),
+                "g1_import": (first_report.parent / "g1-import").exists(),
+                "preimport": (first_report.parent / "preimport-motion-contract").exists(),
+            }
 
         self.assertEqual(manifest["assembly_mode"], "self_contained_report")
+        self.assertEqual(manifest["phase_evidence_mode"], "lean_playback")
+        self.assertFalse(manifest["preserve_phase_evidence"])
+        self.assertTrue(manifest["phase_evidence_pruned"])
         self.assertEqual(manifest["g1_replay_fps"], 10)
         self.assertTrue(manifest["report_complete"])
         self.assertTrue(manifest["actual_g1_model_replay_complete"])
         self.assertEqual(seen_replay_fps, [10] * 8)
         self.assertTrue(all(phase["phase_report"] for phase in manifest["phases"]))
         self.assertTrue(all(phase["actual_g1_model_replay"] for phase in manifest["phases"]))
+        self.assertTrue(all(phase["phase_evidence_mode"] == "lean_playback" for phase in manifest["phases"]))
+        self.assertGreater(manifest["phase_evidence_pruned_artifact_count"], 0)
+        self.assertTrue(lean_state["public_index"])
+        self.assertTrue(lean_state["source_video"])
+        self.assertTrue(lean_state["g1_video"])
+        self.assertTrue(lean_state["prune_manifest"])
+        self.assertFalse(lean_state["scene"])
+        self.assertFalse(lean_state["recording"])
+        self.assertFalse(lean_state["teaching_demo"])
+        self.assertFalse(lean_state["motion_contract"])
+        self.assertFalse(lean_state["validation"])
+        self.assertFalse(lean_state["surface"])
+        self.assertFalse(lean_state["viser"])
+        self.assertFalse(lean_state["g1_import"])
+        self.assertFalse(lean_state["preimport"])
+        self.assertEqual(phase_report_manifest["routine_report_mode"], "lean_self_contained_playback")
+        self.assertIsNone(phase_report_manifest["motion_record"])
+        self.assertIsNone(phase_report_manifest["g1_track"])
+        self.assertIsNone(public_manifest["scene"])
+        self.assertIsNone(public_manifest["recording"])
         self.assertIn("Open phase report", page)
         self.assertIn("G1 Model Replay", page)
+        self.assertIn("lean playback", page)
 
 
 class BilibiliDownloaderTests(unittest.TestCase):

@@ -82,7 +82,12 @@ to build actual G1 Model Replay media from imported GMR tracks. MuJoCo G1 replay
 is sampled at 5 fps by default and encoded to per-phase MP4 for HTML playback,
 so the Original video, SMPL-X canvas, and G1 replay advance on the same sampled
 timeline; set `ROUTINE_G1_REPLAY_FPS=10` or CLI `--g1-replay-fps 10` to change
-that. Use `ROUTINE_INDEX_ONLY=1` or CLI
+that. By default routine assembly keeps those phase reports self-contained but
+prunes bulky full-evidence artifacts such as duplicate scene JSON, Rerun
+fallback files, validation copies, Viser runtime output, and capture bundles;
+set `ROUTINE_PRESERVE_PHASE_EVIDENCE=1` or CLI
+`--preserve-phase-evidence` when debugging the full artifact tree. Use
+`ROUTINE_INDEX_ONLY=1` or CLI
 `--index-only` for the old compact artifact-status index. The repo still does
 not vendor GVHMR, GMR, checkpoints, MuJoCo/Genesis assets, or a live published
 real routine demo.

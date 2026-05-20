@@ -689,6 +689,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="compatibility alias; phase reports are built by default unless --index-only is set",
     )
     routine_assemble.add_argument(
+        "--preserve-phase-evidence",
+        action="store_true",
+        help=(
+            "retain full per-phase evidence trees after building self-contained playback; "
+            "default routine assembly prunes bulky debug/audit artifacts"
+        ),
+    )
+    routine_assemble.add_argument(
         "--index-only",
         action="store_true",
         help="write only the compact overview/index without self-contained phase report pages",
@@ -1591,6 +1599,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 model_descriptor=args.model_descriptor,
                 use_rerun_sdk=args.use_rerun_sdk,
                 build_phase_demos=build_phase_reports,
+                preserve_phase_evidence=args.preserve_phase_evidence,
                 render_mujoco=args.render_mujoco,
                 g1_replay_fps=args.g1_replay_fps,
             )
