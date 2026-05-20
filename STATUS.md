@@ -33,10 +33,15 @@ real Baduanjin G1 replay proof.
   local testing instead of committed directly.
 - The tracked Bilibili batch now has a local-only routine orchestration surface
   for 八段锦, 易筋经, and 五禽戏. `video/bilibili/routines.json` stores manual
-  first-demo phase boundaries; `neodojo routine split/prepare-gpu-runs/assemble`
-  writes ignored per-phase clips, GVHMR handoffs, optional GMR imports, and a
-  fail-closed routine HTML page. This is orchestration metadata and artifact
-  assembly, not evidence that the repo vendors or runs GVHMR/GMR locally.
+  first-demo phase boundaries; Baduanjin now uses one visible round per method
+  from the local Bilibili source video. `neodojo routine
+  split/prepare-gpu-runs/assemble` writes ignored per-phase clips, GVHMR
+  handoffs, optional GMR artifact links, and a fail-closed routine HTML report.
+  `routine assemble` defaults to a self-contained report directory when current
+  GVHMR/GMR artifacts are present: overview `index.html` plus one phase report
+  per selected round. `--index-only` preserves the compact artifact-status
+  index. This is orchestration metadata and local artifact assembly, not
+  evidence that the repo vendors or runs GVHMR/GMR locally.
 - The default MuJoCo G1 render style now follows the actual roboharness
   `g1-reach` scene implementation: wrapped G1 MJCF scene, blue skybox gradient,
   gray/white checker floor, roboharness lights, original G1 materials, and
@@ -104,8 +109,15 @@ PYTHONPATH=src python -m neodojo bilibili download --routine baduanjin --quality
 PYTHONPATH=src python -m neodojo routine split --routine baduanjin --source-video video/bilibili/01_baduanjin-complete-routine-with-breathing-cues.mp4 --dry-run --out outputs/routines/baduanjin/source
 PYTHONPATH=src python -m neodojo routine prepare-gpu-runs --routine baduanjin --clips outputs/routines/baduanjin/source --out outputs/routines/baduanjin/gvhmr-runs
 PYTHONPATH=src python -m neodojo routine assemble --routine baduanjin --source-materializations outputs/routines/baduanjin/source --gvhmr-json-root outputs/routines/baduanjin/gvhmr-runs --gmr-json-root outputs/routines/baduanjin/gmr-json --out outputs/routines/baduanjin/html
+PYTHONPATH=src python -m neodojo routine assemble --routine baduanjin --source-materializations outputs/routines/baduanjin/source --gvhmr-json-root outputs/routines/baduanjin/gvhmr-runs --gmr-json-root outputs/routines/baduanjin/gmr-json --model-descriptor outputs/routines/baduanjin/g1-model/robot-models/unitree_g1/manifest.json --render-mujoco --out outputs/routines/baduanjin/html
+PYTHONPATH=src python -m neodojo routine assemble --routine baduanjin --source-materializations outputs/routines/baduanjin/source --gvhmr-json-root outputs/routines/baduanjin/gvhmr-runs --gmr-json-root outputs/routines/baduanjin/gmr-json --index-only --out outputs/routines/baduanjin/html
 PYTHONPATH=src python -m neodojo routine smoke --routine-html outputs/routines/baduanjin/html
 ```
+
+The first `routine assemble` command is the default self-contained report path.
+Add `--model-descriptor ... --render-mujoco` when the local machine should build
+actual G1 Model Replay frames from imported GMR tracks. The `--index-only`
+variant writes only the compact artifact-status index.
 
 Local real-conversion preparation and returned-artifact handling:
 
@@ -188,8 +200,8 @@ as supported until a new plan explicitly restores them:
   BVID/AID/CID metadata, optional cookies, 480p/best quality selection,
   `ffprobe` metadata, and `ffmpeg -xerror` decode smoke when downloads run.
 - Manual first-demo phase manifests for 八段锦, 易筋经, and 五禽戏 plus routine
-  split, per-phase GVHMR handoff, aggregate routine HTML assembly, and routine
-  HTML smoke validation.
+  split, per-phase GVHMR handoff, self-contained routine report assembly,
+  optional compact index-only assembly, and routine HTML smoke validation.
 
 ## What Does Not Exist Yet
 

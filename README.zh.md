@@ -67,9 +67,14 @@ make routine-assemble ROUTINE=baduanjin
 make routine-smoke ROUTINE=baduanjin
 ```
 
-这条路径会准备本地 phase clips 和逐 phase 的 GVHMR/GMR handoff。它不表示仓库已经
-内置或运行 GVHMR、GMR、checkpoints、MuJoCo/Genesis mesh rendering，或已经发布真实
-整套套路 demo。
+这条路径会准备本地 one-round phase clips 和逐 phase 的 GVHMR/GMR handoff。
+当当前 returned artifacts 已存在时，`routine assemble` 会写 self-contained report
+directory：一个 overview `index.html`，加上每个 selected round 一页同步 phase report，
+包含 Original video、SMPL-X Teaching Track 和 G1 visual evidence。设置
+`ROUTINE_MODEL_DESCRIPTOR=... ROUTINE_RENDER_MUJOCO=1` 可从 imported GMR tracks
+生成实际 G1 Model Replay frames。旧的 compact artifact-status index 可通过
+`ROUTINE_INDEX_ONLY=1` 或 CLI `--index-only` 生成。这不表示仓库已经内置 GVHMR、
+GMR、checkpoints、MuJoCo/Genesis assets，或已经发布真实整套套路 demo。
 
 ## Contributing
 

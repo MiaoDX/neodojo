@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import html
 import json
+import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .contracts import local_file_metadata, require_schema
+from .contracts import local_file_metadata, require_schema, sha256_file
 from .g1_visual import import_gmr_json_track, write_fixture_g1_model_descriptor
 from .motion_contract import (
     _relative_path,
@@ -625,13 +626,126 @@ def _copy_reference_clip(source_materialization: Path, out_dir: Path, phase_id: 
     return _relative_path(destination, out_dir)
 
 
+def _clean_routine_phase_outputs(out_dir: Path) -> None:
+    stale_phase_dir = out_dir / "phases"
+    if stale_phase_dir.exists() and stale_phase_dir.is_dir():
+        shutil.rmtree(stale_phase_dir)
+
+
 def _phase_status_label(status: str) -> str:
     return status.replace("_", " ")
+
+
+def _artifact_link(path: str | None, label: str, missing_label: str) -> str:
+    if path:
+        return f'<a href="{html.escape(path)}">{html.escape(label)}</a>'
+    return f'<span class="missing-inline">{html.escape(missing_label)}</span>'
+
+
+def _status_label(value: str | None) -> str:
+    if not value:
+        return "missing"
+    return value.replace("_", " ")
+
+
+def _phase_report_label(phase: dict[str, Any]) -> str:
+    if phase.get("actual_g1_model_replay"):
+        return "G1 Model Replay"
+    if phase.get("phase_report"):
+        return "G1 Schematic Evidence"
+    return "G1 report unavailable"
+
+
+def _scan_json_string_field(path: Path, field: str) -> str | None:
+    token = f'"{field}"'
+    pattern = re.compile(rf'"{re.escape(field)}"\s*:\s*"([^"]*)"')
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                if token not in line:
+                    continue
+                match = pattern.search(line)
+                return match.group(1) if match else None
+    except OSError:
+        return None
+    return None
+
+
+def _artifact_source_status(artifact: Path | None, source_materialization: Path) -> str:
+    if artifact is None:
+        return "missing"
+    source_sha = _scan_json_string_field(artifact, "source_materialization_sha256")
+    if source_sha is None:
+        manifest_path = artifact.parent / "manifest.json"
+        if manifest_path.exists():
+            try:
+                manifest = _load_json_object(manifest_path, "artifact manifest")
+            except ValueError:
+                manifest = {}
+            manifest_sha = manifest.get("source_materialization_sha256")
+            if isinstance(manifest_sha, str):
+                source_sha = manifest_sha
+    if source_sha is None:
+        return "source_materialization_unverified"
+    return "current_source_match" if source_sha == sha256_file(source_materialization) else "stale_source_materialization"
+
+
+def _dedupe_phase_report_replay_frames(phase_report_manifest_path: Path) -> list[Path]:
+    """Point render evidence at the public replay frames and remove duplicate PNGs."""
+
+    phase_report = _load_json_object(phase_report_manifest_path, "phase report manifest")
+    g1_render_reference = phase_report.get("g1_render")
+    public_demo_reference = phase_report.get("public_demo")
+    if not isinstance(g1_render_reference, str) or not isinstance(public_demo_reference, str):
+        return []
+
+    render_manifest_path = phase_report_manifest_path.parent / g1_render_reference
+    public_manifest_path = phase_report_manifest_path.parent / public_demo_reference
+    if not render_manifest_path.exists() or not public_manifest_path.exists():
+        return []
+
+    render_manifest = _load_json_object(render_manifest_path, "G1 render manifest")
+    public_manifest = _load_json_object(public_manifest_path, "phase public demo manifest")
+    replay = render_manifest.get("replay_frames")
+    teaching_html = public_manifest.get("teaching_html")
+    if not isinstance(replay, dict) or not isinstance(teaching_html, dict):
+        return []
+
+    g1_replay = teaching_html.get("g1_replay")
+    if not isinstance(g1_replay, dict) or g1_replay.get("actual_g1_model_replay") is not True:
+        return []
+    public_frame_refs = g1_replay.get("rendered_frame_paths")
+    original_frame_refs = replay.get("paths")
+    if not isinstance(public_frame_refs, list) or not public_frame_refs:
+        return []
+    if not isinstance(original_frame_refs, list) or len(public_frame_refs) != len(original_frame_refs):
+        return []
+
+    public_dir = public_manifest_path.parent
+    rewritten_refs: list[str] = []
+    for reference in public_frame_refs:
+        if not isinstance(reference, str) or not reference:
+            return []
+        public_frame = public_dir / reference
+        if not public_frame.exists() or public_frame.stat().st_size == 0:
+            return []
+        rewritten_refs.append(_relative_path(public_frame, render_manifest_path.parent))
+
+    replay_dir = render_manifest_path.parent / "frames" / "replay"
+    replay["paths"] = rewritten_refs
+    replay["paths_deduplicated_to_public_demo"] = True
+    replay["deduplicated_original_frame_dir"] = _relative_path(replay_dir, render_manifest_path.parent)
+    _write_json(render_manifest_path, render_manifest)
+    if replay_dir.exists() and replay_dir.is_dir():
+        shutil.rmtree(replay_dir)
+    return [render_manifest_path]
 
 
 def _render_routine_html(payload: dict[str, Any]) -> str:
     routine_name = html.escape(payload["routine_name_en"])
     routine_name_zh = html.escape(payload["routine_name_zh"])
+    report_complete = bool(payload.get("report_complete"))
+    actual_g1_complete = bool(payload.get("actual_g1_model_replay_complete"))
     nav = "\n".join(
         f'<a href="#phase-{html.escape(phase["phase_id"])}">{index + 1}. '
         f'{html.escape(phase["name_zh"])} · {html.escape(phase["name_en"])}</a>'
@@ -645,20 +759,38 @@ def _render_routine_html(payload: dict[str, Any]) -> str:
             if phase.get("reference_clip")
             else '<div class="missing">Original clip is not materialized in this output.</div>'
         )
-        phase_demo = phase.get("phase_public_demo")
+        phase_report = phase.get("phase_report")
+        phase_report_status = _status_label(phase.get("phase_report_status"))
+        gvhmr_link = _artifact_link(
+            phase.get("gvhmr_json"),
+            "GVHMR SMPL-X JSON available",
+            "missing GVHMR SMPL-X JSON",
+        )
+        gmr_link = _artifact_link(
+            phase.get("gmr_json"),
+            "GMR Unitree G1 JSON available",
+            "missing GMR Unitree G1 JSON",
+        )
         smplx_panel = (
-            f'<a class="open-demo" href="{html.escape(phase_demo)}">Open synchronized SMPL-X/G1 phase replay</a>'
-            if phase_demo
-            else f'<div class="missing">{html.escape(phase["gvhmr_status_label"])}</div>'
+            f'<a class="open-report" href="{html.escape(phase_report)}">Open phase report</a>'
+            if phase_report
+            else f'<div class="artifact-status">{gvhmr_link}<span>{html.escape(phase["gvhmr_status_label"])}</span></div>'
         )
         g1_detail = html.escape(phase["g1_status_label"])
+        g1_report_label = html.escape(_phase_report_label(phase))
+        g1_panel = (
+            f'<a class="open-report g1-report" href="{html.escape(phase_report)}">{g1_report_label}</a>'
+            if phase_report
+            else f'<div class="artifact-status">{gmr_link}<span>{g1_detail}</span></div>'
+        )
         provenance_items = "\n".join(
             f"<li><span>{html.escape(label)}</span><code>{html.escape(str(value))}</code></li>"
             for label, value in [
                 ("source materialization", phase.get("source_materialization")),
                 ("GVHMR JSON", phase.get("gvhmr_json") or "missing"),
                 ("GMR JSON", phase.get("gmr_json") or "missing"),
-                ("phase demo", phase.get("phase_demo") or "not generated"),
+                ("phase report", phase.get("phase_report") or "not generated"),
+                ("phase report status", phase_report_status),
             ]
         )
         sections.append(
@@ -683,9 +815,9 @@ def _render_routine_html(payload: dict[str, Any]) -> str:
           {smplx_panel}
         </article>
         <article>
-          <h3>Unitree G1 visual replay</h3>
+          <h3>Unitree G1 visual track</h3>
           <p>G1 is a visual companion only. G1 non-scoring: <strong>true</strong>.</p>
-          <div class="missing">{g1_detail}</div>
+          {g1_panel}
         </article>
       </div>
       <details>
@@ -722,8 +854,13 @@ def _render_routine_html(payload: dict[str, Any]) -> str:
     article {{ border:1px solid var(--line); border-radius:8px; padding:12px; min-width:0; display:grid; gap:10px; align-content:start; background:#fbfcfe; }}
     h3 {{ font-size:16px; }}
     video {{ width:100%; aspect-ratio:16/9; background:#101820; border-radius:8px; }}
-    .missing,.open-demo {{ min-height:88px; display:grid; place-items:center; text-align:center; border:1px dashed #b9c5d0; border-radius:8px; padding:12px; color:var(--muted); background:#fff; }}
-    .open-demo {{ color:var(--smplx); font-weight:800; text-decoration:none; }}
+    .missing,.open-report,.artifact-status {{ min-height:88px; display:grid; place-items:center; text-align:center; border:1px dashed #b9c5d0; border-radius:8px; padding:12px; color:var(--muted); background:#fff; }}
+    .open-report {{ color:var(--smplx); font-weight:800; text-decoration:none; }}
+    .g1-report {{ color:var(--g1); }}
+    .artifact-status {{ gap:7px; }}
+    .artifact-status a {{ color:var(--smplx); font-weight:850; text-decoration:none; }}
+    .artifact-status span {{ font-size:12px; }}
+    .missing-inline {{ font-weight:800; color:var(--muted); }}
     details {{ border-top:1px solid var(--line); padding-top:10px; }}
     summary {{ cursor:pointer; font-weight:800; }}
     ul {{ display:grid; gap:7px; padding-left:0; list-style:none; }}
@@ -736,13 +873,14 @@ def _render_routine_html(payload: dict[str, Any]) -> str:
   <header>
     <div>
       <h1>{routine_name_zh} · {routine_name}</h1>
-      <p class="subtitle">One local routine page assembled from first-demo phase clips and returned artifacts.</p>
+      <p class="subtitle">Self-contained report directory: one overview plus one synchronized phase report per selected round.</p>
     </div>
     <div class="top-badges">
       <span>SMPL-X scoring</span>
       <span>G1 non-scoring</span>
       <span>Local-only media</span>
-      <span>Fail-closed artifact labels</span>
+      <span>{'Complete phase reports' if report_complete else 'Incomplete phase reports'}</span>
+      <span>{'G1 Model Replay complete' if actual_g1_complete else 'G1 Schematic Evidence or missing fallback'}</span>
     </div>
   </header>
   <nav aria-label="Phase navigation">{nav}</nav>
@@ -762,10 +900,15 @@ def write_routine_html(
     gmr_json_root: Path | None = None,
     model_descriptor: Path | None = None,
     use_rerun_sdk: bool = False,
+    build_phase_demos: bool = True,
+    render_mujoco: bool = False,
 ) -> RoutineHtmlWriteResult:
     validate_output_dir(out_dir)
+    if render_mujoco and model_descriptor is None:
+        raise ValueError("routine MuJoCo G1 model replay requires --model-descriptor")
     split_manifest_path, split_manifest, phases = _load_source_materializations(source_materializations, routine)
     out_dir.mkdir(parents=True, exist_ok=True)
+    _clean_routine_phase_outputs(out_dir)
     manifest_path = out_dir / "manifest.json"
     html_path = out_dir / "index.html"
     checked_paths: list[Path] = []
@@ -795,19 +938,38 @@ def write_routine_html(
                 ("gmr-unitree-g1.json", "gmr-unitree-g1.normalized.json"),
             )
         )
+        gvhmr_source_status = _artifact_source_status(gvhmr_json, source_materialization)
         phase_out = out_dir / "phases" / phase_id
-        phase_demo_path: Path | None = None
-        phase_public_demo_index_path: Path | None = None
+        phase_report_manifest_path: Path | None = None
+        phase_report_index_path: Path | None = None
         phase_error: str | None = None
-        g1_status = "missing_gmr_json"
-        gvhmr_status = "missing_gvhmr_json"
+        actual_g1_model_replay = False
+        phase_report_status = "phase_report_not_requested_index_only"
+        if gvhmr_json is None:
+            gvhmr_status = "missing_gvhmr_json"
+        elif gvhmr_source_status == "stale_source_materialization":
+            gvhmr_status = "gvhmr_json_stale_for_current_source"
+        elif gvhmr_source_status == "source_materialization_unverified":
+            gvhmr_status = "gvhmr_json_available_unverified_source"
+        else:
+            gvhmr_status = "gvhmr_json_available"
+        if gmr_json is None:
+            g1_status = "missing_gmr_json"
+        elif gvhmr_source_status == "stale_source_materialization":
+            g1_status = "gmr_json_available_but_smplx_source_stale"
+        elif gvhmr_json is None:
+            g1_status = "gmr_json_available_without_smplx"
+        else:
+            g1_status = "gmr_json_available_non_scoring"
 
-        if gvhmr_json is not None:
-            gvhmr_status = "gvhmr_json_found"
-            try:
-                g1_track = None
-                g1_model = model_descriptor
-                if gmr_json is not None:
+        if build_phase_demos and gvhmr_json is not None and gvhmr_source_status != "stale_source_materialization":
+            if gmr_json is None:
+                phase_report_status = "missing_gmr_json"
+                phase_error = "phase report requires returned GMR Unitree G1 JSON"
+            else:
+                gvhmr_status = "gvhmr_json_found"
+                try:
+                    g1_model = model_descriptor
                     g1_status = "gmr_json_found"
                     preimport_motion = write_gvhmr_json_motion_contract(
                         phase_out / "preimport-motion-contract",
@@ -821,29 +983,38 @@ def write_routine_html(
                         motion_record=preimport_motion.out_dir,
                         model_descriptor_path=g1_model,
                     )
-                    g1_track = imported.track_manifest_path
-                demo = write_real_conversion_demo(
-                    phase_out / "demo",
-                    source_materialization=source_materialization,
-                    gvhmr_json=gvhmr_json,
-                    g1_track=g1_track,
-                    model_descriptor=g1_model,
-                    use_rerun_sdk=use_rerun_sdk,
-                )
-                phase_demo_path = demo.manifest_path
-                public_demo = _load_json_object(phase_demo_path, "phase demo manifest").get("public_demo")
-                if isinstance(public_demo, str):
-                    phase_public_demo_manifest_path = (phase_demo_path.parent / public_demo).resolve()
-                    phase_public_demo_index_path = phase_public_demo_manifest_path.parent / "index.html"
-                gvhmr_status = "smplx_teaching_track_generated"
-                if gmr_json is None:
-                    g1_status = "missing_gmr_json_fixture_fallback"
-                checked_paths.extend(demo.checked_paths)
-            except ValueError as exc:
-                phase_error = str(exc)
-                gvhmr_status = "gvhmr_artifact_invalid"
-                if gmr_json is not None:
+                    demo = write_real_conversion_demo(
+                        phase_out / "report",
+                        source_materialization=source_materialization,
+                        gvhmr_json=gvhmr_json,
+                        g1_track=imported.track_manifest_path,
+                        model_descriptor=g1_model,
+                        render_mujoco=render_mujoco,
+                        use_rerun_sdk=use_rerun_sdk,
+                    )
+                    phase_report_manifest_path = demo.manifest_path
+                    phase_report_manifest = _load_json_object(phase_report_manifest_path, "phase report manifest")
+                    public_demo = phase_report_manifest.get("public_demo")
+                    if isinstance(public_demo, str):
+                        phase_public_demo_manifest_path = (phase_report_manifest_path.parent / public_demo).resolve()
+                        phase_report_index_path = phase_public_demo_manifest_path.parent / "index.html"
+                    actual_g1_model_replay = bool(phase_report_manifest.get("actual_g1_model_replay"))
+                    gvhmr_status = "smplx_teaching_track_generated"
+                    g1_status = (
+                        "g1_model_replay_generated_non_scoring"
+                        if actual_g1_model_replay
+                        else "g1_schematic_evidence_generated_non_scoring"
+                    )
+                    phase_report_status = "phase_report_generated"
+                    checked_paths.extend(demo.checked_paths)
+                    checked_paths.extend(_dedupe_phase_report_replay_frames(phase_report_manifest_path))
+                except ValueError as exc:
+                    phase_error = str(exc)
+                    phase_report_status = "phase_report_generation_failed"
+                    gvhmr_status = "gvhmr_artifact_invalid"
                     g1_status = "gmr_artifact_not_imported"
+        elif build_phase_demos:
+            phase_report_status = gvhmr_status
 
         phase_entry = {
             "phase_id": phase_id,
@@ -861,14 +1032,53 @@ def write_routine_html(
             "gmr_json": _relative_path(gmr_json, manifest_path.parent) if gmr_json is not None else None,
             "g1_status": g1_status,
             "g1_status_label": _phase_status_label(g1_status),
-            "phase_demo": _relative_path(phase_demo_path, manifest_path.parent) if phase_demo_path else None,
-            "phase_public_demo": _relative_path(phase_public_demo_index_path, manifest_path.parent)
-            if phase_public_demo_index_path
+            "phase_report_manifest": _relative_path(phase_report_manifest_path, manifest_path.parent)
+            if phase_report_manifest_path
             else None,
+            "phase_report": _relative_path(phase_report_index_path, manifest_path.parent)
+            if phase_report_index_path
+            else None,
+            "phase_report_status": phase_report_status,
+            "actual_g1_model_replay": actual_g1_model_replay,
+            "phase_demo": _relative_path(phase_report_manifest_path, manifest_path.parent)
+            if phase_report_manifest_path
+            else None,
+            "phase_public_demo": _relative_path(phase_report_index_path, manifest_path.parent)
+            if phase_report_index_path
+            else None,
+            "phase_demo_status": phase_report_status,
+            "artifact_source_status": {
+                "gvhmr_json": gvhmr_source_status,
+                "gmr_json": "linked_to_smplx_source_status" if gmr_json is not None else "missing",
+            },
+            "artifact_current": {
+                "gvhmr_json": gvhmr_json is not None and gvhmr_source_status == "current_source_match",
+                "gmr_json": gmr_json is not None and gvhmr_source_status == "current_source_match",
+            },
+            "artifact_availability": {
+                "reference_clip": reference_clip is not None,
+                "gvhmr_json": gvhmr_json is not None,
+                "gmr_json": gmr_json is not None,
+                "phase_report": phase_report_manifest_path is not None,
+                "phase_public_demo": phase_report_index_path is not None,
+                "g1_model_replay": actual_g1_model_replay,
+                "phase_demo": phase_report_manifest_path is not None,
+            },
             "error": phase_error,
         }
         phase_entries.append(phase_entry)
 
+    report_complete = bool(phase_entries) and all(bool(phase.get("phase_report")) for phase in phase_entries)
+    actual_g1_model_replay_complete = bool(phase_entries) and all(
+        bool(phase.get("actual_g1_model_replay")) for phase in phase_entries
+    )
+    assembly_mode = (
+        "self_contained_report"
+        if build_phase_demos and report_complete
+        else "self_contained_report_incomplete"
+        if build_phase_demos
+        else "lightweight_index"
+    )
     payload = {
         "schema": ROUTINE_HTML_SCHEMA,
         "routine": routine,
@@ -880,6 +1090,12 @@ def write_routine_html(
         "phase_count": len(phase_entries),
         "phases": phase_entries,
         "html": "index.html",
+        "assembly_mode": assembly_mode,
+        "build_phase_demos": build_phase_demos,
+        "build_phase_reports": build_phase_demos,
+        "report_complete": report_complete,
+        "actual_g1_model_replay_complete": actual_g1_model_replay_complete,
+        "render_mujoco_requested": render_mujoco,
         "scoring_source": "smplx",
         "g1_scoring_allowed": False,
         "artifact_roots": {
@@ -887,8 +1103,10 @@ def write_routine_html(
             "gmr_json_root": _as_posix(gmr_json_root) if gmr_json_root is not None else None,
         },
         "notes": (
-            "This is a local routine assembly page. Missing GVHMR/GMR/render inputs are labeled "
-            "explicitly and are not treated as successful runtime execution."
+            "This is a local self-contained routine report directory when current GVHMR and GMR "
+            "artifacts are present. The overview links to one phase report per selected round. "
+            "Missing GVHMR/GMR/render inputs are labeled explicitly and are not treated as "
+            "successful runtime execution."
         ),
     }
     _write_json(manifest_path, payload)
@@ -901,6 +1119,13 @@ def smoke_check_routine_html(routine_html: Path) -> RoutineSmokeResult:
     manifest_path = _resolve_manifest_path(routine_html)
     manifest = _load_json_object(manifest_path, "routine HTML manifest")
     require_schema(manifest, ROUTINE_HTML_SCHEMA, "routine HTML manifest")
+    if manifest.get("assembly_mode") not in {
+        "lightweight_index",
+        "phase_demos",
+        "self_contained_report",
+        "self_contained_report_incomplete",
+    }:
+        raise ValueError("routine HTML manifest has unknown assembly_mode")
     if manifest.get("scoring_source") != "smplx":
         raise ValueError("routine HTML must keep SMPL-X as scoring_source")
     if manifest.get("g1_scoring_allowed") is not False:
@@ -928,15 +1153,22 @@ def smoke_check_routine_html(routine_html: Path) -> RoutineSmokeResult:
         anchor = f'href="#phase-{phase["phase_id"]}"'
         if anchor not in html_text:
             missing.append(anchor)
+        phase_report = phase.get("phase_report")
+        if isinstance(phase_report, str) and phase_report:
+            report_path = manifest_path.parent / phase_report
+            if not report_path.exists() or not report_path.read_text(encoding="utf-8").strip():
+                raise ValueError(f"routine phase report is missing or blank: {report_path}")
     required_fragments = [
         "SMPL-X skeleton teaching track",
         "SMPL-X scoring",
         "G1 non-scoring",
         "Original clip",
-        "Unitree G1 visual replay",
+        "Unitree G1 visual track",
         "Provenance",
     ]
     missing.extend(fragment for fragment in required_fragments if fragment not in html_text)
+    if "G1 Model Replay" not in html_text and "G1 Schematic Evidence" not in html_text:
+        missing.append("G1 Model Replay or G1 Schematic Evidence")
     if missing:
         raise ValueError(f"routine HTML smoke labels are missing: {', '.join(missing)}")
     checked = [manifest_path, html_path]
@@ -947,6 +1179,9 @@ def smoke_check_routine_html(routine_html: Path) -> RoutineSmokeResult:
             if not clip_path.exists() or clip_path.stat().st_size == 0:
                 raise ValueError(f"routine HTML reference clip is missing or blank: {clip_path}")
             checked.append(clip_path)
+        phase_report = phase.get("phase_report")
+        if isinstance(phase_report, str) and phase_report:
+            checked.append(manifest_path.parent / phase_report)
     smoke_path = manifest_path.parent / "smoke.json"
     _write_json(
         smoke_path,

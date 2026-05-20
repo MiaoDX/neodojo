@@ -15,6 +15,9 @@ ROUTINE_HTML_OUT ?= outputs/routines/$(ROUTINE)/html
 ROUTINE_GVHMR_JSON_ROOT ?= outputs/routines/$(ROUTINE)/gvhmr-runs
 ROUTINE_GMR_JSON_ROOT ?= outputs/routines/$(ROUTINE)/gmr-json
 ROUTINE_MODEL_DESCRIPTOR ?=
+ROUTINE_BUILD_PHASE_DEMOS ?= 0
+ROUTINE_INDEX_ONLY ?= 0
+ROUTINE_RENDER_MUJOCO ?= 0
 ROUTINE_FRAME_RATE ?= 1
 ROUTINE_DRY_RUN ?= 1
 REAL_SOURCE_ID ?= 03-006
@@ -158,6 +161,15 @@ ROUTINE_ASSEMBLE_ARGS = --routine "$(ROUTINE)" --source-materializations "$(ROUT
 ifdef ROUTINE_MODEL_DESCRIPTOR
 ROUTINE_ASSEMBLE_ARGS += --model-descriptor "$(ROUTINE_MODEL_DESCRIPTOR)"
 endif
+ifeq ($(ROUTINE_BUILD_PHASE_DEMOS),1)
+ROUTINE_ASSEMBLE_ARGS += --build-phase-demos
+endif
+ifeq ($(ROUTINE_INDEX_ONLY),1)
+ROUTINE_ASSEMBLE_ARGS += --index-only
+endif
+ifeq ($(ROUTINE_RENDER_MUJOCO),1)
+ROUTINE_ASSEMBLE_ARGS += --render-mujoco
+endif
 
 all: verify
 
@@ -212,7 +224,16 @@ routine-prepare-gpu:
 	PYTHONPATH=src $(PYTHON) -m neodojo routine prepare-gpu-runs --routine "$(ROUTINE)" --clips "$(ROUTINE_SOURCE_OUT)" --out "$(ROUTINE_GPU_OUT)"
 
 routine-assemble:
+ifeq ($(ROUTINE_RENDER_MUJOCO),1)
+	@if [ "$(MUJOCO_RENDER_GL)" = "glfw" ]; then \
+		command -v xvfb-run >/dev/null || (echo "xvfb-run is required for ROUTINE_RENDER_MUJOCO=1 MUJOCO_RENDER_GL=glfw; install xvfb or choose MUJOCO_RENDER_GL=egl/osmesa" && exit 2); \
+		xvfb-run -a env MUJOCO_GL="$(MUJOCO_RENDER_GL)" PYTHONPATH=src $(PYTHON) -m neodojo routine assemble $(ROUTINE_ASSEMBLE_ARGS); \
+	else \
+		env MUJOCO_GL="$(MUJOCO_RENDER_GL)" PYTHONPATH=src $(PYTHON) -m neodojo routine assemble $(ROUTINE_ASSEMBLE_ARGS); \
+	fi
+else
 	PYTHONPATH=src $(PYTHON) -m neodojo routine assemble $(ROUTINE_ASSEMBLE_ARGS)
+endif
 
 routine-smoke:
 	PYTHONPATH=src $(PYTHON) -m neodojo routine smoke --routine-html "$(ROUTINE_HTML_OUT)"

@@ -69,6 +69,13 @@ class RoutinePipelineTests(unittest.TestCase):
         self.assertEqual(len(manifest["routines"]["wuqinxi"]["phases"]), 10)
         self.assertEqual(len(manifest["routines"]["yijinjing"]["phases"]), 12)
         self.assertEqual(manifest["routines"]["baduanjin"]["phases"][0]["selection_rule"], "first_demo_only")
+        baduanjin_phases = manifest["routines"]["baduanjin"]["phases"]
+        baduanjin_duration = sum(phase["duration_seconds"] for phase in baduanjin_phases)
+        self.assertGreaterEqual(baduanjin_duration, 180)
+        self.assertLessEqual(baduanjin_duration, 220)
+        self.assertLessEqual(max(phase["duration_seconds"] for phase in baduanjin_phases), 40)
+        separate = next(phase for phase in baduanjin_phases if phase["phase_id"] == "separate_heaven_earth")
+        self.assertEqual(separate["start_seconds"], 240.0)
 
     def test_unknown_routine_is_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "unknown routine"):
@@ -128,19 +135,29 @@ class RoutinePipelineTests(unittest.TestCase):
                 routine="baduanjin",
                 source_materializations=split.manifest_path,
             )
+            manifest = json.loads(html.manifest_path.read_text(encoding="utf-8"))
             smoke = smoke_check_routine_html(html.manifest_path)
             page = html.html_path.read_text(encoding="utf-8")
             gpu_manifest_exists = gpu.manifest_path.exists()
+            phases_dir_exists = (root / "html" / "phases").exists()
 
         self.assertEqual(split.phase_count, 8)
         self.assertEqual(split_manifest["phases"][0]["source_materialization_status"], "dry_run")
         self.assertTrue(gpu_manifest_exists)
+        self.assertEqual(manifest["assembly_mode"], "self_contained_report_incomplete")
         self.assertEqual(smoke.manifest_path, html.manifest_path)
+        self.assertFalse(phases_dir_exists)
+        self.assertEqual(manifest["phases"][0]["phase_report_status"], "missing_gvhmr_json")
+        for phase in split_manifest["phases"]:
+            self.assertIn(phase["name_zh"], page)
+            self.assertIn(phase["name_en"], page)
         self.assertIn("SMPL-X skeleton teaching track", page)
         self.assertIn("missing gvhmr json", page)
         self.assertIn("G1 non-scoring", page)
+        self.assertIn("Original clip", page)
+        self.assertIn("Provenance", page)
 
-    def test_routine_assemble_imports_matching_gvhmr_phase_and_labels_missing_gmr(self) -> None:
+    def test_routine_assemble_indexes_returned_artifacts_without_phase_demos(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             source = root / "source.mp4"
@@ -178,19 +195,183 @@ class RoutinePipelineTests(unittest.TestCase):
                     },
                 },
             )
+            gmr_path = root / "gmr" / first["phase_id"] / "normalized" / "gmr-unitree-g1.normalized.json"
+            _write_json(
+                gmr_path,
+                {
+                    "schema": "neodojo.gmr_unitree_g1_track.v1",
+                    "robot": "unitree_g1",
+                    "fixture_only": False,
+                    "fps": 1,
+                    "frames": [],
+                },
+            )
+            stale_phase_demo = root / "html" / "phases" / first["phase_id"] / "demo" / "index.html"
+            stale_phase_demo.parent.mkdir(parents=True)
+            stale_phase_demo.write_text("stale heavy phase demo", encoding="utf-8")
 
             result = write_routine_html(
                 root / "html",
                 routine="baduanjin",
                 source_materializations=split.manifest_path,
                 gvhmr_json_root=root / "gvhmr",
+                gmr_json_root=root / "gmr",
+                build_phase_demos=False,
             )
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            page = result.html_path.read_text(encoding="utf-8")
+            smoke_check_routine_html(result.manifest_path)
+            phases_dir_exists = (root / "html" / "phases").exists()
+
+        first_phase = manifest["phases"][0]
+        self.assertEqual(manifest["assembly_mode"], "lightweight_index")
+        self.assertEqual(first_phase["gvhmr_status"], "gvhmr_json_available")
+        self.assertEqual(first_phase["g1_status"], "gmr_json_available_non_scoring")
+        self.assertEqual(first_phase["phase_report_status"], "phase_report_not_requested_index_only")
+        self.assertTrue(first_phase["artifact_availability"]["gvhmr_json"])
+        self.assertTrue(first_phase["artifact_availability"]["gmr_json"])
+        self.assertIsNone(first_phase["phase_public_demo"])
+        self.assertFalse(phases_dir_exists)
+        self.assertIn("GVHMR SMPL-X JSON available", page)
+        self.assertIn("GMR Unitree G1 JSON available", page)
+        self.assertIn(first_phase["gvhmr_json"], page)
+        self.assertIn(first_phase["gmr_json"], page)
+
+    def test_routine_assemble_labels_stale_returned_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "source.mp4"
+            source.write_bytes(b"placeholder local Bilibili MP4 bytes")
+            split = write_routine_split(
+                root / "source-out",
+                routine="baduanjin",
+                source_video=source,
+                dry_run=True,
+            )
+            split_manifest = json.loads(split.manifest_path.read_text(encoding="utf-8"))
+            first = split_manifest["phases"][0]
+            gvhmr_path = root / "gvhmr" / first["phase_id"] / "gvhmr-smplx-joints.json"
+            _write_json(
+                gvhmr_path,
+                {
+                    "schema": "neodojo.gvhmr_smplx_joints.v1",
+                    "fixture_only": True,
+                    "routine": "Baduanjin",
+                    "form": first["name_en"],
+                    "fps": 1,
+                    "frames": build_smplx_fixture_frames(int(first["duration_seconds"])),
+                    "provenance": {
+                        "source_materialization_sha256": "stale-source-materialization-sha",
+                    },
+                },
+            )
+            gmr_path = root / "gmr" / first["phase_id"] / "normalized" / "gmr-unitree-g1.normalized.json"
+            _write_json(gmr_path, {"schema": "neodojo.gmr_unitree_g1_track.v1", "robot": "unitree_g1"})
+
+            result = write_routine_html(
+                root / "html",
+                routine="baduanjin",
+                source_materializations=split.manifest_path,
+                gvhmr_json_root=root / "gvhmr",
+                gmr_json_root=root / "gmr",
+                build_phase_demos=False,
+            )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+
+        first_phase = manifest["phases"][0]
+        self.assertEqual(first_phase["gvhmr_status"], "gvhmr_json_stale_for_current_source")
+        self.assertEqual(first_phase["g1_status"], "gmr_json_available_but_smplx_source_stale")
+        self.assertFalse(first_phase["artifact_current"]["gvhmr_json"])
+        self.assertFalse(first_phase["artifact_current"]["gmr_json"])
+
+    def test_routine_assemble_builds_phase_reports_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "source.mp4"
+            source.write_bytes(b"placeholder local Bilibili MP4 bytes")
+            split = write_routine_split(
+                root / "source-out",
+                routine="baduanjin",
+                source_video=source,
+                dry_run=True,
+            )
+            split_manifest = json.loads(split.manifest_path.read_text(encoding="utf-8"))
+            for phase in split_manifest["phases"]:
+                materialization_path = split.manifest_path.parent / phase["source_materialization"]
+                materialization = json.loads(materialization_path.read_text(encoding="utf-8"))
+                gvhmr_path = root / "gvhmr" / phase["phase_id"] / "gvhmr-smplx-joints.json"
+                _write_json(
+                    gvhmr_path,
+                    {
+                        "schema": "neodojo.gvhmr_smplx_joints.v1",
+                        "fixture_only": True,
+                        "routine": "Baduanjin",
+                        "form": phase["name_en"],
+                        "fps": 1,
+                        "frames": build_smplx_fixture_frames(int(phase["duration_seconds"])),
+                        "provenance": {
+                            "source_materialization_sha256": sha256_file(materialization_path),
+                            "source_id": materialization["source_prep"]["source_id"],
+                            "trim": materialization["trim"],
+                        },
+                    },
+                )
+                _write_json(
+                    root / "gmr" / phase["phase_id"] / "normalized" / "gmr-unitree-g1.normalized.json",
+                    {
+                        "schema": "neodojo.gmr_unitree_g1_track.v1",
+                        "robot": "unitree_g1",
+                        "fixture_only": False,
+                        "fps": 1,
+                        "frames": [],
+                    },
+                )
+
+            def fake_demo(out_dir: Path, **_: object) -> SimpleNamespace:
+                manifest_path = out_dir / "manifest.json"
+                public_manifest_path = out_dir / "public-demo" / "manifest.json"
+                index_path = out_dir / "public-demo" / "index.html"
+                _write_json(public_manifest_path, {"html": "index.html"})
+                index_path.write_text(
+                    "Original video SMPL-X skeleton teaching track Unitree G1 MuJoCo model replay G1 non-scoring",
+                    encoding="utf-8",
+                )
+                _write_json(
+                    manifest_path,
+                    {
+                        "public_demo": "public-demo/manifest.json",
+                        "actual_g1_model_replay": True,
+                    },
+                )
+                return SimpleNamespace(manifest_path=manifest_path, checked_paths=[index_path])
+
+            with patch(
+                "neodojo.routine.write_gvhmr_json_motion_contract",
+                return_value=SimpleNamespace(out_dir=root / "motion"),
+            ), patch(
+                "neodojo.routine.import_gmr_json_track",
+                return_value=SimpleNamespace(track_manifest_path=root / "g1-track" / "manifest.json"),
+            ), patch("neodojo.routine.write_real_conversion_demo", side_effect=fake_demo):
+                result = write_routine_html(
+                    root / "html",
+                    routine="baduanjin",
+                    source_materializations=split.manifest_path,
+                    gvhmr_json_root=root / "gvhmr",
+                    gmr_json_root=root / "gmr",
+                    model_descriptor=root / "g1-model" / "manifest.json",
+                    render_mujoco=True,
+                )
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            page = result.html_path.read_text(encoding="utf-8")
             smoke_check_routine_html(result.manifest_path)
 
-        self.assertEqual(manifest["phases"][0]["gvhmr_status"], "smplx_teaching_track_generated")
-        self.assertEqual(manifest["phases"][0]["g1_status"], "missing_gmr_json_fixture_fallback")
-        self.assertTrue(manifest["phases"][0]["phase_public_demo"].endswith("index.html"))
+        self.assertEqual(manifest["assembly_mode"], "self_contained_report")
+        self.assertTrue(manifest["report_complete"])
+        self.assertTrue(manifest["actual_g1_model_replay_complete"])
+        self.assertTrue(all(phase["phase_report"] for phase in manifest["phases"]))
+        self.assertTrue(all(phase["actual_g1_model_replay"] for phase in manifest["phases"]))
+        self.assertIn("Open phase report", page)
+        self.assertIn("G1 Model Replay", page)
 
 
 class BilibiliDownloaderTests(unittest.TestCase):
