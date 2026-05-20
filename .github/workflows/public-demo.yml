@@ -111,10 +111,17 @@ jobs:
             outputs/viser-runtime
             outputs/g1-render
             outputs/browser-capture
+      - name: Build Pages site
+        run: |
+          rm -rf outputs/pages-site
+          mkdir -p outputs/pages-site
+          cp -a outputs/public-demo/. outputs/pages-site/
+          mkdir -p outputs/pages-site/samples
+          cp -a samples/routines outputs/pages-site/samples/routines
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: outputs/public-demo
+          path: outputs/pages-site
 
   deploy:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.NEODOJO_DEPLOY_PAGES == 'true'

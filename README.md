@@ -38,10 +38,19 @@ training loop.
 | Artifact | Link |
 | --- | --- |
 | Live fixture demo | [`miaodx.com/neodojo`](https://miaodx.com/neodojo/) |
+| Full routine gallery | [`miaodx.com/neodojo/samples/routines`](https://miaodx.com/neodojo/samples/routines/) |
+| Full Baduanjin report | [`samples/routines/baduanjin/html`](https://miaodx.com/neodojo/samples/routines/baduanjin/html/) |
+| Full Wu Qin Xi report | [`samples/routines/wuqinxi/html`](https://miaodx.com/neodojo/samples/routines/wuqinxi/html/) |
+| Full Yi Jin Jing report | [`samples/routines/yijinjing/html`](https://miaodx.com/neodojo/samples/routines/yijinjing/html/) |
 | CI fixture HTML | `neodojo-public-demo` in the [`public-demo` workflow](https://github.com/MiaoDX/neodojo/actions/workflows/public-demo.yml) |
 | CI sample-backed real HTML | `neodojo-real-demo-public-demo` in the same workflow |
 | Local sample-backed real HTML | `outputs/real-demo/public-demo/index.html` after `make ci-real-demo` |
 | Local routine HTML | `outputs/routines/<routine>/html/index.html` after the routine split/assemble commands |
+
+The committed full routine samples live under [`samples/routines`](samples/routines)
+and are published by the Pages workflow. They are lean self-contained reports:
+Original video clips, SMPL-X Teaching Track, and 5 fps Unitree G1 Model Replay
+MP4 media for each selected round.
 
 The committed Baduanjin sample includes a small trimmed source clip plus the
 derived GVHMR/GMR JSON needed to rebuild the demo. Larger source videos should

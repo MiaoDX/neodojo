@@ -1,0 +1,109 @@
+{
+  "mode": "lean_self_contained_playback",
+  "notes": "Routine assembly keeps self-contained phase playback for review and removes bulky full-evidence artifacts. Re-run with --preserve-phase-evidence to retain the full tree.",
+  "phase_report": "manifest.json",
+  "pruned_artifact_count": 12,
+  "pruned_artifacts": [
+    {
+      "kind": "file",
+      "path": "public-demo/scene.json",
+      "size_bytes": 8119798
+    },
+    {
+      "kind": "file",
+      "path": "public-demo/neodojo-demo.rrd",
+      "size_bytes": 8878153
+    },
+    {
+      "kind": "directory",
+      "path": "annotations",
+      "size_bytes": 18276
+    },
+    {
+      "kind": "directory",
+      "path": "capture",
+      "size_bytes": 4368
+    },
+    {
+      "kind": "directory",
+      "path": "g1-mujoco-render",
+      "size_bytes": 107523
+    },
+    {
+      "kind": "directory",
+      "path": "motion-contract",
+      "size_bytes": 4522965
+    },
+    {
+      "kind": "directory",
+      "path": "real-conversion-validation",
+      "size_bytes": 3450822
+    },
+    {
+      "kind": "directory",
+      "path": "smplx-surface",
+      "size_bytes": 4702453
+    },
+    {
+      "kind": "directory",
+      "path": "teaching-demo",
+      "size_bytes": 3148161
+    },
+    {
+      "kind": "directory",
+      "path": "viser-runtime",
+      "size_bytes": 8154884
+    },
+    {
+      "kind": "directory",
+      "path": "../g1-import",
+      "size_bytes": 2271640
+    },
+    {
+      "kind": "directory",
+      "path": "../preimport-motion-contract",
+      "size_bytes": 4522610
+    }
+  ],
+  "pruned_size_bytes": 47901653,
+  "retained_artifacts": [
+    {
+      "kind": "file",
+      "path": "manifest.json",
+      "role": "phase report manifest",
+      "size_bytes": 7028
+    },
+    {
+      "kind": "file",
+      "path": "public-demo/manifest.json",
+      "role": "public demo manifest",
+      "size_bytes": 7144
+    },
+    {
+      "kind": "file",
+      "path": "public-demo/index.html",
+      "role": "self-contained playback HTML",
+      "size_bytes": 3145050
+    },
+    {
+      "kind": "file",
+      "path": "public-demo/source-video/original.mp4",
+      "role": "original clipped video",
+      "size_bytes": 1023818
+    },
+    {
+      "kind": "file",
+      "path": "public-demo/g1-replay-video/front.mp4",
+      "role": "G1 replay video",
+      "size_bytes": 1887106
+    },
+    {
+      "kind": "file",
+      "path": "public-demo/screenshot.svg",
+      "role": "static screenshot",
+      "size_bytes": 8367
+    }
+  ],
+  "schema": "neodojo.routine_phase_report_prune.v1",
+  "status": "pruned"
+}
