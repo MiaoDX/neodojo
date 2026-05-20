@@ -24,7 +24,8 @@ Important environment variables:
   USE_DPVO          1 adds GVHMR --use_dpvo. Default: 0.
   F_MM              Optional GVHMR --f_mm focal length.
   PARAMETER_BLOCK   GVHMR parameter block for export. Default: smpl_params_global.
-  FPS               Export fps. Default: 30.
+  FPS               Export fps. Default: detected from VIDEO with ffprobe;
+                    falls back to 30 when detection is unavailable.
   ROUTINE           Export routine label. Default: Baduanjin.
   FORM              Export form label. Default: Two Hands Hold Up the Heavens.
   RUNTIME           Runtime provenance string.
@@ -77,13 +78,45 @@ STATIC_CAM="${STATIC_CAM:-1}"
 USE_DPVO="${USE_DPVO:-0}"
 F_MM="${F_MM:-}"
 PARAMETER_BLOCK="${PARAMETER_BLOCK:-smpl_params_global}"
-FPS="${FPS:-30}"
+FPS="${FPS:-}"
 ROUTINE="${ROUTINE:-Baduanjin}"
 FORM="${FORM:-Two Hands Hold Up the Heavens}"
 RUNTIME="${RUNTIME:-$(uname -a)}"
 UPSTREAM_VERSION="${UPSTREAM_VERSION:-$GVHMR_REV}"
 NEODOJO_DRY_RUN="${NEODOJO_DRY_RUN:-0}"
 GPU_COMMAND_TEXT=""
+
+detect_video_fps() {
+  local video_path="$1"
+  local rate
+  if ! command -v ffprobe >/dev/null 2>&1 || [[ ! -f "$video_path" ]]; then
+    return 0
+  fi
+  rate="$(
+    ffprobe -v error -select_streams v:0 \
+      -show_entries stream=avg_frame_rate \
+      -of default=noprint_wrappers=1:nokey=1 "$video_path" 2>/dev/null \
+      | head -n 1
+  )"
+  if [[ -z "$rate" || "$rate" == "0/0" ]]; then
+    return 0
+  fi
+  awk -v rate="$rate" 'BEGIN {
+    split(rate, parts, "/")
+    if (length(parts[2]) > 0) {
+      if (parts[2] + 0 > 0) {
+        printf "%.6f", (parts[1] + 0) / (parts[2] + 0)
+      }
+    } else if (parts[1] + 0 > 0) {
+      printf "%.6f", parts[1] + 0
+    }
+  }'
+}
+
+if [[ -z "$FPS" ]]; then
+  FPS="$(detect_video_fps "$VIDEO" || true)"
+fi
+FPS="${FPS:-30}"
 
 run_cmd() {
   printf '+'

@@ -41,6 +41,7 @@ training loop.
 | CI fixture HTML | `neodojo-public-demo` in the [`public-demo` workflow](https://github.com/MiaoDX/neodojo/actions/workflows/public-demo.yml) |
 | CI sample-backed real HTML | `neodojo-real-demo-public-demo` in the same workflow |
 | Local sample-backed real HTML | `outputs/real-demo/public-demo/index.html` after `make ci-real-demo` |
+| Local routine HTML | `outputs/routines/<routine>/html/index.html` after the routine split/assemble commands |
 
 The committed Baduanjin sample includes a small trimmed source clip plus the
 derived GVHMR/GMR JSON needed to rebuild the demo. Larger source videos should
@@ -60,6 +61,21 @@ not the judge.
 Use `make ci-real-demo` for the sample-backed real HTML and `make verify` for
 the bootstrap verification surface. Full command details live in
 [`STATUS.md`](STATUS.md).
+
+For the three tracked Bilibili sources, the local routine orchestration path is:
+
+```bash
+make bilibili-download BILIBILI_DRY_RUN=1
+make bilibili-download BILIBILI_DRY_RUN=0 BILIBILI_COOKIES_FROM_BROWSER=chrome
+make routine-split ROUTINE=baduanjin ROUTINE_SOURCE_VIDEO=video/bilibili/01_baduanjin-complete-routine-with-breathing-cues.mp4 ROUTINE_DRY_RUN=0
+make routine-prepare-gpu ROUTINE=baduanjin
+make routine-assemble ROUTINE=baduanjin
+make routine-smoke ROUTINE=baduanjin
+```
+
+This prepares local phase clips and per-phase GVHMR/GMR handoffs. It does not
+vendor or run GVHMR, GMR, checkpoints, MuJoCo/Genesis mesh rendering, or a live
+published real routine demo.
 
 ## Contributing
 

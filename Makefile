@@ -1,6 +1,22 @@
-.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser readme-gif real-gpu-prep gvhmr-inspect demo-real ci-real-demo mujoco-g1-render roboharness-g1-report mujoco-backend-compare mujoco-backend-benchmark real-artifact-intake real-conversion-audit real-conversion-audit-strict smoke-public
+.PHONY: all verify verify-real lint check test build demo-html demo-public demo-public-browser readme-gif bilibili-download routine-split routine-prepare-gpu routine-assemble routine-smoke real-gpu-prep gvhmr-inspect demo-real ci-real-demo mujoco-g1-render roboharness-g1-report mujoco-backend-compare mujoco-backend-benchmark real-artifact-intake real-conversion-audit real-conversion-audit-strict smoke-public
 
 PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
+ROUTINE ?= baduanjin
+BILIBILI_DOWNLOAD_OUT ?= outputs/bilibili-download
+BILIBILI_MEDIA_DIR ?=
+BILIBILI_QUALITY ?= 480p
+BILIBILI_DRY_RUN ?= 1
+BILIBILI_COOKIES ?=
+BILIBILI_COOKIES_FROM_BROWSER ?=
+ROUTINE_SOURCE_VIDEO ?=
+ROUTINE_SOURCE_OUT ?= outputs/routines/$(ROUTINE)/source
+ROUTINE_GPU_OUT ?= outputs/routines/$(ROUTINE)/gvhmr-runs
+ROUTINE_HTML_OUT ?= outputs/routines/$(ROUTINE)/html
+ROUTINE_GVHMR_JSON_ROOT ?= outputs/routines/$(ROUTINE)/gvhmr-runs
+ROUTINE_GMR_JSON_ROOT ?= outputs/routines/$(ROUTINE)/gmr-json
+ROUTINE_MODEL_DESCRIPTOR ?=
+ROUTINE_FRAME_RATE ?= 1
+ROUTINE_DRY_RUN ?= 1
 REAL_SOURCE_ID ?= 03-006
 REAL_START ?= 0
 REAL_END ?= 12
@@ -118,6 +134,30 @@ endif
 ifdef REAL_RIGHTS_NOTES
 REAL_PREP_SOURCE_ARGS += --rights-notes "$(REAL_RIGHTS_NOTES)"
 endif
+BILIBILI_DOWNLOAD_ARGS = --quality "$(BILIBILI_QUALITY)" --out "$(BILIBILI_DOWNLOAD_OUT)"
+ifdef BILIBILI_MEDIA_DIR
+BILIBILI_DOWNLOAD_ARGS += --media-dir "$(BILIBILI_MEDIA_DIR)"
+endif
+ifdef BILIBILI_COOKIES
+BILIBILI_DOWNLOAD_ARGS += --cookies "$(BILIBILI_COOKIES)"
+endif
+ifdef BILIBILI_COOKIES_FROM_BROWSER
+BILIBILI_DOWNLOAD_ARGS += --cookies-from-browser "$(BILIBILI_COOKIES_FROM_BROWSER)"
+endif
+ifeq ($(BILIBILI_DRY_RUN),1)
+BILIBILI_DOWNLOAD_ARGS += --dry-run
+endif
+ROUTINE_SPLIT_ARGS = --routine "$(ROUTINE)" --frame-rate "$(ROUTINE_FRAME_RATE)" --out "$(ROUTINE_SOURCE_OUT)"
+ifdef ROUTINE_SOURCE_VIDEO
+ROUTINE_SPLIT_ARGS += --source-video "$(ROUTINE_SOURCE_VIDEO)"
+endif
+ifeq ($(ROUTINE_DRY_RUN),1)
+ROUTINE_SPLIT_ARGS += --dry-run
+endif
+ROUTINE_ASSEMBLE_ARGS = --routine "$(ROUTINE)" --source-materializations "$(ROUTINE_SOURCE_OUT)" --gvhmr-json-root "$(ROUTINE_GVHMR_JSON_ROOT)" --gmr-json-root "$(ROUTINE_GMR_JSON_ROOT)" --out "$(ROUTINE_HTML_OUT)"
+ifdef ROUTINE_MODEL_DESCRIPTOR
+ROUTINE_ASSEMBLE_ARGS += --model-descriptor "$(ROUTINE_MODEL_DESCRIPTOR)"
+endif
 
 all: verify
 
@@ -161,6 +201,21 @@ demo-public-browser: demo-public
 
 readme-gif: ci-real-demo
 	PYTHONPATH=src $(PYTHON) -m neodojo demo render-gif --public-demo "$(README_GIF_PUBLIC_DEMO)" --out "$(README_GIF_OUT)" --frames "$(README_GIF_FRAMES)" --scale-width "$(README_GIF_SCALE_WIDTH)"
+
+bilibili-download:
+	PYTHONPATH=src $(PYTHON) -m neodojo bilibili download $(BILIBILI_DOWNLOAD_ARGS)
+
+routine-split:
+	PYTHONPATH=src $(PYTHON) -m neodojo routine split $(ROUTINE_SPLIT_ARGS)
+
+routine-prepare-gpu:
+	PYTHONPATH=src $(PYTHON) -m neodojo routine prepare-gpu-runs --routine "$(ROUTINE)" --clips "$(ROUTINE_SOURCE_OUT)" --out "$(ROUTINE_GPU_OUT)"
+
+routine-assemble:
+	PYTHONPATH=src $(PYTHON) -m neodojo routine assemble $(ROUTINE_ASSEMBLE_ARGS)
+
+routine-smoke:
+	PYTHONPATH=src $(PYTHON) -m neodojo routine smoke --routine-html "$(ROUTINE_HTML_OUT)"
 
 real-gpu-prep:
 	@test -n "$(LOCAL_VIDEO)" || (echo "LOCAL_VIDEO=path/to/local-source.mp4 is required" && exit 2)
