@@ -12,9 +12,11 @@ real Baduanjin G1 replay proof.
   Viser UI.
 - Teaching feedback is based on the SMPL-X track. The Unitree G1 track is for
   visualization and ecosystem fit only.
-- The live Pages root demo remains fixture-only at `https://miaodx.com/neodojo/`.
-  The same Pages deployment now also publishes committed full routine samples
-  under `https://miaodx.com/neodojo/samples/routines/`.
+- The live Pages homepage at `https://miaodx.com/neodojo/` is the committed full
+  routine gallery for Baduanjin, Wu Qin Xi, and Yi Jin Jing. The fixture public
+  demo remains available at `https://miaodx.com/neodojo/fixture/`, and the
+  routine gallery is also mirrored at
+  `https://miaodx.com/neodojo/samples/routines/` for stable links.
 - The generated public-demo `index.html` is an interactive synchronized teaching
   replay: SMPL-X skeleton teaching track plus Unitree G1 visual track by
   default, and an optional Original video panel when a local reference clip is
@@ -89,8 +91,9 @@ real Baduanjin G1 replay proof.
 - `.github/workflows/public-demo.yml` has a focused MuJoCo smoke lane that
   installs the `real-g1-replay` extra and validates the G1 renderer through
   `xvfb-run -a env MUJOCO_GL=glfw`. Its Pages artifact is assembled into
-  `outputs/pages-site`, with the fixture public demo at the root and committed
-  routine samples copied under `samples/routines/`.
+  `outputs/pages-site`, with committed routine samples at the root, the fixture
+  public demo under `fixture/`, and the routine gallery mirrored under
+  `samples/routines/`.
 - The same workflow runs `make ci-real-demo` and uploads
   `outputs/real-demo/public-demo/index.html` as the
   `neodojo-real-demo-public-demo` artifact. By default this lane uses

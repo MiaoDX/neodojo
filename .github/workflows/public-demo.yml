@@ -115,7 +115,9 @@ jobs:
         run: |
           rm -rf outputs/pages-site
           mkdir -p outputs/pages-site
-          cp -a outputs/public-demo/. outputs/pages-site/
+          mkdir -p outputs/pages-site/fixture
+          cp -a outputs/public-demo/. outputs/pages-site/fixture/
+          cp -a samples/routines/. outputs/pages-site/
           mkdir -p outputs/pages-site/samples
           cp -a samples/routines outputs/pages-site/samples/routines
       - name: Upload Pages artifact
