@@ -31,6 +31,31 @@
     h1, h2, p { margin: 0; }
     h1 { font-size: clamp(26px, 4vw, 42px); letter-spacing: 0; }
     .subtitle { max-width: 860px; color: var(--muted); line-height: 1.55; }
+    .repo-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .repo-links a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 12px;
+      background: #f9fbfd;
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 850;
+    }
+    .repo-links a.primary {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: white;
+    }
     main { display: grid; gap: 16px; padding: 18px; }
     .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
     article {
@@ -87,6 +112,10 @@
       Static self-contained reports for representative one-round cuts of Baduanjin, Wu Qin Xi, and Yi Jin Jing.
       Each routine opens to an overview with Original video, SMPL-X Teaching Track, and Unitree G1 Model Replay panels.
     </p>
+    <nav class="repo-links" aria-label="Project links">
+      <a class="primary" href="https://github.com/MiaoDX/neodojo">GitHub Repository</a>
+      <a href="https://github.com/MiaoDX/neodojo/actions/workflows/public-demo.yml">CI and Pages Workflow</a>
+    </nav>
   </header>
   <main>
     <section class="grid" aria-label="Full routine sample reports">
