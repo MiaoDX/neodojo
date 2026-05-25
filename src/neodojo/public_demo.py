@@ -9,6 +9,13 @@ from pathlib import Path
 from typing import Any
 
 from .contracts import PLAYBACK_SCHEMA, PUBLIC_DEMO_SCHEMA, TWO_PANEL_TEACHING_HTML_PROFILE, require_schema
+from .execution_profiles import (
+    EXECUTION_PROFILE_SCHEMA,
+    G1_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE,
+    G1_PUBLIC_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE,
+    G1_SCHEMATIC_EVIDENCE_PROFILE,
+    build_public_g1_replay_execution_profile,
+)
 from .fixtures import BONES, TRAJECTORY_JOINTS
 from .g1_render import G1_RENDER_SCHEMA
 from .g1_visual import load_g1_track_frames
@@ -58,8 +65,16 @@ def _actual_g1_replay_available(render_manifest: dict[str, Any] | None) -> bool:
         return False
     replay = render_manifest.get("replay_frames")
     renderer = render_manifest.get("renderer")
+    execution_profile = render_manifest.get("execution_profile")
+    profile_satisfied = bool(
+        isinstance(execution_profile, dict)
+        and execution_profile.get("schema") == EXECUTION_PROFILE_SCHEMA
+        and execution_profile.get("profile") == G1_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE
+        and execution_profile.get("status") == "satisfied"
+    )
     return bool(
         isinstance(replay, dict)
+        and profile_satisfied
         and replay.get("actual_g1_model_replay") is True
         and replay.get("available") is True
         and replay.get("nonblank_pixel_check") is True
@@ -1252,6 +1267,27 @@ def write_public_demo(
         else "split_smplx_left_g1_right"
     )
     fixture_label = "fixture-only" if scene["fixture_only"] else "real-artifact"
+    g1_public_execution_profile = build_public_g1_replay_execution_profile(
+        render_execution_profile=render_evidence.get("execution_profile")
+        if isinstance(render_evidence, dict)
+        else None,
+        actual_g1_model_replay=actual_g1_replay,
+        visual_style=g1_visual_style,
+        public_media_available=bool(
+            actual_g1_replay
+            and (
+                (isinstance(g1_sequence.get("video"), dict) and g1_sequence["video"].get("available") is True)
+                or bool(g1_sequence.get("paths"))
+            )
+        ),
+        scoring_source="smplx",
+        g1_scoring_allowed=False,
+    )
+    scene["g1_execution_profile"] = g1_public_execution_profile
+    _write_json(scene_path, scene)
+    if not use_rerun_sdk:
+        recording["scene"] = scene
+        _write_json(recording_path, recording)
     manifest = {
         "schema": PUBLIC_DEMO_SCHEMA,
         "fixture_only": bool(scene["fixture_only"]),
@@ -1327,6 +1363,7 @@ def write_public_demo(
                 "source_frame_indices": g1_sequence.get("source_frame_indices"),
                 "video": g1_sequence.get("video"),
                 "rendered_frame_paths": g1_sequence.get("paths", []),
+                "execution_profile": g1_public_execution_profile,
             },
         },
         "routine_feedback": {
@@ -1433,8 +1470,16 @@ def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
     g1_replay = teaching_html.get("g1_replay")
     if not isinstance(g1_replay, dict):
         raise ValueError("public demo teaching_html must define g1_replay metadata")
+    g1_execution_profile = g1_replay.get("execution_profile")
+    if not isinstance(g1_execution_profile, dict) or g1_execution_profile.get("schema") != EXECUTION_PROFILE_SCHEMA:
+        raise ValueError("public demo teaching_html g1_replay must define an execution_profile")
     actual_g1_replay = bool(g1_replay.get("actual_g1_model_replay"))
     if actual_g1_replay:
+        if (
+            g1_execution_profile.get("profile") != G1_PUBLIC_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE
+            or g1_execution_profile.get("status") != "satisfied"
+        ):
+            raise ValueError("actual G1 replay must satisfy the public actual replay execution profile")
         if g1_replay.get("visual_style") not in {"mujoco-video-replay.v1", "mujoco-png-frame-sequence.v1"}:
             raise ValueError("actual G1 replay must use a supported MuJoCo replay visual style")
         g1_video = g1_replay.get("video")
@@ -1451,6 +1496,11 @@ def smoke_check_public_demo(public_demo: Path) -> PublicDemoSmokeResult:
             raise ValueError("actual G1 replay must expose a replay video or rendered frame paths")
     elif teaching_html.get("panels", {}).get("right", {}).get("label") != "Unitree G1 schematic evidence":
         raise ValueError("non-actual G1 public demo must label the right panel as schematic evidence")
+    elif (
+        g1_execution_profile.get("profile") != G1_SCHEMATIC_EVIDENCE_PROFILE
+        or g1_execution_profile.get("status") != "satisfied"
+    ):
+        raise ValueError("schematic G1 public demo must satisfy the schematic execution profile")
 
     required_labels = manifest.get("visual_smoke_expectations", {}).get("required_labels", [])
     if not required_labels:

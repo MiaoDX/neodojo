@@ -39,6 +39,7 @@ MUJOCO_RENDER_WIDTH ?= 1280
 MUJOCO_RENDER_HEIGHT ?= 960
 MUJOCO_RENDER_OUT ?= outputs/g1-mujoco-render
 MUJOCO_G1_REPLAY_FPS ?= 5
+G1_EXECUTION_PROFILE ?= auto
 ROBOHARNESS_REPORT_OUT ?= outputs/g1-roboharness-report
 MUJOCO_COMPARE_BACKENDS ?= egl glfw osmesa
 MUJOCO_COMPARE_WIDTH ?= 1280
@@ -82,6 +83,7 @@ REAL_CONVERSION_AUDIT_ARGS = \
 	--real-demo "$(REAL_ARTIFACT_OUT)" \
 	--out "$(REAL_CONVERSION_AUDIT_OUT)"
 REAL_DEMO_ARGS = --source-materialization "$(SOURCE_MATERIALIZATION)" --gvhmr-json "$(GVHMR_JSON)" --out "$(REAL_DEMO_OUT)"
+REAL_DEMO_ARGS += --g1-execution-profile "$(G1_EXECUTION_PROFILE)"
 ifdef G1_TRACK
 REAL_DEMO_ARGS += --g1-track "$(G1_TRACK)"
 endif
@@ -316,9 +318,9 @@ mujoco-g1-render:
 	@test -n "$(G1_TRACK)" || (echo "G1_TRACK=path/to/g1-track-manifest.json is required" && exit 2)
 	@if [ "$(MUJOCO_RENDER_GL)" = "glfw" ]; then \
 		command -v xvfb-run >/dev/null || (echo "xvfb-run is required for MUJOCO_RENDER_GL=glfw; install xvfb or choose MUJOCO_RENDER_GL=egl/osmesa" && exit 2); \
-		xvfb-run -a env MUJOCO_GL="$(MUJOCO_RENDER_GL)" PYTHONPATH=src $(PYTHON) -m neodojo render mujoco-g1 --model-descriptor "$(MODEL_DESCRIPTOR)" --g1-track "$(G1_TRACK)" --width "$(MUJOCO_RENDER_WIDTH)" --height "$(MUJOCO_RENDER_HEIGHT)" --replay-fps "$(MUJOCO_G1_REPLAY_FPS)" --out "$(MUJOCO_RENDER_OUT)"; \
+		xvfb-run -a env MUJOCO_GL="$(MUJOCO_RENDER_GL)" PYTHONPATH=src $(PYTHON) -m neodojo render mujoco-g1 --model-descriptor "$(MODEL_DESCRIPTOR)" --g1-track "$(G1_TRACK)" --width "$(MUJOCO_RENDER_WIDTH)" --height "$(MUJOCO_RENDER_HEIGHT)" --replay-fps "$(MUJOCO_G1_REPLAY_FPS)" --execution-profile "$(G1_EXECUTION_PROFILE)" --out "$(MUJOCO_RENDER_OUT)"; \
 	else \
-		env MUJOCO_GL="$(MUJOCO_RENDER_GL)" PYTHONPATH=src $(PYTHON) -m neodojo render mujoco-g1 --model-descriptor "$(MODEL_DESCRIPTOR)" --g1-track "$(G1_TRACK)" --width "$(MUJOCO_RENDER_WIDTH)" --height "$(MUJOCO_RENDER_HEIGHT)" --replay-fps "$(MUJOCO_G1_REPLAY_FPS)" --out "$(MUJOCO_RENDER_OUT)"; \
+		env MUJOCO_GL="$(MUJOCO_RENDER_GL)" PYTHONPATH=src $(PYTHON) -m neodojo render mujoco-g1 --model-descriptor "$(MODEL_DESCRIPTOR)" --g1-track "$(G1_TRACK)" --width "$(MUJOCO_RENDER_WIDTH)" --height "$(MUJOCO_RENDER_HEIGHT)" --replay-fps "$(MUJOCO_G1_REPLAY_FPS)" --execution-profile "$(G1_EXECUTION_PROFILE)" --out "$(MUJOCO_RENDER_OUT)"; \
 	fi
 
 roboharness-g1-report:

@@ -15,9 +15,14 @@ from typing import Any, Mapping
 from .contracts import (
     PUBLIC_DEMO_SCHEMA,
     TWO_PANEL_TEACHING_HTML_PROFILE,
-    local_file_metadata,
     require_schema,
+    local_file_metadata,
     sha256_file,
+)
+from .execution_profiles import (
+    EXECUTION_PROFILE_SCHEMA,
+    G1_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE,
+    G1_PUBLIC_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE,
 )
 from .fixtures import (
     FIXTURE_FORM,
@@ -1764,8 +1769,18 @@ def audit_real_conversion_completion(
     g1_render_replay = (
         g1_render_payload.get("replay_frames") if isinstance(g1_render_payload, dict) else None
     )
+    g1_render_execution_profile = (
+        g1_render_payload.get("execution_profile") if isinstance(g1_render_payload, dict) else None
+    )
+    g1_render_profile_satisfied = bool(
+        isinstance(g1_render_execution_profile, dict)
+        and g1_render_execution_profile.get("schema") == EXECUTION_PROFILE_SCHEMA
+        and g1_render_execution_profile.get("profile") == G1_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE
+        and g1_render_execution_profile.get("status") == "satisfied"
+    )
     g1_render_actual_replay = bool(
         isinstance(g1_render_payload, dict)
+        and g1_render_profile_satisfied
         and g1_render_payload.get("actual_g1_model_replay") is True
         and g1_render_payload.get("model_fixture_only") is False
         and g1_render_payload.get("track_fixture_only") is False
@@ -1781,6 +1796,17 @@ def audit_real_conversion_completion(
     )
     _audit_add_check(
         checks,
+        name="g1_render_execution_profile_satisfied",
+        passed=g1_render_profile_satisfied,
+        path=g1_render_manifest,
+        message=(
+            "G1 render manifest satisfies the actual MuJoCo replay execution profile."
+            if g1_render_profile_satisfied
+            else g1_render_error or "G1 render manifest is missing a satisfied actual replay execution profile."
+        ),
+    )
+    _audit_add_check(
+        checks,
         name="g1_render_actual_mujoco_frame_sequence",
         passed=g1_render_actual_replay,
         path=g1_render_manifest,
@@ -1793,8 +1819,18 @@ def audit_real_conversion_completion(
 
     public_g1_replay = teaching_html.get("g1_replay") if isinstance(teaching_html, dict) else None
     public_g1_replay_video = public_g1_replay.get("video") if isinstance(public_g1_replay, dict) else None
+    public_execution_profile = (
+        public_g1_replay.get("execution_profile") if isinstance(public_g1_replay, dict) else None
+    )
+    public_execution_profile_satisfied = bool(
+        isinstance(public_execution_profile, dict)
+        and public_execution_profile.get("schema") == EXECUTION_PROFILE_SCHEMA
+        and public_execution_profile.get("profile") == G1_PUBLIC_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE
+        and public_execution_profile.get("status") == "satisfied"
+    )
     public_consumes_replay = bool(
         isinstance(public_g1_replay, dict)
+        and public_execution_profile_satisfied
         and public_g1_replay.get("actual_g1_model_replay") is True
         and public_g1_replay.get("visual_style") in {"mujoco-video-replay.v1", "mujoco-png-frame-sequence.v1"}
         and (
@@ -1915,7 +1951,9 @@ def audit_real_conversion_completion(
             "non_fixture_mjcf_descriptor": g1_descriptor_non_fixture,
             "render_manifest": _as_posix(g1_render_manifest),
             "actual_mujoco_frame_sequence": g1_render_actual_replay,
+            "render_execution_profile_satisfied": g1_render_profile_satisfied,
             "public_demo_consumes_replay": public_consumes_replay,
+            "public_execution_profile_satisfied": public_execution_profile_satisfied,
             "public_demo_consumes_video": bool(
                 isinstance(public_g1_replay_video, dict)
                 and public_g1_replay_video.get("available") is True

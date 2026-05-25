@@ -18,12 +18,20 @@ from neodojo.annotations import detect_opening_form_keyframe, write_detected_ann
 from neodojo.capture_bundle import write_capture_bundle
 from neodojo.contracts import sha256_file
 from neodojo.demo_html import build_fixture, compute_feedback, render_demo_html, write_demo
+from neodojo.execution_profiles import (
+    G1_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE,
+    G1_PUBLIC_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE,
+    G1_SCHEMATIC_EVIDENCE_PROFILE,
+    build_g1_render_execution_profile,
+    require_satisfied_execution_profile,
+)
 from neodojo.fixtures import TEACHING_JOINTS, build_smplx_fixture_frames, derive_g1_like_frame
 from neodojo.g1_render import (
     G1_MUJOCO_RENDER_BACKEND,
     G1_MUJOCO_VISUAL_THEME,
     G1_RENDER_SCHEMA,
     _sample_replay_frame_indices,
+    _write_rgb_png,
     write_g1_mujoco_backend_benchmark,
     write_g1_mujoco_backend_comparison,
     write_g1_mujoco_render,
@@ -129,6 +137,7 @@ def _write_actual_g1_render_manifest(
     source_frame_indices: list[int] | None = None,
     source_fps: float = 24.0,
     replay_fps: float | None = None,
+    include_execution_profile: bool = True,
 ) -> Path:
     render_dir = root / "actual-g1-render"
     selected_dir = render_dir / "frames"
@@ -202,9 +211,40 @@ def _write_actual_g1_render_manifest(
         "nonblank_pixel_check": True,
         "nonblank_views": {"front": True, "side": True, "top": True},
     }
+    if include_execution_profile:
+        manifest["execution_profile"] = build_g1_render_execution_profile(
+            requested_profile=G1_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE,
+            renderer_backend=G1_MUJOCO_RENDER_BACKEND,
+            scoring_source=manifest["scoring_source"],
+            g1_scoring_allowed=manifest["g1_scoring_allowed"],
+            model_fixture_only=manifest["model_fixture_only"],
+            track_fixture_only=manifest["track_fixture_only"],
+            pose_application=manifest["pose_application"],
+            replay_frames=manifest["replay_frames"],
+            mesh_loaded=manifest["mesh_loaded"],
+            nonblank_pixel_check=manifest["nonblank_pixel_check"],
+            actual_g1_model_replay=manifest["actual_g1_model_replay"],
+        )
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     (render_dir / "index.html").write_text("actual G1 render evidence", encoding="utf-8")
     return manifest_path
+
+
+class _FakeMujocoRenderer:
+    def __init__(self, model, *, height: int, width: int):
+        del model, height, width
+
+    def close(self) -> None:
+        return None
+
+
+def _fake_rgb_pixels(width: int, height: int, *, fill: list[int], marker: list[int]):
+    import numpy as np
+
+    pixels = np.zeros((height, width, 3), dtype=np.uint8)
+    pixels[:, :] = fill
+    pixels[-1, -1] = marker
+    return pixels
 
 
 class DemoHtmlTests(unittest.TestCase):
@@ -218,6 +258,22 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(len(ten_fps), 290)
         self.assertEqual(ten_fps[:5], [0, 2, 5, 8, 10])
         self.assertEqual(len(_sample_replay_frame_indices(725, source_fps=25, replay_fps=None)), 725)
+
+    def test_actual_g1_execution_profile_rejects_schematic_evidence(self) -> None:
+        profile = build_g1_render_execution_profile(
+            requested_profile=G1_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE,
+            renderer_backend="neodojo_svg_schematic.v1",
+            scoring_source="smplx",
+            g1_scoring_allowed=False,
+            model_fixture_only=True,
+            track_fixture_only=True,
+            actual_g1_model_replay=False,
+        )
+
+        self.assertEqual(profile["profile"], G1_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE)
+        self.assertEqual(profile["status"], "unsatisfied")
+        with self.assertRaisesRegex(ValueError, "G1 actual replay"):
+            require_satisfied_execution_profile(profile, label="G1 actual replay")
 
     def test_fixture_preserves_scoring_boundary(self) -> None:
         fixture = build_fixture(frame_count=16)
@@ -826,6 +882,10 @@ class DemoHtmlTests(unittest.TestCase):
 
     @unittest.skipUnless(importlib.util.find_spec("mujoco"), "mujoco optional dependency is not installed")
     def test_write_mujoco_render_from_registered_mjcf(self) -> None:
+        def fake_render_mujoco_rgb(renderer, data, camera):
+            del renderer, data, camera
+            return _fake_rgb_pixels(96, 80, fill=[10, 20, 30], marker=[0, 0, 255])
+
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             model_file = root / "g1_fixture.xml"
@@ -854,13 +914,17 @@ class DemoHtmlTests(unittest.TestCase):
                 model_descriptor_path=model.descriptor_path,
             )
 
-            result = write_g1_mujoco_render(
-                root / "mujoco-render",
-                model_descriptor_path=model.descriptor_path,
-                g1_track=g1.track_manifest_path,
-                width=96,
-                height=80,
-            )
+            with patch("mujoco.Renderer", _FakeMujocoRenderer), patch(
+                "neodojo.g1_render._render_mujoco_rgb",
+                side_effect=fake_render_mujoco_rgb,
+            ):
+                result = write_g1_mujoco_render(
+                    root / "mujoco-render",
+                    model_descriptor_path=model.descriptor_path,
+                    g1_track=g1.track_manifest_path,
+                    width=96,
+                    height=80,
+                )
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
             front_png = result.frame_paths["front"].read_bytes()
             front_dimensions = _png_dimensions(result.frame_paths["front"])
@@ -882,6 +946,14 @@ class DemoHtmlTests(unittest.TestCase):
 
     @unittest.skipUnless(importlib.util.find_spec("mujoco"), "mujoco optional dependency is not installed")
     def test_write_mujoco_render_applies_imported_gmr_joint_angles(self) -> None:
+        render_call_count = 0
+
+        def fake_render_mujoco_rgb(renderer, data, camera):
+            del renderer, data, camera
+            nonlocal render_call_count
+            render_call_count += 1
+            return _fake_rgb_pixels(4, 4, fill=[0, render_call_count, 0], marker=[0, 0, 255])
+
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             model_file = root / "g1_fixture.xml"
@@ -933,11 +1005,17 @@ class DemoHtmlTests(unittest.TestCase):
                 model_descriptor_path=model.descriptor_path,
             )
 
-            result = write_g1_mujoco_render(
-                root / "mujoco-render",
-                model_descriptor_path=model.descriptor_path,
-                g1_track=g1.track_manifest_path,
-            )
+            with patch("mujoco.Renderer", _FakeMujocoRenderer), patch(
+                "neodojo.g1_render._render_mujoco_rgb",
+                side_effect=fake_render_mujoco_rgb,
+            ):
+                result = write_g1_mujoco_render(
+                    root / "mujoco-render",
+                    model_descriptor_path=model.descriptor_path,
+                    g1_track=g1.track_manifest_path,
+                    width=96,
+                    height=80,
+                )
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
 
         pose_application = manifest["pose_application"]
@@ -954,6 +1032,95 @@ class DemoHtmlTests(unittest.TestCase):
         "roboharness optional dependency is not installed",
     )
     def test_write_roboharness_report_samples_imported_g1_track(self) -> None:
+        import mujoco
+
+        class FakeVisualizer:
+            def sync(self) -> None:
+                return None
+
+        class FakeMuJoCoMeshcatBackend:
+            def __init__(
+                self,
+                *,
+                xml_string: str,
+                cameras: list[str],
+                render_width: int,
+                render_height: int,
+                visualizer,
+            ):
+                del visualizer
+                self._model = mujoco.MjModel.from_xml_string(xml_string)
+                self._data = mujoco.MjData(self._model)
+                self.cameras = cameras
+                self.render_width = render_width
+                self.render_height = render_height
+                self.visualizer = FakeVisualizer()
+
+        class FakeTaskPhase:
+            def __init__(self, name: str, description: str, *, cameras: list[str], metadata: dict[str, int]):
+                del description
+                self.name = name
+                self.cameras = cameras
+                self.metadata = metadata
+
+        class FakeTaskProtocol:
+            def __init__(self, *, name: str, description: str, phases: list[FakeTaskPhase]):
+                del name, description
+                self.phases = phases
+
+        class FakeCheckpoint:
+            def __init__(self, *, name: str, cameras: list[str], metadata: dict[str, int]):
+                self.name = name
+                self.cameras = cameras
+                self.metadata = metadata
+
+        class FakeView:
+            def __init__(self, name: str):
+                self.name = name
+
+        class FakeCaptureResult:
+            def __init__(self, views: list[FakeView]):
+                self.views = views
+
+        class FakeHarness:
+            def __init__(self, backend: FakeMuJoCoMeshcatBackend, *, output_dir: str, task_name: str):
+                self.backend = backend
+                self.output_dir = Path(output_dir)
+                self.task_name = task_name
+                self._step_count = 0
+
+            def load_protocol(self, protocol: FakeTaskProtocol) -> None:
+                self.protocol = protocol
+
+            def reset(self) -> None:
+                return None
+
+            def capture(self, checkpoint: FakeCheckpoint) -> FakeCaptureResult:
+                stage_dir = self.output_dir / self.task_name / "trial_001" / checkpoint.name
+                pixels = _fake_rgb_pixels(
+                    self.backend.render_width,
+                    self.backend.render_height,
+                    fill=[12, 22, 32],
+                    marker=[0, 0, 255],
+                )
+                views = [FakeView(camera) for camera in checkpoint.cameras]
+                for view in views:
+                    _write_rgb_png(stage_dir / f"{view.name}_rgb.png", pixels)
+                return FakeCaptureResult(views)
+
+        def fake_generate_html_report(out_dir, task_name, **kwargs):
+            del task_name, kwargs
+            report_path = Path(out_dir) / "neodojo_g1_replay_report.html"
+            report_path.write_text("fake roboharness report", encoding="utf-8")
+            return report_path
+
+        fake_tools = (
+            FakeMuJoCoMeshcatBackend,
+            FakeHarness,
+            FakeCheckpoint,
+            (FakeTaskProtocol, FakeTaskPhase, fake_generate_html_report),
+        )
+
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             model_file = root / "g1_fixture.xml"
@@ -1001,13 +1168,14 @@ class DemoHtmlTests(unittest.TestCase):
                 model_descriptor_path=model.descriptor_path,
             )
 
-            result = write_g1_roboharness_report(
-                root / "roboharness-report",
-                model_descriptor_path=model.descriptor_path,
-                g1_track=g1.track_manifest_path,
-                width=96,
-                height=80,
-            )
+            with patch("neodojo.g1_render._load_roboharness_report_tools", return_value=fake_tools):
+                result = write_g1_roboharness_report(
+                    root / "roboharness-report",
+                    model_descriptor_path=model.descriptor_path,
+                    g1_track=g1.track_manifest_path,
+                    width=96,
+                    height=80,
+                )
             manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
             report_exists = result.html_path.exists()
             start_cameras = set(result.stage_paths["start"])
@@ -1559,10 +1727,16 @@ class DemoHtmlTests(unittest.TestCase):
             "robot-body-schematic.v1",
         )
         self.assertFalse(manifest["teaching_html"]["g1_replay"]["actual_g1_model_replay"])
+        self.assertEqual(
+            manifest["teaching_html"]["g1_replay"]["execution_profile"]["profile"],
+            G1_SCHEMATIC_EVIDENCE_PROFILE,
+        )
+        self.assertEqual(manifest["teaching_html"]["g1_replay"]["execution_profile"]["status"], "satisfied")
         self.assertEqual(recording["schema"], "neodojo.rerun_recording_export.v1")
         self.assertFalse(recording["actual_rerun_rrd"])
         self.assertEqual(scene["schema"], "neodojo.scene_timeline.v1")
         self.assertTrue(scene["track_metadata"]["g1"]["fixture_only"])
+        self.assertEqual(scene["g1_execution_profile"]["profile"], G1_SCHEMATIC_EVIDENCE_PROFILE)
         self.assertEqual(scene["camera_definitions"]["front"]["projection_axes"], ["-x", "y"])
         self.assertIn("head", scene["trajectory_joints"])
         self.assertIn('data-teaching-html-profile="neodojo.two_panel_teaching_replay.v1"', html)
@@ -1682,6 +1856,11 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertEqual(manifest["teaching_html"]["g1_replay"]["rendered_frame_count"], 5)
         self.assertEqual(manifest["teaching_html"]["g1_replay"]["rendered_frame_paths"], [])
         self.assertTrue(manifest["teaching_html"]["g1_replay"]["video"]["available"])
+        self.assertEqual(
+            manifest["teaching_html"]["g1_replay"]["execution_profile"]["profile"],
+            G1_PUBLIC_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE,
+        )
+        self.assertEqual(manifest["teaching_html"]["g1_replay"]["execution_profile"]["status"], "satisfied")
         self.assertEqual(manifest["teaching_html"]["g1_replay"]["video"]["path"], "g1-replay-video/front.mp4")
         self.assertEqual(manifest["teaching_html"]["g1_replay"]["replay_fps"], 12)
         self.assertEqual(manifest["teaching_html"]["g1_replay"]["source_frame_indices"], [0, 2, 4, 6, 8])
@@ -1697,6 +1876,82 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertIn("displayFps", html)
         self.assertIn("Unitree G1 MuJoCo model replay", html)
         self.assertIn(replay_video, smoke.checked_paths)
+
+    def test_public_demo_rejects_actual_g1_replay_without_satisfied_profile(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            model_file = root / "g1_fixture.xml"
+            model_file.write_text(
+                """<mujoco model="unitree_g1_fixture">
+  <worldbody>
+    <body name="pelvis">
+      <joint name="waist_yaw_joint" type="hinge"/>
+      <geom name="body" type="sphere" size="0.1"/>
+    </body>
+  </worldbody>
+</mujoco>
+""",
+                encoding="utf-8",
+            )
+            motion = write_fixture_motion_contract(root / "motion", frame_count=10)
+            _, smplx_frames = load_motion_record_frames(motion.motion_record_manifest_path)
+            model = register_g1_model(root / "model", model_file)
+            source = root / "gmr-unitree-g1.json"
+            source.write_text(
+                json.dumps(
+                    {
+                        "schema": "neodojo.gmr_unitree_g1_track.v1",
+                        "robot": "unitree_g1",
+                        "fps": 24,
+                        "frames": [
+                            {
+                                "visual_joints": derive_g1_like_frame(frame),
+                                "joint_angles": {"waist_yaw_joint": index * 0.01},
+                            }
+                            for index, frame in enumerate(smplx_frames)
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            g1 = import_gmr_json_track(
+                root / "g1",
+                source,
+                motion_record=motion.out_dir,
+                model_descriptor_path=model.descriptor_path,
+            )
+            render_manifest = _write_actual_g1_render_manifest(
+                root,
+                model_descriptor=model.descriptor_path,
+                g1_track=g1.track_manifest_path,
+                frame_count=5,
+                include_execution_profile=False,
+            )
+            playback = write_teaching_playback_demo(
+                root / "teaching-demo",
+                motion.out_dir,
+                g1.track_manifest_path,
+            )
+            result = write_public_demo(
+                playback_manifest_path=playback.manifest_path,
+                g1_render_manifest_path=render_manifest,
+                recording_path=root / "public-demo" / "neodojo-demo.rrd",
+            )
+            smoke_check_public_demo(root / "public-demo")
+            manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+            scene = json.loads(result.scene_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(
+            manifest["teaching_html"]["panels"]["right"]["label"],
+            "Unitree G1 schematic evidence",
+        )
+        self.assertFalse(manifest["teaching_html"]["g1_replay"]["actual_g1_model_replay"])
+        self.assertEqual(
+            manifest["teaching_html"]["g1_replay"]["execution_profile"]["profile"],
+            G1_SCHEMATIC_EVIDENCE_PROFILE,
+        )
+        self.assertEqual(manifest["teaching_html"]["g1_replay"]["execution_profile"]["status"], "satisfied")
+        self.assertEqual(scene["g1_execution_profile"]["profile"], G1_SCHEMATIC_EVIDENCE_PROFILE)
 
     @unittest.skipUnless(importlib.util.find_spec("rerun"), "rerun optional dependency is not installed")
     def test_public_demo_can_write_true_rerun_recording(self) -> None:
@@ -3184,12 +3439,15 @@ class DemoHtmlTests(unittest.TestCase):
         self.assertTrue(manifest["g1_replay"]["imported_gmr_joint_angles"])
         self.assertTrue(manifest["g1_replay"]["non_fixture_mjcf_descriptor"])
         self.assertTrue(manifest["g1_replay"]["actual_mujoco_frame_sequence"])
+        self.assertTrue(manifest["g1_replay"]["render_execution_profile_satisfied"])
         self.assertTrue(manifest["g1_replay"]["public_demo_consumes_frames"])
+        self.assertTrue(manifest["g1_replay"]["public_execution_profile_satisfied"])
         self.assertEqual(manifest["artifact"]["validation_status"], "validated")
         self.assertTrue(_check_by_name(manifest, "source_validation_passed")["passed"])
         self.assertTrue(_check_by_name(manifest, "gvhmr_export_visible_motion")["passed"])
         self.assertTrue(_check_by_name(manifest, "public_demo_two_panel_teaching_html")["passed"])
         self.assertTrue(_check_by_name(manifest, "g1_track_imported_gmr_joint_angles")["passed"])
+        self.assertTrue(_check_by_name(manifest, "g1_render_execution_profile_satisfied")["passed"])
         self.assertTrue(_check_by_name(manifest, "g1_render_actual_mujoco_frame_sequence")["passed"])
 
     def test_real_conversion_audit_rejects_static_gvhmr_export(self) -> None:

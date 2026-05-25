@@ -78,9 +78,14 @@ remains follow-on work.
 The static public HTML consumes MuJoCo G1 replay media only when the render
 manifest proves a non-fixture, nonblank, changing frame sequence, then prefers
 the encoded per-phase MP4 for playback; otherwise it labels the G1 panel as
-schematic evidence. When the playback manifest points to a local reference
-clip, the public HTML copies that clip into the ignored demo folder and prepends
-an Original video panel on the same timeline.
+schematic evidence. G1 render and public-demo manifests also carry a versioned
+execution-profile block (`neodojo.execution_profile.v1`) that names the evidence
+claim being made, for example schematic evidence, MuJoCo mesh evidence, actual
+MuJoCo replay evidence, or public actual-replay consumption. Strict real-demo
+verification requires the satisfied actual-replay profiles before accepting the
+right panel as actual Unitree G1 replay. When the playback manifest points to a
+local reference clip, the public HTML copies that clip into the ignored demo
+folder and prepends an Original video panel on the same timeline.
 Routine assembly is a higher-level local report directory over per-phase
 artifacts. By default the overview links to one self-contained phase report per
 selected round when current GVHMR and GMR artifacts are present. Each phase
@@ -104,6 +109,8 @@ instead of being treated as completed runtime work.
   until those commands actually exist.
 - Routine pages must keep SMPL-X as the scoring source and G1 as visual-only
   even when phase-level GMR or MuJoCo evidence is supplied.
+- Actual G1 replay claims must be backed by satisfied execution profiles, not
+  only by labels or single boolean fields.
 
 ## Non-Goals For The MVP
 

@@ -22,7 +22,10 @@ real Baduanjin G1 replay proof.
   default, and an optional Original video panel when a local reference clip is
   available. The G1 panel is labeled as actual Unitree G1 MuJoCo model replay
   only when a non-fixture imported/native GMR track, non-fixture G1 descriptor,
-  and MuJoCo PNG frame sequence are supplied.
+  and MuJoCo PNG frame sequence are supplied. G1 render and public-demo
+  manifests now carry `neodojo.execution_profile.v1` evidence profiles so the
+  actual-replay claim is audited as one named contract rather than a loose set
+  of booleans.
 - A local ignored proof exists in this workspace for a visible-motion Baduanjin
   clip (`80s-92s` from the local 12m08s source video): non-fixture GVHMR SMPL-X
   JSON, headless native GMR Unitree G1 joint angles, a non-fixture
@@ -176,10 +179,12 @@ PYTHONPATH=src python -m neodojo robot-model register-roboharness-g1 --out outpu
 PYTHONPATH=src python -m neodojo tracks run-gmr-g1 --motion-record outputs/real-demo/motion-contract --gvhmr-result path/to/hmr4d_results.pt --gmr-repo path/to/GMR --body-models path/to/GMR/assets/body_models --out outputs/gmr-native-run --execute
 PYTHONPATH=src python -m neodojo tracks import-gmr-json --source outputs/gmr-native-run/normalized/gmr-unitree-g1.normalized.json --motion-record outputs/real-demo/motion-contract --model-descriptor outputs/g1-visual/robot-models/unitree_g1/manifest.json --out outputs/g1-visual
 make mujoco-g1-render MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
+make mujoco-g1-render MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json G1_EXECUTION_PROFILE=g1_actual_mujoco_replay_evidence
 make roboharness-g1-report MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
 make mujoco-backend-compare MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
 make mujoco-backend-benchmark MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json
 make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=path/to/gvhmr-smplx-joints.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json G1_RENDER=outputs/g1-mujoco-render/manifest.json
+make demo-real SOURCE_MATERIALIZATION=outputs/real-conversion-source/source-materialization.json GVHMR_JSON=path/to/gvhmr-smplx-joints.json G1_TRACK=outputs/g1-visual/tracks/g1/manifest.json MODEL_DESCRIPTOR=outputs/g1-visual/robot-models/unitree_g1/manifest.json RENDER_MUJOCO=1 G1_EXECUTION_PROFILE=g1_actual_mujoco_replay_evidence
 make real-conversion-audit
 make verify-real
 ```

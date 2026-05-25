@@ -9,6 +9,10 @@ from .bilibili import DEFAULT_BILIBILI_DOWNLOAD_OUT, DEFAULT_BILIBILI_MANIFEST, 
 from .browser_capture import write_public_demo_browser_capture
 from .capture_bundle import write_capture_bundle
 from .demo_html import write_demo
+from .execution_profiles import (
+    G1_MUJOCO_RENDER_EXECUTION_PROFILE_CHOICES,
+    G1_RENDER_EXECUTION_PROFILE_CHOICES,
+)
 from .g1_visual import (
     build_g1_visual_track,
     import_gmr_json_track,
@@ -815,6 +819,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="allow fixture model descriptors for CI/demo smoke paths",
     )
     render_g1.add_argument(
+        "--execution-profile",
+        choices=G1_RENDER_EXECUTION_PROFILE_CHOICES,
+        default="auto",
+        help="expected G1 evidence profile; explicit profiles fail if required evidence is not satisfied",
+    )
+    render_g1.add_argument(
         "--out",
         type=Path,
         default=Path("outputs/g1-render"),
@@ -858,6 +868,16 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=DEFAULT_G1_REPLAY_FPS,
         help="sample the MuJoCo replay PNG sequence to this FPS; defaults to 5",
+    )
+    render_mujoco_g1.add_argument(
+        "--execution-profile",
+        choices=G1_MUJOCO_RENDER_EXECUTION_PROFILE_CHOICES,
+        default="auto",
+        help=(
+            "expected MuJoCo G1 evidence profile; use "
+            "g1_actual_mujoco_replay_evidence to fail unless imported GMR joint "
+            "angles produce a nonblank changing replay"
+        ),
     )
     render_mujoco_g1.add_argument(
         "--out",
@@ -1300,6 +1320,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="sample MuJoCo G1 replay PNG frames to this FPS when --render-mujoco is used; defaults to 5",
     )
     real_import_demo.add_argument(
+        "--g1-execution-profile",
+        choices=G1_RENDER_EXECUTION_PROFILE_CHOICES,
+        default="auto",
+        help="expected G1 evidence profile for generated render evidence",
+    )
+    real_import_demo.add_argument(
         "--use-rerun-sdk",
         action="store_true",
         help="write a true Rerun SDK .rrd instead of the JSON fallback artifact",
@@ -1646,6 +1672,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 model_descriptor_path=args.model_descriptor,
                 g1_track=args.g1_track,
                 allow_fixture_model=args.allow_fixture_model,
+                execution_profile=args.execution_profile,
             )
             print(f"wrote {result.html_path}")
             print(f"wrote {result.manifest_path}")
@@ -1662,6 +1689,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 width=args.width,
                 height=args.height,
                 replay_fps=args.replay_fps,
+                execution_profile=args.execution_profile,
             )
             print(f"wrote {result.html_path}")
             print(f"wrote {result.manifest_path}")
@@ -1833,6 +1861,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 g1_render=args.g1_render,
                 render_mujoco=args.render_mujoco,
                 g1_replay_fps=args.g1_replay_fps,
+                g1_execution_profile=args.g1_execution_profile,
                 use_rerun_sdk=args.use_rerun_sdk,
             )
             print(f"wrote {result.manifest_path}")

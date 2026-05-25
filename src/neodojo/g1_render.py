@@ -15,6 +15,11 @@ from pathlib import Path
 from typing import Any
 
 from .contracts import require_schema
+from .execution_profiles import (
+    G1_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE,
+    build_g1_render_execution_profile,
+    require_satisfied_execution_profile,
+)
 from .fixtures import BONES, TRAJECTORY_JOINTS
 from .g1_visual import ROBOT_MODEL_SCHEMA, SUPPORTED_ROBOT, load_g1_track_frames, resolve_g1_track_manifest
 from .motion_contract import _relative_path, _write_json, validate_output_dir
@@ -380,6 +385,7 @@ def _run_mujoco_backend_render(
                 "html": _relative_path(out_dir / "index.html", relative_start),
                 "renderer": render_manifest.get("renderer"),
                 "pose_application": render_manifest.get("pose_application"),
+                "execution_profile": render_manifest.get("execution_profile"),
                 "nonblank_views": render_manifest.get("nonblank_views"),
                 "actual_g1_model_replay": bool(render_manifest.get("actual_g1_model_replay")),
                 "frame_paths": frame_paths,
@@ -906,6 +912,7 @@ def write_g1_render(
     model_descriptor_path: Path,
     g1_track: Path,
     allow_fixture_model: bool = False,
+    execution_profile: str = "auto",
 ) -> G1RenderWriteResult:
     validate_output_dir(out_dir)
     model_descriptor = _load_model_descriptor(model_descriptor_path, allow_fixture_model=allow_fixture_model)
@@ -968,6 +975,20 @@ def write_g1_render(
         "scoring_source": "smplx",
         "g1_scoring_allowed": False,
     }
+    manifest["execution_profile"] = build_g1_render_execution_profile(
+        requested_profile=execution_profile,
+        renderer_backend=G1_RENDER_BACKEND,
+        scoring_source=manifest["scoring_source"],
+        g1_scoring_allowed=manifest["g1_scoring_allowed"],
+        model_fixture_only=manifest["model_fixture_only"],
+        track_fixture_only=manifest["track_fixture_only"],
+        actual_g1_model_replay=False,
+    )
+    if execution_profile != "auto":
+        require_satisfied_execution_profile(
+            manifest["execution_profile"],
+            label="G1 schematic render evidence",
+        )
     _write_json(manifest_path, manifest)
     html_path.write_text(_render_html(manifest, list(frame_paths)), encoding="utf-8")
     return G1RenderWriteResult(html_path=html_path, manifest_path=manifest_path, frame_paths=frame_paths)
@@ -982,6 +1003,7 @@ def write_g1_mujoco_render(
     width: int = 640,
     height: int = 480,
     replay_fps: float | None = DEFAULT_G1_REPLAY_FPS,
+    execution_profile: str = "auto",
 ) -> G1RenderWriteResult:
     if width <= 0 or height <= 0:
         raise ValueError("MuJoCo render width and height must be positive")
@@ -1135,6 +1157,27 @@ def write_g1_mujoco_render(
         "nonblank_pixel_check": all(nonblank_checks.values()),
         "nonblank_views": nonblank_checks,
     }
+    manifest["execution_profile"] = build_g1_render_execution_profile(
+        requested_profile=execution_profile,
+        renderer_backend=G1_MUJOCO_RENDER_BACKEND,
+        scoring_source=manifest["scoring_source"],
+        g1_scoring_allowed=manifest["g1_scoring_allowed"],
+        model_fixture_only=manifest["model_fixture_only"],
+        track_fixture_only=manifest["track_fixture_only"],
+        pose_application=pose_application,
+        replay_frames=manifest["replay_frames"],
+        mesh_loaded=manifest["mesh_loaded"],
+        nonblank_pixel_check=manifest["nonblank_pixel_check"],
+        actual_g1_model_replay=actual_replay,
+    )
+    if (
+        execution_profile != "auto"
+        or manifest["execution_profile"]["profile"] == G1_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE
+    ):
+        require_satisfied_execution_profile(
+            manifest["execution_profile"],
+            label="G1 MuJoCo render evidence",
+        )
     _write_json(manifest_path, manifest)
     html_path.write_text(_render_image_html(manifest, frame_paths), encoding="utf-8")
     return G1RenderWriteResult(html_path=html_path, manifest_path=manifest_path, frame_paths=frame_paths)

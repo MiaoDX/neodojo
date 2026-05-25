@@ -7,6 +7,7 @@ from typing import Any
 
 from .annotations import write_detected_annotations
 from .capture_bundle import write_capture_bundle
+from .execution_profiles import G1_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE, require_satisfied_execution_profile
 from .g1_render import DEFAULT_G1_REPLAY_FPS, write_g1_mujoco_render, write_g1_render
 from .g1_visual import build_g1_visual_track, resolve_g1_track_manifest, write_fixture_g1_model_descriptor
 from .motion_contract import _relative_path, _write_json, validate_output_dir, write_gvhmr_json_motion_contract
@@ -76,6 +77,7 @@ def write_real_conversion_demo(
     g1_render: Path | None = None,
     render_mujoco: bool = False,
     g1_replay_fps: float | None = DEFAULT_G1_REPLAY_FPS,
+    g1_execution_profile: str = "auto",
     use_rerun_sdk: bool = False,
 ) -> RealConversionDemoWriteResult:
     validate_output_dir(out_dir)
@@ -137,6 +139,7 @@ def write_real_conversion_demo(
             model_descriptor_path=model_descriptor_path,
             g1_track=g1_track_path,
             replay_fps=g1_replay_fps,
+            execution_profile=g1_execution_profile,
         )
         render_manifest_path = render.manifest_path
         render_checked_paths = [render.manifest_path, *render.frame_paths.values()]
@@ -148,9 +151,22 @@ def write_real_conversion_demo(
             model_descriptor_path=model_descriptor_path,
             g1_track=g1_track_path,
             allow_fixture_model=True,
+            execution_profile=g1_execution_profile,
         )
         render_manifest_path = render.manifest_path
         render_checked_paths = [render.manifest_path, *render.frame_paths.values()]
+
+    render_manifest_payload = _load_json_object(render_manifest_path, "G1 render manifest")
+    if g1_execution_profile != "auto":
+        profile = render_manifest_payload.get("execution_profile")
+        if not isinstance(profile, dict):
+            raise ValueError("G1 render manifest is missing execution_profile")
+        if profile.get("profile") != g1_execution_profile:
+            raise ValueError(
+                "G1 render manifest execution_profile does not match requested "
+                f"profile {g1_execution_profile}"
+            )
+        require_satisfied_execution_profile(profile, label="G1 render manifest")
     reference_video, reference_trim_start = _materialized_reference_video(source_materialization)
     playback = write_teaching_playback_demo(
         out_dir / "teaching-demo",
@@ -187,7 +203,6 @@ def write_real_conversion_demo(
         fixture_components.append("g1_model_descriptor")
     if generated_g1_track is not None:
         fixture_components.append("derived_g1_visual_track")
-    render_manifest_payload = _load_json_object(render_manifest_path, "G1 render manifest")
     actual_g1_model_replay = bool(render_manifest_payload.get("actual_g1_model_replay"))
     notes = (
         "This command consumes a returned GVHMR JSON export. It does not run "
@@ -230,6 +245,8 @@ def write_real_conversion_demo(
         "g1_render_mujoco_requested": render_mujoco,
         "actual_g1_model_replay": actual_g1_model_replay,
         "g1_replay_claim": "actual_mujoco_frame_sequence" if actual_g1_model_replay else "schematic_or_incomplete_evidence",
+        "g1_execution_profile": render_manifest_payload.get("execution_profile"),
+        "g1_actual_replay_profile_required": g1_execution_profile == G1_ACTUAL_MUJOCO_REPLAY_EVIDENCE_PROFILE,
         "teaching_playback": _relative_path(playback.manifest_path, manifest_path.parent),
         "public_demo": _relative_path(public.manifest_path, manifest_path.parent),
         "teaching_html": public_manifest_payload.get("teaching_html"),
